@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
-import { Radio } from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore';
 import type { UserRole } from '@acars/shared';
 
@@ -30,9 +29,7 @@ export function AuthGuard({ minRole }: AuthGuardProps) {
     return (
       <div className="flex items-center justify-center h-screen bg-acars-bg">
         <div className="flex flex-col items-center gap-3">
-          <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-acars-blue/20 animate-pulse">
-            <Radio className="w-6 h-6 text-acars-blue" />
-          </div>
+          <img src="./logos/chevron-light.png" alt="Loading" className="h-12 w-auto animate-pulse" />
           <p className="text-xs text-acars-muted">Loading...</p>
         </div>
       </div>

@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Radio } from 'lucide-react';
 import { useAuthStore } from '../stores/authStore';
 import { ApiError } from '../lib/api';
 
@@ -44,11 +43,8 @@ export function RegisterPage() {
     <div className="flex items-center justify-center min-h-screen bg-acars-bg px-4">
       <div className="panel max-w-sm w-full p-6">
         {/* Logo */}
-        <div className="flex flex-col items-center gap-2 mb-8">
-          <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-acars-blue/20">
-            <Radio className="w-6 h-6 text-acars-blue" />
-          </div>
-          <h1 className="text-lg font-semibold text-acars-text">SMA ACARS</h1>
+        <div className="flex flex-col items-center gap-3 mb-8">
+          <img src="./logos/smx-login-logo.png" alt="Special Missions Air" className="h-20 w-auto" />
           <p className="text-xs text-acars-muted uppercase tracking-wider">Create Account</p>
         </div>
 
