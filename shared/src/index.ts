@@ -17,6 +17,23 @@ export type {
   AuthPayload,
   CreateUserRequest,
 } from './types/auth.js';
+export type {
+  CharterType,
+  Airport,
+  FleetAircraft,
+  ScheduledFlight,
+  Bid,
+  BidWithDetails,
+  ScheduleListItem,
+  ScheduleListResponse,
+  BidResponse,
+  MyBidsResponse,
+  ActiveBidEntry,
+  AllBidsResponse,
+  DashboardStats,
+  CreateCharterRequest,
+  CreateCharterResponse,
+} from './types/schedule.js';
 
 // Constants
 export { FlightPhase, PhaseThresholds } from './constants/flight-phases.js';

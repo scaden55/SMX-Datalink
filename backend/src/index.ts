@@ -15,6 +15,7 @@ import { fuelRouter } from './routes/fuel.js';
 import { engineRouter } from './routes/engine.js';
 import { authRouter } from './routes/auth.js';
 import { adminRouter } from './routes/admin.js';
+import { scheduleRouter } from './routes/schedules.js';
 
 // Initialize database before anything else
 initializeDatabase();
@@ -58,6 +59,7 @@ app.use('/api', flightRouter(telemetry, config.simconnectEnabled));
 app.use('/api', fuelRouter(telemetry, config.simconnectEnabled));
 app.use('/api', engineRouter(telemetry, config.simconnectEnabled));
 app.use('/api', authRouter());
+app.use('/api', scheduleRouter());
 app.use('/api', adminRouter());
 
 // WebSocket
