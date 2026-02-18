@@ -1,0 +1,36 @@
+import { HashRouter, Routes, Route } from 'react-router-dom';
+import { useSocket } from './hooks/useSocket';
+import { useMockFlightPlan } from './hooks/useMockFlightPlan';
+import { MainShell } from './components/navigation/MainShell';
+import { DashboardPage } from './pages/DashboardPage';
+import { LiveMapPage } from './pages/LiveMapPage';
+import { SchedulePage } from './pages/SchedulePage';
+import { FlightPlanningPage } from './pages/FlightPlanningPage';
+import { DispatchPage } from './pages/DispatchPage';
+import { FleetPage } from './pages/FleetPage';
+import { LogbookPage } from './pages/LogbookPage';
+import { ReportsPage } from './pages/ReportsPage';
+import { SettingsPage } from './pages/SettingsPage';
+
+export function App() {
+  useSocket();
+  useMockFlightPlan();
+
+  return (
+    <HashRouter>
+      <Routes>
+        <Route element={<MainShell />}>
+          <Route path="/" element={<DashboardPage />} />
+          <Route path="/map" element={<LiveMapPage />} />
+          <Route path="/schedule" element={<SchedulePage />} />
+          <Route path="/planning" element={<FlightPlanningPage />} />
+          <Route path="/dispatch" element={<DispatchPage />} />
+          <Route path="/fleet" element={<FleetPage />} />
+          <Route path="/logbook" element={<LogbookPage />} />
+          <Route path="/reports" element={<ReportsPage />} />
+          <Route path="/settings" element={<SettingsPage />} />
+        </Route>
+      </Routes>
+    </HashRouter>
+  );
+}

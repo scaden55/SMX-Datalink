@@ -1,0 +1,57 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: #30363d #161b22;
+  }
+  *::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  *::-webkit-scrollbar-track {
+    background: #161b22;
+  }
+  *::-webkit-scrollbar-thumb {
+    background: #30363d;
+    border-radius: 3px;
+  }
+}
+
+@layer components {
+  .panel {
+    @apply bg-acars-panel border border-acars-border rounded-md;
+  }
+  .badge {
+    @apply inline-flex items-center px-2 py-0.5 rounded text-xs font-medium;
+  }
+  .badge-green {
+    @apply badge bg-acars-green/20 text-acars-green border border-acars-green/30;
+  }
+  .badge-amber {
+    @apply badge bg-acars-amber/20 text-acars-amber border border-acars-amber/30;
+  }
+  .badge-red {
+    @apply badge bg-acars-red/20 text-acars-red border border-acars-red/30;
+  }
+  .badge-blue {
+    @apply badge bg-acars-blue/20 text-acars-blue border border-acars-blue/30;
+  }
+  .badge-magenta {
+    @apply badge bg-acars-magenta/20 text-acars-magenta border border-acars-magenta/30;
+  }
+  .data-label {
+    @apply text-[10px] uppercase tracking-wider text-acars-muted font-medium;
+  }
+  .data-value {
+    @apply text-sm font-mono text-acars-text;
+  }
+  .tab-active {
+    @apply text-acars-blue border-b-2 border-acars-blue;
+  }
+  .tab-inactive {
+    @apply text-acars-muted hover:text-acars-text;
+  }
+}

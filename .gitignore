@@ -78,3 +78,17 @@ appsettings.Local.json
 
 # DPAPI tokens
 device_token.dat
+
+# Node.js
+node_modules/
+dist/
+*.tsbuildinfo
+
+# Vite
+frontend/dist/
+
+# Electron
+release/
+electron/dist/
+*.blockmap
+*.snap
