@@ -2,7 +2,7 @@ import type { Server as HttpServer } from 'http';
 import { Server as SocketServer } from 'socket.io';
 import type { ServerToClientEvents, ClientToServerEvents } from '@acars/shared';
 import type { TelemetryService } from '../services/telemetry.js';
-import type { SimConnectManager } from '../simconnect/connection.js';
+import type { ISimConnectManager } from '../simconnect/types.js';
 import { generateMockSnapshot } from '../services/mock-data.js';
 import { config } from '../config.js';
 
@@ -13,7 +13,7 @@ import { config } from '../config.js';
 export function setupWebSocket(
   httpServer: HttpServer,
   telemetry: TelemetryService,
-  simConnect: SimConnectManager,
+  simConnect: ISimConnectManager,
 ): SocketServer<ClientToServerEvents, ServerToClientEvents> {
   const io = new SocketServer<ClientToServerEvents, ServerToClientEvents>(httpServer, {
     cors: {

@@ -3,29 +3,14 @@ import { EventEmitter } from 'events';
 import { config } from '../config.js';
 import { registerAllDefinitions, requestAllData, subscribeSystemEvents, SystemEventID, RequestID } from './definitions.js';
 import { readPosition, readEngine, readFuel, readFlightState, readAutopilot, readRadio, readAircraftInfo } from './reader.js';
-import type { AircraftPosition, AutopilotState, TransponderState, ComRadio, NavRadio, EngineData, FuelData, ConnectionStatus } from '@acars/shared';
-
-export interface SimConnectEvents {
-  connected: (status: ConnectionStatus) => void;
-  disconnected: () => void;
-  positionUpdate: (data: AircraftPosition) => void;
-  engineUpdate: (data: EngineData) => void;
-  fuelUpdate: (data: FuelData) => void;
-  flightStateUpdate: (data: ReturnType<typeof readFlightState>) => void;
-  autopilotUpdate: (data: AutopilotState) => void;
-  radioUpdate: (data: { transponder: TransponderState; com1: ComRadio; com2: ComRadio; nav1: NavRadio; nav2: NavRadio }) => void;
-  aircraftInfoUpdate: (data: { title: string; atcId: string; atcType: string; atcModel: string }) => void;
-  paused: (isPaused: boolean) => void;
-  crashed: () => void;
-  simStart: () => void;
-  simStop: () => void;
-}
+import type { ConnectionStatus } from '@acars/shared';
+import type { ISimConnectManager } from './types.js';
 
 /**
  * SimConnect connection manager.
  * Handles connection lifecycle, auto-reconnect, and data dispatch.
  */
-export class SimConnectManager extends EventEmitter {
+export class SimConnectManager extends EventEmitter implements ISimConnectManager {
   private handle: SimConnectConnection | null = null;
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
   private _connected = false;

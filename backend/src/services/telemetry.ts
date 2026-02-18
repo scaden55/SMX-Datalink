@@ -11,7 +11,7 @@ import type {
   TelemetrySnapshot,
 } from '@acars/shared';
 import { FlightPhase } from '@acars/shared';
-import { SimConnectManager } from '../simconnect/connection.js';
+import type { ISimConnectManager } from '../simconnect/types.js';
 import { FlightPhaseService } from './flight-phase.js';
 import { generateMockSnapshot } from './mock-data.js';
 
@@ -57,7 +57,7 @@ export class TelemetryService {
 
   private phaseService: FlightPhaseService;
 
-  constructor(private simConnect: SimConnectManager) {
+  constructor(private simConnect: ISimConnectManager) {
     this.phaseService = new FlightPhaseService();
     this.wireEvents();
   }

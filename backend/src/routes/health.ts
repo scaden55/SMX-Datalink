@@ -1,7 +1,7 @@
 import { Router } from 'express';
-import type { SimConnectManager } from '../simconnect/connection.js';
+import type { ISimConnectManager } from '../simconnect/types.js';
 
-export function healthRouter(simConnect: SimConnectManager): Router {
+export function healthRouter(simConnect: ISimConnectManager): Router {
   const router = Router();
 
   router.get('/health', (_req, res) => {

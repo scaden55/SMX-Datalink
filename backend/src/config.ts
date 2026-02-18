@@ -3,6 +3,7 @@ import 'dotenv/config';
 export const config = {
   port: parseInt(process.env.PORT || '3001', 10),
   corsOrigin: process.env.CORS_ORIGIN || 'http://localhost:5173',
+  simconnectEnabled: process.env.SIMCONNECT_ENABLED !== 'false',
   simconnect: {
     appName: 'ACARS System',
     pollInterval: parseInt(process.env.SIMCONNECT_POLL_INTERVAL || '1000', 10),
