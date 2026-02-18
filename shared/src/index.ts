@@ -6,6 +6,17 @@ export type { FlightData, ConnectionStatus } from './types/flight.js';
 export type { Waypoint, FlightPlan, FlightPlanProgress } from './types/flight-plan.js';
 export type { OOOIEventType, AcarsMessage, DispatcherRemarks, SystemInfo } from './types/acars.js';
 export type { TelemetrySnapshot, ServerToClientEvents, ClientToServerEvents } from './types/websocket.js';
+export type {
+  UserRole,
+  LoginRequest,
+  RegisterRequest,
+  RefreshRequest,
+  UserProfile,
+  LoginResponse,
+  RefreshResponse,
+  AuthPayload,
+  CreateUserRequest,
+} from './types/auth.js';
 
 // Constants
 export { FlightPhase, PhaseThresholds } from './constants/flight-phases.js';

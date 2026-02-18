@@ -5,14 +5,17 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/index.ts",
-    "build": "tsc",
+    "build": "tsc && copyfiles -u 1 \"src/db/migrations/*.sql\" dist",
     "start": "node dist/index.js"
   },
   "dependencies": {
     "@acars/shared": "*",
+    "bcryptjs": "^3.0.3",
+    "better-sqlite3": "^12.6.2",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
+    "jsonwebtoken": "^9.0.3",
     "socket.io": "^4.8.1",
     "uuid": "^11.1.0"
   },
@@ -20,10 +23,14 @@
     "node-simconnect": "^4.0.0"
   },
   "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/better-sqlite3": "^7.6.13",
     "@types/cors": "^2.8.17",
     "@types/express": "^5.0.0",
+    "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^22.12.0",
     "@types/uuid": "^10.0.0",
+    "copyfiles": "^2.4.1",
     "tsx": "^4.19.2",
     "typescript": "^5.7.3"
   }

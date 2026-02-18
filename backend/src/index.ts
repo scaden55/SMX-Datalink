@@ -6,11 +6,19 @@ import { NullSimConnectManager } from './simconnect/null-manager.js';
 import type { ISimConnectManager } from './simconnect/types.js';
 import { TelemetryService } from './services/telemetry.js';
 import { setupWebSocket } from './websocket/handler.js';
+import { initializeDatabase, closeDatabase } from './db/index.js';
+import { seedDatabase } from './db/seed.js';
 import { healthRouter } from './routes/health.js';
 import { aircraftRouter } from './routes/aircraft.js';
 import { flightRouter } from './routes/flight.js';
 import { fuelRouter } from './routes/fuel.js';
 import { engineRouter } from './routes/engine.js';
+import { authRouter } from './routes/auth.js';
+import { adminRouter } from './routes/admin.js';
+
+// Initialize database before anything else
+initializeDatabase();
+seedDatabase();
 
 const app = express();
 const httpServer = createServer(app);
@@ -44,6 +52,8 @@ app.use('/api', aircraftRouter(telemetry, config.simconnectEnabled));
 app.use('/api', flightRouter(telemetry, config.simconnectEnabled));
 app.use('/api', fuelRouter(telemetry, config.simconnectEnabled));
 app.use('/api', engineRouter(telemetry, config.simconnectEnabled));
+app.use('/api', authRouter());
+app.use('/api', adminRouter());
 
 // WebSocket
 setupWebSocket(httpServer, telemetry, simConnect);
@@ -62,10 +72,12 @@ httpServer.listen(config.port, () => {
 process.on('SIGINT', () => {
   console.log('\n[Server] Shutting down...');
   simConnect.disconnect();
+  closeDatabase();
   httpServer.close(() => process.exit(0));
 });
 
 process.on('SIGTERM', () => {
   simConnect.disconnect();
+  closeDatabase();
   httpServer.close(() => process.exit(0));
 });
