@@ -1,0 +1,80 @@
+# Build results
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+[Bb]uild/
+bld/
+[Bb]in/
+[Oo]bj/
+[Oo]ut/
+[Ll]og/
+[Ll]ogs/
+
+# Visual Studio
+.vs/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.rsuser
+[Tt]est[Rr]esult*/
+[Dd]ebug[Pp]ublic/
+[Rr]elease[Pp]ublic/
+
+# NuGet
+**/[Pp]ackages/*
+!**/[Pp]ackages/build/
+*.nupkg
+**/packages/repositories.config
+project.lock.json
+project.fragment.lock.json
+artifacts/
+
+# MSBuild
+*.csproj.user
+
+# Rider / JetBrains
+.idea/
+*.sln.iml
+
+# VS Code
+.vscode/
+
+# User-specific files
+*.suo
+*.user
+*.userprefs
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# macOS
+.DS_Store
+._*
+
+# Publish / deploy
+publish/
+*.azurePubxml
+*.pubxml
+!**/PublishProfiles/*.pubxml
+
+# SQLite databases (generated at runtime)
+*.db
+*.db-shm
+*.db-wal
+
+# Serilog / log files
+*.log
+
+# Environment / secrets
+.env
+*.env
+appsettings.Development.json
+appsettings.Local.json
+
+# DPAPI tokens
+device_token.dat
