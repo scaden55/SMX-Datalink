@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { useUIStore } from '../../stores/uiStore';
 import { useTelemetry } from '../../hooks/useTelemetry';
+import { useAuthStore } from '../../stores/authStore';
 
 interface NavItem {
   to: string;
@@ -60,6 +61,11 @@ export function NavSidebar() {
   const collapsed = useUIStore((s) => s.navCollapsed);
   const toggleNav = useUIStore((s) => s.toggleNav);
   const location = useLocation();
+  const user = useAuthStore((s) => s.user);
+
+  const initials = user ? `${user.firstName[0]}${user.lastName[0]}` : '??';
+  const displayName = user ? `${user.firstName} ${user.lastName}` : 'Unknown';
+  const roleBadge = user?.role ?? 'pilot';
 
   return (
     <aside
@@ -123,12 +129,12 @@ export function NavSidebar() {
         {!collapsed && (
           <div className="flex items-center gap-2.5">
             <div className="flex items-center justify-center w-8 h-8 rounded-full bg-acars-blue/20 text-acars-blue text-xs font-semibold shrink-0">
-              PA
+              {initials}
             </div>
             <div className="flex flex-col min-w-0">
-              <span className="text-xs text-acars-text truncate">Pilot Admin</span>
+              <span className="text-xs text-acars-text truncate">{displayName}</span>
               <span className="inline-flex items-center gap-1">
-                <span className="text-[10px] font-medium uppercase tracking-wide text-acars-blue bg-acars-blue/10 px-1.5 py-0.5 rounded">Pilot</span>
+                <span className="text-[10px] font-medium uppercase tracking-wide text-acars-blue bg-acars-blue/10 px-1.5 py-0.5 rounded">{roleBadge}</span>
               </span>
             </div>
           </div>
@@ -136,7 +142,7 @@ export function NavSidebar() {
         {collapsed && (
           <div className="flex justify-center">
             <div className="flex items-center justify-center w-8 h-8 rounded-full bg-acars-blue/20 text-acars-blue text-xs font-semibold">
-              PA
+              {initials}
             </div>
           </div>
         )}

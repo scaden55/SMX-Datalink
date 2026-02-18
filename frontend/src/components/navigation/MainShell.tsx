@@ -2,8 +2,13 @@ import { Outlet } from 'react-router-dom';
 import { NavSidebar } from './NavSidebar';
 import { HeaderBar } from './HeaderBar';
 import { StatusBar } from '../layout/StatusBar';
+import { useSocket } from '../../hooks/useSocket';
+import { useMockFlightPlan } from '../../hooks/useMockFlightPlan';
 
 export function MainShell() {
+  useSocket();
+  useMockFlightPlan();
+
   return (
     <div className="flex h-full">
       {/* Left: Sidebar navigation */}
