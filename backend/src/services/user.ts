@@ -14,6 +14,7 @@ interface UserRow {
   is_active: number;
   created_at: string;
   updated_at: string;
+  simbrief_username: string | null;
 }
 
 export class UserService {
@@ -76,6 +77,16 @@ export class UserService {
       rank: row.rank,
       hoursTotal: row.hours_total,
       createdAt: row.created_at,
+      simbriefUsername: row.simbrief_username ?? undefined,
     };
+  }
+
+  getSimbriefUsername(userId: number): string | null {
+    const row = getDb().prepare('SELECT simbrief_username FROM users WHERE id = ?').get(userId) as { simbrief_username: string | null } | undefined;
+    return row?.simbrief_username ?? null;
+  }
+
+  updateSimbriefUsername(userId: number, username: string | null): void {
+    getDb().prepare('UPDATE users SET simbrief_username = ? WHERE id = ?').run(username, userId);
   }
 }

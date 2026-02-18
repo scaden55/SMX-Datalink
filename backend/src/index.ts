@@ -16,6 +16,7 @@ import { engineRouter } from './routes/engine.js';
 import { authRouter } from './routes/auth.js';
 import { adminRouter } from './routes/admin.js';
 import { scheduleRouter } from './routes/schedules.js';
+import { flightPlanRouter } from './routes/flight-plan.js';
 
 // Initialize database before anything else
 initializeDatabase();
@@ -61,6 +62,7 @@ app.use('/api', engineRouter(telemetry, config.simconnectEnabled));
 app.use('/api', authRouter());
 app.use('/api', scheduleRouter());
 app.use('/api', adminRouter());
+app.use('/api', flightPlanRouter());
 
 // WebSocket
 setupWebSocket(httpServer, telemetry, simConnect);

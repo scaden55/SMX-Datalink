@@ -13,4 +13,5 @@ export const config = {
   jwtAccessExpiry: process.env.JWT_ACCESS_EXPIRY || '15m',
   jwtRefreshExpiry: process.env.JWT_REFRESH_EXPIRY || '7d',
   dbPath: process.env.DB_PATH || './data/acars.db',
+  simbriefApiKey: process.env.SIMBRIEF_API_KEY || 'NwjwOBNIxoAyOOyiS3OIWm8wH91aqr1p',
 } as const;

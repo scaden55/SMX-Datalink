@@ -1,4 +1,5 @@
 import { Fragment, useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   CalendarDays,
   Search,
@@ -18,6 +19,7 @@ import {
   Package,
   Users,
   RotateCw,
+  Route,
 } from 'lucide-react';
 import { MapContainer, TileLayer, CircleMarker, Polyline, Tooltip, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -500,6 +502,7 @@ function FlightPreviewPanel({ schedule: s, depAirport, arrAirport, hasBid, isBid
 // ─── Schedule Page ──────────────────────────────────────────────
 
 export function SchedulePage() {
+  const navigate = useNavigate();
   // Filter state
   const [airports, setAirports] = useState<Airport[]>([]);
   const [aircraftTypes, setAircraftTypes] = useState<string[]>([]);
@@ -899,6 +902,12 @@ export function SchedulePage() {
                     </span>
                     <span className="tabular-nums">{formatDuration(bid.flightTimeMin)}</span>
                   </div>
+                  <button
+                    onClick={() => navigate(`/planning/${bid.id}`)}
+                    className="mt-2 w-full inline-flex items-center justify-center gap-1 px-2 py-1 rounded text-[9px] font-semibold uppercase tracking-wide bg-acars-magenta/10 text-acars-magenta border border-acars-magenta/20 hover:bg-acars-magenta/20 transition-colors"
+                  >
+                    <Route className="w-3 h-3" /> Plan Flight
+                  </button>
                 </div>
               ))}
             </div>

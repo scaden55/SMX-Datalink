@@ -26,6 +26,7 @@ export interface UserProfile {
   rank: string;
   hoursTotal: number;
   createdAt: string;
+  simbriefUsername?: string;
 }
 
 export interface LoginResponse {

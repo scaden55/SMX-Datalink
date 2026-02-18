@@ -18,6 +18,21 @@ export type {
   CreateUserRequest,
 } from './types/auth.js';
 export type {
+  SimBriefStep,
+  SimBriefFuel,
+  SimBriefWeights,
+  SimBriefAlternate,
+  SimBriefTimes,
+  SimBriefOFP,
+  MetarData,
+  TafData,
+  NotamData,
+  FlightPlanFormData,
+  FlightPlanPhase,
+  PlanningInfoTab,
+  WeatherCache,
+} from './types/flight-planning.js';
+export type {
   CharterType,
   Airport,
   FleetAircraft,

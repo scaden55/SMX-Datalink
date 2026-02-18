@@ -24,7 +24,7 @@ export function App() {
             <Route path="/" element={<DashboardPage />} />
             <Route path="/map" element={<LiveMapPage />} />
             <Route path="/schedule" element={<SchedulePage />} />
-            <Route path="/planning" element={<FlightPlanningPage />} />
+            <Route path="/planning/:bidId?" element={<FlightPlanningPage />} />
             <Route path="/dispatch" element={<DispatchPage />} />
             <Route path="/fleet" element={<FleetPage />} />
             <Route path="/logbook" element={<LogbookPage />} />
