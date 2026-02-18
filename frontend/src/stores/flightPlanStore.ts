@@ -81,6 +81,7 @@ interface FlightPlanState {
   setPhase: (phase: FlightPlanPhase) => void;
   activeBidId: number | null;
   setActiveBidId: (id: number | null) => void;
+  clearActiveBid: () => void;
 
   weatherCache: WeatherCache;
   setWeatherCache: (cache: WeatherCache) => void;
@@ -130,6 +131,7 @@ export const useFlightPlanStore = create<FlightPlanState>((set) => ({
   setPhase: (phase) => set({ phase }),
   activeBidId: null,
   setActiveBidId: (id) => set({ activeBidId: id }),
+  clearActiveBid: () => set({ activeBidId: null, form: { ...emptyForm }, ofp: null, steps: [], planningWaypoints: [], phase: 'planning' }),
 
   // Weather
   weatherCache: {},

@@ -24,6 +24,7 @@ import {
 import { MapContainer, TileLayer, CircleMarker, Polyline, Tooltip, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import { api } from '../lib/api';
+import { useFlightPlanStore } from '../stores/flightPlanStore';
 import type {
   Airport,
   ScheduleListItem,
@@ -621,6 +622,12 @@ export function SchedulePage() {
       ));
     }
     setMyBids(prev => prev.filter(b => b.id !== bidId));
+
+    // Clear flight planning store if this bid was the active one
+    const planStore = useFlightPlanStore.getState();
+    if (planStore.activeBidId === bidId) {
+      planStore.clearActiveBid();
+    }
 
     try {
       await api.delete('/api/bids/' + bidId);

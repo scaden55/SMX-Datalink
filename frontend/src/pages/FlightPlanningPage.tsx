@@ -260,8 +260,6 @@ export function FlightPlanningPage() {
     <div className="flex h-full overflow-hidden">
       {/* Left: Form */}
       <PlanningLeftPanel
-        bids={bids}
-        onSelectBid={handleSelectBid}
         onGenerate={handleGenerate}
         onFetchLatest={handleFetchLatest}
         onSave={handleSave}
@@ -281,8 +279,8 @@ export function FlightPlanningPage() {
         <PlanningInfoPanel />
       </div>
 
-      {/* Right: Airport cards + phase */}
-      <PlanningRightPanel />
+      {/* Right: Bid selector + phase */}
+      <PlanningRightPanel bids={bids} onSelectBid={handleSelectBid} />
     </div>
   );
 }
