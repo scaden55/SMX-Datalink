@@ -46,6 +46,11 @@ if (config.simconnectEnabled) {
 
 const telemetry = new TelemetryService(simConnect);
 
+// Root
+app.get('/', (_req, res) => {
+  res.json({ name: 'SMA ACARS API', version: '1.0.0', status: 'online' });
+});
+
 // REST API routes
 app.use('/api', healthRouter(simConnect));
 app.use('/api', aircraftRouter(telemetry, config.simconnectEnabled));
