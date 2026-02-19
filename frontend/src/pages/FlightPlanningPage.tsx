@@ -189,13 +189,14 @@ export function FlightPlanningPage() {
   // No bid in URL, bids loaded, no activeBidId to redirect to, and no bids at all → empty state
   if (!bidId && bidsLoaded && !activeBidId && bids.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center h-full text-center gap-4">
+      <div className="flex flex-col items-center justify-center h-full text-center gap-5">
+        <img src="/logos/chevron-light.png" alt="SMA" className="h-14 w-auto opacity-15" />
         <div className="flex items-center justify-center w-16 h-16 rounded-2xl bg-acars-magenta/10 border border-acars-magenta/20">
           <Route className="w-8 h-8 text-acars-magenta" />
         </div>
         <div>
           <h2 className="text-lg font-semibold text-acars-text">No Active Bids</h2>
-          <p className="text-sm text-acars-muted mt-1">Browse the schedule and place a bid to start planning a flight</p>
+          <p className="text-sm text-acars-muted mt-1">Browse the schedule and place a bid to start planning a cargo run</p>
         </div>
         <button
           onClick={() => navigate('/schedule')}
@@ -210,7 +211,8 @@ export function FlightPlanningPage() {
   // No bid selected yet, but bids exist → show bid picker prompt
   if (!bidId && bidsLoaded && !activeBidId && bids.length > 0) {
     return (
-      <div className="flex flex-col items-center justify-center h-full text-center gap-4">
+      <div className="flex flex-col items-center justify-center h-full text-center gap-5">
+        <img src="/logos/chevron-light.png" alt="SMA" className="h-14 w-auto opacity-15" />
         <div className="flex items-center justify-center w-16 h-16 rounded-2xl bg-acars-blue/10 border border-acars-blue/20">
           <Route className="w-8 h-8 text-acars-blue" />
         </div>

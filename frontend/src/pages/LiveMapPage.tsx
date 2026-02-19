@@ -2,7 +2,8 @@ import { Map } from 'lucide-react';
 
 export function LiveMapPage() {
   return (
-    <div className="flex flex-col items-center justify-center h-full text-center gap-4">
+    <div className="flex flex-col items-center justify-center h-full text-center gap-5">
+      <img src="/logos/chevron-light.png" alt="SMA" className="h-14 w-auto opacity-15" />
       <div className="flex items-center justify-center w-16 h-16 rounded-2xl bg-acars-cyan/10 border border-acars-cyan/20">
         <Map className="w-8 h-8 text-acars-cyan" />
       </div>

@@ -72,9 +72,9 @@ function DaysIndicator({ days }: { days: string }) {
 // ─── Charter Types ──────────────────────────────────────────────
 
 const CHARTER_TYPES: { value: CharterType; label: string; icon: typeof Plane; desc: string }[] = [
-  { value: 'reposition', label: 'Reposition', icon: RotateCw, desc: 'Ferry flight — no payload' },
   { value: 'cargo', label: 'Cargo Charter', icon: Package, desc: 'Freight / cargo operations' },
-  { value: 'passenger', label: 'Passenger Charter', icon: Users, desc: 'Passenger charter service' },
+  { value: 'reposition', label: 'Reposition', icon: RotateCw, desc: 'Ferry flight — no payload' },
+  { value: 'passenger', label: 'Passenger Charter', icon: Users, desc: 'Pax charter service (non-scheduled)' },
 ];
 
 // ─── Airport Search ─────────────────────────────────────────────
@@ -195,7 +195,7 @@ interface CharterModalProps {
 }
 
 function CharterModal({ airports, aircraftTypes, onClose, onCreated }: CharterModalProps) {
-  const [charterType, setCharterType] = useState<CharterType>('passenger');
+  const [charterType, setCharterType] = useState<CharterType>('cargo');
   const [depIcao, setDepIcao] = useState('');
   const [arrIcao, setArrIcao] = useState('');
   const [aircraftType, setAircraftType] = useState('');
@@ -767,8 +767,8 @@ export function SchedulePage() {
                 ) : schedules.length === 0 ? (
                   <tr>
                     <td colSpan={10} className="py-16 text-center">
-                      <CalendarDays className="w-6 h-6 text-acars-muted/40 mx-auto mb-2" />
-                      <span className="text-xs text-acars-muted">No flights match your filters</span>
+                      <img src="/logos/chevron-light.png" alt="SMA" className="h-10 w-auto opacity-10 mx-auto mb-3" />
+                      <span className="text-xs text-acars-muted">No cargo routes match your filters</span>
                     </td>
                   </tr>
                 ) : (
@@ -875,9 +875,9 @@ export function SchedulePage() {
         <div className="flex-1 overflow-auto">
           {myBids.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-center px-4">
-              <Plane className="w-8 h-8 text-acars-muted/30 mb-3" />
+              <img src="/logos/chevron-light.png" alt="SMA" className="h-8 w-auto opacity-10 mb-3" />
               <p className="text-xs text-acars-muted">No active bids</p>
-              <p className="text-[10px] text-acars-muted/60 mt-1">Browse the schedule and place a bid to get started</p>
+              <p className="text-[10px] text-acars-muted/60 mt-1">Browse the cargo schedule and place a bid to get started</p>
             </div>
           ) : (
             <div className="p-3 space-y-2">

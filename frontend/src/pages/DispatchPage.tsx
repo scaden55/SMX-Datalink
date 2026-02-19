@@ -146,8 +146,8 @@ export function DispatchPage() {
   if (flights.length === 0) {
     return (
       <div className="flex h-full items-center justify-center">
-        <div className="text-center max-w-md space-y-3">
-          <div className="text-4xl text-acars-muted/40">&#9992;</div>
+        <div className="text-center max-w-md space-y-4">
+          <img src="/logos/chevron-light.png" alt="SMA" className="h-14 w-auto opacity-15 mx-auto" />
           <h2 className="text-sm font-semibold text-acars-text">
             {isAdmin ? 'No Active Flights' : 'No Active Flight'}
           </h2>

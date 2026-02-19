@@ -87,8 +87,8 @@ function ActiveBidsTable({ bids }: { bids: ActiveBidEntry[] }) {
       </div>
       {bids.length === 0 ? (
         <div className="flex-1 flex flex-col items-center justify-center py-12">
-          <Plane className="w-8 h-8 text-acars-muted/30 mb-3" />
-          <p className="text-xs text-acars-muted">No active bids across the VA</p>
+          <img src="/logos/chevron-light.png" alt="SMA" className="h-10 w-auto opacity-10 mb-3" />
+          <p className="text-xs text-acars-muted">No active cargo runs across the VA</p>
           <button
             onClick={() => navigate('/schedule')}
             className="mt-2 text-[11px] font-medium text-acars-blue hover:text-acars-text transition-colors"
@@ -179,7 +179,8 @@ function NetworkMapPreview({ airports }: { airports: Airport[] }) {
   return (
     <div className="panel flex flex-col h-[320px]">
       <div className="flex items-center justify-between px-4 py-3 border-b border-acars-border">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2.5">
+          <img src="/logos/chevron-light.png" alt="SMA" className="h-5 w-auto opacity-60" />
           <h3 className="text-sm font-semibold text-acars-text">Network Map</h3>
           {airports.length > 0 && (
             <span className="text-[10px] text-acars-muted tabular-nums">{airports.length} hubs</span>
@@ -344,7 +345,7 @@ export function DashboardPage() {
     <div className="p-5 space-y-5 overflow-auto h-full">
       {/* Row 1: Stats Bar */}
       <div className="grid grid-cols-4 gap-4">
-        <StatCard label="Scheduled Routes" value={stats?.totalSchedules ?? '—'} icon={CalendarDays} iconBox="bg-acars-green/10 border-acars-green/20" iconColor="text-acars-green" />
+        <StatCard label="Cargo Routes" value={stats?.totalSchedules ?? '—'} icon={CalendarDays} iconBox="bg-acars-green/10 border-acars-green/20" iconColor="text-acars-green" />
         <StatCard label="Registered Pilots" value={stats?.totalPilots ?? '—'} icon={Users} iconBox="bg-acars-blue/10 border-acars-blue/20" iconColor="text-acars-blue" />
         <StatCard label="Fleet Aircraft" value={stats?.totalFleet ?? '—'} icon={Plane} iconBox="bg-acars-amber/10 border-acars-amber/20" iconColor="text-acars-amber" />
         <StatCard label="Active Hubs" value={stats?.totalHubs ?? '—'} icon={Clock} iconBox="bg-acars-cyan/10 border-acars-cyan/20" iconColor="text-acars-cyan" />
