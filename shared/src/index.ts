@@ -34,8 +34,12 @@ export type {
 } from './types/flight-planning.js';
 export type {
   CharterType,
+  FleetStatus,
   Airport,
   FleetAircraft,
+  CreateFleetAircraftRequest,
+  UpdateFleetAircraftRequest,
+  FleetListResponse,
   ScheduledFlight,
   Bid,
   BidWithDetails,

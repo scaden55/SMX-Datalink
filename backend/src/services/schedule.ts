@@ -2,6 +2,7 @@ import { getDb } from '../db/index.js';
 import type {
   Airport,
   FleetAircraft,
+  FleetStatus,
   ScheduleListItem,
   BidWithDetails,
   ActiveBidEntry,
@@ -37,6 +38,11 @@ interface FleetRow {
   pax_capacity: number;
   cargo_capacity_lbs: number;
   is_active: number;
+  status: string;
+  base_icao: string | null;
+  location_icao: string | null;
+  remarks: string | null;
+  updated_at: string | null;
 }
 
 interface ScheduleRow {
@@ -389,6 +395,11 @@ export class ScheduleService {
       paxCapacity: row.pax_capacity,
       cargoCapacityLbs: row.cargo_capacity_lbs,
       isActive: row.is_active === 1,
+      status: (row.status ?? 'active') as FleetStatus,
+      baseIcao: row.base_icao,
+      locationIcao: row.location_icao,
+      remarks: row.remarks,
+      updatedAt: row.updated_at,
     };
   }
 

@@ -11,6 +11,8 @@ export interface Airport {
   timezone: string;
 }
 
+export type FleetStatus = 'active' | 'stored' | 'retired';
+
 export interface FleetAircraft {
   id: number;
   icaoType: string;
@@ -22,6 +24,46 @@ export interface FleetAircraft {
   paxCapacity: number;
   cargoCapacityLbs: number;
   isActive: boolean;
+  status: FleetStatus;
+  baseIcao: string | null;
+  locationIcao: string | null;
+  remarks: string | null;
+  updatedAt: string | null;
+}
+
+export interface CreateFleetAircraftRequest {
+  icaoType: string;
+  name: string;
+  registration: string;
+  airline?: string;
+  rangeNm: number;
+  cruiseSpeed: number;
+  paxCapacity: number;
+  cargoCapacityLbs: number;
+  status?: FleetStatus;
+  baseIcao?: string;
+  locationIcao?: string;
+  remarks?: string;
+}
+
+export interface UpdateFleetAircraftRequest {
+  icaoType?: string;
+  name?: string;
+  registration?: string;
+  airline?: string;
+  rangeNm?: number;
+  cruiseSpeed?: number;
+  paxCapacity?: number;
+  cargoCapacityLbs?: number;
+  status?: FleetStatus;
+  baseIcao?: string | null;
+  locationIcao?: string | null;
+  remarks?: string | null;
+}
+
+export interface FleetListResponse {
+  fleet: FleetAircraft[];
+  total: number;
 }
 
 export type CharterType = 'reposition' | 'cargo' | 'passenger';

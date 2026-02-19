@@ -64,7 +64,16 @@
       "WebFetch(domain:forum.navigraph.com)",
       "mcp__plugin_playwright_playwright__browser_tabs",
       "mcp__plugin_playwright_playwright__browser_evaluate",
-      "mcp__plugin_playwright_playwright__browser_console_messages"
+      "mcp__plugin_playwright_playwright__browser_console_messages",
+      "Bash(npx vite:*)",
+      "Bash(dotnet run:*)",
+      "Bash(dotnet build:*)",
+      "Bash(dir:*)",
+      "Bash(npx tsx:*)",
+      "Bash(npm run dev:backend:*)",
+      "WebFetch(domain:nasstatus.faa.gov)",
+      "WebFetch(domain:aviationweather.gov)",
+      "Bash(python3:*)"
     ]
   }
 }

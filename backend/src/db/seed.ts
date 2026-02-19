@@ -8,11 +8,14 @@ export function seedDatabase(): void {
   const userCount = db.prepare('SELECT COUNT(*) as count FROM users').get() as { count: number };
   if (userCount.count === 0) {
     const passwordHash = bcrypt.hashSync('changeme', 10);
-    db.prepare(`
+    const insertUser = db.prepare(`
       INSERT INTO users (email, callsign, password_hash, first_name, last_name, role, rank)
       VALUES (?, ?, ?, ?, ?, ?, ?)
-    `).run('admin@smavirtual.com', 'SMA-001', passwordHash, 'Admin', 'User', 'admin', 'Captain');
+    `);
+    insertUser.run('admin@smavirtual.com', 'SMA-001', passwordHash, 'Admin', 'User', 'admin', 'Captain');
+    insertUser.run('pilot@smavirtual.com', 'SMA-042', passwordHash, 'Jake', 'Mitchell', 'pilot', 'First Officer');
     console.log('[Seed] Admin user created: admin@smavirtual.com / changeme');
+    console.log('[Seed] Pilot user created: pilot@smavirtual.com / changeme');
   }
 
   // ── Airports (26 major US hubs) ────────────────────────────────
@@ -65,23 +68,24 @@ export function seedDatabase(): void {
   const fleetCount = db.prepare('SELECT COUNT(*) as count FROM fleet').get() as { count: number };
   if (fleetCount.count === 0) {
     const insertFleet = db.prepare(`
-      INSERT INTO fleet (icao_type, name, registration, airline, range_nm, cruise_speed, pax_capacity, cargo_capacity_lbs, is_active)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO fleet (icao_type, name, registration, airline, range_nm, cruise_speed, pax_capacity, cargo_capacity_lbs, is_active, status, base_icao, location_icao, remarks, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
+    const now = new Date().toISOString();
     const fleet = [
-      ['B738', 'Boeing 737-800',         'N801SM', 'SMA', 2935, 453, 162, 5200,  1],
-      ['B738', 'Boeing 737-800',         'N802SM', 'SMA', 2935, 453, 162, 5200,  1],
-      ['B739', 'Boeing 737-900ER',       'N901SM', 'SMA', 2950, 453, 178, 5400,  1],
-      ['A320', 'Airbus A320neo',         'N320SM', 'SMA', 3400, 447, 150, 4600,  1],
-      ['A320', 'Airbus A320neo',         'N321SM', 'SMA', 3400, 447, 150, 4600,  1],
-      ['A321', 'Airbus A321neo',         'N322SM', 'SMA', 3500, 447, 196, 5100,  1],
-      ['B772', 'Boeing 777-200ER',       'N772SM', 'SMA', 7700, 490, 314, 14500, 1],
-      ['B772', 'Boeing 777-200ER',       'N773SM', 'SMA', 7700, 490, 314, 14500, 1],
-      ['B789', 'Boeing 787-9 Dreamliner','N789SM', 'SMA', 7635, 488, 290, 13200, 1],
-      ['A333', 'Airbus A330-300',        'N333SM', 'SMA', 6350, 470, 277, 11800, 1],
-      ['E175', 'Embraer E175',           'N175SM', 'SMA', 2000, 430,  76, 2200,  1],
-      ['CRJ9', 'Bombardier CRJ-900',    'N900SM', 'SMA', 1550, 447,  76, 2000,  1],
+      ['B738', 'Boeing 737-800',         'N801SM', 'SMA', 2935, 453, 162, 5200,  1, 'active',  'KJFK', 'KJFK', null,                          now],
+      ['B738', 'Boeing 737-800',         'N802SM', 'SMA', 2935, 453, 162, 5200,  1, 'stored',  'KPHX', 'KPHX', 'Engine inspection due Mar 2026', now],
+      ['B739', 'Boeing 737-900ER',       'N901SM', 'SMA', 2950, 453, 178, 5400,  1, 'active',  'KJFK', 'KORD', null,                          now],
+      ['A320', 'Airbus A320neo',         'N320SM', 'SMA', 3400, 447, 150, 4600,  1, 'active',  'KORD', 'KORD', null,                          now],
+      ['A320', 'Airbus A320neo',         'N321SM', 'SMA', 3400, 447, 150, 4600,  1, 'active',  'KLAX', 'KLAX', null,                          now],
+      ['A321', 'Airbus A321neo',         'N322SM', 'SMA', 3500, 447, 196, 5100,  1, 'active',  'KMIA', 'KJFK', null,                          now],
+      ['B772', 'Boeing 777-200ER',       'N772SM', 'SMA', 7700, 490, 314, 14500, 1, 'active',  'KJFK', 'KLAX', null,                          now],
+      ['B772', 'Boeing 777-200ER',       'N773SM', 'SMA', 7700, 490, 314, 14500, 1, 'active',  'KJFK', 'KJFK', null,                          now],
+      ['B789', 'Boeing 787-9 Dreamliner','N789SM', 'SMA', 7635, 488, 290, 13200, 1, 'active',  'KSFO', 'KSFO', null,                          now],
+      ['A333', 'Airbus A330-300',        'N333SM', 'SMA', 6350, 470, 277, 11800, 1, 'active',  'KSEA', 'KMIA', null,                          now],
+      ['E175', 'Embraer E175',           'N175SM', 'SMA', 2000, 430,  76, 2200,  1, 'active',  'KBOS', 'KBOS', null,                          now],
+      ['CRJ9', 'Bombardier CRJ-900',    'N900SM', 'SMA', 1550, 447,  76, 2000,  0, 'retired', 'KLAS', 'KLAS', 'Retired from fleet Feb 2026',  now],
     ] as const;
 
     const insertMany = db.transaction(() => {

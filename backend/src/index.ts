@@ -19,6 +19,7 @@ import { scheduleRouter } from './routes/schedules.js';
 import { flightPlanRouter } from './routes/flight-plan.js';
 import { dispatchRouter } from './routes/dispatch.js';
 import { faaRouter } from './routes/faa.js';
+import { fleetManageRouter } from './routes/fleet.js';
 
 // Initialize database before anything else
 initializeDatabase();
@@ -66,6 +67,7 @@ app.use('/api', scheduleRouter());
 app.use('/api', adminRouter());
 app.use('/api', flightPlanRouter());
 app.use('/api', faaRouter());
+app.use('/api', fleetManageRouter());
 
 // WebSocket
 const io = setupWebSocket(httpServer, telemetry, simConnect);

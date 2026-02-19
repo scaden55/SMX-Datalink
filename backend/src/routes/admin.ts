@@ -9,11 +9,8 @@ export function adminRouter(): Router {
   const authService = new AuthService();
   const userService = new UserService();
 
-  // All admin routes require auth + admin role
-  router.use(authMiddleware, adminMiddleware);
-
   // POST /api/admin/users — create user with specified role
-  router.post('/admin/users', async (req, res) => {
+  router.post('/admin/users', authMiddleware, adminMiddleware, async (req, res) => {
     try {
       const { email, password, firstName, lastName, role, rank } = req.body as CreateUserRequest;
 
@@ -50,7 +47,7 @@ export function adminRouter(): Router {
   });
 
   // GET /api/admin/users — list all users
-  router.get('/admin/users', (_req, res) => {
+  router.get('/admin/users', authMiddleware, adminMiddleware, (_req, res) => {
     try {
       const users = userService.findAll().map(u => userService.toProfile(u));
       res.json(users);
