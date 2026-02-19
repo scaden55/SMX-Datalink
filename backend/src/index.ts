@@ -17,6 +17,8 @@ import { authRouter } from './routes/auth.js';
 import { adminRouter } from './routes/admin.js';
 import { scheduleRouter } from './routes/schedules.js';
 import { flightPlanRouter } from './routes/flight-plan.js';
+import { dispatchRouter } from './routes/dispatch.js';
+import { faaRouter } from './routes/faa.js';
 
 // Initialize database before anything else
 initializeDatabase();
@@ -27,7 +29,7 @@ const httpServer = createServer(app);
 
 // Middleware
 app.use(cors({ origin: config.corsOrigin }));
-app.use(express.json());
+app.use(express.json({ limit: config.maxBodySize }));
 
 // SimConnect — conditionally loaded
 let simConnect: ISimConnectManager;
@@ -63,9 +65,13 @@ app.use('/api', authRouter());
 app.use('/api', scheduleRouter());
 app.use('/api', adminRouter());
 app.use('/api', flightPlanRouter());
+app.use('/api', faaRouter());
 
 // WebSocket
-setupWebSocket(httpServer, telemetry, simConnect);
+const io = setupWebSocket(httpServer, telemetry, simConnect);
+
+// Register dispatch router with io for real-time broadcasts
+app.use('/api', dispatchRouter(io));
 
 // Start
 httpServer.listen(config.port, () => {

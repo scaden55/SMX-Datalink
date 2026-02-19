@@ -6,6 +6,8 @@ export interface AcarsMessage {
   type: OOOIEventType | 'SYSTEM' | 'DISPATCHER' | 'PILOT';
   content: string;
   source: 'auto' | 'manual';
+  senderId?: number;
+  senderName?: string;
 }
 
 export interface DispatcherRemarks {

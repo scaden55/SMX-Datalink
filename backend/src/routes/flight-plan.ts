@@ -57,6 +57,11 @@ export function flightPlanRouter(): Router {
         return;
       }
 
+      if (!config.simbriefApiKey) {
+        res.status(503).json({ error: 'SimBrief API key not configured on server' });
+        return;
+      }
+
       const timestamp = Math.round(Date.now() / 1000).toString();
       const outputpageCalc = (outputpage || '').replace(/^https?:\/\//, '');
       const apiReq = orig + dest + type + timestamp + outputpageCalc;
@@ -183,6 +188,12 @@ export function flightPlanRouter(): Router {
         flightPlanData?: unknown;
         phase?: string;
       };
+
+      const validPhases = new Set(['planning', 'active', 'completed']);
+      if (phase !== undefined && !validPhases.has(phase)) {
+        res.status(400).json({ error: `Invalid phase: must be one of ${[...validPhases].join(', ')}` });
+        return;
+      }
 
       const updated = fpService.saveFlightPlan(bidId, req.user!.userId, {
         ofpJson: ofpJson !== undefined ? JSON.stringify(ofpJson) : undefined,

@@ -13,7 +13,7 @@ import type {
   PlanningInfoTab,
 } from '@acars/shared';
 
-const emptyForm: FlightPlanFormData = {
+export const emptyForm: FlightPlanFormData = {
   origin: '',
   destination: '',
   flightNumber: '',
@@ -61,13 +61,14 @@ interface FlightPlanState {
   // Existing (backward compat with Dispatch)
   flightPlan: FlightPlan | null;
   progress: FlightPlanProgress | null;
-  setFlightPlan: (plan: FlightPlan) => void;
-  setProgress: (progress: FlightPlanProgress) => void;
+  setFlightPlan: (plan: FlightPlan | null) => void;
+  setProgress: (progress: FlightPlanProgress | null) => void;
 
   // Planning page state
   form: FlightPlanFormData;
   setFormField: <K extends keyof FlightPlanFormData>(key: K, value: FlightPlanFormData[K]) => void;
   setForm: (form: Partial<FlightPlanFormData>) => void;
+  replaceForm: (form: FlightPlanFormData) => void;
   resetForm: () => void;
 
   ofp: SimBriefOFP | null;
@@ -116,6 +117,7 @@ export const useFlightPlanStore = create<FlightPlanState>((set) => ({
   form: { ...emptyForm },
   setFormField: (key, value) => set((s) => ({ form: { ...s.form, [key]: value } })),
   setForm: (partial) => set((s) => ({ form: { ...s.form, ...partial } })),
+  replaceForm: (form) => set({ form: { ...emptyForm, ...form } }),
   resetForm: () => set({ form: { ...emptyForm }, ofp: null, steps: [], planningWaypoints: [], phase: 'planning' }),
 
   // OFP

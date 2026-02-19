@@ -5,7 +5,7 @@ export type { FuelData, FuelTank } from './types/fuel.js';
 export type { FlightData, ConnectionStatus } from './types/flight.js';
 export type { Waypoint, FlightPlan, FlightPlanProgress } from './types/flight-plan.js';
 export type { OOOIEventType, AcarsMessage, DispatcherRemarks, SystemInfo } from './types/acars.js';
-export type { TelemetrySnapshot, ServerToClientEvents, ClientToServerEvents } from './types/websocket.js';
+export type { TelemetrySnapshot, AcarsMessagePayload, ServerToClientEvents, ClientToServerEvents } from './types/websocket.js';
 export type {
   UserRole,
   LoginRequest,
@@ -49,6 +49,20 @@ export type {
   CreateCharterRequest,
   CreateCharterResponse,
 } from './types/schedule.js';
+export type {
+  DispatchFlight,
+  DispatchFlightsResponse,
+  DispatchEditPayload,
+} from './types/dispatch.js';
+export type {
+  FaaGroundStop,
+  FaaGroundDelay,
+  FaaArrivalDepartureDelay,
+  FaaDeicing,
+  FaaAirportConfig,
+  FaaFreeForm,
+  FaaAirportEvent,
+} from './types/faa.js';
 
 // Constants
 export { FlightPhase, PhaseThresholds } from './constants/flight-phases.js';

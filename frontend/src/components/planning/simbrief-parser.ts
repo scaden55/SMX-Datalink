@@ -47,7 +47,7 @@ export function parseSimBriefResponse(json: any): SimBriefOFP {
     cargoLbs: toNum(weightsData.cargo),
   };
 
-  const steps: SimBriefStep[] = navlog.map((fix: any) => ({
+  const rawSteps: SimBriefStep[] = navlog.map((fix: any) => ({
     ident: fix.ident ?? '',
     lat: toNum(fix.pos_lat),
     lon: toNum(fix.pos_long),
@@ -56,7 +56,75 @@ export function parseSimBriefResponse(json: any): SimBriefOFP {
     fuelRemainLbs: toNum(fix.fuel_plan_onboard),
     wind: fix.wind_dir && fix.wind_spd ? `${fix.wind_dir}/${fix.wind_spd}` : '',
     oat: toNum(fix.oat),
+    fixType: fix.type ?? undefined,
   }));
+
+  // Ensure origin airport is first step at field elevation so the vertical
+  // profile starts on the ground instead of at the first enroute altitude.
+  const originIcao = origin.icao_code ?? '';
+  const originElev = toNum(origin.elevation);
+  const originLat = toNum(origin.pos_lat);
+  const originLon = toNum(origin.pos_long);
+
+  if (rawSteps.length === 0 || rawSteps[0].ident !== originIcao) {
+    rawSteps.unshift({
+      ident: originIcao,
+      lat: originLat,
+      lon: originLon,
+      altitudeFt: originElev,
+      distanceFromOriginNm: 0,
+      fuelRemainLbs: fuel.totalLbs,
+      wind: '',
+      oat: 0,
+      fixType: 'apt',
+    });
+  } else {
+    // First step is origin — pin altitude to field elevation
+    rawSteps[0].altitudeFt = originElev;
+    rawSteps[0].fixType = rawSteps[0].fixType ?? 'apt';
+  }
+
+  // Ensure destination airport is last step at field elevation.
+  const destIcao = destination.icao_code ?? '';
+  const destElev = toNum(destination.elevation);
+  const destLat = toNum(destination.pos_lat);
+  const destLon = toNum(destination.pos_long);
+  const routeDistNm = toNum(general.route_distance);
+
+  // Truncate alternate-route fixes BEFORE bookend logic. SimBrief navlog may
+  // include legs to the alternate airport after the destination. Find the
+  // first occurrence of the destination (forward scan, skip origin) and cut.
+  if (destIcao && destIcao !== originIcao) {
+    for (let i = 1; i < rawSteps.length; i++) {
+      if (rawSteps[i].ident === destIcao) {
+        rawSteps.length = i + 1; // truncate in-place
+        break;
+      }
+    }
+  }
+
+  if (rawSteps.length === 0 || rawSteps[rawSteps.length - 1].ident !== destIcao) {
+    const lastDist = rawSteps.length > 0
+      ? rawSteps[rawSteps.length - 1].distanceFromOriginNm
+      : 0;
+    rawSteps.push({
+      ident: destIcao,
+      lat: destLat,
+      lon: destLon,
+      altitudeFt: destElev,
+      distanceFromOriginNm: routeDistNm || lastDist,
+      fuelRemainLbs: 0,
+      wind: '',
+      oat: 0,
+      fixType: 'apt',
+    });
+  } else {
+    // Last step is destination — pin altitude to field elevation
+    rawSteps[rawSteps.length - 1].altitudeFt = destElev;
+    rawSteps[rawSteps.length - 1].fixType = rawSteps[rawSteps.length - 1].fixType ?? 'apt';
+  }
+
+  const steps = rawSteps;
 
   const times: SimBriefTimes = {
     schedDep: timesData.sched_out ?? '',
@@ -130,22 +198,96 @@ export function ofpToFormFields(ofp: SimBriefOFP): Partial<FlightPlanFormData> {
   };
 }
 
+export interface AirportBookend {
+  icao: string;
+  lat: number;
+  lon: number;
+  elevation: number;
+}
+
 /**
  * Convert OFP steps to Waypoint[] for map rendering.
+ * When origin/destination are provided, ensures the route starts and ends
+ * at field elevation so the vertical profile shows the full climb/descent.
  */
-export function stepsToWaypoints(steps: SimBriefStep[]): Waypoint[] {
-  return steps.map((step, i) => ({
+export function stepsToWaypoints(
+  steps: SimBriefStep[],
+  origin?: AirportBookend,
+  destination?: AirportBookend,
+): Waypoint[] {
+  if (steps.length === 0) return [];
+
+  // Work on a shallow copy so we don't mutate the caller's array
+  let work = [...steps];
+
+  // Ensure origin airport is first at field elevation
+  if (origin) {
+    if (work[0].ident === origin.icao) {
+      // Already the first step — pin altitude to field elevation
+      work[0] = { ...work[0], altitudeFt: origin.elevation, fixType: work[0].fixType ?? 'apt' };
+    } else {
+      // Prepend origin at distance 0
+      work.unshift({
+        ident: origin.icao,
+        lat: origin.lat,
+        lon: origin.lon,
+        altitudeFt: origin.elevation,
+        distanceFromOriginNm: 0,
+        fuelRemainLbs: 0,
+        wind: '',
+        oat: 0,
+        fixType: 'apt',
+      });
+    }
+  }
+
+  // Ensure destination airport is last at field elevation
+  if (destination) {
+    const last = work[work.length - 1];
+    if (last.ident === destination.icao) {
+      work[work.length - 1] = { ...last, altitudeFt: destination.elevation, fixType: last.fixType ?? 'apt' };
+    } else {
+      work.push({
+        ident: destination.icao,
+        lat: destination.lat,
+        lon: destination.lon,
+        altitudeFt: destination.elevation,
+        distanceFromOriginNm: last.distanceFromOriginNm,
+        fuelRemainLbs: 0,
+        wind: '',
+        oat: 0,
+        fixType: 'apt',
+      });
+    }
+  }
+
+  return work.map((step, i) => ({
     ident: step.ident,
-    type: i === 0 || i === steps.length - 1 ? 'airport' : 'intersection',
+    type: mapFixType(step.fixType, i === 0 || i === work.length - 1),
     latitude: step.lat,
     longitude: step.lon,
     altitude: step.altitudeFt,
     isActive: false,
-    distanceFromPrevious: i === 0 ? 0 : step.distanceFromOriginNm - (steps[i - 1]?.distanceFromOriginNm ?? 0),
+    distanceFromPrevious: i === 0 ? 0 : step.distanceFromOriginNm - (work[i - 1]?.distanceFromOriginNm ?? 0),
     ete: null,
     eta: null,
     passed: false,
   }));
+}
+
+/** Map SimBrief fix type string to Waypoint type. */
+function mapFixType(
+  fixType: string | undefined,
+  isEndpoint: boolean,
+): Waypoint['type'] {
+  if (isEndpoint) return 'airport';
+  switch (fixType) {
+    case 'apt': return 'airport';
+    case 'vor': return 'vor';
+    case 'ndb': return 'ndb';
+    case 'ltlg': return 'gps';
+    default: return 'intersection'; // wpt, toc, tod, sc, etc.
+  }
 }
 
 function toNum(val: any): number {

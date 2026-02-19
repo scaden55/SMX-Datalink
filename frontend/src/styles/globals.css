@@ -20,6 +20,11 @@
   }
 }
 
+/* Tint neutral-gray CartoDB tiles to match the app's blue-dark palette */
+.leaflet-tile-pane {
+  filter: sepia(0.15) hue-rotate(180deg) brightness(0.9) saturate(1.8);
+}
+
 @layer components {
   .panel {
     @apply bg-acars-panel border border-acars-border rounded-md;

@@ -1,8 +1,15 @@
-import { useState } from 'react';
+import { useDispatchEdit } from '../../contexts/DispatchEditContext';
 
-export function RemarksSection() {
-  const [dispatcherRemarks, setDispatcherRemarks] = useState('');
-  const [fuelAutoRemarks, setFuelAutoRemarks] = useState('');
+interface RemarksSectionProps {
+  dispatcherRemarks?: string;
+  autoRemarks?: string;
+}
+
+export function RemarksSection({ dispatcherRemarks: initialDispatcher = '', autoRemarks: initialAuto = '' }: RemarksSectionProps) {
+  const { canEditRemarks, editableFields, onFieldChange } = useDispatchEdit();
+
+  const dispatcherRemarks = editableFields.dispatcherRemarks ?? initialDispatcher;
+  const fuelAutoRemarks = editableFields.autoRemarks ?? initialAuto;
 
   return (
     <div className="border-t border-acars-border px-3 py-3">
@@ -11,21 +18,33 @@ export function RemarksSection() {
         <div className="space-y-3">
           <div>
             <label className="data-label block mb-1">Dispatcher Remarks</label>
-            <textarea
-              value={dispatcherRemarks}
-              onChange={(e) => setDispatcherRemarks(e.target.value)}
-              className="w-full h-16 rounded bg-acars-bg border border-acars-border text-acars-text text-[11px] px-2 py-1.5 font-mono resize-none focus:outline-none focus:border-acars-blue"
-              placeholder="Enter dispatcher remarks..."
-            />
+            {canEditRemarks ? (
+              <textarea
+                value={dispatcherRemarks}
+                onChange={(e) => onFieldChange('dispatcherRemarks', e.target.value)}
+                className="w-full h-16 rounded bg-acars-bg border border-acars-border text-acars-text text-[11px] px-2 py-1.5 font-mono resize-none focus:outline-none focus:border-acars-cyan"
+                placeholder="No dispatcher remarks"
+              />
+            ) : (
+              <div className="w-full h-16 rounded bg-acars-bg border border-acars-border text-acars-text text-[11px] px-2 py-1.5 font-mono overflow-y-auto">
+                {dispatcherRemarks || <span className="text-acars-muted italic">No dispatcher remarks</span>}
+              </div>
+            )}
           </div>
           <div>
             <label className="data-label block mb-1">Fuel/Auto Remarks</label>
-            <textarea
-              value={fuelAutoRemarks}
-              onChange={(e) => setFuelAutoRemarks(e.target.value)}
-              className="w-full h-16 rounded bg-acars-bg border border-acars-border text-acars-text text-[11px] px-2 py-1.5 font-mono resize-none focus:outline-none focus:border-acars-blue"
-              placeholder="Enter fuel/auto remarks..."
-            />
+            {canEditRemarks ? (
+              <textarea
+                value={fuelAutoRemarks}
+                onChange={(e) => onFieldChange('autoRemarks', e.target.value)}
+                className="w-full h-16 rounded bg-acars-bg border border-acars-border text-acars-text text-[11px] px-2 py-1.5 font-mono resize-none focus:outline-none focus:border-acars-cyan"
+                placeholder="No auto remarks"
+              />
+            ) : (
+              <div className="w-full h-16 rounded bg-acars-bg border border-acars-border text-acars-text text-[11px] px-2 py-1.5 font-mono overflow-y-auto">
+                {fuelAutoRemarks || <span className="text-acars-muted italic">No auto remarks</span>}
+              </div>
+            )}
           </div>
         </div>
 
@@ -33,13 +52,14 @@ export function RemarksSection() {
         <div>
           <label className="data-label block mb-1">System Info</label>
           <div className="h-[140px] rounded bg-acars-bg border border-acars-border text-[10px] font-mono px-2 py-1.5 overflow-y-auto leading-relaxed">
-            <div className="text-acars-text">This is a staPECO -5 USD/14btsPECO -5 USD/14bts</div>
-            <div className="text-acars-text">Blk Hrs/Min Route</div>
-            <div className="text-acars-amber">BURN includes 1200lbs due MEL XX-XXXX</div>
-            <div className="text-acars-text">COLDS ENRT FUEL TEMP MINC (-) JNA223.8 W11116.8) 4.26/1858NM</div>
-            <div className="text-acars-text">JA KKOS-AMSN-KBL KEKD-KSFO</div>
-            <div className="text-acars-text">M1 CLEARS TERRAIN</div>
-            <div className="text-acars-text">PTOG 181460 ENRT ATOG 263200 ENG AND WING ANTI-ICE ON</div>
+            {(initialDispatcher || initialAuto) ? (
+              <>
+                {initialDispatcher && <div className="text-acars-text">{initialDispatcher}</div>}
+                {initialAuto && <div className="text-acars-muted mt-1">{initialAuto}</div>}
+              </>
+            ) : (
+              <div className="text-acars-muted italic">No system info available</div>
+            )}
           </div>
         </div>
       </div>

@@ -1,7 +1,13 @@
 import { useEffect, useMemo } from 'react';
-import { MapContainer, TileLayer, CircleMarker, Polyline, Tooltip, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, CircleMarker, Marker, Polyline, Tooltip, useMap } from 'react-leaflet';
+import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import type { Waypoint } from '@acars/shared';
 import { useFlightPlanStore } from '../../stores/flightPlanStore';
+
+const CLR_CLIMB = '#d2a8ff';
+const CLR_CRUISE = '#58a6ff';
+const CLR_DESCENT = '#3fb950';
 
 function FitToRoute({ positions }: { positions: [number, number][] }) {
   const map = useMap();
@@ -20,6 +26,45 @@ function MapInvalidator() {
     return () => clearTimeout(timer);
   }, [map]);
   return null;
+}
+
+const SZ = 10;
+const FILL = '#161b22';
+const SW = 1.5;
+
+function shapeIcon(wpType: Waypoint['type'], color: string): L.DivIcon {
+  let svg: string;
+  const half = SZ / 2;
+
+  switch (wpType) {
+    case 'airport':
+      svg = `<rect x="1" y="1" width="${SZ - 2}" height="${SZ - 2}" fill="${FILL}" stroke="${color}" stroke-width="${SW}"/>`;
+      break;
+    case 'vor': {
+      const pts = Array.from({ length: 6 }, (_, i) => {
+        const a = (Math.PI / 3) * i - Math.PI / 2;
+        return `${half + (half - 1) * Math.cos(a)},${half + (half - 1) * Math.sin(a)}`;
+      }).join(' ');
+      svg = `<polygon points="${pts}" fill="${FILL}" stroke="${color}" stroke-width="${SW}"/>`;
+      break;
+    }
+    case 'ndb':
+      svg = `<circle cx="${half}" cy="${half}" r="${half - 1}" fill="${FILL}" stroke="${color}" stroke-width="${SW}"/>`;
+      break;
+    case 'gps':
+      svg = `<polygon points="${half},1 ${SZ - 1},${half} ${half},${SZ - 1} 1,${half}" fill="${FILL}" stroke="${color}" stroke-width="${SW}"/>`;
+      break;
+    default:
+      svg = `<polygon points="${half},1 ${SZ - 1},${SZ - 1} 1,${SZ - 1}" fill="${FILL}" stroke="${color}" stroke-width="${SW}"/>`;
+      break;
+  }
+
+  return L.divIcon({
+    html: `<svg width="${SZ}" height="${SZ}" viewBox="0 0 ${SZ} ${SZ}">${svg}</svg>`,
+    className: '',
+    iconSize: [SZ, SZ],
+    iconAnchor: [half, half],
+  });
 }
 
 export function PlanningMap() {
@@ -48,6 +93,32 @@ export function PlanningMap() {
   // Use waypoints count as key to force Polyline re-mount when route changes
   const routeKey = planningWaypoints.length;
 
+  // Compute phase indices and colored route segments
+  const { climbPositions, cruisePositions, descentPositions, tocIndex, todIndex } = useMemo(() => {
+    if (planningWaypoints.length < 2) return { climbPositions: [] as [number, number][], cruisePositions: [] as [number, number][], descentPositions: [] as [number, number][], tocIndex: 0, todIndex: 0 };
+
+    const maxAlt = Math.max(...planningWaypoints.map((w) => w.altitude ?? 0));
+    const threshold = maxAlt * 0.90;
+
+    let toc = 0;
+    let tod = planningWaypoints.length - 1;
+    for (let i = 0; i < planningWaypoints.length; i++) {
+      if ((planningWaypoints[i].altitude ?? 0) >= threshold) { toc = i; break; }
+    }
+    for (let i = planningWaypoints.length - 1; i >= 0; i--) {
+      if ((planningWaypoints[i].altitude ?? 0) >= threshold) { tod = i; break; }
+    }
+
+    const toPos = (w: typeof planningWaypoints[number]): [number, number] => [w.latitude, w.longitude];
+    return {
+      climbPositions: planningWaypoints.slice(0, toc + 1).map(toPos),
+      cruisePositions: planningWaypoints.slice(toc, tod + 1).map(toPos),
+      descentPositions: planningWaypoints.slice(tod).map(toPos),
+      tocIndex: toc,
+      todIndex: tod,
+    };
+  }, [planningWaypoints]);
+
   return (
     <div className="h-full w-full relative">
       <MapContainer
@@ -67,29 +138,36 @@ export function PlanningMap() {
         {routePositions.length >= 2 && (
           <>
             <FitToRoute positions={routePositions} />
-            <Polyline
-              key={`route-${routeKey}`}
-              positions={routePositions}
-              pathOptions={{ color: '#58a6ff', weight: 2, opacity: 0.8, dashArray: '6 4' }}
-            />
+            {climbPositions.length >= 2 && (
+              <Polyline key={`climb-${routeKey}`} positions={climbPositions} pathOptions={{ color: CLR_CLIMB, weight: 2, opacity: 0.8, dashArray: '6 4' }} />
+            )}
+            {cruisePositions.length >= 2 && (
+              <Polyline key={`cruise-${routeKey}`} positions={cruisePositions} pathOptions={{ color: CLR_CRUISE, weight: 2, opacity: 0.8, dashArray: '6 4' }} />
+            )}
+            {descentPositions.length >= 2 && (
+              <Polyline key={`descent-${routeKey}`} positions={descentPositions} pathOptions={{ color: CLR_DESCENT, weight: 2, opacity: 0.8, dashArray: '6 4' }} />
+            )}
           </>
         )}
 
-        {/* Waypoint markers (small dots for intermediate) */}
-        {planningWaypoints.slice(1, -1).map((w, i) => (
-          <CircleMarker
-            key={`wp-${i}-${w.ident}`}
-            center={[w.latitude, w.longitude]}
-            radius={2.5}
-            pathOptions={{ color: '#58a6ff', fillColor: '#58a6ff', fillOpacity: 0.6, weight: 1 }}
-          >
-            <Tooltip direction="top" offset={[0, -6]} className="hub-tooltip">
-              <span style={{ fontFamily: 'JetBrains Mono, Consolas, monospace', fontSize: '9px' }}>
-                {w.ident}
-              </span>
-            </Tooltip>
-          </CircleMarker>
-        ))}
+        {/* Waypoint markers — shape by type, colored by phase */}
+        {planningWaypoints.slice(1, -1).map((w, i) => {
+          const absIdx = i + 1;
+          const clr = absIdx < tocIndex ? CLR_CLIMB : absIdx > todIndex ? CLR_DESCENT : CLR_CRUISE;
+          return (
+            <Marker
+              key={`wp-${i}-${w.ident}`}
+              position={[w.latitude, w.longitude]}
+              icon={shapeIcon(w.type, clr)}
+            >
+              <Tooltip direction="top" offset={[0, -6]} className="hub-tooltip">
+                <span style={{ fontFamily: 'JetBrains Mono, Consolas, monospace', fontSize: '9px' }}>
+                  {w.ident}
+                </span>
+              </Tooltip>
+            </Marker>
+          );
+        })}
 
         {/* Departure */}
         {depAirport && (

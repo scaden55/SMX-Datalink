@@ -1,8 +1,6 @@
 import { Router } from 'express';
-import type { Request, Response, NextFunction } from 'express';
 import { ScheduleService } from '../services/schedule.js';
-import { AuthService } from '../services/auth.js';
-import { authMiddleware } from '../middleware/auth.js';
+import { authMiddleware, optionalAuthMiddleware } from '../middleware/auth.js';
 import type { ScheduleFilters } from '../services/schedule.js';
 import type { CreateCharterRequest, CharterType } from '@acars/shared';
 
@@ -55,7 +53,7 @@ export function scheduleRouter(): Router {
   });
 
   // GET /api/schedules — auth optional (has_bid requires auth)
-  router.get('/schedules', optionalAuth, (req, res) => {
+  router.get('/schedules', optionalAuthMiddleware, (req, res) => {
     try {
       const filters: ScheduleFilters = {
         depIcao: req.query.dep_icao as string | undefined,
@@ -75,7 +73,7 @@ export function scheduleRouter(): Router {
   });
 
   // GET /api/schedules/:id — auth optional
-  router.get('/schedules/:id', optionalAuth, (req, res) => {
+  router.get('/schedules/:id', optionalAuthMiddleware, (req, res) => {
     try {
       const id = parseInt(req.params.id as string, 10);
       if (isNaN(id)) {
@@ -205,21 +203,3 @@ export function scheduleRouter(): Router {
   return router;
 }
 
-// Optional auth middleware — sets req.user if token present, but doesn't reject
-const optionalAuthService = new AuthService();
-
-function optionalAuth(req: Request, _res: Response, next: NextFunction): void {
-  const header = req.headers.authorization;
-  if (!header?.startsWith('Bearer ')) {
-    next();
-    return;
-  }
-
-  try {
-    const token = header.slice(7);
-    req.user = optionalAuthService.verifyAccessToken(token);
-  } catch {
-    // Invalid token — continue without user context
-  }
-  next();
-}

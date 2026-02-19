@@ -9,6 +9,8 @@ export interface SimBriefStep {
   fuelRemainLbs: number;
   wind: string;
   oat: number;
+  /** SimBrief fix type (apt, vor, ndb, wpt, ltlg, toc, tod, etc.) */
+  fixType?: string;
 }
 
 export interface SimBriefFuel {

@@ -123,17 +123,28 @@ export function useSimBrief() {
     simbriefLoading,
   } = useFlightPlanStore();
 
+  const activeBidId = useFlightPlanStore((s) => s.activeBidId);
+
   const popupRef = useRef<Window | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  /** Cancel any active popup polling and timeout */
+  const cancelPolling = useCallback(() => {
+    if (pollRef.current) {
+      clearInterval(pollRef.current);
+      pollRef.current = null;
+    }
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
+  }, []);
+
   // Cleanup on unmount
   useEffect(() => {
-    return () => {
-      if (pollRef.current) clearInterval(pollRef.current);
-      if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    };
-  }, []);
+    return () => cancelPolling();
+  }, [cancelPolling]);
 
   /**
    * Fetch the latest OFP via backend proxy (avoids CORS).
@@ -148,35 +159,66 @@ export function useSimBrief() {
       }
 
       const ofp = parseSimBriefResponse(json);
+
+      // Validate OFP route matches the active bid
+      const currentForm = useFlightPlanStore.getState().form;
+      if (currentForm.origin && ofp.origin && currentForm.origin !== ofp.origin) {
+        throw new Error(
+          `OFP origin (${ofp.origin}) doesn't match your bid origin (${currentForm.origin}). Generate a new OFP for this route first.`
+        );
+      }
+      if (currentForm.destination && ofp.destination && currentForm.destination !== ofp.destination) {
+        throw new Error(
+          `OFP destination (${ofp.destination}) doesn't match your bid destination (${currentForm.destination}). Generate a new OFP for this route first.`
+        );
+      }
+
       const formFields = ofpToFormFields(ofp);
       const waypoints = stepsToWaypoints(ofp.steps);
 
       setOfp(ofp);
       setSteps(ofp.steps);
       setPlanningWaypoints(waypoints);
-      setForm({
+
+      // Re-read form after store updates above
+      const latestForm = useFlightPlanStore.getState().form;
+      const mergedForm = {
+        ...latestForm,
         ...formFields,
         // Preserve manually-set fields
-        flightNumber: form.flightNumber || formFields.origin + '-' + formFields.destination,
-        etd: form.etd || '',
-      });
+        flightNumber: latestForm.flightNumber || formFields.origin + '-' + formFields.destination,
+        etd: latestForm.etd || '',
+      };
+      setForm(mergedForm);
+
+      // Auto-save to backend so data persists across navigation
+      const bidId = useFlightPlanStore.getState().activeBidId;
+      if (bidId) {
+        api.put(`/api/bids/${bidId}/flight-plan`, {
+          ofpJson: ofp,
+          flightPlanData: mergedForm,
+          phase: 'planning',
+        }).catch((err) => console.error('[SimBrief] Auto-save failed:', err));
+      }
     } catch (err) {
       console.error('[SimBrief] Fetch failed:', err);
       throw err;
     } finally {
       setSimbriefLoading(false);
     }
-  }, [form.flightNumber, form.etd, setSimbriefLoading, setOfp, setSteps, setPlanningWaypoints, setForm]);
+  }, [activeBidId, setSimbriefLoading, setOfp, setSteps, setPlanningWaypoints, setForm]);
 
   /**
    * Generate OFP via SimBrief API v1 popup flow.
    * Opens a popup to SimBrief, monitors it, and auto-fetches the result.
    */
   const generateOFP = useCallback(async () => {
-    if (simbriefLoading) return;
+    // Guard against concurrent generation attempts
+    if (useFlightPlanStore.getState().simbriefLoading) return;
 
     // Validate required fields
-    if (!form.origin || !form.destination || !form.aircraftType) {
+    const currentForm = useFlightPlanStore.getState().form;
+    if (!currentForm.origin || !currentForm.destination || !currentForm.aircraftType) {
       throw new Error('Origin, destination, and aircraft type are required');
     }
 
@@ -192,22 +234,22 @@ export function useSimBrief() {
         timestamp: string;
         outputpage: string;
       }>('/api/simbrief/apicode', {
-        orig: form.origin,
-        dest: form.destination,
-        type: form.aircraftType.toLowerCase(),
+        orig: currentForm.origin,
+        dest: currentForm.destination,
+        type: currentForm.aircraftType.toLowerCase(),
         outputpage: callbackUrl,
       });
 
       // Build loader URL
-      const params = buildLoaderParams(form, fleet, apicode, timestamp, outputpage);
+      const currentFleet = useFlightPlanStore.getState().fleet;
+      const params = buildLoaderParams(currentForm, currentFleet, apicode, timestamp, outputpage);
       const loaderUrl = `${SIMBRIEF_LOADER_URL}?${params.toString()}`;
 
-      // Close any previous popup
+      // Clean up any previous popup/polling before starting new one
       if (popupRef.current && !popupRef.current.closed) {
         popupRef.current.close();
       }
-      if (pollRef.current) clearInterval(pollRef.current);
-      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+      cancelPolling();
 
       // Open SimBrief generation popup
       const popup = window.open(loaderUrl, 'SBworker', 'width=600,height=400');
@@ -218,13 +260,10 @@ export function useSimBrief() {
         throw new Error('Popup blocked — please allow popups for this site');
       }
 
-      // Monitor popup closure
+      // Monitor popup closure — single interval, cancellable
       pollRef.current = setInterval(async () => {
         if (!popup || popup.closed) {
-          if (pollRef.current) clearInterval(pollRef.current);
-          if (timeoutRef.current) clearTimeout(timeoutRef.current);
-          pollRef.current = null;
-          timeoutRef.current = null;
+          cancelPolling();
 
           // Brief delay for SimBrief to finalize
           await new Promise((r) => setTimeout(r, 1500));
@@ -241,10 +280,7 @@ export function useSimBrief() {
 
       // Safety timeout — stop polling after 5 minutes
       timeoutRef.current = setTimeout(() => {
-        if (pollRef.current) {
-          clearInterval(pollRef.current);
-          pollRef.current = null;
-        }
+        cancelPolling();
         setSimbriefLoading(false);
         console.warn('[SimBrief] Generation timed out');
       }, 300_000);
@@ -253,7 +289,7 @@ export function useSimBrief() {
       setSimbriefLoading(false);
       throw err;
     }
-  }, [form, fleet, simbriefLoading, setSimbriefLoading, fetchOFP]);
+  }, [setSimbriefLoading, fetchOFP, cancelPolling]);
 
   return { fetchOFP, generateOFP, simbriefLoading };
 }

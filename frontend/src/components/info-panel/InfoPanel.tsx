@@ -1,5 +1,7 @@
 import { TabBar } from '../common/TabBar';
 import { useUIStore, type InfoTab } from '../../stores/uiStore';
+import { useFlightPlanStore } from '../../stores/flightPlanStore';
+import { useDispatchData } from '../../hooks/useDispatchData';
 import { WeatherTab } from './WeatherTab';
 import { NOTAMTab } from './NOTAMTab';
 import { AirportInfoTab } from './AirportInfoTab';
@@ -23,23 +25,37 @@ const TABS: { id: InfoTab; label: string }[] = [
   { id: 'flight-log', label: 'Flight Log' },
 ];
 
-const TAB_COMPONENTS: Record<InfoTab, React.FC> = {
-  'weather': WeatherTab,
-  'notam': NOTAMTab,
-  'airport-info': AirportInfoTab,
-  'suitability': SuitabilityTab,
-  'ofp': OFPTab,
-  'messages': MessagesTab,
-  'tracks': TracksTab,
-  'advisories': AdvisoriesTab,
-  'flight-log': FlightLogTab,
-};
-
 export function InfoPanel() {
   const activeTab = useUIStore((s) => s.activeTab);
   const setActiveTab = useUIStore((s) => s.setActiveTab);
+  const flightPlan = useFlightPlanStore((s) => s.flightPlan);
 
-  const TabContent = TAB_COMPONENTS[activeTab];
+  const origin = flightPlan?.origin;
+  const destination = flightPlan?.destination;
+  const dispatchData = useDispatchData(origin, destination);
+
+  function renderTab() {
+    switch (activeTab) {
+      case 'weather':
+        return <WeatherTab dispatchData={dispatchData} />;
+      case 'notam':
+        return <NOTAMTab dispatchData={dispatchData} />;
+      case 'airport-info':
+        return <AirportInfoTab dispatchData={dispatchData} />;
+      case 'suitability':
+        return <SuitabilityTab dispatchData={dispatchData} />;
+      case 'ofp':
+        return <OFPTab />;
+      case 'messages':
+        return <MessagesTab />;
+      case 'tracks':
+        return <TracksTab />;
+      case 'advisories':
+        return <AdvisoriesTab />;
+      case 'flight-log':
+        return <FlightLogTab />;
+    }
+  }
 
   return (
     <div className="flex h-full flex-col">
@@ -52,7 +68,7 @@ export function InfoPanel() {
       <div className="flex flex-1 flex-col overflow-hidden border-t border-acars-border">
         <TabBar tabs={TABS} active={activeTab} onChange={setActiveTab} />
         <div className="flex-1 overflow-y-auto p-3">
-          <TabContent />
+          {renderTab()}
         </div>
       </div>
     </div>

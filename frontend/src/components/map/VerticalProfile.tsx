@@ -6,10 +6,14 @@ import { useFlightPlanStore } from '../../stores/flightPlanStore';
 const MARGIN = { top: 10, right: 40, bottom: 25, left: 50 };
 const HEIGHT = 120;
 
+const CLR_CLIMB = '#d2a8ff';
+const CLR_CRUISE = '#58a6ff';
+const CLR_DESCENT = '#3fb950';
+
 export function VerticalProfile() {
   const svgRef = useRef<SVGSVGElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const { aircraft } = useTelemetry();
+  const { aircraft, connected, isStale } = useTelemetry();
   const flightPlan = useFlightPlanStore((s) => s.flightPlan);
 
   useEffect(() => {
@@ -40,18 +44,35 @@ export function VerticalProfile() {
       return;
     }
 
-    // Build cumulative distance array
-    let cumDist = 0;
-    const points = flightPlan.waypoints.map((wp, i) => {
-      if (i > 0) cumDist += wp.distanceFromPrevious;
-      return { dist: cumDist, alt: wp.altitude ?? 0, ident: wp.ident };
-    });
+    // Build points array with index-based x positioning
+    const points = flightPlan.waypoints.map((wp) => ({
+      alt: wp.altitude ?? 0,
+      ident: wp.ident,
+      wpType: wp.type,
+    }));
 
-    const xScale = d3.scaleLinear().domain([0, cumDist]).range([0, innerW]);
+    // Evenly-spaced x scale by waypoint index (avoids curve artifacts from clustered distances)
+    const xScale = d3
+      .scalePoint<number>()
+      .domain(points.map((_, i) => i))
+      .range([0, innerW]);
+
     const yScale = d3
       .scaleLinear()
-      .domain([0, d3.max(points, (d) => d.alt) ?? 40000])
+      .domain([0, (d3.max(points, (d) => d.alt) ?? 40000) + 10000])
       .range([innerH, 0]);
+
+    // Find TOC/TOD
+    const maxAlt = d3.max(points, (d) => d.alt) ?? 0;
+    const threshold = maxAlt * 0.90;
+    let tocIndex = 0;
+    let todIndex = points.length - 1;
+    for (let i = 0; i < points.length; i++) {
+      if (points[i].alt >= threshold) { tocIndex = i; break; }
+    }
+    for (let i = points.length - 1; i >= 0; i--) {
+      if (points[i].alt >= threshold) { todIndex = i; break; }
+    }
 
     // Terrain silhouette (simplified — flat terrain placeholder)
     g.append('rect')
@@ -62,36 +83,101 @@ export function VerticalProfile() {
       .attr('fill', '#3fb950')
       .attr('opacity', 0.3);
 
-    // Altitude profile line
-    const line = d3
-      .line<(typeof points)[number]>()
-      .x((d) => xScale(d.dist))
+    // Index-aware point type for line generators
+    type IxPt = { idx: number; alt: number };
+
+    // Draw segmented altitude profile lines
+    const lineFn = d3
+      .line<IxPt>()
+      .x((d) => xScale(d.idx) ?? 0)
       .y((d) => yScale(d.alt))
-      .curve(d3.curveMonotoneX);
+      .curve(d3.curveLinear);
 
-    g.append('path')
-      .datum(points)
-      .attr('d', line)
-      .attr('fill', 'none')
-      .attr('stroke', '#d2a8ff')
-      .attr('stroke-width', 2);
+    const ixPoints: IxPt[] = points.map((p, i) => ({ idx: i, alt: p.alt }));
 
-    // Waypoint dots
-    g.selectAll('.wp-dot')
-      .data(points)
-      .enter()
-      .append('circle')
-      .attr('cx', (d) => xScale(d.dist))
-      .attr('cy', (d) => yScale(d.alt))
-      .attr('r', 3)
-      .attr('fill', '#d2a8ff');
+    // Climb segment (0 → TOC inclusive)
+    const climbPts = ixPoints.slice(0, tocIndex + 1);
+    if (climbPts.length >= 2) {
+      g.append('path')
+        .datum(climbPts)
+        .attr('d', lineFn)
+        .attr('fill', 'none')
+        .attr('stroke', CLR_CLIMB)
+        .attr('stroke-width', 2);
+    }
 
-    // Waypoint labels on x-axis
+    // Cruise segment (TOC → TOD inclusive)
+    const cruisePts = ixPoints.slice(tocIndex, todIndex + 1);
+    if (cruisePts.length >= 2) {
+      g.append('path')
+        .datum(cruisePts)
+        .attr('d', lineFn)
+        .attr('fill', 'none')
+        .attr('stroke', CLR_CRUISE)
+        .attr('stroke-width', 2);
+    }
+
+    // Descent segment (TOD → end inclusive)
+    const descentPts = ixPoints.slice(todIndex);
+    if (descentPts.length >= 2) {
+      g.append('path')
+        .datum(descentPts)
+        .attr('d', lineFn)
+        .attr('fill', 'none')
+        .attr('stroke', CLR_DESCENT)
+        .attr('stroke-width', 2);
+    }
+
+    // Waypoint dots — shape by type, color by phase
+    const R = 4;
+    const hexPath = (cx: number, cy: number) =>
+      Array.from({ length: 6 }, (_, k) => {
+        const a = (Math.PI / 3) * k - Math.PI / 2;
+        return `${cx + R * Math.cos(a)},${cy + R * Math.sin(a)}`;
+      }).join(' ');
+
+    points.forEach((pt, i) => {
+      const cx = xScale(i) ?? 0;
+      const cy = yScale(pt.alt);
+      const color = i < tocIndex ? CLR_CLIMB : i > todIndex ? CLR_DESCENT : CLR_CRUISE;
+      const fill = '#0d1117';
+
+      switch (pt.wpType) {
+        case 'airport': // Square
+          g.append('rect').attr('x', cx - R).attr('y', cy - R).attr('width', R * 2).attr('height', R * 2)
+            .attr('fill', fill).attr('stroke', color).attr('stroke-width', 1.5);
+          break;
+        case 'vor': // Hexagon
+          g.append('polygon').attr('points', hexPath(cx, cy))
+            .attr('fill', fill).attr('stroke', color).attr('stroke-width', 1.5);
+          break;
+        case 'gps': // Diamond
+          g.append('polygon').attr('points', `${cx},${cy - R} ${cx + R},${cy} ${cx},${cy + R} ${cx - R},${cy}`)
+            .attr('fill', fill).attr('stroke', color).attr('stroke-width', 1.5);
+          break;
+        case 'ndb': // Circle
+          g.append('circle').attr('cx', cx).attr('cy', cy).attr('r', R)
+            .attr('fill', fill).attr('stroke', color).attr('stroke-width', 1.5);
+          break;
+        default: // Triangle — intersection/fix
+          g.append('polygon').attr('points', `${cx},${cy - R} ${cx + R},${cy + R} ${cx - R},${cy + R}`)
+            .attr('fill', fill).attr('stroke', color).attr('stroke-width', 1.5);
+          break;
+      }
+    });
+
+    // Waypoint labels on x-axis — thin to avoid overcrowding
+    const maxLabelsCount = Math.max(4, Math.floor(innerW / 55));
+    const labelInterval = Math.max(1, Math.ceil(points.length / maxLabelsCount));
+    const labelIndices = points
+      .map((p, i) => ({ ...p, i }))
+      .filter((_, i) => i === 0 || i === points.length - 1 || i % labelInterval === 0);
+
     g.selectAll('.wp-label')
-      .data(points)
+      .data(labelIndices)
       .enter()
       .append('text')
-      .attr('x', (d) => xScale(d.dist))
+      .attr('x', (d) => xScale(d.i) ?? 0)
       .attr('y', innerH + 14)
       .attr('text-anchor', 'middle')
       .attr('fill', '#8b949e')
@@ -113,20 +199,39 @@ export function VerticalProfile() {
 
     g.selectAll('.domain, .tick line').attr('stroke', '#30363d');
 
-    // Current altitude dot
-    if (aircraft) {
+    // Current altitude indicator — only when SimConnect is actively returning data
+    if (aircraft && connected && !isStale) {
       const currentAlt = aircraft.position.altitude;
-      // Approximate current position on profile (simple linear interpolation)
-      const currentX = innerW * 0.3; // placeholder — needs real distance tracking
-      g.append('circle')
-        .attr('cx', currentX)
-        .attr('cy', yScale(currentAlt))
-        .attr('r', 5)
-        .attr('fill', '#79c0ff')
-        .attr('stroke', '#0d1117')
-        .attr('stroke-width', 1.5);
+      // Placeholder x position (30% of chart) — needs real waypoint progress tracking
+      const currentX = innerW * 0.3;
+      const sz = 16;
+
+      // Drop shadow
+      const defs = svg.select('defs').empty()
+        ? svg.insert('defs', ':first-child')
+        : svg.select('defs');
+      defs.append('filter')
+        .attr('id', 'aircraft-shadow')
+        .append('feDropShadow')
+        .attr('dx', 0).attr('dy', 1)
+        .attr('stdDeviation', 1.5)
+        .attr('flood-color', '#000')
+        .attr('flood-opacity', 0.5);
+
+      // Clean top-down airplane silhouette facing right
+      g.append('svg')
+        .attr('x', currentX - sz / 2)
+        .attr('y', yScale(currentAlt) - sz / 2)
+        .attr('width', sz)
+        .attr('height', sz)
+        .attr('viewBox', '0 0 24 24')
+        .attr('style', 'overflow:visible')
+        .append('path')
+        .attr('d', 'M22,12 L16,6 L15,7 L16,11 L4,7.5 L2,9 L14,12 L2,15 L4,16.5 L16,13 L15,17 L16,18 Z')
+        .attr('fill', 'white')
+        .attr('filter', 'url(#aircraft-shadow)');
     }
-  }, [flightPlan, aircraft]);
+  }, [flightPlan, aircraft, connected, isStale]);
 
   return (
     <div

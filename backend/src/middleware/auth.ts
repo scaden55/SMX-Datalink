@@ -13,6 +13,7 @@ declare global {
 
 const authService = new AuthService();
 
+/** Requires valid Bearer token — rejects with 401 if missing or invalid. */
 export function authMiddleware(req: Request, res: Response, next: NextFunction): void {
   const header = req.headers.authorization;
   if (!header?.startsWith('Bearer ')) {
@@ -29,8 +30,21 @@ export function authMiddleware(req: Request, res: Response, next: NextFunction):
   }
 }
 
+/** Sets req.user if a valid token is present, but does not reject unauthenticated requests. */
+export function optionalAuthMiddleware(req: Request, _res: Response, next: NextFunction): void {
+  const header = req.headers.authorization;
+  if (header?.startsWith('Bearer ')) {
+    try {
+      req.user = authService.verifyAccessToken(header.slice(7));
+    } catch {
+      // Invalid token — continue without user context
+    }
+  }
+  next();
+}
+
 export function adminMiddleware(req: Request, res: Response, next: NextFunction): void {
-  if (req.user?.role !== 'admin') {
+  if (!req.user || req.user.role !== 'admin') {
     res.status(403).json({ error: 'Admin access required' });
     return;
   }

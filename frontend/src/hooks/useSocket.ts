@@ -3,6 +3,7 @@ import { io, type Socket } from 'socket.io-client';
 import type { ServerToClientEvents, ClientToServerEvents } from '@acars/shared';
 import { useTelemetryStore } from '../stores/telemetryStore';
 import { useAuthStore } from '../stores/authStore';
+import { useSocketStore } from '../stores/socketStore';
 
 type AcarsSocket = Socket<ServerToClientEvents, ClientToServerEvents>;
 
@@ -11,6 +12,7 @@ export function useSocket(): AcarsSocket | null {
   const setSnapshot = useTelemetryStore((s) => s.setSnapshot);
   const setConnectionStatus = useTelemetryStore((s) => s.setConnectionStatus);
   const accessToken = useAuthStore((s) => s.accessToken);
+  const setSocket = useSocketStore((s) => s.setSocket);
 
   useEffect(() => {
     if (!accessToken) return;
@@ -23,6 +25,7 @@ export function useSocket(): AcarsSocket | null {
     });
 
     socketRef.current = socket;
+    setSocket(socket as any);
 
     socket.on('connect', () => {
       console.log('[Socket] Connected');
@@ -45,8 +48,9 @@ export function useSocket(): AcarsSocket | null {
       socket.emit('telemetry:unsubscribe');
       socket.disconnect();
       socketRef.current = null;
+      setSocket(null);
     };
-  }, [setSnapshot, setConnectionStatus, accessToken]);
+  }, [setSnapshot, setConnectionStatus, accessToken, setSocket]);
 
   return socketRef.current;
 }

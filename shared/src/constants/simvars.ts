@@ -34,7 +34,7 @@ export const ENGINE_VARS: SimVarDefinition[] = [
   { name: 'ENG N2 RPM:2', units: 'percent', dataType: SimConnectDataType.FLOAT64 },
   { name: 'ENG FUEL FLOW GPH:2', units: 'gallons per hour', dataType: SimConnectDataType.FLOAT64 },
   { name: 'GENERAL ENG OIL TEMPERATURE:2', units: 'Rankine', dataType: SimConnectDataType.FLOAT64 },
-  { name: 'GENERAL ENG OIL PRESSURE:2', units: 'Rankine', dataType: SimConnectDataType.FLOAT64 },
+  { name: 'GENERAL ENG OIL PRESSURE:2', units: 'psf', dataType: SimConnectDataType.FLOAT64 },
   { name: 'TURB ENG PRIMARY NOZZLE PERCENT:2', units: 'percent', dataType: SimConnectDataType.FLOAT64 },
   { name: 'TURB ENG ITT:2', units: 'Rankine', dataType: SimConnectDataType.FLOAT64 },
 ];

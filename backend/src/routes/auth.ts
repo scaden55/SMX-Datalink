@@ -19,6 +19,16 @@ export function authRouter(): Router {
         return;
       }
 
+      if (password.length < 8) {
+        res.status(400).json({ error: 'Password must be at least 8 characters' });
+        return;
+      }
+
+      if (password.length > 128) {
+        res.status(400).json({ error: 'Password must be at most 128 characters' });
+        return;
+      }
+
       if (userService.emailExists(email)) {
         res.status(409).json({ error: 'Email already registered' });
         return;

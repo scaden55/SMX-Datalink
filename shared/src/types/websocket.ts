@@ -2,6 +2,7 @@ import type { AircraftData } from './aircraft.js';
 import type { EngineData } from './engine.js';
 import type { FuelData } from './fuel.js';
 import type { FlightData, ConnectionStatus } from './flight.js';
+import type { DispatchEditPayload } from './dispatch.js';
 
 export interface TelemetrySnapshot {
   aircraft: AircraftData;
@@ -11,14 +12,30 @@ export interface TelemetrySnapshot {
   timestamp: string; // ISO UTC
 }
 
+/** Message payload broadcast over WebSocket for ACARS messaging */
+export interface AcarsMessagePayload {
+  id: string;
+  bidId: number;
+  senderId: number;
+  senderName: string;
+  type: string;
+  content: string;
+  source: string;
+  timestamp: string;
+}
+
 export interface ServerToClientEvents {
   'telemetry:update': (data: TelemetrySnapshot) => void;
   'connection:status': (status: ConnectionStatus) => void;
   'flight:phaseChange': (data: { previous: string; current: string; timestamp: string }) => void;
-  'acars:message': (message: { type: string; content: string; timestamp: string }) => void;
+  'acars:message': (message: AcarsMessagePayload) => void;
+  'dispatch:updated': (data: { bidId: number; fields: DispatchEditPayload }) => void;
 }
 
 export interface ClientToServerEvents {
   'telemetry:subscribe': () => void;
   'telemetry:unsubscribe': () => void;
+  'dispatch:subscribe': (bidId: number) => void;
+  'dispatch:unsubscribe': (bidId: number) => void;
+  'acars:sendMessage': (data: { bidId: number; content: string }) => void;
 }

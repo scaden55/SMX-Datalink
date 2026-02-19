@@ -1,4 +1,5 @@
 import { HashRouter, Routes, Route } from 'react-router-dom';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { MainShell } from './components/navigation/MainShell';
 import { AuthGuard } from './components/auth/AuthGuard';
 import { LoginPage } from './pages/LoginPage';
@@ -15,6 +16,7 @@ import { SettingsPage } from './pages/SettingsPage';
 
 export function App() {
   return (
+    <ErrorBoundary>
     <HashRouter>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
@@ -34,5 +36,6 @@ export function App() {
         </Route>
       </Routes>
     </HashRouter>
+    </ErrorBoundary>
   );
 }

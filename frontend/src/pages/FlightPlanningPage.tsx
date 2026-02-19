@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Route, CalendarDays, Loader2 } from 'lucide-react';
 import { api } from '../lib/api';
-import { useFlightPlanStore } from '../stores/flightPlanStore';
+import { useFlightPlanStore, emptyForm } from '../stores/flightPlanStore';
 import { useSimBrief } from '../components/planning/useSimBrief';
 import { useWeather } from '../components/planning/useWeather';
 import { PlanningLeftPanel } from '../components/planning/PlanningLeftPanel';
@@ -26,6 +26,7 @@ export function FlightPlanningPage() {
   const {
     form,
     setForm,
+    replaceForm,
     setActiveBidId,
     setFleet,
     setAirports,
@@ -37,6 +38,7 @@ export function FlightPlanningPage() {
     resetForm,
     activeBidId,
     ofp,
+    airports,
   } = useFlightPlanStore();
 
   const { fetchOFP, generateOFP } = useSimBrief();
@@ -70,15 +72,12 @@ export function FlightPlanningPage() {
   }, [bidId, bidsLoaded, activeBidId, bids, navigate]);
 
   // Load bid data when bidId changes
+  // NOTE: activeBidId is intentionally NOT in the dep array — it's written here,
+  // not read as input. Including it caused a double-fire race condition where the
+  // second run hit the guard and skipped loading, leaving stale form data.
   useEffect(() => {
     if (!bidId) {
-      // Don't reset if we have an active bid (we might be about to redirect)
-      if (!activeBidId) {
-        setLoading(false);
-      } else {
-        // Brief wait for redirect
-        setLoading(false);
-      }
+      setLoading(false);
       return;
     }
 
@@ -89,38 +88,42 @@ export function FlightPlanningPage() {
       return;
     }
 
-    // If this bid is already loaded in the store, don't refetch
-    if (activeBidId === numBidId && form.origin) {
-      setLoading(false);
-      return;
-    }
-
+    // Always clear + reload when the URL bid changes
+    resetForm();
+    setActiveBidId(numBidId);
     setLoading(true);
     setError('');
+
+    let cancelled = false;
 
     api.get<{ ofpJson: any; flightPlanData: any; phase: string }>(`/api/bids/${numBidId}/flight-plan`)
       .catch(() => null)
       .then((planRes) => {
-        // Find bid from our already-fetched list, or from the URL
+        if (cancelled) return;
+
+        // Find bid from our already-fetched list
         const bid = bids.find((b) => b.id === numBidId);
 
-        setActiveBidId(numBidId);
-
-        // If saved plan exists, restore it
+        // If saved plan exists, restore it (full replace, not merge)
         if (planRes?.flightPlanData) {
-          setForm(planRes.flightPlanData);
+          replaceForm(planRes.flightPlanData);
           if (planRes.ofpJson) {
             setOfp(planRes.ofpJson);
             if (planRes.ofpJson.steps) {
               setSteps(planRes.ofpJson.steps);
-              setPlanningWaypoints(stepsToWaypoints(planRes.ofpJson.steps));
+              const currentAirports = useFlightPlanStore.getState().airports;
+              const depApt = currentAirports.find((a: Airport) => a.icao === planRes.ofpJson.origin);
+              const arrApt = currentAirports.find((a: Airport) => a.icao === planRes.ofpJson.destination);
+              const ob = depApt ? { icao: depApt.icao, lat: depApt.lat, lon: depApt.lon, elevation: depApt.elevation } : undefined;
+              const db = arrApt ? { icao: arrApt.icao, lat: arrApt.lat, lon: arrApt.lon, elevation: arrApt.elevation } : undefined;
+              setPlanningWaypoints(stepsToWaypoints(planRes.ofpJson.steps, ob, db));
             }
           }
           setPhase((planRes.phase as any) ?? 'planning');
         } else if (bid) {
-          // Populate defaults from bid
-          resetForm();
-          setForm({
+          // No saved plan — populate defaults from bid
+          replaceForm({
+            ...emptyForm,
             origin: bid.depIcao,
             destination: bid.arrIcao,
             flightNumber: bid.flightNumber,
@@ -131,11 +134,15 @@ export function FlightPlanningPage() {
 
         setLoading(false);
       }).catch((err) => {
+        if (cancelled) return;
         console.error('[Planning] Failed to load bid:', err);
         setError('Failed to load flight plan data');
         setLoading(false);
       });
-  }, [bidId, bids, activeBidId, form.origin]);
+
+    return () => { cancelled = true; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- only re-run on URL bidId or bids list changes
+  }, [bidId, bids]);
 
   // Handle bid selection from dropdown
   const handleSelectBid = useCallback((id: number) => {

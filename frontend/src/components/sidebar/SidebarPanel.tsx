@@ -1,9 +1,59 @@
 import { AirportCard } from './AirportCard';
 import { useFlightPlanStore } from '../../stores/flightPlanStore';
+import type { DispatchFlight } from '@acars/shared';
 
-export function SidebarPanel() {
+interface SidebarPanelProps {
+  flights?: DispatchFlight[];
+  selectedBidId?: number | null;
+  onSelectFlight?: (bidId: number) => void;
+}
+
+export function SidebarPanel({ flights, selectedBidId, onSelectFlight }: SidebarPanelProps) {
   const flightPlan = useFlightPlanStore((s) => s.flightPlan);
 
+  // Admin flight selector mode
+  if (flights && flights.length > 0 && onSelectFlight) {
+    return (
+      <div className="bg-acars-bg p-2 space-y-2">
+        <div className="px-1 pb-1">
+          <span className="text-[9px] font-semibold text-acars-muted uppercase tracking-wider">
+            Active Flights
+          </span>
+        </div>
+        {flights.map((f) => {
+          const isSelected = f.bid.id === selectedBidId;
+          return (
+            <button
+              key={f.bid.id}
+              onClick={() => onSelectFlight(f.bid.id)}
+              className={`w-full text-left rounded p-2 border transition-colors ${
+                isSelected
+                  ? 'border-acars-cyan bg-acars-cyan/10'
+                  : 'border-acars-border bg-acars-panel hover:border-acars-cyan/40'
+              }`}
+            >
+              <div className="text-[10px] font-bold text-acars-cyan">
+                {f.bid.flightNumber}
+              </div>
+              <div className="text-[9px] text-acars-text mt-0.5">
+                {f.bid.depIcao} → {f.bid.arrIcao}
+              </div>
+              {f.pilot && (
+                <div className="text-[9px] text-acars-muted mt-0.5">
+                  {f.pilot.callsign} - {f.pilot.name}
+                </div>
+              )}
+              <div className="text-[8px] text-acars-muted mt-0.5">
+                {f.bid.aircraftType}
+              </div>
+            </button>
+          );
+        })}
+      </div>
+    );
+  }
+
+  // Default: Airport cards
   return (
     <div className="bg-acars-bg p-2 space-y-2">
       <AirportCard

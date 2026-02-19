@@ -1,20 +1,32 @@
 import { CollapsibleSection } from '../common/CollapsibleSection';
+import type { SimBriefOFP } from '@acars/shared';
 
-export function TerrainSection() {
+interface TerrainSectionProps {
+  ofp?: SimBriefOFP | null;
+}
+
+export function TerrainSection({ ofp }: TerrainSectionProps) {
+  const cruiseAlt = ofp?.cruiseAltitude;
+  const cruiseStr = cruiseAlt ? `FL${Math.round(cruiseAlt / 100)}` : '---';
+  const costIndex = ofp?.costIndex;
+  const costStr = costIndex != null && costIndex > 0 ? String(costIndex) : '---';
+
+  const summary = cruiseAlt ? `Cruise ${cruiseStr} | CI ${costStr}` : '---';
+
   return (
-    <CollapsibleSection title="Terrain" summary="M1 | METW 145.1 | Anti Ice: Auto (Engine)">
+    <CollapsibleSection title="Terrain & Perf" summary={summary} defaultOpen>
       <div className="grid grid-cols-3 gap-2 text-[11px]">
         <div>
-          <span className="data-label">Category</span>
-          <div className="data-value">M1</div>
+          <span className="data-label">Cruise Alt</span>
+          <div className="data-value">{cruiseStr}</div>
         </div>
         <div>
-          <span className="data-label">METW</span>
-          <div className="data-value">145.1</div>
+          <span className="data-label">Cost Index</span>
+          <div className="data-value">{costStr}</div>
         </div>
         <div>
-          <span className="data-label">Anti Ice</span>
-          <div className="data-value">Auto (Engine)</div>
+          <span className="data-label">Aircraft</span>
+          <div className="data-value">{ofp?.aircraftType ?? '---'}</div>
         </div>
       </div>
     </CollapsibleSection>
