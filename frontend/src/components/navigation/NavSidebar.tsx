@@ -75,7 +75,7 @@ export function NavSidebar() {
     >
       {/* Logo / Brand */}
       <div className="flex items-center gap-3 px-4 h-12 border-b border-acars-border shrink-0">
-        <img src="./logos/chevron-light.png" alt="SMA" className="h-7 w-auto shrink-0" />
+        <img src="/logos/chevron-light.png" alt="SMA" className="h-7 w-auto shrink-0" />
         {!collapsed && (
           <div className="flex flex-col min-w-0">
             <span className="text-sm font-semibold text-acars-text truncate">SMA ACARS</span>
