@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Bell, ChevronDown, Plane, User, LogOut } from 'lucide-react';
+import { ChevronDown, ChevronRight, Plane, User, LogOut, X } from 'lucide-react';
 import { useTelemetry } from '../../hooks/useTelemetry';
 import { useAuthStore } from '../../stores/authStore';
+import { useAdminStore } from '../../stores/adminStore';
+import { NotificationDropdown } from './NotificationDropdown';
 
 const PAGE_TITLES: Record<string, string> = {
   '/': 'Dashboard',
@@ -14,6 +16,14 @@ const PAGE_TITLES: Record<string, string> = {
   '/logbook': 'Logbook',
   '/reports': 'Reports',
   '/settings': 'Settings',
+  '/admin': 'Admin',
+  '/admin/users': 'Users',
+  '/admin/schedules': 'Schedules',
+  '/admin/pireps': 'PIREPs',
+  '/admin/finances': 'Finances',
+  '/admin/reports': 'Admin Reports',
+  '/admin/settings': 'VA Settings',
+  '/admin/audit': 'Audit Log',
 };
 
 function ZuluClock() {
@@ -64,23 +74,104 @@ function ActiveFlightPill() {
   );
 }
 
+interface BreadcrumbSegment {
+  label: string;
+  path: string | null; // null = current page (not clickable)
+}
+
+function buildBreadcrumbs(pathname: string): BreadcrumbSegment[] {
+  // Root dashboard — single segment, no trail
+  if (pathname === '/') {
+    return [{ label: 'Dashboard', path: null }];
+  }
+
+  const segments = pathname.split('/').filter(Boolean);
+  const crumbs: BreadcrumbSegment[] = [{ label: 'Dashboard', path: '/' }];
+
+  // Special case: /planning/:bidId? — always a single "Flight Planning" page
+  if (segments[0] === 'planning') {
+    crumbs.push({ label: 'Flight Planning', path: null });
+    return crumbs;
+  }
+
+  // Build crumbs from path segments
+  let accumulated = '';
+  for (let i = 0; i < segments.length; i++) {
+    const seg = segments[i];
+    accumulated += `/${seg}`;
+    const isLast = i === segments.length - 1;
+
+    // Known top-level page
+    const title = PAGE_TITLES[accumulated];
+    if (title) {
+      crumbs.push({ label: title, path: isLast ? null : accumulated });
+    } else if (/^\d+$/.test(seg)) {
+      // Numeric ID — contextual label based on parent
+      const parent = segments[i - 1];
+      const label = parent === 'logbook' ? 'Flight Detail' : 'Detail';
+      crumbs.push({ label, path: null });
+    } else {
+      // Unknown segment — capitalize it
+      crumbs.push({
+        label: seg.charAt(0).toUpperCase() + seg.slice(1),
+        path: isLast ? null : accumulated,
+      });
+    }
+  }
+
+  return crumbs;
+}
+
 export function HeaderBar() {
   const location = useLocation();
+  const navigate = useNavigate();
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
+  const impersonating = useAdminStore((s) => s.impersonating);
+  const stopImpersonation = useAdminStore((s) => s.stopImpersonation);
 
   const initials = user ? `${user.firstName[0]}${user.lastName[0]}` : '??';
   const displayName = user ? `${user.firstName} ${user.lastName}` : 'Unknown';
   const callsign = user?.callsign ?? '';
 
-  const pageTitle = PAGE_TITLES[location.pathname] || 'ACARS';
+  const breadcrumbs = buildBreadcrumbs(location.pathname);
 
   return (
+    <>
+      {/* Impersonation banner */}
+      {impersonating && (
+        <div className="relative z-[1001] flex items-center justify-center gap-3 h-8 bg-acars-amber/20 border-b border-acars-amber/30 text-acars-amber text-xs">
+          <span className="font-medium">Viewing as {callsign || displayName}</span>
+          <button
+            onClick={stopImpersonation}
+            className="flex items-center gap-1 px-2 py-0.5 rounded bg-acars-amber/20 hover:bg-acars-amber/30 text-acars-amber text-[10px] font-medium transition-colors"
+          >
+            <X className="w-3 h-3" />
+            Stop
+          </button>
+        </div>
+      )}
     <header className="relative z-[1000] flex items-center justify-between h-12 px-4 border-b border-acars-border bg-acars-panel shrink-0">
-      {/* Left: Page title */}
+      {/* Left: Breadcrumb navigation */}
       <div className="flex items-center gap-4">
-        <h1 className="text-sm font-semibold text-acars-text">{pageTitle}</h1>
+        <nav className="flex items-center gap-1.5 text-sm">
+          {breadcrumbs.map((crumb, i) => (
+            <span key={i} className="flex items-center gap-1.5">
+              {i > 0 && <ChevronRight className="w-3 h-3 text-acars-muted/50" />}
+              {crumb.path !== null ? (
+                <button
+                  onClick={() => navigate(crumb.path!)}
+                  className="text-acars-muted hover:text-acars-text cursor-pointer transition-colors"
+                >
+                  {crumb.label}
+                </button>
+              ) : (
+                <span className="text-acars-text font-semibold">{crumb.label}</span>
+              )}
+            </span>
+          ))}
+        </nav>
         <ActiveFlightPill />
       </div>
 
@@ -89,12 +180,7 @@ export function HeaderBar() {
         <ZuluClock />
 
         {/* Notification bell */}
-        <button className="relative text-acars-muted hover:text-acars-text transition-colors p-1">
-          <Bell className="w-4 h-4" />
-          <span className="absolute -top-0.5 -right-0.5 flex items-center justify-center w-3.5 h-3.5 rounded-full bg-acars-red text-[8px] font-bold text-white">
-            3
-          </span>
-        </button>
+        <NotificationDropdown />
 
         {/* User menu */}
         <div className="relative">
@@ -133,5 +219,6 @@ export function HeaderBar() {
         </div>
       </div>
     </header>
+    </>
   );
 }

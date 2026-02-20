@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Settings, Save, Loader2, Check } from 'lucide-react';
 import { api } from '../lib/api';
 
@@ -7,14 +7,26 @@ export function SettingsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [loadError, setLoadError] = useState('');
+  const savedTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   useEffect(() => {
+    let cancelled = false;
     api.get<{ simbriefUsername: string | null }>('/api/profile/simbrief')
       .then((data) => {
-        setSimbriefUsername(data.simbriefUsername ?? '');
+        if (!cancelled) setSimbriefUsername(data.simbriefUsername ?? '');
       })
-      .catch((err) => console.error('[Settings] Failed to load SimBrief username:', err))
-      .finally(() => setLoading(false));
+      .catch((err) => {
+        if (!cancelled) setLoadError('Failed to load settings');
+        console.error('[Settings] Failed to load SimBrief username:', err);
+      })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, []);
+
+  // Clean up saved timer on unmount
+  useEffect(() => {
+    return () => { clearTimeout(savedTimerRef.current); };
   }, []);
 
   const handleSave = async () => {
@@ -23,7 +35,8 @@ export function SettingsPage() {
     try {
       await api.put('/api/profile/simbrief', { simbriefUsername });
       setSaved(true);
-      setTimeout(() => setSaved(false), 2000);
+      clearTimeout(savedTimerRef.current);
+      savedTimerRef.current = setTimeout(() => setSaved(false), 2000);
     } catch (err) {
       console.error('[Settings] Failed to save SimBrief username:', err);
     } finally {

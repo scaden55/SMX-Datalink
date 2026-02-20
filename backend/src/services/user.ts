@@ -12,9 +12,12 @@ interface UserRow {
   rank: string;
   hours_total: number;
   is_active: number;
+  status: string;
+  last_login: string | null;
+  force_password_reset: number;
+  simbrief_username: string | null;
   created_at: string;
   updated_at: string;
-  simbrief_username: string | null;
 }
 
 export class UserService {
@@ -35,17 +38,10 @@ export class UserService {
     return row !== undefined;
   }
 
-  nextCallsign(): string {
-    const row = getDb().prepare(
-      "SELECT callsign FROM users WHERE callsign LIKE 'SMA-%' ORDER BY id DESC LIMIT 1"
-    ).get() as { callsign: string } | undefined;
-
-    if (!row) return 'SMA-001';
-
-    const num = parseInt(row.callsign.split('-')[1], 10);
-    return `SMA-${String(num + 1).padStart(3, '0')}`;
-  }
-
+  /**
+   * Generate next callsign and create user atomically in a transaction
+   * to prevent duplicate callsigns from concurrent registrations.
+   */
   create(params: {
     email: string;
     passwordHash: string;
@@ -55,15 +51,34 @@ export class UserService {
     rank?: string;
     callsign?: string;
   }): UserRow {
-    const callsign = params.callsign ?? this.nextCallsign();
+    const db = getDb();
     const rank = params.rank ?? 'First Officer';
 
-    const result = getDb().prepare(`
-      INSERT INTO users (email, callsign, password_hash, first_name, last_name, role, rank)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
-    `).run(params.email, callsign, params.passwordHash, params.firstName, params.lastName, params.role, rank);
+    const txn = db.transaction(() => {
+      // Generate callsign inside the transaction for atomicity
+      let callsign = params.callsign;
+      if (!callsign) {
+        const row = db.prepare(
+          "SELECT callsign FROM users WHERE callsign LIKE 'SMA-%' ORDER BY id DESC LIMIT 1"
+        ).get() as { callsign: string } | undefined;
 
-    return this.findById(result.lastInsertRowid as number)!;
+        if (!row) {
+          callsign = 'SMA-001';
+        } else {
+          const num = parseInt(row.callsign.split('-')[1], 10);
+          callsign = `SMA-${String(num + 1).padStart(3, '0')}`;
+        }
+      }
+
+      const result = db.prepare(`
+        INSERT INTO users (email, callsign, password_hash, first_name, last_name, role, rank)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+      `).run(params.email, callsign, params.passwordHash, params.firstName, params.lastName, params.role, rank);
+
+      return this.findById(result.lastInsertRowid as number)!;
+    });
+
+    return txn();
   }
 
   toProfile(row: UserRow): UserProfile {
@@ -78,6 +93,8 @@ export class UserService {
       hoursTotal: row.hours_total,
       createdAt: row.created_at,
       simbriefUsername: row.simbrief_username ?? undefined,
+      status: row.status ?? 'active',
+      lastLogin: row.last_login ?? null,
     };
   }
 

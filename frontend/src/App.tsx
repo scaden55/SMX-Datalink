@@ -11,8 +11,16 @@ import { FlightPlanningPage } from './pages/FlightPlanningPage';
 import { DispatchPage } from './pages/DispatchPage';
 import { FleetPage } from './pages/FleetPage';
 import { LogbookPage } from './pages/LogbookPage';
+import { FlightDetailPage } from './pages/FlightDetailPage';
 import { ReportsPage } from './pages/ReportsPage';
 import { SettingsPage } from './pages/SettingsPage';
+import { AdminUsersPage } from './pages/admin/AdminUsersPage';
+import { AdminSchedulesPage } from './pages/admin/AdminSchedulesPage';
+import { AdminPirepsPage } from './pages/admin/AdminPirepsPage';
+import { AdminFinancesPage } from './pages/admin/AdminFinancesPage';
+import { AdminReportsPage } from './pages/admin/AdminReportsPage';
+import { AdminSettingsPage } from './pages/admin/AdminSettingsPage';
+import { AdminAuditPage } from './pages/admin/AdminAuditPage';
 
 export function App() {
   return (
@@ -30,8 +38,26 @@ export function App() {
             <Route path="/dispatch" element={<DispatchPage />} />
             <Route path="/fleet" element={<FleetPage />} />
             <Route path="/logbook" element={<LogbookPage />} />
+            <Route path="/logbook/:id" element={<FlightDetailPage />} />
             <Route path="/reports" element={<ReportsPage />} />
             <Route path="/settings" element={<SettingsPage />} />
+          </Route>
+        </Route>
+        {/* Dispatcher admin routes (dispatcher + admin) */}
+        <Route element={<AuthGuard minRole="dispatcher" />}>
+          <Route element={<MainShell />}>
+            <Route path="/admin/schedules" element={<AdminSchedulesPage />} />
+            <Route path="/admin/pireps" element={<AdminPirepsPage />} />
+          </Route>
+        </Route>
+        {/* Admin-only routes */}
+        <Route element={<AuthGuard minRole="admin" />}>
+          <Route element={<MainShell />}>
+            <Route path="/admin/users" element={<AdminUsersPage />} />
+            <Route path="/admin/finances" element={<AdminFinancesPage />} />
+            <Route path="/admin/reports" element={<AdminReportsPage />} />
+            <Route path="/admin/settings" element={<AdminSettingsPage />} />
+            <Route path="/admin/audit" element={<AdminAuditPage />} />
           </Route>
         </Route>
       </Routes>

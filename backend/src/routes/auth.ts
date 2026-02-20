@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { AuthService } from '../services/auth.js';
 import { UserService } from '../services/user.js';
+import { UserAdminService } from '../services/user-admin.js';
 import { authMiddleware } from '../middleware/auth.js';
 import type { LoginRequest, RegisterRequest, RefreshRequest } from '@acars/shared';
 
@@ -8,6 +9,7 @@ export function authRouter(): Router {
   const router = Router();
   const authService = new AuthService();
   const userService = new UserService();
+  const userAdminService = new UserAdminService();
 
   // POST /api/auth/register — public
   router.post('/auth/register', async (req, res) => {
@@ -16,6 +18,12 @@ export function authRouter(): Router {
 
       if (!email || !password || !firstName || !lastName) {
         res.status(400).json({ error: 'email, password, firstName, and lastName are required' });
+        return;
+      }
+
+      // Basic email format validation
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        res.status(400).json({ error: 'Invalid email format' });
         return;
       }
 
@@ -84,6 +92,9 @@ export function authRouter(): Router {
         return;
       }
 
+      // Record login time
+      userAdminService.recordLogin(user.id);
+
       const accessToken = authService.generateAccessToken({
         userId: user.id,
         email: user.email,
@@ -113,7 +124,8 @@ export function authRouter(): Router {
         return;
       }
 
-      const result = authService.validateRefreshToken(refreshToken);
+      // Atomically validate and revoke in one transaction to prevent token doubling
+      const result = authService.validateAndRevokeRefreshToken(refreshToken);
       if (!result) {
         res.status(401).json({ error: 'Invalid or expired refresh token' });
         return;
@@ -124,9 +136,6 @@ export function authRouter(): Router {
         res.status(401).json({ error: 'User not found or inactive' });
         return;
       }
-
-      // Revoke old token, issue new pair
-      authService.revokeRefreshToken(refreshToken);
 
       const accessToken = authService.generateAccessToken({
         userId: user.id,

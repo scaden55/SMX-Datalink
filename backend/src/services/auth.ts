@@ -39,6 +39,37 @@ export class AuthService {
     return token;
   }
 
+  /**
+   * Atomically validate and revoke a refresh token in a single transaction.
+   * Returns the userId if valid, null otherwise.
+   * This prevents the race condition where two concurrent refresh requests
+   * could both validate the same token before either revokes it.
+   */
+  validateAndRevokeRefreshToken(token: string): { userId: number } | null {
+    const hash = createHash('sha256').update(token).digest('hex');
+    const db = getDb();
+
+    const txn = db.transaction(() => {
+      const row = db.prepare(`
+        SELECT user_id, expires_at FROM refresh_tokens WHERE token_hash = ?
+      `).get(hash) as { user_id: number; expires_at: string } | undefined;
+
+      if (!row) return null;
+      if (new Date(row.expires_at) < new Date()) {
+        // Expired — clean it up
+        db.prepare('DELETE FROM refresh_tokens WHERE token_hash = ?').run(hash);
+        return null;
+      }
+
+      // Revoke immediately within the same transaction
+      db.prepare('DELETE FROM refresh_tokens WHERE token_hash = ?').run(hash);
+      return { userId: row.user_id };
+    });
+
+    return txn();
+  }
+
+  /** @deprecated Use validateAndRevokeRefreshToken for atomic operation */
   validateRefreshToken(token: string): { userId: number } | null {
     const hash = createHash('sha256').update(token).digest('hex');
 
@@ -48,7 +79,6 @@ export class AuthService {
 
     if (!row) return null;
     if (new Date(row.expires_at) < new Date()) {
-      // Expired — clean it up
       getDb().prepare('DELETE FROM refresh_tokens WHERE token_hash = ?').run(hash);
       return null;
     }
@@ -72,7 +102,10 @@ export class AuthService {
 
 function parseExpiry(expiry: string): number {
   const match = expiry.match(/^(\d+)([smhd])$/);
-  if (!match) return 7 * 24 * 60 * 60 * 1000; // default 7 days
+  if (!match) {
+    console.warn(`[Auth] Unrecognized expiry format "${expiry}" — defaulting to 7 days`);
+    return 7 * 24 * 60 * 60 * 1000;
+  }
 
   const value = parseInt(match[1], 10);
   switch (match[2]) {

@@ -1,5 +1,5 @@
 import { getDb } from '../db/index.js';
-import type { DispatchFlight, FlightPlanPhase } from '@acars/shared';
+import type { CharterType, DispatchFlight, FlightPlanPhase } from '@acars/shared';
 
 interface DispatchBidRow {
   id: number;
@@ -17,6 +17,7 @@ interface DispatchBidRow {
   distance_nm: number;
   flight_time_min: number;
   days_of_week: string;
+  charter_type: string | null;
   simbrief_ofp_json: string | null;
   flight_plan_data: string | null;
   flight_plan_phase: string;
@@ -26,6 +27,12 @@ interface DispatchBidRow {
 }
 
 export class DispatchService {
+  /** Quick lookup for bid ownership checks */
+  findBidOwner(bidId: number): { userId: number } | null {
+    const row = getDb().prepare('SELECT user_id FROM active_bids WHERE id = ?').get(bidId) as { user_id: number } | undefined;
+    return row ? { userId: row.user_id } : null;
+  }
+
   findActiveFlights(userId?: number): DispatchFlight[] {
     const conditions = ['ab.flight_plan_data IS NOT NULL'];
     const params: unknown[] = [];
@@ -40,6 +47,7 @@ export class DispatchService {
         ab.id, ab.user_id, ab.schedule_id, ab.created_at,
         sf.flight_number, sf.dep_icao, sf.arr_icao, sf.aircraft_type,
         sf.dep_time, sf.arr_time, sf.distance_nm, sf.flight_time_min, sf.days_of_week,
+        sf.charter_type,
         dep.name AS dep_name,
         arr.name AS arr_name,
         ab.simbrief_ofp_json,
@@ -86,6 +94,7 @@ export class DispatchService {
         distanceNm: row.distance_nm,
         flightTimeMin: row.flight_time_min,
         daysOfWeek: row.days_of_week,
+        charterType: row.charter_type as CharterType | null,
       },
       flightPlanData,
       ofpJson,

@@ -73,7 +73,24 @@
       "Bash(npm run dev:backend:*)",
       "WebFetch(domain:nasstatus.faa.gov)",
       "WebFetch(domain:aviationweather.gov)",
-      "Bash(python3:*)"
+      "Bash(python3:*)",
+      "WebFetch(domain:developers.navigraph.com)",
+      "WebFetch(domain:www.simbrief.com)",
+      "mcp__plugin_playwright_playwright__browser_network_requests",
+      "Bash(grep:*)",
+      "mcp__plugin_playwright_playwright__browser_hover",
+      "Bash(\"/c/Users/scade/Documents/SMA ACARS/frontend/src/stores/notificationStore.ts\":*)",
+      "Bash(\"/c/Users/scade/Documents/SMA ACARS/frontend/src/stores/adminStore.ts\":*)",
+      "Bash(\"/c/Users/scade/Documents/SMA ACARS/frontend/src/components/navigation/NotificationDropdown.tsx\":*)",
+      "Bash(\"/c/Users/scade/Documents/SMA ACARS/frontend/src/components/admin/ConfirmDialog.tsx\":*)",
+      "Bash(\"C:/Users/scade/Documents/SMA ACARS/frontend/src/pages/admin/AdminPirepsPage.tsx\":*)",
+      "Bash(\"C:/Users/scade/Documents/SMA ACARS/frontend/src/pages/admin/AdminFinancesPage.tsx\":*)",
+      "Bash(\"C:/Users/scade/Documents/SMA ACARS/frontend/src/pages/admin/AdminReportsPage.tsx\":*)",
+      "Bash(\"C:/Users/scade/Documents/SMA ACARS/frontend/src/pages/admin/AdminSettingsPage.tsx\":*)",
+      "Bash(\"C:/Users/scade/Documents/SMA ACARS/frontend/src/pages/admin/AdminAuditPage.tsx\":*)",
+      "Bash(wc:*)",
+      "Bash(ipconfig:*)",
+      "Bash(npm run dev:frontend:*)"
     ]
   }
 }

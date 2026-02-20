@@ -43,6 +43,22 @@ interface FleetRow {
   location_icao: string | null;
   remarks: string | null;
   updated_at: string | null;
+  oew_lbs: number | null;
+  mzfw_lbs: number | null;
+  mtow_lbs: number | null;
+  mlw_lbs: number | null;
+  max_fuel_lbs: number | null;
+  engines: string | null;
+  ceiling_ft: number | null;
+  iata_type: string | null;
+  configuration: string | null;
+  is_cargo: number | null;
+  equip_code: string | null;
+  transponder_code: string | null;
+  pbn: string | null;
+  cat: string | null;
+  selcal: string | null;
+  hex_code: string | null;
 }
 
 interface ScheduleRow {
@@ -80,6 +96,7 @@ interface BidRow {
   distance_nm: number;
   flight_time_min: number;
   days_of_week: string;
+  charter_type: string | null;
 }
 
 interface AllBidRow extends BidRow {
@@ -250,6 +267,7 @@ export class ScheduleService {
         ab.id, ab.user_id, ab.schedule_id, ab.created_at,
         sf.flight_number, sf.dep_icao, sf.arr_icao, sf.aircraft_type,
         sf.dep_time, sf.arr_time, sf.distance_nm, sf.flight_time_min, sf.days_of_week,
+        sf.charter_type,
         dep.name AS dep_name,
         arr.name AS arr_name
       FROM active_bids ab
@@ -269,6 +287,7 @@ export class ScheduleService {
         ab.id, ab.user_id, ab.schedule_id, ab.created_at,
         sf.flight_number, sf.dep_icao, sf.arr_icao, sf.aircraft_type,
         sf.dep_time, sf.arr_time, sf.distance_nm, sf.flight_time_min, sf.days_of_week,
+        sf.charter_type,
         dep.name AS dep_name,
         arr.name AS arr_name,
         u.callsign AS pilot_callsign,
@@ -312,14 +331,7 @@ export class ScheduleService {
     const arrM = arrTotalMin % 60;
     const arrTime = `${String(arrH).padStart(2, '0')}:${String(arrM).padStart(2, '0')}`;
 
-    // Generate charter flight number: SMC + sequential
-    const lastCharter = db.prepare(
-      "SELECT flight_number FROM scheduled_flights WHERE flight_number LIKE 'SMC%' ORDER BY flight_number DESC LIMIT 1"
-    ).get() as { flight_number: string } | undefined;
-    const nextNum = lastCharter ? parseInt(lastCharter.flight_number.slice(3), 10) + 1 : 1;
-    const flightNumber = `SMC${String(nextNum).padStart(3, '0')}`;
-
-    // Insert schedule + bid in a transaction
+    // Insert schedule + bid in a transaction (charter number generated inside for atomicity)
     const insertSchedule = db.prepare(`
       INSERT INTO scheduled_flights (flight_number, dep_icao, arr_icao, aircraft_type, dep_time, arr_time, distance_nm, flight_time_min, days_of_week, is_active, charter_type, created_by)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, '1234567', 1, ?, ?)
@@ -327,6 +339,14 @@ export class ScheduleService {
     const insertBid = db.prepare('INSERT INTO active_bids (user_id, schedule_id) VALUES (?, ?)');
 
     const txn = db.transaction(() => {
+      // Generate charter flight number inside transaction to prevent race conditions
+      // Use CAST to numeric sort so SMC10 sorts after SMC9
+      const lastCharter = db.prepare(
+        "SELECT flight_number FROM scheduled_flights WHERE flight_number LIKE 'SMC%' ORDER BY CAST(SUBSTR(flight_number, 4) AS INTEGER) DESC LIMIT 1"
+      ).get() as { flight_number: string } | undefined;
+      const nextNum = lastCharter ? parseInt(lastCharter.flight_number.slice(3), 10) + 1 : 1;
+      const flightNumber = `SMC${String(nextNum).padStart(3, '0')}`;
+
       const result = insertSchedule.run(
         flightNumber, req.depIcao, req.arrIcao, req.aircraftType,
         req.depTime, arrTime, distanceNm, flightTimeMin,
@@ -354,6 +374,7 @@ export class ScheduleService {
         ab.id, ab.user_id, ab.schedule_id, ab.created_at,
         sf.flight_number, sf.dep_icao, sf.arr_icao, sf.aircraft_type,
         sf.dep_time, sf.arr_time, sf.distance_nm, sf.flight_time_min, sf.days_of_week,
+        sf.charter_type,
         dep.name AS dep_name,
         arr.name AS arr_name
       FROM active_bids ab
@@ -400,6 +421,22 @@ export class ScheduleService {
       locationIcao: row.location_icao,
       remarks: row.remarks,
       updatedAt: row.updated_at,
+      oewLbs: row.oew_lbs,
+      mzfwLbs: row.mzfw_lbs,
+      mtowLbs: row.mtow_lbs,
+      mlwLbs: row.mlw_lbs,
+      maxFuelLbs: row.max_fuel_lbs,
+      engines: row.engines,
+      ceilingFt: row.ceiling_ft,
+      iataType: row.iata_type,
+      configuration: row.configuration,
+      isCargo: (row.is_cargo ?? 0) === 1,
+      equipCode: row.equip_code,
+      transponderCode: row.transponder_code,
+      pbn: row.pbn,
+      cat: row.cat,
+      selcal: row.selcal,
+      hexCode: row.hex_code,
     };
   }
 
@@ -441,6 +478,7 @@ export class ScheduleService {
       distanceNm: row.distance_nm,
       flightTimeMin: row.flight_time_min,
       daysOfWeek: row.days_of_week,
+      charterType: row.charter_type as CharterType | null,
     };
   }
 
@@ -461,6 +499,7 @@ export class ScheduleService {
       distanceNm: row.distance_nm,
       flightTimeMin: row.flight_time_min,
       daysOfWeek: row.days_of_week,
+      charterType: row.charter_type as CharterType | null,
       pilotCallsign: row.pilot_callsign,
       pilotName: `${row.pilot_first_name} ${row.pilot_last_name}`,
     };

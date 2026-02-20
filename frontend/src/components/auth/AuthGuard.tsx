@@ -5,6 +5,7 @@ import type { UserRole } from '@acars/shared';
 
 const ROLE_LEVEL: Record<UserRole, number> = {
   pilot: 1,
+  dispatcher: 2,
   admin: 3,
 };
 

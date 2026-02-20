@@ -3,6 +3,9 @@ import { persist } from 'zustand/middleware';
 import type { UserProfile, LoginResponse } from '@acars/shared';
 import { api, ApiError } from '../lib/api';
 
+// Module-level dedup: ensures hydrate() only runs once even if called by multiple AuthGuards
+let hydratePromise: Promise<void> | null = null;
+
 interface AuthState {
   accessToken: string | null;
   refreshToken: string | null;
@@ -83,27 +86,34 @@ export const useAuthStore = create<AuthState>()(
         });
       },
 
-      hydrate: async () => {
+      hydrate: () => {
+        // Deduplicate: multiple AuthGuard instances call hydrate concurrently,
+        // but we only want one /api/auth/me request in flight.
+        if (hydratePromise) return hydratePromise;
+
         const { accessToken } = get();
         if (!accessToken) {
           set({ isAuthenticated: false, isHydrating: false });
-          return;
+          return Promise.resolve();
         }
 
         set({ isHydrating: true });
-        try {
-          const user = await api.get<UserProfile>('/api/auth/me');
-          set({ user, isAuthenticated: true, isHydrating: false });
-        } catch (err) {
-          // If it's a 401 the api client already tried refresh.
-          // If that also failed, clearAuth was called. Just ensure clean state.
-          if (err instanceof ApiError && err.status === 401) {
-            set({ isHydrating: false });
-          } else {
-            // Network error etc — keep tokens, don't sign out
-            set({ isHydrating: false, isAuthenticated: true });
-          }
-        }
+        hydratePromise = api.get<UserProfile>('/api/auth/me')
+          .then((user) => {
+            set({ user, isAuthenticated: true, isHydrating: false });
+          })
+          .catch((err) => {
+            if (err instanceof ApiError && err.status === 401) {
+              set({ isHydrating: false });
+            } else {
+              set({ isHydrating: false, isAuthenticated: true });
+            }
+          })
+          .finally(() => {
+            hydratePromise = null;
+          });
+
+        return hydratePromise;
       },
     }),
     {

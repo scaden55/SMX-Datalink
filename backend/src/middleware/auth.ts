@@ -50,3 +50,12 @@ export function adminMiddleware(req: Request, res: Response, next: NextFunction)
   }
   next();
 }
+
+/** Allows dispatcher OR admin — use for PIREP + schedule admin routes. */
+export function dispatcherMiddleware(req: Request, res: Response, next: NextFunction): void {
+  if (!req.user || (req.user.role !== 'admin' && req.user.role !== 'dispatcher')) {
+    res.status(403).json({ error: 'Dispatcher or admin access required' });
+    return;
+  }
+  next();
+}

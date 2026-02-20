@@ -11,7 +11,7 @@ export interface Airport {
   timezone: string;
 }
 
-export type FleetStatus = 'active' | 'stored' | 'retired';
+export type FleetStatus = 'active' | 'stored' | 'retired' | 'maintenance';
 
 export interface FleetAircraft {
   id: number;
@@ -29,6 +29,25 @@ export interface FleetAircraft {
   locationIcao: string | null;
   remarks: string | null;
   updatedAt: string | null;
+  // Weight specs (lbs)
+  oewLbs: number | null;
+  mzfwLbs: number | null;
+  mtowLbs: number | null;
+  mlwLbs: number | null;
+  maxFuelLbs: number | null;
+  // Airframe details
+  engines: string | null;
+  ceilingFt: number | null;
+  iataType: string | null;
+  configuration: string | null;
+  isCargo: boolean;
+  // Equipment codes
+  equipCode: string | null;
+  transponderCode: string | null;
+  pbn: string | null;
+  cat: string | null;
+  selcal: string | null;
+  hexCode: string | null;
 }
 
 export interface CreateFleetAircraftRequest {
@@ -44,6 +63,23 @@ export interface CreateFleetAircraftRequest {
   baseIcao?: string;
   locationIcao?: string;
   remarks?: string;
+  // Extended specs (optional)
+  oewLbs?: number;
+  mzfwLbs?: number;
+  mtowLbs?: number;
+  mlwLbs?: number;
+  maxFuelLbs?: number;
+  engines?: string;
+  ceilingFt?: number;
+  iataType?: string;
+  configuration?: string;
+  isCargo?: boolean;
+  equipCode?: string;
+  transponderCode?: string;
+  pbn?: string;
+  cat?: string;
+  selcal?: string;
+  hexCode?: string;
 }
 
 export interface UpdateFleetAircraftRequest {
@@ -59,11 +95,56 @@ export interface UpdateFleetAircraftRequest {
   baseIcao?: string | null;
   locationIcao?: string | null;
   remarks?: string | null;
+  // Extended specs
+  oewLbs?: number | null;
+  mzfwLbs?: number | null;
+  mtowLbs?: number | null;
+  mlwLbs?: number | null;
+  maxFuelLbs?: number | null;
+  engines?: string | null;
+  ceilingFt?: number | null;
+  iataType?: string | null;
+  configuration?: string | null;
+  isCargo?: boolean;
+  equipCode?: string | null;
+  transponderCode?: string | null;
+  pbn?: string | null;
+  cat?: string | null;
+  selcal?: string | null;
+  hexCode?: string | null;
 }
 
 export interface FleetListResponse {
   fleet: FleetAircraft[];
   total: number;
+}
+
+// ── SimBrief Aircraft Search ─────────────────────────────────────
+
+export interface SimBriefAircraftType {
+  aircraftIcao: string;
+  aircraftName: string;
+  engines: string;
+  passengers: number;
+  mtowLbs: number;
+  speed: number;
+  ceilingFt: number;
+  fuelflowLbs: number;
+  isCargo: boolean;
+  oewLbs: number;
+  mzfwLbs: number;
+  mlwLbs: number;
+  maxFuelLbs: number;
+  maxPax: number;
+  cat: string;
+  equipCode: string;
+  transponderCode: string;
+  pbn: string;
+}
+
+export interface SimBriefAircraftSearchResponse {
+  aircraft: SimBriefAircraftType[];
+  cachedAt: string;
 }
 
 export type CharterType = 'reposition' | 'cargo' | 'passenger';
@@ -80,7 +161,7 @@ export interface ScheduledFlight {
   flightTimeMin: number;
   daysOfWeek: string;
   isActive: boolean;
-  charterType?: CharterType | null;
+  charterType: CharterType | null;
 }
 
 export interface CreateCharterRequest {
@@ -115,6 +196,7 @@ export interface BidWithDetails extends Bid {
   distanceNm: number;
   flightTimeMin: number;
   daysOfWeek: string;
+  charterType: CharterType | null;
 }
 
 export interface ScheduleListItem extends ScheduledFlight {

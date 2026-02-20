@@ -40,6 +40,8 @@ export type {
   CreateFleetAircraftRequest,
   UpdateFleetAircraftRequest,
   FleetListResponse,
+  SimBriefAircraftType,
+  SimBriefAircraftSearchResponse,
   ScheduledFlight,
   Bid,
   BidWithDetails,
@@ -59,6 +61,23 @@ export type {
   DispatchEditPayload,
 } from './types/dispatch.js';
 export type {
+  LogbookStatus,
+  LogbookEntry,
+  LogbookListResponse,
+  LogbookFilters,
+} from './types/logbook.js';
+export type {
+  ReportSummary,
+  RevenueBreakdown,
+  ExpenseBreakdown,
+  FinancialSummary,
+  AircraftFinancials,
+  TopAirportPair,
+  PilotBreakdown,
+  DailyVolume,
+  ReportResponse,
+} from './types/reports.js';
+export type {
   FaaGroundStop,
   FaaGroundDelay,
   FaaArrivalDepartureDelay,
@@ -67,6 +86,44 @@ export type {
   FaaFreeForm,
   FaaAirportEvent,
 } from './types/faa.js';
+export type {
+  LeaderboardEntry,
+  LeaderboardResponse,
+} from './types/leaderboard.js';
+export type {
+  NewsPost,
+  NewsListResponse,
+  CreateNewsRequest,
+  UpdateNewsRequest,
+} from './types/news.js';
+export type {
+  UserStatus,
+  AdminUserProfile,
+  UpdateUserRequest,
+  AdminUserListResponse,
+  AdminUserFilters,
+  AuditLogEntry,
+  AuditLogListResponse,
+  AuditLogFilters,
+  VaSetting,
+  VaSettingsResponse,
+  UpdateSettingsRequest,
+  FinanceType,
+  FinanceEntry,
+  FinanceListResponse,
+  CreateFinanceRequest,
+  FinanceFilters,
+  PilotBalance,
+  FinanceSummary,
+  NotificationType,
+  Notification,
+  NotificationListResponse,
+  PirepReviewRequest,
+  BulkPirepReviewRequest,
+  CreateScheduleRequest,
+  UpdateScheduleRequest,
+  AdminDashboardStats,
+} from './types/admin.js';
 
 // Constants
 export { FlightPhase, PhaseThresholds } from './constants/flight-phases.js';

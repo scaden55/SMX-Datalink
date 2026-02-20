@@ -100,6 +100,9 @@ export function setupWebSocket(
   const authService = new AuthService();
   const messageService = new MessageService();
 
+  // Pre-prepare the bid ownership query once (not per-event)
+  const bidOwnerStmt = () => getDb().prepare('SELECT user_id FROM active_bids WHERE id = ?');
+
   io.use((socket, next) => {
     const token = socket.handshake.auth?.token as string | undefined;
     if (token) {
@@ -146,7 +149,7 @@ export function setupWebSocket(
 
       // Verify user owns this bid or is admin
       if (user.role !== 'admin') {
-        const bid = getDb().prepare('SELECT user_id FROM active_bids WHERE id = ?').get(bidId) as { user_id: number } | undefined;
+        const bid = bidOwnerStmt().get(bidId) as { user_id: number } | undefined;
         if (!bid || bid.user_id !== user.userId) return;
       }
 
@@ -158,10 +161,16 @@ export function setupWebSocket(
       socket.leave(`bid:${bidId}`);
     });
 
-    // Real-time message sending via WebSocket
+    // Real-time message sending via WebSocket — verify bid ownership
     socket.on('acars:sendMessage', (data: { bidId: number; content: string }) => {
       const user = socket.user;
       if (!user || !data.content?.trim()) return;
+
+      // Verify sender owns this bid or is admin
+      if (user.role !== 'admin') {
+        const bid = bidOwnerStmt().get(data.bidId) as { user_id: number } | undefined;
+        if (!bid || bid.user_id !== user.userId) return;
+      }
 
       const content = data.content.trim().slice(0, 2000); // enforce max length
       const type = user.role === 'admin' ? 'DISPATCHER' : 'PILOT';

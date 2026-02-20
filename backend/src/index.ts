@@ -1,5 +1,7 @@
 import express from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
 import { createServer } from 'http';
 import { config } from './config.js';
 import { NullSimConnectManager } from './simconnect/null-manager.js';
@@ -20,17 +22,52 @@ import { flightPlanRouter } from './routes/flight-plan.js';
 import { dispatchRouter } from './routes/dispatch.js';
 import { faaRouter } from './routes/faa.js';
 import { fleetManageRouter } from './routes/fleet.js';
+import { logbookRouter } from './routes/logbook.js';
+import { reportsRouter } from './routes/reports.js';
+import { leaderboardRouter } from './routes/leaderboard.js';
+import { newsRouter } from './routes/news.js';
+import { adminUsersRouter } from './routes/admin-users.js';
+import { adminSchedulesRouter } from './routes/admin-schedules.js';
+import { adminPirepsRouter } from './routes/admin-pireps.js';
+import { adminFinancesRouter } from './routes/admin-finances.js';
+import { adminSettingsRouter } from './routes/admin-settings.js';
+import { adminAuditRouter } from './routes/admin-audit.js';
+import { notificationsRouter } from './routes/notifications.js';
+import { SettingsService } from './services/settings.js';
+import { AuthService } from './services/auth.js';
 
 // Initialize database before anything else
 initializeDatabase();
 seedDatabase();
+new SettingsService().seedDefaults();
 
 const app = express();
 const httpServer = createServer(app);
 
-// Middleware
+// Security headers
+app.use(helmet());
+
+// CORS
 app.use(cors({ origin: config.corsOrigin }));
 app.use(express.json({ limit: config.maxBodySize }));
+
+// Rate limiting on auth endpoints — 15 requests per 15 minutes per IP
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 15,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many requests, please try again later' },
+});
+app.use('/api/auth/login', authLimiter);
+app.use('/api/auth/register', authLimiter);
+app.use('/api/auth/refresh', rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many refresh requests' },
+}));
 
 // SimConnect — conditionally loaded
 let simConnect: ISimConnectManager;
@@ -68,6 +105,17 @@ app.use('/api', adminRouter());
 app.use('/api', flightPlanRouter());
 app.use('/api', faaRouter());
 app.use('/api', fleetManageRouter());
+app.use('/api', logbookRouter());
+app.use('/api', reportsRouter());
+app.use('/api', leaderboardRouter());
+app.use('/api', newsRouter());
+app.use('/api', adminUsersRouter());
+app.use('/api', adminSchedulesRouter());
+app.use('/api', adminPirepsRouter());
+app.use('/api', adminFinancesRouter());
+app.use('/api', adminSettingsRouter());
+app.use('/api', adminAuditRouter());
+app.use('/api', notificationsRouter());
 
 // WebSocket
 const io = setupWebSocket(httpServer, telemetry, simConnect);
@@ -75,9 +123,20 @@ const io = setupWebSocket(httpServer, telemetry, simConnect);
 // Register dispatch router with io for real-time broadcasts
 app.use('/api', dispatchRouter(io));
 
+// Periodic cleanup of expired refresh tokens (every hour)
+const authService = new AuthService();
+const tokenCleanupInterval = setInterval(() => {
+  try {
+    authService.cleanupExpiredTokens();
+  } catch (err) {
+    console.error('[Server] Token cleanup error:', err);
+  }
+}, 60 * 60 * 1000);
+tokenCleanupInterval.unref();
+
 // Start
-httpServer.listen(config.port, () => {
-  console.log(`[Server] ACARS backend running on http://localhost:${config.port}`);
+httpServer.listen(config.port, '0.0.0.0', () => {
+  console.log(`[Server] ACARS backend running on http://0.0.0.0:${config.port}`);
   console.log(`[Server] REST API: http://localhost:${config.port}/api`);
   console.log(`[Server] WebSocket: ws://localhost:${config.port}`);
 
@@ -86,15 +145,16 @@ httpServer.listen(config.port, () => {
 });
 
 // Graceful shutdown
-process.on('SIGINT', () => {
+function shutdown(): void {
   console.log('\n[Server] Shutting down...');
+  clearInterval(tokenCleanupInterval);
+  io.close();
   simConnect.disconnect();
   closeDatabase();
   httpServer.close(() => process.exit(0));
-});
+  // Force exit after 5 seconds if connections don't close
+  setTimeout(() => process.exit(1), 5000).unref();
+}
 
-process.on('SIGTERM', () => {
-  simConnect.disconnect();
-  closeDatabase();
-  httpServer.close(() => process.exit(0));
-});
+process.on('SIGINT', shutdown);
+process.on('SIGTERM', shutdown);

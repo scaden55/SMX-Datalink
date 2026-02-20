@@ -64,12 +64,22 @@ export function dispatchRouter(io?: SocketServer<ClientToServerEvents, ServerToC
   });
 
   // GET /api/dispatch/flights/:bidId/messages — message history
+  // Pilots can only see messages for their own bids; admins can see all
   router.get('/dispatch/flights/:bidId/messages', authMiddleware, (req, res) => {
     try {
       const bidId = Number(req.params.bidId);
       if (isNaN(bidId)) {
         res.status(400).json({ error: 'Invalid bid ID' });
         return;
+      }
+
+      // Verify ownership — pilot must own the bid
+      if (req.user!.role !== 'admin') {
+        const bid = dispatchService.findBidOwner(bidId);
+        if (!bid || bid.userId !== req.user!.userId) {
+          res.status(404).json({ error: 'Bid not found' });
+          return;
+        }
       }
 
       const messages = messageService.getMessages(bidId);
@@ -81,12 +91,22 @@ export function dispatchRouter(io?: SocketServer<ClientToServerEvents, ServerToC
   });
 
   // POST /api/dispatch/flights/:bidId/messages — send a message
+  // Pilots can only send messages for their own bids; admins can send to any
   router.post('/dispatch/flights/:bidId/messages', authMiddleware, (req, res) => {
     try {
       const bidId = Number(req.params.bidId);
       if (isNaN(bidId)) {
         res.status(400).json({ error: 'Invalid bid ID' });
         return;
+      }
+
+      // Verify ownership — pilot must own the bid
+      if (req.user!.role !== 'admin') {
+        const bid = dispatchService.findBidOwner(bidId);
+        if (!bid || bid.userId !== req.user!.userId) {
+          res.status(404).json({ error: 'Bid not found' });
+          return;
+        }
       }
 
       const { content } = req.body as { content?: string };

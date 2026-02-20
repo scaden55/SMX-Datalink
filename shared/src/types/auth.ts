@@ -1,4 +1,4 @@
-export type UserRole = 'admin' | 'pilot';
+export type UserRole = 'admin' | 'dispatcher' | 'pilot';
 
 export interface LoginRequest {
   email: string;
@@ -16,6 +16,8 @@ export interface RefreshRequest {
   refreshToken: string;
 }
 
+export type UserStatus = 'active' | 'suspended' | 'deleted';
+
 export interface UserProfile {
   id: number;
   email: string;
@@ -27,6 +29,8 @@ export interface UserProfile {
   hoursTotal: number;
   createdAt: string;
   simbriefUsername?: string;
+  status: UserStatus | string;
+  lastLogin: string | null;
 }
 
 export interface LoginResponse {

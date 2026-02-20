@@ -24,6 +24,23 @@ interface FleetRow {
   location_icao: string | null;
   remarks: string | null;
   updated_at: string | null;
+  // Extended specs (from migration 007)
+  oew_lbs: number | null;
+  mzfw_lbs: number | null;
+  mtow_lbs: number | null;
+  mlw_lbs: number | null;
+  max_fuel_lbs: number | null;
+  engines: string | null;
+  ceiling_ft: number | null;
+  iata_type: string | null;
+  configuration: string | null;
+  is_cargo: number | null;
+  equip_code: string | null;
+  transponder_code: string | null;
+  pbn: string | null;
+  cat: string | null;
+  selcal: string | null;
+  hex_code: string | null;
 }
 
 // ── Filters ─────────────────────────────────────────────────────
@@ -36,7 +53,7 @@ export interface FleetFilters {
 
 // ── Service ─────────────────────────────────────────────────────
 
-const VALID_STATUSES = new Set<FleetStatus>(['active', 'stored', 'retired']);
+const VALID_STATUSES = new Set<FleetStatus>(['active', 'stored', 'retired', 'maintenance']);
 
 export class FleetService {
 
@@ -85,8 +102,13 @@ export class FleetService {
     const now = new Date().toISOString();
 
     const result = getDb().prepare(`
-      INSERT INTO fleet (icao_type, name, registration, airline, range_nm, cruise_speed, pax_capacity, cargo_capacity_lbs, is_active, status, base_icao, location_icao, remarks, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO fleet (
+        icao_type, name, registration, airline, range_nm, cruise_speed, pax_capacity, cargo_capacity_lbs,
+        is_active, status, base_icao, location_icao, remarks, updated_at,
+        oew_lbs, mzfw_lbs, mtow_lbs, mlw_lbs, max_fuel_lbs,
+        engines, ceiling_ft, iata_type, configuration, is_cargo,
+        equip_code, transponder_code, pbn, cat, selcal, hex_code
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       data.icaoType,
       data.name,
@@ -102,6 +124,22 @@ export class FleetService {
       data.locationIcao ?? null,
       data.remarks ?? null,
       now,
+      data.oewLbs ?? null,
+      data.mzfwLbs ?? null,
+      data.mtowLbs ?? null,
+      data.mlwLbs ?? null,
+      data.maxFuelLbs ?? null,
+      data.engines ?? null,
+      data.ceilingFt ?? null,
+      data.iataType ?? null,
+      data.configuration ?? null,
+      data.isCargo ? 1 : 0,
+      data.equipCode ?? null,
+      data.transponderCode ?? null,
+      data.pbn ?? null,
+      data.cat ?? null,
+      data.selcal ?? null,
+      data.hexCode ?? null,
     );
 
     return this.findById(result.lastInsertRowid as number)!;
@@ -125,6 +163,24 @@ export class FleetService {
     if (data.baseIcao !== undefined)        { sets.push('base_icao = ?');         params.push(data.baseIcao); }
     if (data.locationIcao !== undefined)    { sets.push('location_icao = ?');     params.push(data.locationIcao); }
     if (data.remarks !== undefined)         { sets.push('remarks = ?');           params.push(data.remarks); }
+
+    // Extended specs
+    if (data.oewLbs !== undefined)          { sets.push('oew_lbs = ?');           params.push(data.oewLbs); }
+    if (data.mzfwLbs !== undefined)         { sets.push('mzfw_lbs = ?');          params.push(data.mzfwLbs); }
+    if (data.mtowLbs !== undefined)         { sets.push('mtow_lbs = ?');          params.push(data.mtowLbs); }
+    if (data.mlwLbs !== undefined)          { sets.push('mlw_lbs = ?');           params.push(data.mlwLbs); }
+    if (data.maxFuelLbs !== undefined)      { sets.push('max_fuel_lbs = ?');      params.push(data.maxFuelLbs); }
+    if (data.engines !== undefined)         { sets.push('engines = ?');           params.push(data.engines); }
+    if (data.ceilingFt !== undefined)       { sets.push('ceiling_ft = ?');        params.push(data.ceilingFt); }
+    if (data.iataType !== undefined)        { sets.push('iata_type = ?');         params.push(data.iataType); }
+    if (data.configuration !== undefined)   { sets.push('configuration = ?');     params.push(data.configuration); }
+    if (data.isCargo !== undefined)         { sets.push('is_cargo = ?');          params.push(data.isCargo ? 1 : 0); }
+    if (data.equipCode !== undefined)       { sets.push('equip_code = ?');        params.push(data.equipCode); }
+    if (data.transponderCode !== undefined) { sets.push('transponder_code = ?');  params.push(data.transponderCode); }
+    if (data.pbn !== undefined)             { sets.push('pbn = ?');               params.push(data.pbn); }
+    if (data.cat !== undefined)             { sets.push('cat = ?');               params.push(data.cat); }
+    if (data.selcal !== undefined)          { sets.push('selcal = ?');            params.push(data.selcal); }
+    if (data.hexCode !== undefined)         { sets.push('hex_code = ?');          params.push(data.hexCode); }
 
     // Status syncs is_active
     if (data.status !== undefined && VALID_STATUSES.has(data.status)) {
@@ -150,6 +206,33 @@ export class FleetService {
     return result.changes > 0;
   }
 
+  getUtilizationStats(registration: string): {
+    totalFlights: number;
+    totalHours: number;
+    lastFlightDate: string | null;
+    avgScore: number | null;
+    avgLandingRate: number | null;
+  } {
+    const row = getDb().prepare(`
+      SELECT
+        COUNT(*) AS total_flights,
+        COALESCE(SUM(flight_time_min), 0) AS total_hours_min,
+        MAX(actual_arr) AS last_flight,
+        AVG(score) AS avg_score,
+        AVG(landing_rate_fpm) AS avg_landing_rate
+      FROM logbook
+      WHERE aircraft_registration = ? AND status IN ('approved')
+    `).get(registration) as any;
+
+    return {
+      totalFlights: row.total_flights,
+      totalHours: Math.round((row.total_hours_min / 60) * 10) / 10,
+      lastFlightDate: row.last_flight,
+      avgScore: row.avg_score != null ? Math.round(row.avg_score) : null,
+      avgLandingRate: row.avg_landing_rate != null ? Math.round(row.avg_landing_rate) : null,
+    };
+  }
+
   // ── Mapper ──────────────────────────────────────────────────
 
   private toFleetAircraft(row: FleetRow): FleetAircraft {
@@ -169,6 +252,23 @@ export class FleetService {
       locationIcao: row.location_icao,
       remarks: row.remarks,
       updatedAt: row.updated_at,
+      // Extended specs
+      oewLbs: row.oew_lbs,
+      mzfwLbs: row.mzfw_lbs,
+      mtowLbs: row.mtow_lbs,
+      mlwLbs: row.mlw_lbs,
+      maxFuelLbs: row.max_fuel_lbs,
+      engines: row.engines,
+      ceilingFt: row.ceiling_ft,
+      iataType: row.iata_type,
+      configuration: row.configuration,
+      isCargo: (row.is_cargo ?? 0) === 1,
+      equipCode: row.equip_code,
+      transponderCode: row.transponder_code,
+      pbn: row.pbn,
+      cat: row.cat,
+      selcal: row.selcal,
+      hexCode: row.hex_code,
     };
   }
 }

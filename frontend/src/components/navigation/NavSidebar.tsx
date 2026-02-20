@@ -11,6 +11,11 @@ import {
   Settings,
   PanelLeftClose,
   PanelLeftOpen,
+  Users,
+  ClipboardCheck,
+  DollarSign,
+  Shield,
+  ScrollText,
   type LucideIcon,
 } from 'lucide-react';
 import { useUIStore } from '../../stores/uiStore';
@@ -33,6 +38,20 @@ const navItems: NavItem[] = [
   { to: '/logbook', label: 'Logbook', icon: BookOpen },
   { to: '/reports', label: 'Reports', icon: BarChart3 },
   { to: '/settings', label: 'Settings', icon: Settings },
+];
+
+// Dispatcher sees only Schedules + PIREPs; admin sees all
+const dispatcherAdminItems: NavItem[] = [
+  { to: '/admin/schedules', label: 'Schedules', icon: CalendarDays },
+  { to: '/admin/pireps', label: 'PIREPs', icon: ClipboardCheck },
+];
+
+const adminOnlyItems: NavItem[] = [
+  { to: '/admin/users', label: 'Users', icon: Users },
+  { to: '/admin/finances', label: 'Finances', icon: DollarSign },
+  { to: '/admin/reports', label: 'Admin Reports', icon: BarChart3 },
+  { to: '/admin/settings', label: 'VA Settings', icon: Settings },
+  { to: '/admin/audit', label: 'Audit Log', icon: ScrollText },
 ];
 
 function ConnectionDot() {
@@ -111,6 +130,42 @@ export function NavSidebar() {
             );
           })}
         </ul>
+
+        {/* Admin Section */}
+        {(roleBadge === 'admin' || roleBadge === 'dispatcher') && (
+          <>
+            <div className="mx-4 my-2 border-t border-acars-border" />
+            {!collapsed && (
+              <div className="flex items-center gap-1.5 px-4 mb-1">
+                <Shield className="w-3 h-3 text-acars-amber" />
+                <span className="text-[10px] font-semibold uppercase tracking-wider text-acars-amber">Admin</span>
+              </div>
+            )}
+            <ul className="space-y-0.5 px-2">
+              {[...dispatcherAdminItems, ...(roleBadge === 'admin' ? adminOnlyItems : [])].map((item) => {
+                const Icon = item.icon;
+                const isActive = location.pathname.startsWith(item.to);
+
+                return (
+                  <li key={item.to}>
+                    <NavLink
+                      to={item.to}
+                      className={`group flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors duration-150 ${
+                        isActive
+                          ? 'bg-acars-amber/10 text-acars-amber border-l-[3px] border-acars-amber pl-[9px]'
+                          : 'text-acars-muted hover:text-acars-text hover:bg-[#161b22] border-l-[3px] border-transparent pl-[9px]'
+                      }`}
+                      title={collapsed ? item.label : undefined}
+                    >
+                      <Icon className={`w-[18px] h-[18px] shrink-0 ${isActive ? 'text-acars-amber' : 'text-acars-muted group-hover:text-acars-text'}`} />
+                      {!collapsed && <span className="truncate">{item.label}</span>}
+                    </NavLink>
+                  </li>
+                );
+              })}
+            </ul>
+          </>
+        )}
       </nav>
 
       {/* Bottom section */}

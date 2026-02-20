@@ -1,14 +1,16 @@
 import { Router } from 'express';
 import { FleetService } from '../services/fleet.js';
+import { SimBriefAircraftService } from '../services/simbrief-aircraft.js';
 import { authMiddleware, adminMiddleware } from '../middleware/auth.js';
 import type { FleetFilters } from '../services/fleet.js';
 import type { FleetStatus, CreateFleetAircraftRequest, UpdateFleetAircraftRequest } from '@acars/shared';
 
-const VALID_STATUSES = new Set<FleetStatus>(['active', 'stored', 'retired']);
+const VALID_STATUSES = new Set<FleetStatus>(['active', 'stored', 'retired', 'maintenance']);
 
 export function fleetManageRouter(): Router {
   const router = Router();
   const service = new FleetService();
+  const simbriefService = new SimBriefAircraftService();
 
   // GET /api/fleet/manage — all fleet with filters (auth required)
   router.get('/fleet/manage', authMiddleware, (req, res) => {
@@ -90,6 +92,32 @@ export function fleetManageRouter(): Router {
       }
       console.error('[Fleet] Update error:', err);
       res.status(500).json({ error: 'Failed to update aircraft' });
+    }
+  });
+
+  // GET /api/fleet/simbrief/aircraft?q=<term> — search SimBrief airframes (auth required)
+  router.get('/fleet/simbrief/aircraft', authMiddleware, async (req, res) => {
+    try {
+      const query = (req.query.q as string) ?? '';
+      const aircraft = await simbriefService.search(query);
+      res.json({ aircraft, cachedAt: simbriefService.cachedAt ?? new Date().toISOString() });
+    } catch (err) {
+      console.error('[Fleet] SimBrief search error:', err);
+      res.status(502).json({ error: 'Failed to fetch SimBrief aircraft data' });
+    }
+  });
+
+  // GET /api/fleet/manage/:id/stats — utilization stats from logbook
+  router.get('/fleet/manage/:id/stats', authMiddleware, (req, res) => {
+    try {
+      const aircraft = service.findById(parseInt(req.params.id as string));
+      if (!aircraft) { res.status(404).json({ error: 'Aircraft not found' }); return; }
+
+      const stats = service.getUtilizationStats(aircraft.registration);
+      res.json(stats);
+    } catch (err) {
+      console.error('[Fleet] Stats error:', err);
+      res.status(500).json({ error: 'Failed to get utilization stats' });
     }
   });
 

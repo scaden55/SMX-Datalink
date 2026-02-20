@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   Plane,
   Users,
@@ -13,6 +13,16 @@ import {
   Award,
   MapPin,
   Loader2,
+  Trophy,
+  Megaphone,
+  ChevronLeft,
+  ChevronRight,
+  Pin,
+  Plus,
+  Pencil,
+  Trash2,
+  X,
+  Save,
 } from 'lucide-react';
 import { MapContainer, TileLayer, CircleMarker, Tooltip } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -23,6 +33,12 @@ import type {
   AllBidsResponse,
   DashboardStats,
   Airport,
+  LeaderboardEntry,
+  LeaderboardResponse,
+  NewsPost,
+  NewsListResponse,
+  CreateNewsRequest,
+  UpdateNewsRequest,
 } from '@acars/shared';
 
 // ─── Helpers ────────────────────────────────────────────────────
@@ -308,6 +324,316 @@ function MyInfoCard() {
   );
 }
 
+// ─── Pilot Leaderboard ──────────────────────────────────────────
+
+function getCurrentMonth(): string {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+}
+
+function shiftMonth(month: string, delta: number): string {
+  const [y, m] = month.split('-').map(Number);
+  const d = new Date(y, m - 1 + delta, 1);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+}
+
+function formatMonth(month: string): string {
+  const [y, m] = month.split('-').map(Number);
+  return new Date(y, m - 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+}
+
+const RANK_STYLES: Record<number, string> = {
+  1: 'text-yellow-400 font-bold',
+  2: 'text-gray-300 font-bold',
+  3: 'text-amber-600 font-bold',
+};
+
+function PilotLeaderboard() {
+  const [month, setMonth] = useState(getCurrentMonth);
+  const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    setLoading(true);
+    api.get<LeaderboardResponse>(`/api/leaderboard?month=${month}`)
+      .then(data => setEntries(data.entries))
+      .catch(err => console.error('[Leaderboard] Error:', err))
+      .finally(() => setLoading(false));
+  }, [month]);
+
+  const canGoNext = month < getCurrentMonth();
+
+  return (
+    <div className="panel flex flex-col h-[380px]">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-acars-border">
+        <div className="flex items-center gap-2">
+          <Trophy className="w-4 h-4 text-acars-amber" />
+          <h3 className="text-sm font-semibold text-acars-text">Pilot Leaderboard</h3>
+        </div>
+        <div className="flex items-center gap-1">
+          <button onClick={() => setMonth(m => shiftMonth(m, -1))} className="p-1 rounded hover:bg-acars-border/30 text-acars-muted hover:text-acars-text transition-colors">
+            <ChevronLeft className="w-4 h-4" />
+          </button>
+          <span className="text-xs text-acars-muted tabular-nums min-w-[120px] text-center">{formatMonth(month)}</span>
+          <button onClick={() => canGoNext && setMonth(m => shiftMonth(m, 1))} disabled={!canGoNext} className="p-1 rounded hover:bg-acars-border/30 text-acars-muted hover:text-acars-text transition-colors disabled:opacity-30 disabled:cursor-not-allowed">
+            <ChevronRight className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+
+      {loading ? (
+        <div className="flex-1 flex items-center justify-center">
+          <Loader2 className="w-5 h-5 text-acars-blue animate-spin" />
+        </div>
+      ) : entries.length === 0 ? (
+        <div className="flex-1 flex flex-col items-center justify-center">
+          <Trophy className="w-8 h-8 text-acars-muted/30 mb-2" />
+          <p className="text-xs text-acars-muted">No flights logged for {formatMonth(month)}</p>
+        </div>
+      ) : (
+        <div className="flex-1 overflow-auto">
+          <table className="w-full text-xs">
+            <thead>
+              <tr className="text-[10px] uppercase tracking-wider text-acars-muted border-b border-acars-border">
+                <th className="text-center px-3 py-2 font-medium w-10">#</th>
+                <th className="text-left px-3 py-2 font-medium">Pilot</th>
+                <th className="text-right px-3 py-2 font-medium">Flights</th>
+                <th className="text-right px-3 py-2 font-medium hidden lg:table-cell">Hours</th>
+                <th className="text-right px-3 py-2 font-medium hidden xl:table-cell">Cargo</th>
+                <th className="text-right px-3 py-2 font-medium">Score</th>
+              </tr>
+            </thead>
+            <tbody>
+              {entries.map((e, i) => (
+                <tr
+                  key={e.callsign}
+                  className={`border-b border-acars-border/50 hover:bg-[#1c2433] transition-colors ${
+                    i % 2 === 0 ? 'bg-acars-panel' : 'bg-acars-bg'
+                  }`}
+                >
+                  <td className={`text-center px-3 py-2.5 tabular-nums ${RANK_STYLES[e.rank] ?? 'text-acars-muted'}`}>
+                    {e.rank}
+                  </td>
+                  <td className="px-3 py-2.5">
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-mono font-medium text-acars-text">{e.callsign}</span>
+                      <span className="text-acars-muted hidden xl:inline">{e.pilotName}</span>
+                    </div>
+                  </td>
+                  <td className="text-right px-3 py-2.5 font-mono text-acars-text tabular-nums">{e.flights}</td>
+                  <td className="text-right px-3 py-2.5 font-mono text-acars-muted tabular-nums hidden lg:table-cell">{formatDuration(e.hoursMin)}</td>
+                  <td className="text-right px-3 py-2.5 font-mono text-acars-muted tabular-nums hidden xl:table-cell">{e.cargoLbs.toLocaleString()} lb</td>
+                  <td className="text-right px-3 py-2.5 tabular-nums">
+                    {e.avgScore != null ? (
+                      <span className={e.avgScore >= 90 ? 'text-acars-green' : e.avgScore >= 75 ? 'text-acars-amber' : 'text-acars-red'}>
+                        {e.avgScore}
+                      </span>
+                    ) : (
+                      <span className="text-acars-muted">—</span>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── News Feed ──────────────────────────────────────────────────
+
+function relativeTime(iso: string): string {
+  const diff = Date.now() - new Date(iso).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return 'just now';
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  const days = Math.floor(hrs / 24);
+  if (days < 30) return `${days}d ago`;
+  return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
+function NewsFeed() {
+  const user = useAuthStore(s => s.user);
+  const isAdmin = user?.role === 'admin';
+  const [posts, setPosts] = useState<NewsPost[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [editing, setEditing] = useState<number | null>(null); // post id or -1 for new
+  const [formTitle, setFormTitle] = useState('');
+  const [formBody, setFormBody] = useState('');
+  const [formPinned, setFormPinned] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [expandedId, setExpandedId] = useState<number | null>(null);
+
+  const loadPosts = useCallback(() => {
+    setLoading(true);
+    api.get<NewsListResponse>('/api/news?pageSize=20')
+      .then(data => setPosts(data.posts))
+      .catch(err => console.error('[News] Error:', err))
+      .finally(() => setLoading(false));
+  }, []);
+
+  useEffect(() => { loadPosts(); }, [loadPosts]);
+
+  function startCreate() {
+    setEditing(-1);
+    setFormTitle('');
+    setFormBody('');
+    setFormPinned(false);
+  }
+
+  function startEdit(post: NewsPost) {
+    setEditing(post.id);
+    setFormTitle(post.title);
+    setFormBody(post.body);
+    setFormPinned(post.pinned);
+  }
+
+  function cancelEdit() {
+    setEditing(null);
+  }
+
+  async function handleSave() {
+    if (!formTitle.trim() || !formBody.trim()) return;
+    setSaving(true);
+    try {
+      if (editing === -1) {
+        await api.post<NewsPost>('/api/news', { title: formTitle.trim(), body: formBody.trim(), pinned: formPinned } satisfies CreateNewsRequest);
+      } else {
+        await api.patch<NewsPost>(`/api/news/${editing}`, { title: formTitle.trim(), body: formBody.trim(), pinned: formPinned } satisfies UpdateNewsRequest);
+      }
+      setEditing(null);
+      loadPosts();
+    } catch (err) {
+      console.error('[News] Save error:', err);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleDelete(id: number) {
+    try {
+      await api.delete(`/api/news/${id}`);
+      loadPosts();
+    } catch (err) {
+      console.error('[News] Delete error:', err);
+    }
+  }
+
+  return (
+    <div className="panel flex flex-col h-[380px]">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-acars-border">
+        <div className="flex items-center gap-2">
+          <Megaphone className="w-4 h-4 text-acars-blue" />
+          <h3 className="text-sm font-semibold text-acars-text">Announcements</h3>
+          {posts.length > 0 && (
+            <span className="inline-flex items-center justify-center min-w-[20px] h-5 rounded-full bg-acars-blue/10 border border-acars-blue/20 text-[10px] font-semibold text-acars-blue tabular-nums px-1.5">
+              {posts.length}
+            </span>
+          )}
+        </div>
+        {isAdmin && editing === null && (
+          <button onClick={startCreate} className="flex items-center gap-1 text-[11px] font-medium text-acars-blue hover:text-acars-text transition-colors">
+            <Plus className="w-3.5 h-3.5" /> New Post
+          </button>
+        )}
+      </div>
+
+      {/* Inline create/edit form */}
+      {editing !== null && (
+        <div className="px-4 py-3 border-b border-acars-border space-y-2 bg-acars-bg/50">
+          <input
+            type="text"
+            value={formTitle}
+            onChange={e => setFormTitle(e.target.value)}
+            placeholder="Title"
+            className="w-full px-2.5 py-1.5 bg-acars-bg border border-acars-border rounded text-xs text-acars-text placeholder:text-acars-muted/50 focus:outline-none focus:border-acars-blue"
+          />
+          <textarea
+            value={formBody}
+            onChange={e => setFormBody(e.target.value)}
+            placeholder="Body"
+            rows={3}
+            className="w-full px-2.5 py-1.5 bg-acars-bg border border-acars-border rounded text-xs text-acars-text placeholder:text-acars-muted/50 focus:outline-none focus:border-acars-blue resize-none"
+          />
+          <div className="flex items-center justify-between">
+            <label className="flex items-center gap-1.5 text-[11px] text-acars-muted cursor-pointer">
+              <input type="checkbox" checked={formPinned} onChange={e => setFormPinned(e.target.checked)} className="rounded border-acars-border" />
+              <Pin className="w-3 h-3" /> Pin post
+            </label>
+            <div className="flex items-center gap-2">
+              <button onClick={cancelEdit} className="flex items-center gap-1 px-2.5 py-1 rounded text-[11px] text-acars-muted hover:text-acars-text hover:bg-acars-border/30 transition-colors">
+                <X className="w-3 h-3" /> Cancel
+              </button>
+              <button onClick={handleSave} disabled={saving || !formTitle.trim() || !formBody.trim()} className="flex items-center gap-1 px-2.5 py-1 rounded text-[11px] font-medium bg-acars-blue text-white hover:bg-acars-blue/80 transition-colors disabled:opacity-50">
+                <Save className="w-3 h-3" /> {saving ? 'Saving...' : 'Save'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {loading ? (
+        <div className="flex-1 flex items-center justify-center">
+          <Loader2 className="w-5 h-5 text-acars-blue animate-spin" />
+        </div>
+      ) : posts.length === 0 ? (
+        <div className="flex-1 flex flex-col items-center justify-center">
+          <Megaphone className="w-8 h-8 text-acars-muted/30 mb-2" />
+          <p className="text-xs text-acars-muted">No announcements yet</p>
+        </div>
+      ) : (
+        <div className="flex-1 overflow-auto">
+          {posts.map(post => {
+            const isExpanded = expandedId === post.id;
+            return (
+              <div
+                key={post.id}
+                className="px-4 py-3 border-b border-acars-border/50 hover:bg-[#1c2433] transition-colors group cursor-pointer"
+                onClick={() => setExpandedId(isExpanded ? null : post.id)}
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-1.5 mb-0.5">
+                      {post.pinned && <Pin className="w-3 h-3 text-acars-amber shrink-0" />}
+                      <h4 className="text-xs font-semibold text-acars-text truncate">{post.title}</h4>
+                    </div>
+                    <p className={`text-[11px] text-acars-muted mb-1 ${isExpanded ? 'whitespace-pre-wrap' : 'line-clamp-2'}`}>{post.body}</p>
+                    <div className="flex items-center gap-2 text-[10px] text-acars-muted/70">
+                      <span className="font-mono">{post.authorCallsign}</span>
+                      <span className="text-acars-border">|</span>
+                      <span>{relativeTime(post.createdAt)}</span>
+                      {isExpanded && post.updatedAt !== post.createdAt && (
+                        <>
+                          <span className="text-acars-border">|</span>
+                          <span>edited {relativeTime(post.updatedAt)}</span>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                  {isAdmin && editing === null && (
+                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" onClick={e => e.stopPropagation()}>
+                      <button onClick={() => startEdit(post)} className="p-1 rounded hover:bg-acars-border/30 text-acars-muted hover:text-acars-text transition-colors">
+                        <Pencil className="w-3 h-3" />
+                      </button>
+                      <button onClick={() => handleDelete(post.id)} className="p-1 rounded hover:bg-red-500/10 text-acars-muted hover:text-red-400 transition-colors">
+                        <Trash2 className="w-3 h-3" />
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Dashboard Page ─────────────────────────────────────────────
 
 export function DashboardPage() {
@@ -361,6 +687,12 @@ export function DashboardPage() {
       <div className="grid grid-cols-[1fr_380px] gap-4">
         <NetworkMapPreview airports={airports} />
         <MyInfoCard />
+      </div>
+
+      {/* Row 4: Pilot Leaderboard + News */}
+      <div className="grid grid-cols-[1fr_380px] gap-4">
+        <PilotLeaderboard />
+        <NewsFeed />
       </div>
     </div>
   );

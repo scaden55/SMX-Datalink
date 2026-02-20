@@ -13,15 +13,25 @@ export function useSocket(): AcarsSocket | null {
   const setConnectionStatus = useTelemetryStore((s) => s.setConnectionStatus);
   const accessToken = useAuthStore((s) => s.accessToken);
   const setSocket = useSocketStore((s) => s.setSocket);
+  const tokenRef = useRef(accessToken);
+
+  // Update auth on existing socket in-place instead of tearing down and reconnecting
+  // This prevents the visible "blink" in connection state on every token refresh
+  useEffect(() => {
+    tokenRef.current = accessToken;
+    if (socketRef.current && accessToken) {
+      socketRef.current.auth = { token: accessToken };
+    }
+  }, [accessToken]);
 
   useEffect(() => {
-    if (!accessToken) return;
+    if (!tokenRef.current) return;
 
     const socket: AcarsSocket = io({
       transports: ['websocket'],
       reconnection: true,
       reconnectionDelay: 2000,
-      auth: { token: accessToken },
+      auth: { token: tokenRef.current },
     });
 
     socketRef.current = socket;
@@ -50,7 +60,7 @@ export function useSocket(): AcarsSocket | null {
       socketRef.current = null;
       setSocket(null);
     };
-  }, [setSnapshot, setConnectionStatus, accessToken, setSocket]);
+  }, [setSnapshot, setConnectionStatus, setSocket]); // accessToken removed from deps
 
   return socketRef.current;
 }
