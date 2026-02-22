@@ -90,7 +90,48 @@
       "Bash(\"C:/Users/scade/Documents/SMA ACARS/frontend/src/pages/admin/AdminAuditPage.tsx\":*)",
       "Bash(wc:*)",
       "Bash(ipconfig:*)",
-      "Bash(npm run dev:frontend:*)"
+      "Bash(npm run dev:frontend:*)",
+      "WebFetch(domain:vatsim.dev)",
+      "WebFetch(domain:data.vatsim.net)",
+      "WebFetch(domain:vatsim-radar.com)",
+      "WebFetch(domain:data-admin.vnas.vatsim.net)",
+      "WebFetch(domain:forums.vatsim.net)",
+      "WebFetch(domain:api.vatsim.net)",
+      "WebFetch(domain:pypi.org)",
+      "Bash(cat:*)",
+      "Bash(openssl rand:*)",
+      "Bash(wmic process:*)",
+      "WebFetch(domain:davidmegginson.github.io)",
+      "WebFetch(domain:ourairports.com)",
+      "Bash(npm run import:airports:*)",
+      "mcp__plugin_playwright_playwright__browser_run_code",
+      "Bash(gh api:*)",
+      "Bash(cmd.exe /c \"where gh\")",
+      "WebFetch(domain:api.github.com)",
+      "Bash(export PATH=\"$PATH:/c/Program Files/GitHub CLI:/c/Users/scade/AppData/Local/Programs/GitHub CLI:/c/Users/scade/scoop/shims\")",
+      "Bash(gh:*)",
+      "Bash(python -c:*)",
+      "Bash(powershell -NoProfile -Command \"Get-CimInstance Win32_Process -Filter ''Name=''''node.exe'''''' | Where-Object { $_CommandLine -match ''tsx.*watch|vite.*host|concurrently.*dev'' } | ForEach-Object { Write-Output \\(''{0} {1}'' -f $_ProcessId, $_CommandLine.Substring\\(0,80\\)\\) }\")",
+      "Bash(powershell -NoProfile:*)",
+      "Bash(cd \"/c/Users/scade/Documents/SMA ACARS/backend\" && npm run import:navdata 2>&1)",
+      "Bash(cd \"/c/Users/scade/Documents/SMA ACARS/frontend\" && npx tailwindcss --version 2>&1)",
+      "Bash(head:*)",
+      "WebFetch(domain:www.law.cornell.edu)",
+      "WebFetch(domain:www.ecfr.gov)",
+      "Bash(typescript-language-server:*)"
+    ]
+  },
+  "hooks": {
+    "Notification": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "{\n  \"hooks\": {\n    \"Notification\": [\n      {\n        \"matcher\": \"\",\n        \"hooks\": [\n          {\n            \"type\": \"command\",\n            \"command\": \"powershell.exe -Command \\\"[System.Reflection.Assembly]::LoadWithPartialName('System.Windows.Forms'); [System.Windows.Forms.MessageBox]::Show('Claude Code needs your attention', 'Claude Code')\\\"\"\n          }\n        ]\n      }\n    ]\n  }\n}"
+          }
+        ]
+      }
     ]
   }
 }

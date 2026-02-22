@@ -15,6 +15,8 @@ export function RouteSection() {
       <CollapsibleSection
         title="Route"
         summary={route || 'No route loaded'}
+        useCheckmark
+        status={route ? 'green' : 'grey'}
         defaultOpen
       >
         <div className="space-y-2">
@@ -23,7 +25,7 @@ export function RouteSection() {
             <textarea
               value={route}
               onChange={(e) => onFieldChange('route', e.target.value)}
-              className="w-full h-16 rounded bg-acars-bg border border-acars-border text-acars-text text-[11px] px-2 py-1.5 font-mono resize-none focus:outline-none focus:border-acars-cyan"
+              className="w-full h-16 rounded bg-acars-bg border border-acars-border text-acars-text text-[11px] px-2 py-1.5 font-mono resize-none focus:outline-none focus:border-sky-400"
               placeholder="Enter ICAO route..."
             />
           </div>
@@ -34,7 +36,7 @@ export function RouteSection() {
                 type="text"
                 value={alt1}
                 onChange={(e) => onFieldChange('alternate1', e.target.value.toUpperCase())}
-                className="w-full rounded bg-acars-bg border border-acars-border text-acars-text text-[11px] px-2 py-1 font-mono focus:outline-none focus:border-acars-cyan"
+                className="w-full rounded bg-acars-bg border border-acars-border text-acars-text text-[11px] px-2 py-1 font-mono focus:outline-none focus:border-sky-400"
                 placeholder="ICAO"
                 maxLength={4}
               />
@@ -45,7 +47,7 @@ export function RouteSection() {
                 type="text"
                 value={alt2}
                 onChange={(e) => onFieldChange('alternate2', e.target.value.toUpperCase())}
-                className="w-full rounded bg-acars-bg border border-acars-border text-acars-text text-[11px] px-2 py-1 font-mono focus:outline-none focus:border-acars-cyan"
+                className="w-full rounded bg-acars-bg border border-acars-border text-acars-text text-[11px] px-2 py-1 font-mono focus:outline-none focus:border-sky-400"
                 placeholder="ICAO"
                 maxLength={4}
               />
@@ -60,6 +62,8 @@ export function RouteSection() {
     <CollapsibleSection
       title="Route"
       summary={route || 'No route loaded'}
+      useCheckmark
+      status={route ? 'green' : 'grey'}
       defaultOpen
     >
       <div className="font-mono text-[11px] text-acars-text leading-relaxed break-all">

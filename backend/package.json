@@ -6,13 +6,16 @@
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "tsc && copyfiles -u 1 \"src/db/migrations/*.sql\" dist",
-    "start": "node dist/index.js"
+    "start": "node dist/index.js",
+    "import:airports": "tsx scripts/import-airports.ts",
+    "import:navdata": "tsx scripts/import-navdata.ts"
   },
   "dependencies": {
     "@acars/shared": "*",
     "bcryptjs": "^3.0.3",
     "better-sqlite3": "^12.6.2",
     "cors": "^2.8.5",
+    "csv-parse": "^6.1.0",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
     "express-rate-limit": "^8.2.1",

@@ -33,6 +33,10 @@ export interface LogbookEntry {
   reviewNotes: string | null;
   reviewerCallsign: string | null;
   reviewerName: string | null;
+  // VATSIM tracking
+  vatsimConnected: boolean;
+  vatsimCallsign: string | null;
+  vatsimCid: number | null;
   // Joined fields (from list queries)
   pilotCallsign?: string;
   pilotName?: string;
@@ -56,4 +60,5 @@ export interface LogbookFilters {
   search?: string;
   dateFrom?: string;
   dateTo?: string;
+  vatsimOnly?: boolean;
 }

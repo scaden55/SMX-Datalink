@@ -35,6 +35,14 @@ import { adminAuditRouter } from './routes/admin-audit.js';
 import { notificationsRouter } from './routes/notifications.js';
 import { SettingsService } from './services/settings.js';
 import { AuthService } from './services/auth.js';
+import { VatsimService } from './services/vatsim.js';
+import { vatsimRouter } from './routes/vatsim.js';
+import { airportDetailRouter } from './routes/airports.js';
+import { trackRouter } from './routes/track.js';
+import { navdataRouter } from './routes/navdata.js';
+import { regulatoryRouter } from './routes/regulatory.js';
+import { TrackService } from './services/track.js';
+import { FlightEventTracker } from './services/flight-event-tracker.js';
 
 // Initialize database before anything else
 initializeDatabase();
@@ -87,6 +95,7 @@ if (config.simconnectEnabled) {
 }
 
 const telemetry = new TelemetryService(simConnect);
+const flightEventTracker = new FlightEventTracker();
 
 // Root
 app.get('/', (_req, res) => {
@@ -116,23 +125,38 @@ app.use('/api', adminFinancesRouter());
 app.use('/api', adminSettingsRouter());
 app.use('/api', adminAuditRouter());
 app.use('/api', notificationsRouter());
+app.use('/api', airportDetailRouter());
+app.use('/api', trackRouter());
+app.use('/api', navdataRouter());
+app.use('/api', regulatoryRouter());
+
+// VATSIM service
+const vatsimService = new VatsimService(config.vatsim);
+app.use('/api', vatsimRouter(vatsimService));
 
 // WebSocket
-const io = setupWebSocket(httpServer, telemetry, simConnect);
+const io = setupWebSocket(httpServer, telemetry, simConnect, vatsimService, flightEventTracker);
 
 // Register dispatch router with io for real-time broadcasts
-app.use('/api', dispatchRouter(io));
+app.use('/api', dispatchRouter(io, telemetry, flightEventTracker));
 
 // Periodic cleanup of expired refresh tokens (every hour)
 const authService = new AuthService();
-const tokenCleanupInterval = setInterval(() => {
+const trackCleanupService = new TrackService();
+const cleanupInterval = setInterval(() => {
   try {
     authService.cleanupExpiredTokens();
   } catch (err) {
     console.error('[Server] Token cleanup error:', err);
   }
+  try {
+    const deleted = trackCleanupService.cleanup();
+    if (deleted > 0) console.log(`[Server] Track cleanup: removed ${deleted} rows older than 30 days`);
+  } catch (err) {
+    console.error('[Server] Track cleanup error:', err);
+  }
 }, 60 * 60 * 1000);
-tokenCleanupInterval.unref();
+cleanupInterval.unref();
 
 // Start
 httpServer.listen(config.port, '0.0.0.0', () => {
@@ -142,12 +166,16 @@ httpServer.listen(config.port, '0.0.0.0', () => {
 
   // Begin SimConnect connection loop (no-op if disabled)
   simConnect.connect();
+
+  // Start VATSIM polling
+  vatsimService.start();
 });
 
 // Graceful shutdown
 function shutdown(): void {
   console.log('\n[Server] Shutting down...');
-  clearInterval(tokenCleanupInterval);
+  clearInterval(cleanupInterval);
+  vatsimService.stop();
   io.close();
   simConnect.disconnect();
   closeDatabase();

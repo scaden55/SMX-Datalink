@@ -5,6 +5,9 @@ import { api } from '../../lib/api';
 
 const SIMBRIEF_LOADER_URL = 'https://www.simbrief.com/ofp/ofp.loader.api.php';
 
+/** Two hours in milliseconds */
+const OFP_FRESHNESS_MS = 2 * 60 * 60 * 1000;
+
 /**
  * Build query string for the SimBrief API v1 loader popup.
  */
@@ -109,6 +112,19 @@ function buildLoaderParams(
   params.set('timestamp', timestamp);
 
   return params;
+}
+
+/**
+ * Check whether a SimBrief OFP's scheduled departure is still fresh (< 2 hours old).
+ */
+function isOfpFresh(ofp: { times?: { schedDep?: string } }): boolean {
+  const schedDep = ofp?.times?.schedDep;
+  if (!schedDep) return false;
+
+  const depMs = Number(schedDep) > 1e9 ? Number(schedDep) * 1000 : Date.parse(schedDep);
+  if (isNaN(depMs)) return false;
+
+  return Date.now() - depMs < OFP_FRESHNESS_MS;
 }
 
 export function useSimBrief() {
@@ -222,6 +238,17 @@ export function useSimBrief() {
       throw new Error('Origin, destination, and aircraft type are required');
     }
 
+    // Pre-check: SimBrief username must be configured to retrieve the OFP
+    try {
+      const profileRes = await api.get<{ simbriefUsername: string | null }>('/api/profile/simbrief');
+      if (!profileRes.simbriefUsername) {
+        throw new Error('SimBrief username not set — go to Settings to configure it before generating an OFP');
+      }
+    } catch (err: any) {
+      if (err?.message?.includes('SimBrief username')) throw err;
+      // Network error — continue and let the generation attempt proceed
+    }
+
     setSimbriefLoading(true);
 
     try {
@@ -251,16 +278,85 @@ export function useSimBrief() {
       }
       cancelPolling();
 
-      // Open SimBrief generation popup
+      // Open SimBrief generation popup (or system browser in Electron)
       const popup = window.open(loaderUrl, 'SBworker', 'width=600,height=400');
       popupRef.current = popup;
 
       if (!popup) {
+        // In Electron, setWindowOpenHandler opens the URL in the system browser
+        // but returns null (action: 'deny'). This is expected — not a blocked popup.
+        // Poll the SimBrief API until a fresh OFP appears.
+        if (window.electronAPI?.isElectron) {
+          console.log('[SimBrief] Opened in system browser — polling for OFP completion');
+
+          // Track the OFP state before generation to detect a new one
+          let preGenerateSchedDep: string | null = null;
+          try {
+            const preCheck = await api.get<any>('/api/simbrief/ofp');
+            if (preCheck.fetch?.status !== 'Error') {
+              const existing = parseSimBriefResponse(preCheck);
+              preGenerateSchedDep = existing?.times?.schedDep ?? null;
+            }
+          } catch {
+            // No existing OFP — fine, any OFP we find will be new
+          }
+
+          // Poll every 4 seconds for a fresh OFP
+          let pollErrorCount = 0;
+          pollRef.current = setInterval(async () => {
+            try {
+              const json = await api.get<any>('/api/simbrief/ofp');
+
+              if (json.fetch?.status?.startsWith?.('Error')) {
+                // Permanent SimBrief-level errors (e.g. "Error: Unknown UserID")
+                // These won't resolve by retrying — stop immediately
+                const errMsg = json.fetch.status as string;
+                console.error('[SimBrief] Permanent API error:', errMsg);
+                cancelPolling();
+                setSimbriefLoading(false);
+                return;
+              }
+
+              const candidate = parseSimBriefResponse(json);
+
+              // Only accept a fresh OFP (< 2 hours old)
+              if (!isOfpFresh(candidate)) return;
+
+              // If we had a pre-existing OFP, only accept if schedDep changed
+              // (meaning SimBrief generated a new one, not the old cached one)
+              if (preGenerateSchedDep && candidate.times?.schedDep === preGenerateSchedDep) return;
+
+              // Fresh OFP available — stop polling and apply it
+              cancelPolling();
+              await fetchOFP();
+            } catch (pollErr: any) {
+              pollErrorCount++;
+              // Detect permanent failures — stop polling instead of spinning forever
+              const status = pollErr?.status;
+              if (status === 400 || status === 401 || status === 403 || pollErrorCount >= 5) {
+                cancelPolling();
+                setSimbriefLoading(false);
+                console.error('[SimBrief] Permanent fetch error:', pollErr?.message);
+              }
+              // Transient errors (network, 502, 504) — keep polling
+            }
+          }, 4000);
+
+          // Safety timeout — stop polling after 5 minutes
+          timeoutRef.current = setTimeout(() => {
+            cancelPolling();
+            setSimbriefLoading(false);
+            console.warn('[SimBrief] Generation timed out');
+          }, 300_000);
+
+          return; // URL was opened externally — don't throw
+        }
+
         setSimbriefLoading(false);
         throw new Error('Popup blocked — please allow popups for this site');
       }
 
-      // Monitor popup closure — single interval, cancellable
+      // Browser: monitor popup closure — single interval, cancellable
       pollRef.current = setInterval(async () => {
         if (!popup || popup.closed) {
           cancelPolling();
@@ -291,5 +387,67 @@ export function useSimBrief() {
     }
   }, [setSimbriefLoading, fetchOFP, cancelPolling]);
 
-  return { fetchOFP, generateOFP, simbriefLoading };
+  /**
+   * Smart generate: if an OFP already exists for this bid and its departure
+   * time is less than 2 hours old, just fetch the existing one.
+   * Otherwise, open the SimBrief generation popup.
+   */
+  const generateOrFetchOFP = useCallback(async () => {
+    // First try fetching the existing OFP to see if it's still fresh
+    try {
+      setSimbriefLoading(true);
+      const json = await api.get<any>('/api/simbrief/ofp');
+
+      if (json.fetch?.status !== 'Error') {
+        const existingOfp = parseSimBriefResponse(json);
+
+        // Check route matches current bid
+        const currentForm = useFlightPlanStore.getState().form;
+        const routeMatches =
+          (!currentForm.origin || !existingOfp.origin || currentForm.origin === existingOfp.origin) &&
+          (!currentForm.destination || !existingOfp.destination || currentForm.destination === existingOfp.destination);
+
+        if (routeMatches && isOfpFresh(existingOfp)) {
+          // OFP is fresh and route matches — use it directly
+          const formFields = ofpToFormFields(existingOfp);
+          const waypoints = stepsToWaypoints(existingOfp.steps);
+
+          setOfp(existingOfp);
+          setSteps(existingOfp.steps);
+          setPlanningWaypoints(waypoints);
+
+          const latestForm = useFlightPlanStore.getState().form;
+          const mergedForm = {
+            ...latestForm,
+            ...formFields,
+            flightNumber: latestForm.flightNumber || formFields.origin + '-' + formFields.destination,
+            etd: latestForm.etd || '',
+          };
+          setForm(mergedForm);
+
+          // Auto-save
+          const bidId = useFlightPlanStore.getState().activeBidId;
+          if (bidId) {
+            api.put(`/api/bids/${bidId}/flight-plan`, {
+              ofpJson: existingOfp,
+              flightPlanData: mergedForm,
+              phase: 'planning',
+            }).catch((err) => console.error('[SimBrief] Auto-save failed:', err));
+          }
+
+          setSimbriefLoading(false);
+          return;
+        }
+      }
+    } catch {
+      // Fetch failed or no existing OFP — fall through to generate
+    }
+
+    setSimbriefLoading(false);
+
+    // No fresh OFP found — generate a new one (this sets its own loading state)
+    await generateOFP();
+  }, [generateOFP, setSimbriefLoading, setOfp, setSteps, setPlanningWaypoints, setForm]);
+
+  return { fetchOFP, generateOFP, generateOrFetchOFP, simbriefLoading };
 }

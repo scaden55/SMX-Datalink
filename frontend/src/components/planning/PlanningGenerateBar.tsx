@@ -1,36 +1,35 @@
-import { Loader2, Save, Zap, Download } from 'lucide-react';
+import { Loader2, Zap, PlayCircle } from 'lucide-react';
 import { useFlightPlanStore } from '../../stores/flightPlanStore';
 
 interface Props {
   onGenerate: () => void;
-  onFetchLatest: () => void;
-  onSave: () => void;
+  onStartFlight: () => void;
 }
 
-export function PlanningGenerateBar({ onGenerate, onFetchLatest, onSave }: Props) {
-  const { ofp, simbriefLoading, savingFlightPlan, activeBidId } = useFlightPlanStore();
+export function PlanningGenerateBar({ onGenerate, onStartFlight }: Props) {
+  const { ofp, simbriefLoading, activeBidId } = useFlightPlanStore();
 
   const hasOFP = ofp !== null;
 
   return (
     <div className="px-3 py-3 border-t border-acars-border space-y-2">
       {hasOFP && ofp.times && (
-        <div className="grid grid-cols-4 gap-1 text-[9px] text-center">
+        <div className="grid grid-cols-4 gap-1 text-center">
           <div>
-            <span className="text-acars-muted block">ETE</span>
-            <span className="text-acars-text font-mono">{ofp.times.estEnroute}m</span>
+            <span className="planning-label">ETE</span>
+            <span className="data-value block">{ofp.times.estEnroute}m</span>
           </div>
           <div>
-            <span className="text-acars-muted block">ETD</span>
-            <span className="text-acars-text font-mono">{formatUtc(ofp.times.schedDep)}</span>
+            <span className="planning-label">ETD</span>
+            <span className="data-value block">{formatUtc(ofp.times.schedDep)}</span>
           </div>
           <div>
-            <span className="text-acars-muted block">ETA</span>
-            <span className="text-acars-text font-mono">{formatUtc(ofp.times.schedArr)}</span>
+            <span className="planning-label">ETA</span>
+            <span className="data-value block">{formatUtc(ofp.times.schedArr)}</span>
           </div>
           <div>
-            <span className="text-acars-muted block">Block</span>
-            <span className="text-acars-text font-mono">{ofp.times.estBlock}m</span>
+            <span className="planning-label">Block</span>
+            <span className="data-value block">{ofp.times.estBlock}m</span>
           </div>
         </div>
       )}
@@ -38,29 +37,21 @@ export function PlanningGenerateBar({ onGenerate, onFetchLatest, onSave }: Props
         <button
           onClick={onGenerate}
           disabled={simbriefLoading}
-          className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded text-[11px] font-semibold bg-acars-blue/10 text-acars-blue border border-acars-blue/20 hover:bg-acars-blue/20 transition-colors disabled:opacity-50"
-          title="Generate OFP via SimBrief (opens popup, auto-fetches result)"
+          className="flex-1 btn-primary btn-md"
+          title="Generate or fetch OFP via SimBrief"
         >
           {simbriefLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Zap className="w-3.5 h-3.5" />}
-          {simbriefLoading ? 'Generating...' : 'Generate OFP'}
+          {simbriefLoading
+            ? (window.electronAPI?.isElectron ? 'Waiting for SimBrief...' : 'Loading OFP...')
+            : 'Generate OFP'}
         </button>
-        <button
-          onClick={onFetchLatest}
-          disabled={simbriefLoading}
-          className="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded text-[11px] font-semibold bg-acars-cyan/10 text-acars-cyan border border-acars-cyan/20 hover:bg-acars-cyan/20 transition-colors disabled:opacity-50"
-          title="Fetch your latest SimBrief OFP"
-        >
-          <Download className="w-3.5 h-3.5" />
-          Fetch
-        </button>
-        {activeBidId && (
+        {activeBidId && hasOFP && (
           <button
-            onClick={onSave}
-            disabled={savingFlightPlan}
-            className="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded text-[11px] font-semibold bg-acars-green/10 text-acars-green border border-acars-green/20 hover:bg-acars-green/20 transition-colors disabled:opacity-50"
+            onClick={onStartFlight}
+            className="btn-green btn-md"
           >
-            {savingFlightPlan ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
-            Save
+            <PlayCircle className="w-3.5 h-3.5" />
+            Start Flight
           </button>
         )}
       </div>

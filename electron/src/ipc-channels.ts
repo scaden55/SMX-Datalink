@@ -35,6 +35,12 @@ export const IpcChannels = {
   SETTINGS_SET: 'settings:set',
   SETTINGS_GET_ALL: 'settings:get-all',
 
+  // Developer tools
+  DEVTOOLS_TOGGLE: 'devtools:toggle',
+
+  // Window maximize state (main → renderer)
+  WINDOW_MAXIMIZED_CHANGE: 'window:maximized-change',
+
   // File system (scoped)
   FILE_OPEN_DIALOG: 'file:open-dialog',
   FILE_SAVE_DIALOG: 'file:save-dialog',

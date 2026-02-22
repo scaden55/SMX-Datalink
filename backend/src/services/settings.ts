@@ -17,6 +17,7 @@ const DEFAULTS: Record<string, string> = {
   'finance.cargo_rate': '0.0005',
   'finance.pax_rate': '0.12',
   'bids.max_active': '5',
+  'dev.enabled': 'false',
 };
 
 export class SettingsService {

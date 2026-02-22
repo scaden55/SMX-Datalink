@@ -5,13 +5,13 @@ import type { DispatchData } from '../../hooks/useDispatchData';
 function FlightCategoryBadge({ category }: { category: string | null }) {
   if (!category) return null;
   const styles: Record<string, string> = {
-    VFR: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
+    VFR: 'bg-emerald-500/15 text-emerald-400 border-emerald-400/20',
     MVFR: 'bg-blue-500/15 text-blue-400 border-blue-500/30',
     IFR: 'bg-amber-500/15 text-amber-400 border-amber-500/30',
     LIFR: 'bg-red-500/15 text-red-400 border-red-500/30',
   };
   return (
-    <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold border ${styles[category] ?? 'bg-acars-cyan/15 text-acars-cyan border-acars-cyan/30'}`}>
+    <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold border ${styles[category] ?? 'bg-sky-500/15 text-sky-400 border-sky-400/30'}`}>
       {category}
     </span>
   );
@@ -21,7 +21,7 @@ function MetarBlock({ icao, label, metar }: { icao: string; label: string; metar
   return (
     <div className="panel p-3 space-y-2">
       <div className="flex items-center gap-2">
-        <span className="text-xs font-bold text-acars-cyan">{icao}</span>
+        <span className="text-xs font-bold text-sky-400">{icao}</span>
         <span className="text-[10px] text-acars-muted">({label})</span>
         {metar?.flightCategory && <FlightCategoryBadge category={metar.flightCategory} />}
       </div>
@@ -73,7 +73,7 @@ function TafBlock({ icao, label, taf }: { icao: string; label: string; taf?: Taf
   return (
     <div className="panel p-3 space-y-2">
       <div className="flex items-center gap-2">
-        <span className="text-xs font-bold text-acars-cyan">{icao}</span>
+        <span className="text-xs font-bold text-sky-400">{icao}</span>
         <span className="text-[10px] text-acars-muted">({label} TAF)</span>
       </div>
 
@@ -119,7 +119,7 @@ export function WeatherTab({ dispatchData }: { dispatchData: DispatchData }) {
       <div className="flex items-center gap-2">
         <h3 className="text-xs font-semibold text-acars-text">Weather</h3>
         {dispatchData.loading && (
-          <span className="text-[10px] text-acars-cyan animate-pulse">Fetching...</span>
+          <span className="text-[10px] text-sky-400 animate-pulse">Fetching...</span>
         )}
       </div>
 

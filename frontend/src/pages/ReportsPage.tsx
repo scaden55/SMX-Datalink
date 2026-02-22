@@ -33,16 +33,16 @@ import type { ReportResponse, FinancialSummary } from '@acars/shared';
 // ── Theme colors (match tailwind.config) ────────────────────────
 
 const COLORS = {
-  cyan: '#79c0ff',
-  blue: '#58a6ff',
-  green: '#3fb950',
-  amber: '#f0883e',
-  red: '#f85149',
-  text: '#e6edf3',
-  muted: '#8b949e',
-  panel: '#161b22',
-  border: '#30363d',
-  bg: '#0d1117',
+  cyan: 'var(--cyan)',
+  blue: 'var(--cyan)',
+  green: 'var(--status-green)',
+  amber: 'var(--status-amber)',
+  red: 'var(--status-red)',
+  text: 'var(--text-primary)',
+  muted: 'var(--text-secondary)',
+  panel: 'var(--bg-panel)',
+  border: 'var(--border-panel)',
+  bg: 'var(--bg-app)',
 };
 
 // ── Helpers ─────────────────────────────────────────────────────
@@ -119,7 +119,7 @@ function StatCard({ icon: Icon, label, value, color }: {
   color: string;
 }) {
   return (
-    <div className="rounded-lg border border-acars-border bg-acars-panel p-3 flex flex-col gap-1 min-w-0">
+    <div className="rounded-md border border-acars-border bg-acars-panel p-3 flex flex-col gap-1 min-w-0">
       <div className="flex items-center gap-2">
         <Icon className="w-3.5 h-3.5 flex-shrink-0" style={{ color }} />
         <span className="text-[10px] uppercase tracking-wider text-acars-muted font-medium truncate">{label}</span>
@@ -156,7 +156,7 @@ function ExpenseRow({ icon: Icon, label, amount, pct, color, description }: {
               <span className="text-xs font-mono font-semibold text-acars-text min-w-[80px] text-right">{formatCurrencyFull(amount)}</span>
             </div>
           </div>
-          <div className="h-1.5 rounded-full bg-acars-border/50 overflow-hidden">
+          <div className="h-1.5 rounded-full bg-acars-border overflow-hidden">
             <div
               className="h-full rounded-full transition-all duration-700"
               style={{ width: `${Math.min(pct, 100)}%`, backgroundColor: color }}
@@ -181,7 +181,7 @@ function AircraftFilter({ options, value, onChange }: {
     <div className="relative">
       <button
         onClick={() => setOpen(v => !v)}
-        className="h-7 px-2.5 rounded-md border border-acars-border bg-acars-bg text-xs font-medium text-acars-text hover:border-acars-cyan/40 transition-colors flex items-center gap-1.5"
+        className="h-7 px-2.5 rounded-md border border-acars-border bg-acars-bg text-xs font-medium text-acars-text hover:border-sky-400/40 transition-colors flex items-center gap-1.5"
       >
         <Plane className="w-3 h-3 text-acars-muted" />
         <span>{value === 'all' ? 'All Aircraft' : value}</span>
@@ -193,7 +193,7 @@ function AircraftFilter({ options, value, onChange }: {
           <div className="absolute right-0 top-full mt-1 z-20 min-w-[140px] rounded-md border border-acars-border bg-acars-panel shadow-xl py-1">
             <button
               onClick={() => { onChange('all'); setOpen(false); }}
-              className={`w-full text-left px-3 py-1.5 text-xs transition-colors ${value === 'all' ? 'text-acars-cyan bg-acars-cyan/5' : 'text-acars-text hover:bg-acars-border/30'}`}
+              className={`w-full text-left px-3 py-1.5 text-xs transition-colors ${value === 'all' ? 'text-sky-400 bg-sky-500/5' : 'text-acars-text hover:bg-acars-border'}`}
             >
               All Aircraft
             </button>
@@ -201,7 +201,7 @@ function AircraftFilter({ options, value, onChange }: {
               <button
                 key={type}
                 onClick={() => { onChange(type); setOpen(false); }}
-                className={`w-full text-left px-3 py-1.5 text-xs font-mono transition-colors ${value === type ? 'text-acars-cyan bg-acars-cyan/5' : 'text-acars-text hover:bg-acars-border/30'}`}
+                className={`w-full text-left px-3 py-1.5 text-xs font-mono transition-colors ${value === type ? 'text-sky-400 bg-sky-500/5' : 'text-acars-text hover:bg-acars-border'}`}
               >
                 {type}
               </button>
@@ -275,8 +275,8 @@ export function ReportsPage() {
       <div className="flex-none border-b border-acars-border bg-acars-bg/50 px-5 py-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-acars-cyan/10 border border-acars-cyan/20">
-              <BarChart3 className="w-5 h-5 text-acars-cyan" />
+            <div className="flex items-center justify-center w-9 h-9 rounded-md bg-sky-500/10 border border-sky-400/20">
+              <BarChart3 className="w-5 h-5 text-sky-400" />
             </div>
             <div>
               <h1 className="text-base font-semibold text-acars-text">Reports</h1>
@@ -310,7 +310,7 @@ export function ReportsPage() {
               onClick={handleAllTimeToggle}
               className={`h-8 px-3 rounded-md border text-xs font-medium transition-colors flex items-center gap-1.5 ${
                 allTime
-                  ? 'border-acars-cyan/40 bg-acars-cyan/10 text-acars-cyan'
+                  ? 'border-sky-400/40 bg-sky-500/10 text-sky-400'
                   : 'border-acars-border bg-acars-panel text-acars-muted hover:text-acars-text'
               }`}
             >
@@ -342,14 +342,15 @@ export function ReportsPage() {
       <div className="flex-1 overflow-auto">
         {loading ? (
           <div className="flex items-center justify-center h-64">
-            <Loader2 className="w-6 h-6 text-acars-cyan animate-spin" />
+            <Loader2 className="w-6 h-6 text-sky-400 animate-spin" />
           </div>
         ) : error ? (
-          <div className="flex items-center justify-center h-64 text-sm text-acars-red">{error}</div>
+          <div className="flex items-center justify-center h-64 text-sm text-red-400">{error}</div>
         ) : !report || !s || s.totalFlights === 0 ? (
-          <div className="flex flex-col items-center justify-center h-64 gap-3">
-            <BarChart3 className="w-10 h-10 text-acars-muted/30" />
-            <p className="text-sm text-acars-muted">No flight data for this period</p>
+          <div className="empty-state h-64">
+            <BarChart3 className="empty-state-icon" />
+            <p className="empty-state-title">No Flight Data</p>
+            <p className="empty-state-desc">No flights recorded for this period</p>
           </div>
         ) : (
           <div className="p-5 space-y-5">
@@ -396,14 +397,14 @@ export function ReportsPage() {
                 {/* ── Financial Detail Row ──────────────────────── */}
                 <div className="grid grid-cols-2 gap-3">
                   {/* Expense Breakdown Detail */}
-                  <div className="rounded-lg border border-acars-border bg-acars-panel p-4">
+                  <div className="rounded-md border border-acars-border bg-acars-panel p-4">
                     <div className="flex items-center justify-between mb-1">
                       <h3 className="text-xs font-semibold text-acars-text uppercase tracking-wider">Expense Breakdown</h3>
-                      <span className="text-xs font-mono font-semibold text-acars-amber">{formatCurrencyFull(activeFin.expenses.totalExpenses)}</span>
+                      <span className="text-xs font-mono font-semibold text-amber-400">{formatCurrencyFull(activeFin.expenses.totalExpenses)}</span>
                     </div>
                     <p className="text-[10px] text-acars-muted mb-3">Operating costs for completed flights</p>
 
-                    <div className="divide-y divide-acars-border/30">
+                    <div className="divide-y divide-acars-border">
                       <ExpenseRow
                         icon={Fuel}
                         label="Fuel"
@@ -440,7 +441,7 @@ export function ReportsPage() {
                   </div>
 
                   {/* Revenue & Profit Summary */}
-                  <div className="rounded-lg border border-acars-border bg-acars-panel p-4">
+                  <div className="rounded-md border border-acars-border bg-acars-panel p-4">
                     <div className="flex items-center justify-between mb-1">
                       <h3 className="text-xs font-semibold text-acars-text uppercase tracking-wider">Revenue &amp; Profit</h3>
                       <span className="text-xs font-mono font-semibold" style={{ color: COLORS.green }}>{formatCurrencyFull(activeFin.revenue.totalRevenue)}</span>
@@ -450,7 +451,7 @@ export function ReportsPage() {
                     <div className="flex flex-col items-center gap-5">
                       {/* Profit Margin */}
                       <div className="text-center">
-                        <div className="text-4xl font-bold font-mono" style={{ color: activeFin.netProfit >= 0 ? COLORS.green : COLORS.red }}>
+                        <div className="text-2xl font-bold font-mono" style={{ color: activeFin.netProfit >= 0 ? COLORS.green : COLORS.red }}>
                           {activeFin.profitMargin > 0 ? '+' : ''}{activeFin.profitMargin}%
                         </div>
                         <div className="text-[10px] uppercase tracking-wider text-acars-muted mt-1">Profit Margin</div>
@@ -466,7 +467,7 @@ export function ReportsPage() {
                             </div>
                             <span className="text-xs font-mono font-semibold text-acars-text">{formatCurrencyFull(activeFin.revenue.cargoRevenue)}</span>
                           </div>
-                          <div className="h-2 rounded-full bg-acars-border/50 overflow-hidden">
+                          <div className="h-2 rounded-full bg-acars-border overflow-hidden">
                             <div
                               className="h-full rounded-full transition-all duration-700"
                               style={{
@@ -486,7 +487,7 @@ export function ReportsPage() {
                             </div>
                             <span className="text-xs font-mono font-semibold text-acars-text">{formatCurrencyFull(activeFin.revenue.passengerRevenue)}</span>
                           </div>
-                          <div className="h-2 rounded-full bg-acars-border/50 overflow-hidden">
+                          <div className="h-2 rounded-full bg-acars-border overflow-hidden">
                             <div
                               className="h-full rounded-full transition-all duration-700"
                               style={{
@@ -500,7 +501,7 @@ export function ReportsPage() {
                         </div>
 
                         {/* P&L Summary Line */}
-                        <div className="pt-2 border-t border-acars-border/50 space-y-1.5">
+                        <div className="pt-2 border-t border-acars-border space-y-1.5">
                           <div className="flex items-center justify-between">
                             <span className="text-[10px] text-acars-muted uppercase tracking-wider">Total Revenue</span>
                             <span className="text-xs font-mono font-semibold" style={{ color: COLORS.green }}>{formatCurrencyFull(activeFin.revenue.totalRevenue)}</span>
@@ -509,7 +510,7 @@ export function ReportsPage() {
                             <span className="text-[10px] text-acars-muted uppercase tracking-wider">Total Expenses</span>
                             <span className="text-xs font-mono font-semibold" style={{ color: COLORS.amber }}>-{formatCurrencyFull(activeFin.expenses.totalExpenses)}</span>
                           </div>
-                          <div className="flex items-center justify-between pt-1.5 border-t border-acars-border/50">
+                          <div className="flex items-center justify-between pt-1.5 border-t border-acars-border">
                             <span className="text-[10px] text-acars-text font-semibold uppercase tracking-wider">Net Profit</span>
                             <span className="text-xs font-mono font-bold" style={{ color: activeFin.netProfit >= 0 ? COLORS.green : COLORS.red }}>
                               {formatCurrencyFull(activeFin.netProfit)}
@@ -525,8 +526,9 @@ export function ReportsPage() {
 
             {/* ── Volume Chart ─────────────────────────────────── */}
             {report.volume.length > 0 && (
-              <div className="rounded-lg border border-acars-border bg-acars-panel p-4">
-                <h3 className="text-xs font-semibold text-acars-text mb-3 uppercase tracking-wider">
+              <div className="rounded-md border border-acars-border bg-acars-panel p-4">
+                <h3 className="text-xs font-semibold text-acars-text mb-4 uppercase tracking-wider flex items-center gap-2">
+                  <BarChart3 className="w-3.5 h-3.5 text-sky-400" />
                   {allTime ? 'Monthly Flight Volume' : 'Daily Flight Volume'}
                 </h3>
                 <ResponsiveContainer width="100%" height={180}>
@@ -557,7 +559,7 @@ export function ReportsPage() {
             {/* ── Tables Row ───────────────────────────────────── */}
             <div className="grid grid-cols-2 gap-3">
               {/* Top Routes */}
-              <div className="rounded-lg border border-acars-border bg-acars-panel p-4">
+              <div className="rounded-md border border-acars-border bg-acars-panel p-4">
                 <h3 className="text-xs font-semibold text-acars-text mb-3 uppercase tracking-wider">Top Routes</h3>
                 {report.topRoutes.length === 0 ? (
                   <p className="text-xs text-acars-muted">No route data</p>
@@ -572,12 +574,12 @@ export function ReportsPage() {
                     </thead>
                     <tbody>
                       {report.topRoutes.map((r, i) => (
-                        <tr key={`${r.depIcao}-${r.arrIcao}`} className="border-b border-acars-border/30">
+                        <tr key={`${r.depIcao}-${r.arrIcao}`} className="border-b border-acars-border">
                           <td className="py-1.5 text-acars-muted">{i + 1}</td>
                           <td className="py-1.5">
                             <div className="flex items-center gap-1.5">
                               <span className="font-mono font-semibold text-acars-text">{r.depIcao}</span>
-                              <ArrowRight className="w-3 h-3 text-acars-muted/50" />
+                              <ArrowRight className="w-3 h-3 text-sky-400/40" />
                               <span className="font-mono font-semibold text-acars-text">{r.arrIcao}</span>
                             </div>
                             {(r.depName || r.arrName) && (
@@ -586,7 +588,7 @@ export function ReportsPage() {
                               </div>
                             )}
                           </td>
-                          <td className="py-1.5 text-right font-mono font-semibold text-acars-cyan">{r.flights}</td>
+                          <td className="py-1.5 text-right font-mono font-semibold text-acars-text">{r.flights}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -595,7 +597,7 @@ export function ReportsPage() {
               </div>
 
               {/* Pilot Leaderboard */}
-              <div className="rounded-lg border border-acars-border bg-acars-panel p-4">
+              <div className="rounded-md border border-acars-border bg-acars-panel p-4">
                 <h3 className="text-xs font-semibold text-acars-text mb-3 uppercase tracking-wider">Pilot Leaderboard</h3>
                 {report.byPilot.length === 0 ? (
                   <p className="text-xs text-acars-muted">No pilot data</p>
@@ -612,7 +614,7 @@ export function ReportsPage() {
                     </thead>
                     <tbody>
                       {report.byPilot.map((p, i) => (
-                        <tr key={p.callsign} className="border-b border-acars-border/30">
+                        <tr key={p.callsign} className="border-b border-acars-border">
                           <td className="py-1.5 text-acars-muted">{i + 1}</td>
                           <td className="py-1.5">
                             <div className="font-semibold text-acars-text">{p.callsign}</div>

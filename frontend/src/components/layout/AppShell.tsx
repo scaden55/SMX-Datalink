@@ -10,9 +10,10 @@ interface AppShellProps {
   flights?: DispatchFlight[];
   selectedBidId?: number | null;
   onSelectFlight?: (bidId: number) => void;
+  ruleChips?: string[];
 }
 
-export function AppShell({ dispatchFlight, flights, selectedBidId, onSelectFlight }: AppShellProps) {
+export function AppShell({ dispatchFlight, flights, selectedBidId, onSelectFlight, ruleChips }: AppShellProps) {
   const viewMode = useUIStore((s) => s.viewMode);
   const sidebarOpen = useUIStore((s) => s.sidebarOpen);
 
@@ -27,11 +28,12 @@ export function AppShell({ dispatchFlight, flights, selectedBidId, onSelectFligh
             <FlightPlanPanel
               ofp={dispatchFlight?.ofpJson ?? null}
               formData={dispatchFlight?.flightPlanData ?? null}
+              ruleChips={ruleChips}
             />
           </div>
         )}
 
-        {/* Right panel — Map / Info tabs */}
+        {/* Right panel — Map / Info tabs (flush against divider, no gap) */}
         {(viewMode === 'map' || viewMode === 'both') && (
           <div className="flex-1 overflow-hidden">
             <InfoPanel />

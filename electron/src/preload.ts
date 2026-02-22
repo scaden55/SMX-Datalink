@@ -19,6 +19,7 @@ const SEND_CHANNELS = new Set<string>([
   IpcChannels.APP_MAXIMIZE,
   IpcChannels.UPDATE_CHECK,
   IpcChannels.UPDATE_INSTALL,
+  IpcChannels.DEVTOOLS_TOGGLE,
 ]);
 
 // Channels the renderer is allowed to invoke (request/response)
@@ -41,6 +42,7 @@ const RECEIVE_CHANNELS = new Set<string>([
   IpcChannels.UPDATE_DOWNLOADED,
   IpcChannels.UPDATE_PROGRESS,
   IpcChannels.UPDATE_ERROR,
+  IpcChannels.WINDOW_MAXIMIZED_CHANGE,
 ]);
 
 const electronAPI = {
@@ -67,6 +69,9 @@ const electronAPI = {
     ipcRenderer.invoke(IpcChannels.FILE_OPEN_DIALOG, options),
   saveFileDialog: (options?: Electron.SaveDialogOptions) =>
     ipcRenderer.invoke(IpcChannels.FILE_SAVE_DIALOG, options),
+
+  // --- Developer Tools ---
+  toggleDevTools: () => ipcRenderer.send(IpcChannels.DEVTOOLS_TOGGLE),
 
   // --- Auto-Updater ---
   checkForUpdates: () => ipcRenderer.send(IpcChannels.UPDATE_CHECK),

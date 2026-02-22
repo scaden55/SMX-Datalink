@@ -96,7 +96,10 @@ export function flightPlanRouter(): Router {
         return;
       }
 
-      const url = `${SIMBRIEF_FETCH_URL}?username=${encodeURIComponent(username)}&json=1`;
+      // SimBrief accepts ?username= for text usernames or ?userid= for numeric pilot IDs.
+      // Detect which one the user stored and use the correct parameter.
+      const paramName = /^\d+$/.test(username) ? 'userid' : 'username';
+      const url = `${SIMBRIEF_FETCH_URL}?${paramName}=${encodeURIComponent(username)}&json=1`;
       const upstream = await fetch(url);
       const json = await upstream.json();
       res.json(json);

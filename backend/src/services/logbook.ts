@@ -32,6 +32,10 @@ interface LogbookRow {
   reviewer_id: number | null;
   reviewed_at: string | null;
   review_notes: string | null;
+  // VATSIM tracking
+  vatsim_connected: number;
+  vatsim_callsign: string | null;
+  vatsim_cid: number | null;
   // Joined fields
   pilot_callsign?: string;
   pilot_name?: string;
@@ -81,6 +85,9 @@ export class LogbookService {
     if (filters?.dateTo) {
       conditions.push('l.actual_dep <= ?');
       params.push(filters.dateTo);
+    }
+    if (filters?.vatsimOnly) {
+      conditions.push('l.vatsim_connected = 1');
     }
 
     const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
@@ -166,6 +173,9 @@ export class LogbookService {
       reviewNotes: row.review_notes,
       reviewerCallsign: row.reviewer_callsign ?? null,
       reviewerName: row.reviewer_name ?? null,
+      vatsimConnected: row.vatsim_connected === 1,
+      vatsimCallsign: row.vatsim_callsign ?? null,
+      vatsimCid: row.vatsim_cid ?? null,
       pilotCallsign: row.pilot_callsign,
       pilotName: row.pilot_name,
       depName: row.dep_name,

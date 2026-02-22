@@ -1,4 +1,5 @@
 import { AirportCard } from './AirportCard';
+import { VatsimBadge } from '../common/VatsimBadge';
 import { useFlightPlanStore } from '../../stores/flightPlanStore';
 import type { DispatchFlight } from '@acars/shared';
 
@@ -28,11 +29,11 @@ export function SidebarPanel({ flights, selectedBidId, onSelectFlight }: Sidebar
               onClick={() => onSelectFlight(f.bid.id)}
               className={`w-full text-left rounded p-2 border transition-colors ${
                 isSelected
-                  ? 'border-acars-cyan bg-acars-cyan/10'
-                  : 'border-acars-border bg-acars-panel hover:border-acars-cyan/40'
+                  ? 'border-sky-400 bg-sky-500/10'
+                  : 'border-acars-border bg-acars-panel hover:border-sky-400/40'
               }`}
             >
-              <div className="text-[10px] font-bold text-acars-cyan">
+              <div className="text-[10px] font-bold text-sky-400">
                 {f.bid.flightNumber}
               </div>
               <div className="text-[9px] text-acars-text mt-0.5">
@@ -43,8 +44,9 @@ export function SidebarPanel({ flights, selectedBidId, onSelectFlight }: Sidebar
                   {f.pilot.callsign} - {f.pilot.name}
                 </div>
               )}
-              <div className="text-[8px] text-acars-muted mt-0.5">
-                {f.bid.aircraftType}
+              <div className="flex items-center gap-1.5 mt-0.5">
+                <span className="text-[8px] text-acars-muted">{f.bid.aircraftType}</span>
+                <VatsimBadge connected={f.vatsimConnected} callsign={f.vatsimCallsign} />
               </div>
             </button>
           );

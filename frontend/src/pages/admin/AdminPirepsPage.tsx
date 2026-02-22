@@ -22,6 +22,7 @@ import { AdminPageHeader } from '../../components/admin/AdminPageHeader';
 import { StatusBadge } from '../../components/admin/StatusBadge';
 import { ConfirmDialog } from '../../components/admin/ConfirmDialog';
 import { AdminTable, type ColumnDef } from '../../components/admin/AdminTable';
+import { VatsimBadge } from '../../components/common/VatsimBadge';
 import type { LogbookEntry, LogbookStatus, PirepReviewRequest, BulkPirepReviewRequest } from '@acars/shared';
 
 // ── Types ────────────────────────────────────────────────────────
@@ -61,23 +62,23 @@ function formatDateTime(iso: string): string {
 function landingRateColor(fpm: number | null): string {
   if (fpm == null) return 'text-acars-muted';
   const abs = Math.abs(fpm);
-  if (abs < 200) return 'text-acars-green';
-  if (abs <= 400) return 'text-acars-amber';
-  return 'text-acars-red';
+  if (abs < 200) return 'text-emerald-400';
+  if (abs <= 400) return 'text-amber-400';
+  return 'text-red-400';
 }
 
 function scoreColor(score: number | null): string {
   if (score == null) return 'text-acars-muted';
-  if (score >= 90) return 'text-acars-green';
-  if (score >= 75) return 'text-acars-amber';
-  return 'text-acars-red';
+  if (score >= 90) return 'text-emerald-400';
+  if (score >= 75) return 'text-amber-400';
+  return 'text-red-400';
 }
 
 const STATUS_BADGE_CONFIG: Record<string, { bg: string; text: string; dot: string; label?: string }> = {
-  pending:   { bg: 'bg-acars-amber/10', text: 'text-acars-amber', dot: 'bg-acars-amber' },
-  approved:  { bg: 'bg-acars-green/10', text: 'text-acars-green', dot: 'bg-acars-green' },
-  rejected:  { bg: 'bg-acars-red/10',   text: 'text-acars-red',   dot: 'bg-acars-red' },
-  diverted:  { bg: 'bg-acars-blue/10',  text: 'text-acars-blue',  dot: 'bg-acars-blue' },
+  pending:   { bg: 'bg-amber-500/10', text: 'text-amber-400', dot: 'bg-amber-500' },
+  approved:  { bg: 'bg-emerald-500/10', text: 'text-emerald-400', dot: 'bg-emerald-500' },
+  rejected:  { bg: 'bg-red-500/10',   text: 'text-red-400',   dot: 'bg-red-500' },
+  diverted:  { bg: 'bg-blue-500/10',  text: 'text-blue-400',  dot: 'bg-blue-500' },
   cancelled: { bg: 'bg-gray-500/10',    text: 'text-gray-400',    dot: 'bg-gray-400' },
 };
 
@@ -254,7 +255,7 @@ export function AdminPirepsPage() {
       render: (row) => (
         <div className="flex items-center gap-1.5">
           <span className="font-mono font-semibold text-acars-text">{row.depIcao}</span>
-          <ArrowRight className="w-3 h-3 text-acars-muted/50 shrink-0" />
+          <ArrowRight className="w-3 h-3 text-sky-400/40 shrink-0" />
           <span className="font-mono font-semibold text-acars-text">{row.arrIcao}</span>
         </div>
       ),
@@ -304,6 +305,14 @@ export function AdminPirepsPage() {
       ),
     },
     {
+      key: 'network',
+      header: 'Net',
+      width: '70px',
+      render: (row) => (
+        <VatsimBadge connected={row.vatsimConnected} callsign={row.vatsimCallsign} />
+      ),
+    },
+    {
       key: 'status',
       header: 'Status',
       width: '100px',
@@ -330,7 +339,7 @@ export function AdminPirepsPage() {
       render: (row) => (
         <button
           onClick={(e) => { e.stopPropagation(); openDetail(row); }}
-          className="text-acars-muted hover:text-acars-blue transition-colors"
+          className="text-acars-muted hover:text-blue-400 transition-colors"
           title="View details"
         >
           <ClipboardCheck className="w-3.5 h-3.5" />
@@ -348,10 +357,10 @@ export function AdminPirepsPage() {
         title="PIREP Review"
         subtitle="Review, approve, or reject pilot flight reports"
         stats={[
-          { label: 'Pending', value: pendingCount, color: 'text-acars-amber' },
+          { label: 'Pending', value: pendingCount, color: 'text-amber-400' },
           { label: 'Total', value: total },
-          { label: 'Approved %', value: total > 0 ? `${approvedPct}%` : '---', color: 'text-acars-green' },
-          { label: 'Rejected', value: rejectedCount, color: 'text-acars-red' },
+          { label: 'Approved %', value: total > 0 ? `${approvedPct}%` : '---', color: 'text-emerald-400' },
+          { label: 'Rejected', value: rejectedCount, color: 'text-red-400' },
         ]}
       />
 
@@ -363,13 +372,13 @@ export function AdminPirepsPage() {
             onClick={() => { setStatusTab(tab.key); setPage(1); setSelectedIds(new Set()); }}
             className={`relative px-4 py-2 text-xs font-medium transition-colors ${
               statusTab === tab.key
-                ? 'text-acars-blue border-b-2 border-acars-blue -mb-px'
+                ? 'text-blue-400 border-b-2 border-blue-400 -mb-px'
                 : 'text-acars-muted hover:text-acars-text'
             }`}
           >
             {tab.label}
             {tab.key === 'pending' && pendingCount > 0 && (
-              <span className="ml-1.5 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-acars-amber/20 text-acars-amber text-[10px] font-bold">
+              <span className="ml-1.5 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-amber-500/20 text-amber-400 text-[10px] font-bold">
                 {pendingCount}
               </span>
             )}
@@ -386,7 +395,7 @@ export function AdminPirepsPage() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search callsign, flight #, ICAO..."
-            className="w-full h-8 pl-8 pr-3 rounded-md border border-acars-border bg-acars-panel text-xs text-acars-text placeholder:text-acars-muted/50 outline-none focus:border-acars-blue transition-colors font-mono"
+            className="input-field text-xs font-mono h-8 pl-8"
           />
         </div>
 
@@ -396,7 +405,7 @@ export function AdminPirepsPage() {
             type="date"
             value={dateFrom}
             onChange={(e) => { setDateFrom(e.target.value); setPage(1); }}
-            className="h-8 px-2 rounded-md border border-acars-border bg-acars-panel text-xs text-acars-text outline-none focus:border-acars-blue transition-colors"
+            className="input-field text-xs h-8 px-2"
           />
         </div>
         <div className="flex items-center gap-2">
@@ -405,14 +414,14 @@ export function AdminPirepsPage() {
             type="date"
             value={dateTo}
             onChange={(e) => { setDateTo(e.target.value); setPage(1); }}
-            className="h-8 px-2 rounded-md border border-acars-border bg-acars-panel text-xs text-acars-text outline-none focus:border-acars-blue transition-colors"
+            className="input-field text-xs h-8 px-2"
           />
         </div>
 
         {(search || dateFrom || dateTo) && (
           <button
             onClick={() => { setSearch(''); setDateFrom(''); setDateTo(''); setPage(1); }}
-            className="h-8 px-3 rounded-md border border-acars-border bg-acars-panel text-xs text-acars-muted hover:text-acars-text flex items-center gap-1.5 transition-colors"
+            className="btn-secondary btn-sm flex items-center gap-1.5 h-8"
           >
             <X className="w-3 h-3" />
             Clear
@@ -422,7 +431,7 @@ export function AdminPirepsPage() {
 
       {/* ── Error message ───────────────────────────────────────── */}
       {error && (
-        <div className="px-3 py-2 rounded-md bg-acars-red/10 border border-acars-red/20 text-xs text-acars-red">
+        <div className="px-3 py-2 rounded-md bg-red-500/10 border border-red-400/20 text-xs text-red-400">
           {error}
         </div>
       )}
@@ -455,21 +464,21 @@ export function AdminPirepsPage() {
           <div className="flex items-center gap-2">
             <button
               onClick={() => setBulkConfirm({ action: 'approved' })}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-acars-green/20 text-acars-green text-xs font-medium hover:bg-acars-green/30 transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-emerald-500/20 text-emerald-400 text-xs font-medium hover:bg-emerald-500/30 transition-colors"
             >
               <CheckCircle2 className="w-3.5 h-3.5" />
               Approve All
             </button>
             <button
               onClick={() => setBulkConfirm({ action: 'rejected' })}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-acars-red/20 text-acars-red text-xs font-medium hover:bg-acars-red/30 transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-red-500/20 text-red-400 text-xs font-medium hover:bg-red-500/30 transition-colors"
             >
               <XCircle className="w-3.5 h-3.5" />
               Reject All
             </button>
             <button
               onClick={() => setSelectedIds(new Set())}
-              className="px-3 py-1.5 rounded-md border border-acars-border text-acars-muted text-xs hover:text-acars-text transition-colors"
+              className="btn-secondary btn-sm"
             >
               Clear
             </button>
@@ -501,9 +510,9 @@ export function AdminPirepsPage() {
           {/* Panel */}
           <div className="fixed top-0 right-0 bottom-0 w-96 bg-acars-panel border-l border-acars-border z-[9999] flex flex-col overflow-hidden shadow-2xl">
             {/* Panel header */}
-            <div className="flex items-center justify-between px-4 py-3 border-b border-acars-border bg-[#0d1117]">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-acars-border bg-acars-bg">
               <div className="flex items-center gap-2">
-                <ClipboardCheck className="w-4 h-4 text-acars-blue" />
+                <ClipboardCheck className="w-4 h-4 text-blue-400" />
                 <h2 className="text-sm font-semibold text-acars-text">PIREP Detail</h2>
               </div>
               <button
@@ -524,9 +533,12 @@ export function AdminPirepsPage() {
                 <div className="p-4 space-y-4">
                   {/* Status + Flight number */}
                   <div className="flex items-center justify-between">
-                    <span className="text-lg font-bold font-mono text-acars-text">
-                      {detailEntry.flightNumber || 'No Flight #'}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-lg font-bold font-mono text-acars-text">
+                        {detailEntry.flightNumber || 'No Flight #'}
+                      </span>
+                      <VatsimBadge connected={detailEntry.vatsimConnected} callsign={detailEntry.vatsimCallsign} />
+                    </div>
                     <StatusBadge status={detailEntry.status} config={STATUS_BADGE_CONFIG} />
                   </div>
 
@@ -543,7 +555,7 @@ export function AdminPirepsPage() {
                       </div>
                       <div className="flex-1 flex items-center justify-center">
                         <div className="h-px flex-1 bg-acars-border" />
-                        <ArrowRight className="w-4 h-4 text-acars-muted mx-2 shrink-0" />
+                        <ArrowRight className="w-4 h-4 text-sky-400/40 mx-2 shrink-0" />
                         <div className="h-px flex-1 bg-acars-border" />
                       </div>
                       <div className="text-center">
@@ -655,7 +667,7 @@ export function AdminPirepsPage() {
                   {/* Review section */}
                   {detailEntry.reviewerId != null && detailEntry.reviewedAt ? (
                     // ── Already reviewed ──────────────────────────
-                    <div className="panel p-3 space-y-1.5 border-acars-green/20">
+                    <div className="panel p-3 space-y-1.5 border-emerald-400/20">
                       <div className="flex items-center gap-2 text-xs text-acars-muted">
                         <CheckCircle2 className="w-3.5 h-3.5" />
                         <span className="uppercase tracking-wider font-medium">Review</span>
@@ -690,9 +702,9 @@ export function AdminPirepsPage() {
                             name="reviewStatus"
                             checked={reviewStatus === 'approved'}
                             onChange={() => setReviewStatus('approved')}
-                            className="text-acars-green focus:ring-acars-green"
+                            className="text-emerald-400 focus:ring-emerald-400"
                           />
-                          <span className="text-xs text-acars-green font-medium">Approve</span>
+                          <span className="text-xs text-emerald-400 font-medium">Approve</span>
                         </label>
                         <label className="flex items-center gap-2 cursor-pointer">
                           <input
@@ -700,9 +712,9 @@ export function AdminPirepsPage() {
                             name="reviewStatus"
                             checked={reviewStatus === 'rejected'}
                             onChange={() => setReviewStatus('rejected')}
-                            className="text-acars-red focus:ring-acars-red"
+                            className="text-red-400 focus:ring-red-400"
                           />
-                          <span className="text-xs text-acars-red font-medium">Reject</span>
+                          <span className="text-xs text-red-400 font-medium">Reject</span>
                         </label>
                       </div>
 
@@ -712,7 +724,7 @@ export function AdminPirepsPage() {
                         onChange={(e) => setReviewNotes(e.target.value)}
                         placeholder="Review notes (optional)..."
                         rows={3}
-                        className="w-full px-3 py-2 rounded-md border border-acars-border bg-acars-bg text-xs text-acars-text placeholder:text-acars-muted/50 outline-none focus:border-acars-blue transition-colors resize-none"
+                        className="input-field text-xs resize-none"
                       />
 
                       {/* Submit button */}
@@ -721,8 +733,8 @@ export function AdminPirepsPage() {
                         disabled={reviewSubmitting}
                         className={`w-full py-2 rounded-md text-xs font-medium text-white transition-colors disabled:opacity-50 ${
                           reviewStatus === 'approved'
-                            ? 'bg-acars-green hover:bg-acars-green/80'
-                            : 'bg-acars-red hover:bg-acars-red/80'
+                            ? 'bg-emerald-500 hover:bg-emerald-500/80'
+                            : 'bg-red-500 hover:bg-red-500/80'
                         }`}
                       >
                         {reviewSubmitting ? (

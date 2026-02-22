@@ -1,20 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { useFlightPlanStore } from '../../stores/flightPlanStore';
 
-const CLR_CLIMB = '#d2a8ff';   // purple/magenta
-const CLR_CRUISE = '#58a6ff';  // blue
-const CLR_DESCENT = '#3fb950'; // green
-
-/** Generate SVG polygon points string for a hexagon centered at (cx, cy). */
-function hexPoints(cx: number, cy: number, r: number): string {
-  return Array.from({ length: 6 }, (_, i) => {
-    const angle = (Math.PI / 3) * i - Math.PI / 2;
-    return `${cx + r * Math.cos(angle)},${cy + r * Math.sin(angle)}`;
-  }).join(' ');
+/** Resolve a CSS custom property from :root to its computed value. */
+function getCssVar(name: string): string {
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 }
 
-/** Find TOC/TOD indices by locating the cruise band (≥90% of max altitude). */
+/** Find TOC/TOD indices by locating the cruise band (>=90% of max altitude). */
 function findPhases(data: { altitude: number }[]) {
   const maxAlt = Math.max(...data.map((d) => d.altitude));
   const threshold = maxAlt * 0.90;
@@ -48,8 +41,8 @@ export function PlanningAltitudeProfile() {
 
   if (!hasSteps) {
     return (
-      <div className="h-[140px] border-t border-acars-border flex items-center justify-center bg-acars-panel">
-        <span className="text-[10px] text-acars-muted">Generate OFP to see altitude profile</span>
+      <div className="h-[130px] border-t flex items-center justify-center bg-acars-panel" style={{ borderColor: 'var(--border-panel)' }}>
+        <span className="text-[11px] text-acars-muted font-sans">Generate OFP to see altitude profile</span>
       </div>
     );
   }
@@ -63,141 +56,113 @@ export function PlanningAltitudeProfile() {
 
   const { tocIndex, todIndex } = findPhases(baseData);
 
-  // Build segmented data — each point gets climb/cruise/descent altitude.
-  // Overlap at TOC and TOD so segments connect seamlessly.
-  const data = baseData.map((d, i) => ({
+  const data = baseData.map((d) => ({
     ...d,
-    climbAlt:   i <= tocIndex ? d.altitude : undefined as number | undefined,
-    cruiseAlt:  i >= tocIndex && i <= todIndex ? d.altitude : undefined as number | undefined,
-    descentAlt: i >= todIndex ? d.altitude : undefined as number | undefined,
   }));
 
-  const maxLabels = 12;
+  const maxLabels = 14;
   const labelInterval = Math.max(1, Math.ceil(data.length / maxLabels));
 
   const maxAlt = Math.max(...baseData.map((d) => d.altitude));
   const yCeiling = maxAlt + 10000;
 
-  // Determine dot color per index
-  const dotColor = (i: number) =>
-    i < tocIndex ? CLR_CLIMB : i > todIndex ? CLR_DESCENT : CLR_CRUISE;
-
-  // Custom dot renderer — shape depends on waypoint type, color on phase
-  const renderDot = (props: any) => {
-    const { cx, cy, index } = props;
-    if (cx == null || cy == null) return null;
-    const color = dotColor(index);
-    const ft = data[index]?.fixType ?? 'wpt';
-    const r = 4;
-    const fill = '#161b22';
-    const sw = 1.5;
-
-    switch (ft) {
-      case 'apt': // Square — airport
-        return <rect key={`dot-${index}`} x={cx - r} y={cy - r} width={r * 2} height={r * 2} fill={fill} stroke={color} strokeWidth={sw} />;
-      case 'vor': // Hexagon — VOR
-        return <polygon key={`dot-${index}`} points={hexPoints(cx, cy, r)} fill={fill} stroke={color} strokeWidth={sw} />;
-      case 'ndb': // Circle — NDB
-        return <circle key={`dot-${index}`} cx={cx} cy={cy} r={r} fill={fill} stroke={color} strokeWidth={sw} />;
-      case 'ltlg': // Diamond — GPS/lat-lon
-        return <polygon key={`dot-${index}`} points={`${cx},${cy - r} ${cx + r},${cy} ${cx},${cy + r} ${cx - r},${cy}`} fill={fill} stroke={color} strokeWidth={sw} />;
-      default: // Triangle — intersection/fix/wpt/toc/tod
-        return <polygon key={`dot-${index}`} points={`${cx},${cy - r} ${cx + r},${cy + r} ${cx - r},${cy + r}`} fill={fill} stroke={color} strokeWidth={sw} />;
-    }
-  };
+  // Resolve CSS custom properties once for SVG/Recharts rendering
+  const clr = useMemo(() => ({
+    cruise:      getCssVar('--purple'),
+    bottom:      getCssVar('--purple-fill'),
+    border:      getCssVar('--border-section'),
+    textLabel:   getCssVar('--text-label'),
+    textPrimary: getCssVar('--text-primary'),
+    textSecondary: getCssVar('--text-secondary'),
+    bgTooltip:   getCssVar('--bg-tooltip'),
+    borderPanel: getCssVar('--border-panel'),
+    bgApp:       getCssVar('--bg-app'),
+  }), []);
 
   return (
-    <div className="h-[140px] min-w-0 border-t border-acars-border bg-acars-panel px-2 pt-1 overflow-hidden">
+    <div className="h-[130px] min-w-0 border-t bg-acars-panel overflow-hidden relative" style={{ borderColor: 'var(--border-panel)' }}>
+      {/* Waypoint ident labels along the top edge */}
       {canRender && (
-        <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={data} margin={{ top: 4, right: 8, bottom: 0, left: 0 }}>
-            <defs>
-              <linearGradient id="climbGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor={CLR_CLIMB} stopOpacity={0.25} />
-                <stop offset="95%" stopColor={CLR_CLIMB} stopOpacity={0} />
-              </linearGradient>
-              <linearGradient id="cruiseGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor={CLR_CRUISE} stopOpacity={0.25} />
-                <stop offset="95%" stopColor={CLR_CRUISE} stopOpacity={0} />
-              </linearGradient>
-              <linearGradient id="descentGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor={CLR_DESCENT} stopOpacity={0.25} />
-                <stop offset="95%" stopColor={CLR_DESCENT} stopOpacity={0} />
-              </linearGradient>
-            </defs>
-            <XAxis
-              dataKey="ident"
-              tick={{ fontSize: 8, fill: '#8b949e', fontFamily: 'monospace' }}
-              tickLine={false}
-              axisLine={{ stroke: '#30363d' }}
-              interval={labelInterval - 1}
-            />
-            <YAxis
-              domain={[0, yCeiling]}
-              tick={{ fontSize: 9, fill: '#8b949e' }}
-              tickLine={false}
-              axisLine={{ stroke: '#30363d' }}
-              tickFormatter={(v) => `FL${Math.round(v / 100)}`}
-              width={42}
-            />
-            <Tooltip
-              content={({ active, payload }) => {
-                if (!active || !payload?.length) return null;
-                const pt = payload[0]?.payload;
-                if (!pt) return null;
-                const idx = data.indexOf(pt);
-                const color = idx < tocIndex ? CLR_CLIMB : idx > todIndex ? CLR_DESCENT : CLR_CRUISE;
-                const alt = pt.altitude as number;
-                const dist = pt.distance as number;
-                return (
-                  <div style={{ background: '#161b22', border: '1px solid #30363d', borderRadius: 6, padding: '4px 8px', fontSize: 10 }}>
-                    <div style={{ color: '#8b949e' }}>{pt.ident} ({dist} nm)</div>
-                    <div style={{ color, fontWeight: 600 }}>{alt.toLocaleString()} ft</div>
-                  </div>
-                );
-              }}
-            />
-            <Area
-              type="monotone"
-              dataKey="climbAlt"
-              stroke={CLR_CLIMB}
-              strokeWidth={1.5}
-              fill="url(#climbGrad)"
-              dot={false}
-              activeDot={{ r: 5, fill: '#161b22', stroke: CLR_CLIMB, strokeWidth: 2 }}
-              connectNulls={false}
-            />
-            <Area
-              type="monotone"
-              dataKey="cruiseAlt"
-              stroke={CLR_CRUISE}
-              strokeWidth={1.5}
-              fill="url(#cruiseGrad)"
-              dot={false}
-              activeDot={{ r: 5, fill: '#161b22', stroke: CLR_CRUISE, strokeWidth: 2 }}
-              connectNulls={false}
-            />
-            <Area
-              type="monotone"
-              dataKey="descentAlt"
-              stroke={CLR_DESCENT}
-              strokeWidth={1.5}
-              fill="url(#descentGrad)"
-              dot={false}
-              activeDot={{ r: 5, fill: '#161b22', stroke: CLR_DESCENT, strokeWidth: 2 }}
-              connectNulls={false}
-            />
-            {/* Phase-colored dots rendered as a single layer on top */}
-            <Area
-              type="monotone"
-              dataKey="altitude"
-              stroke="none"
-              fill="none"
-              dot={renderDot}
-              activeDot={false}
-            />
-          </AreaChart>
-        </ResponsiveContainer>
+        <div className="absolute top-0 left-[42px] right-[8px] h-[16px] flex items-center z-10 pointer-events-none overflow-hidden">
+          {data.map((d, i) => {
+            if (i % labelInterval !== 0) return null;
+            const pct = data.length > 1 ? (i / (data.length - 1)) * 100 : 0;
+            return (
+              <span
+                key={i}
+                className="absolute text-[10px] font-mono whitespace-nowrap"
+                style={{
+                  color: 'var(--text-label)',
+                  left: `${pct}%`,
+                  transform: 'translateX(-50%)',
+                }}
+              >
+                {d.ident}
+              </span>
+            );
+          })}
+        </div>
+      )}
+
+      {canRender && (
+        <div className="pt-[16px] h-full">
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={data} margin={{ top: 2, right: 8, bottom: 0, left: 0 }}>
+              <defs>
+                <linearGradient id="altGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor={clr.cruise} stopOpacity={0.4} />
+                  <stop offset="100%" stopColor={clr.bottom} stopOpacity={0.1} />
+                </linearGradient>
+              </defs>
+              <XAxis
+                dataKey="ident"
+                tick={false}
+                tickLine={false}
+                axisLine={{ stroke: clr.border }}
+                height={0}
+              />
+              <YAxis
+                domain={[0, yCeiling]}
+                tick={{ fontSize: 10, fill: clr.textLabel }}
+                tickLine={false}
+                axisLine={{ stroke: clr.border }}
+                tickFormatter={(v) => `FL${Math.round(v / 100)}`}
+                width={42}
+              />
+              <Tooltip
+                content={({ active, payload }) => {
+                  if (!active || !payload?.length) return null;
+                  const pt = payload[0]?.payload;
+                  if (!pt) return null;
+                  const alt = pt.altitude as number;
+                  const dist = pt.distance as number;
+                  return (
+                    <div style={{
+                      background: clr.bgTooltip,
+                      border: `1px solid ${clr.borderPanel}`,
+                      borderRadius: 2,
+                      padding: '6px 10px',
+                      fontSize: 11,
+                    }}>
+                      <div style={{ color: clr.textPrimary, fontWeight: 600 }}>{pt.ident}</div>
+                      <div style={{ color: clr.textSecondary }}>Alt: {alt.toLocaleString()} ft</div>
+                      <div style={{ color: clr.textSecondary }}>Dist: {dist} nm</div>
+                    </div>
+                  );
+                }}
+              />
+              <Area
+                type="monotone"
+                dataKey="altitude"
+                stroke={clr.cruise}
+                strokeWidth={1.5}
+                fill="url(#altGrad)"
+                dot={false}
+                activeDot={{ r: 4, fill: clr.bgApp, stroke: clr.cruise, strokeWidth: 2 }}
+              />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
       )}
     </div>
   );

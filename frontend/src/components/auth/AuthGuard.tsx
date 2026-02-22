@@ -50,7 +50,7 @@ export function AuthGuard({ minRole }: AuthGuardProps) {
       return (
         <div className="flex items-center justify-center h-screen bg-acars-bg">
           <div className="panel p-6 max-w-sm text-center">
-            <p className="text-sm text-acars-red font-medium mb-2">Access Denied</p>
+            <p className="text-sm text-red-400 font-medium mb-2">Access Denied</p>
             <p className="text-xs text-acars-muted">
               You need <span className="capitalize">{minRole}</span> privileges to view this page.
             </p>

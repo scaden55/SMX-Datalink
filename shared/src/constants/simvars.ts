@@ -1,4 +1,22 @@
-import { SimConnectDataType } from 'node-simconnect';
+/**
+ * SimConnect data type enum — local copy to avoid pulling the
+ * native node-simconnect package into browser bundles.
+ * Values match node-simconnect's SimConnectDataType exactly.
+ */
+export const enum SimConnectDataType {
+  INVALID = 0,
+  INT32 = 1,
+  INT64 = 2,
+  FLOAT32 = 3,
+  FLOAT64 = 4,
+  STRING8 = 5,
+  STRING32 = 6,
+  STRING64 = 7,
+  STRING128 = 8,
+  STRING256 = 9,
+  STRING260 = 10,
+  STRINGV = 11,
+}
 
 export interface SimVarDefinition {
   name: string;

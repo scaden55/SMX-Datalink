@@ -1,12 +1,14 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { CalendarDays, Plane, Route, Radio, ArrowRight } from 'lucide-react';
 import { AppShell } from '../components/layout/AppShell';
 import { useAuthStore } from '../stores/authStore';
 import { useFlightPlanStore } from '../stores/flightPlanStore';
+import { useSocketStore } from '../stores/socketStore';
 import { DispatchEditProvider } from '../contexts/DispatchEditContext';
 import { api } from '../lib/api';
 import { stepsToWaypoints } from '../components/planning/simbrief-parser';
-import type { DispatchFlight, DispatchFlightsResponse, Airport } from '@acars/shared';
+import type { DispatchFlight, DispatchFlightsResponse, Airport, VatsimFlightStatus, RegulatoryAssessment } from '@acars/shared';
 
 export function DispatchPage() {
   const navigate = useNavigate();
@@ -17,12 +19,16 @@ export function DispatchPage() {
   const setProgress = useFlightPlanStore((s) => s.setProgress);
   const setOfp = useFlightPlanStore((s) => s.setOfp);
   const setAirports = useFlightPlanStore((s) => s.setAirports);
+  const setActiveBidId = useFlightPlanStore((s) => s.setActiveBidId);
   const airports = useFlightPlanStore((s) => s.airports);
+
+  const socket = useSocketStore((s) => s.socket);
 
   const [flights, setFlights] = useState<DispatchFlight[]>([]);
   const [selectedBidId, setSelectedBidId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [regulatoryAssessment, setRegulatoryAssessment] = useState<RegulatoryAssessment | null>(null);
 
   // Fetch active flights + airports on mount
   useEffect(() => {
@@ -51,8 +57,63 @@ export function DispatchPage() {
     return () => { cancelled = true; };
   }, [setAirports]);
 
+  // Listen for real-time VATSIM status changes
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleVatsimStatus = (status: VatsimFlightStatus) => {
+      setFlights((prev) =>
+        prev.map((f) =>
+          f.bid.id === status.bidId
+            ? { ...f, vatsimConnected: status.vatsimConnected, vatsimCallsign: status.vatsimCallsign }
+            : f,
+        ),
+      );
+    };
+
+    const handleFlightCompleted = (data: { bidId: number; logbookId: number }) => {
+      // Remove completed flight from dispatch list
+      setFlights((prev) => prev.filter((f) => f.bid.id !== data.bidId));
+    };
+
+    socket.on('dispatch:vatsimStatus', handleVatsimStatus);
+    socket.on('flight:completed', handleFlightCompleted);
+    return () => {
+      socket.off('dispatch:vatsimStatus', handleVatsimStatus);
+      socket.off('flight:completed', handleFlightCompleted);
+    };
+  }, [socket]);
+
   // When selected flight changes, populate the store
   const selectedFlight = flights.find((f) => f.bid.id === selectedBidId) ?? null;
+
+  useEffect(() => {
+    // Keep activeBidId in sync so TopBar can show End Flight button
+    setActiveBidId(selectedBidId);
+  }, [selectedBidId, setActiveBidId]);
+
+  // Fetch regulatory assessment when selected flight changes
+  useEffect(() => {
+    if (!selectedFlight) {
+      setRegulatoryAssessment(null);
+      return;
+    }
+
+    let cancelled = false;
+    const { bid, ofpJson } = selectedFlight;
+    const origin = ofpJson?.origin ?? bid.depIcao;
+    const dest = ofpJson?.destination ?? bid.arrIcao;
+    const cruiseAlt = ofpJson?.cruiseAltitude ?? 0;
+
+    const params = new URLSearchParams({ origin, dest });
+    if (cruiseAlt) params.set('cruiseAlt', String(cruiseAlt));
+
+    api.get<RegulatoryAssessment>(`/api/regulatory/assess?${params}`)
+      .then((data) => { if (!cancelled) setRegulatoryAssessment(data); })
+      .catch(() => { if (!cancelled) setRegulatoryAssessment(null); });
+
+    return () => { cancelled = true; };
+  }, [selectedFlight]);
 
   useEffect(() => {
     if (!selectedFlight) {
@@ -111,8 +172,9 @@ export function DispatchPage() {
       setFlightPlan(null);
       setProgress(null);
       setOfp(null);
+      setActiveBidId(null);
     };
-  }, [setFlightPlan, setProgress, setOfp]);
+  }, [setFlightPlan, setProgress, setOfp, setActiveBidId]);
 
   const handleSelectFlight = useCallback((bidId: number) => {
     setSelectedBidId(bidId);
@@ -123,7 +185,7 @@ export function DispatchPage() {
     return (
       <div className="flex h-full items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin h-8 w-8 border-2 border-acars-cyan border-t-transparent rounded-full mx-auto mb-3" />
+          <div className="animate-spin h-8 w-8 border-2 border-sky-400 border-t-transparent rounded-full mx-auto mb-3" />
           <p className="text-sm text-acars-muted">Loading dispatch flights...</p>
         </div>
       </div>
@@ -135,7 +197,7 @@ export function DispatchPage() {
     return (
       <div className="flex h-full items-center justify-center">
         <div className="text-center max-w-md">
-          <p className="text-sm text-acars-red mb-2">Failed to load dispatch data</p>
+          <p className="text-sm text-red-400 mb-2">Failed to load dispatch data</p>
           <p className="text-xs text-acars-muted">{error}</p>
         </div>
       </div>
@@ -146,23 +208,60 @@ export function DispatchPage() {
   if (flights.length === 0) {
     return (
       <div className="flex h-full items-center justify-center">
-        <div className="text-center max-w-md space-y-4">
-          <img src="/logos/chevron-light.png" alt="SMA" className="h-14 w-auto opacity-15 mx-auto" />
-          <h2 className="text-sm font-semibold text-acars-text">
+        <div className="text-center max-w-lg space-y-6">
+          <h2 className="text-base font-semibold text-acars-text">
             {isAdmin ? 'No Active Flights' : 'No Active Flight'}
           </h2>
-          <p className="text-xs text-acars-muted leading-relaxed">
-            {isAdmin
-              ? 'No pilots currently have flights with saved flight plans. Active flights will appear here once a pilot saves a flight plan from the Planning page.'
-              : 'You don\'t have an active flight with a saved flight plan. Place a bid on the Schedule page, then create a flight plan on the Planning page.'}
-          </p>
+
           {!isAdmin && (
-            <button
-              onClick={() => navigate('/schedule')}
-              className="inline-flex items-center gap-1 px-3 py-1.5 rounded text-xs font-medium bg-acars-cyan/10 text-acars-cyan border border-acars-cyan/20 hover:bg-acars-cyan/20 transition-colors"
-            >
-              Go to Schedule
-            </button>
+            <>
+              <div className="flex items-center justify-center gap-3">
+                <div className="flex flex-col items-center gap-1.5">
+                  <div className="w-10 h-10 rounded-md bg-amber-500/10 border border-amber-400/20 flex items-center justify-center">
+                    <CalendarDays className="w-5 h-5 text-amber-400" />
+                  </div>
+                  <span className="text-[10px] font-medium text-amber-400">Schedule</span>
+                </div>
+                <ArrowRight className="w-4 h-4 text-sky-400/40" />
+                <div className="flex flex-col items-center gap-1.5">
+                  <div className="w-10 h-10 rounded-md bg-blue-500/10 border border-blue-400/20 flex items-center justify-center">
+                    <Plane className="w-5 h-5 text-blue-400" />
+                  </div>
+                  <span className="text-[10px] font-medium text-blue-400">Bid</span>
+                </div>
+                <ArrowRight className="w-4 h-4 text-sky-400/40" />
+                <div className="flex flex-col items-center gap-1.5">
+                  <div className="w-10 h-10 rounded-md bg-blue-500/10 border border-blue-400/20 flex items-center justify-center">
+                    <Route className="w-5 h-5 text-blue-400" />
+                  </div>
+                  <span className="text-[10px] font-medium text-blue-400">Plan</span>
+                </div>
+                <ArrowRight className="w-4 h-4 text-sky-400/40" />
+                <div className="flex flex-col items-center gap-1.5">
+                  <div className="w-10 h-10 rounded-md bg-sky-500/10 border border-sky-400/20 flex items-center justify-center">
+                    <Radio className="w-5 h-5 text-sky-400" />
+                  </div>
+                  <span className="text-[10px] font-medium text-sky-400">Dispatch</span>
+                </div>
+              </div>
+
+              <p className="text-xs text-acars-muted leading-relaxed max-w-sm mx-auto">
+                Place a bid on the Schedule, create a flight plan on the Planning page, then your flight will appear here.
+              </p>
+
+              <button
+                onClick={() => navigate('/schedule')}
+                className="btn-primary btn-sm"
+              >
+                Go to Schedule
+              </button>
+            </>
+          )}
+
+          {isAdmin && (
+            <p className="text-xs text-acars-muted leading-relaxed max-w-sm mx-auto">
+              No pilots currently have flights with saved flight plans. Active flights will appear here once a pilot saves a flight plan from the Planning page.
+            </p>
           )}
         </div>
       </div>
@@ -181,6 +280,7 @@ export function DispatchPage() {
         flights={isAdmin ? flights : undefined}
         selectedBidId={selectedBidId}
         onSelectFlight={isAdmin ? handleSelectFlight : undefined}
+        ruleChips={regulatoryAssessment?.ruleChips}
       />
     </DispatchEditProvider>
   );

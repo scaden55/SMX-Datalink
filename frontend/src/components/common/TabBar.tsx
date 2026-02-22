@@ -11,12 +11,12 @@ interface TabBarProps<T extends string> {
 
 export function TabBar<T extends string>({ tabs, active, onChange }: TabBarProps<T>) {
   return (
-    <div className="flex border-b border-acars-border overflow-x-auto">
+    <div className="flex border-b border-acars-border">
       {tabs.map((tab) => (
         <button
           key={tab.id}
           onClick={() => onChange(tab.id)}
-          className={`whitespace-nowrap px-3 py-2 text-xs font-medium transition-colors ${
+          className={`whitespace-nowrap px-3 py-2 text-[11px] uppercase tracking-[0.08em] font-medium font-sans transition-colors ${
             active === tab.id ? 'tab-active' : 'tab-inactive'
           }`}
         >

@@ -5,11 +5,13 @@ import { api } from '../lib/api';
 import { useFlightPlanStore, emptyForm } from '../stores/flightPlanStore';
 import { useSimBrief } from '../components/planning/useSimBrief';
 import { useWeather } from '../components/planning/useWeather';
+import { useRoutePreview } from '../hooks/useRoutePreview';
 import { PlanningLeftPanel } from '../components/planning/PlanningLeftPanel';
 import { PlanningMap } from '../components/planning/PlanningMap';
 import { PlanningAltitudeProfile } from '../components/planning/PlanningAltitudeProfile';
 import { PlanningInfoPanel } from '../components/planning/PlanningInfoPanel';
 import { PlanningRightPanel } from '../components/planning/PlanningRightPanel';
+import { VatsimPrefile } from '../components/planning/VatsimPrefile';
 import { stepsToWaypoints } from '../components/planning/simbrief-parser';
 import type { MyBidsResponse, BidWithDetails, Airport, FleetAircraft } from '@acars/shared';
 
@@ -21,6 +23,7 @@ export function FlightPlanningPage() {
   const [simbriefError, setSimbriefError] = useState('');
   const [bids, setBids] = useState<BidWithDetails[]>([]);
   const [bidsLoaded, setBidsLoaded] = useState(false);
+  const [showVatsimPrefile, setShowVatsimPrefile] = useState(false);
   const redirectedRef = useRef(false);
 
   const {
@@ -39,10 +42,12 @@ export function FlightPlanningPage() {
     activeBidId,
     ofp,
     airports,
+    fleet,
   } = useFlightPlanStore();
 
-  const { fetchOFP, generateOFP } = useSimBrief();
-  useWeather(); // auto-fetches on form.origin/dest changes
+  const { generateOrFetchOFP } = useSimBrief();
+  useWeather();
+  useRoutePreview();
 
   // Load reference data + bids on mount
   useEffect(() => {
@@ -72,9 +77,6 @@ export function FlightPlanningPage() {
   }, [bidId, bidsLoaded, activeBidId, bids, navigate]);
 
   // Load bid data when bidId changes
-  // NOTE: activeBidId is intentionally NOT in the dep array — it's written here,
-  // not read as input. Including it caused a double-fire race condition where the
-  // second run hit the guard and skipped loading, leaving stale form data.
   useEffect(() => {
     if (!bidId) {
       setLoading(false);
@@ -88,7 +90,6 @@ export function FlightPlanningPage() {
       return;
     }
 
-    // Always clear + reload when the URL bid changes
     resetForm();
     setActiveBidId(numBidId);
     setLoading(true);
@@ -101,10 +102,8 @@ export function FlightPlanningPage() {
       .then((planRes) => {
         if (cancelled) return;
 
-        // Find bid from our already-fetched list
         const bid = bids.find((b) => b.id === numBidId);
 
-        // If saved plan exists, restore it (full replace, not merge)
         if (planRes?.flightPlanData) {
           replaceForm(planRes.flightPlanData);
           if (planRes.ofpJson) {
@@ -121,7 +120,6 @@ export function FlightPlanningPage() {
           }
           setPhase((planRes.phase as any) ?? 'planning');
         } else if (bid) {
-          // No saved plan — populate defaults from bid
           replaceForm({
             ...emptyForm,
             origin: bid.depIcao,
@@ -144,90 +142,78 @@ export function FlightPlanningPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps -- only re-run on URL bidId or bids list changes
   }, [bidId, bids]);
 
-  // Handle bid selection from dropdown
   const handleSelectBid = useCallback((id: number) => {
     navigate(`/planning/${id}`, { replace: true });
   }, [navigate]);
 
-  // Generate OFP via SimBrief API v1 popup
   const handleGenerate = useCallback(async () => {
     setSimbriefError('');
     try {
-      await generateOFP();
+      await generateOrFetchOFP();
     } catch (err: any) {
       setSimbriefError(err?.message ?? 'Failed to generate OFP');
     }
-  }, [generateOFP]);
+  }, [generateOrFetchOFP]);
 
-  // Manual fetch latest OFP
-  const handleFetchLatest = useCallback(async () => {
-    setSimbriefError('');
-    try {
-      await fetchOFP();
-    } catch (err: any) {
-      setSimbriefError(err?.message ?? 'Failed to fetch OFP');
-    }
-  }, [fetchOFP]);
-
-  // Save handler
-  const handleSave = useCallback(async () => {
+  const handleStartFlight = useCallback(async () => {
     if (!activeBidId) return;
     setSavingFlightPlan(true);
     try {
       await api.put(`/api/bids/${activeBidId}/flight-plan`, {
         ofpJson: ofp,
         flightPlanData: form,
-        phase: 'planning',
+        phase: 'active',
       });
+      navigate('/dispatch');
     } catch (err) {
-      console.error('[Planning] Save failed:', err);
+      console.error('[Planning] Start flight failed:', err);
     } finally {
       setSavingFlightPlan(false);
     }
-  }, [activeBidId, ofp, form, setSavingFlightPlan]);
+  }, [activeBidId, ofp, form, setSavingFlightPlan, navigate]);
 
-  // No bid in URL, bids loaded, no activeBidId to redirect to, and no bids at all → empty state
+  // Empty state — no bids
   if (!bidId && bidsLoaded && !activeBidId && bids.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center h-full text-center gap-5">
-        <img src="/logos/chevron-light.png" alt="SMA" className="h-14 w-auto opacity-15" />
-        <div className="flex items-center justify-center w-16 h-16 rounded-2xl bg-acars-magenta/10 border border-acars-magenta/20">
-          <Route className="w-8 h-8 text-acars-magenta" />
+      <div className="flex flex-col items-center justify-center h-full text-center gap-4 bg-acars-bg">
+        <img src="/logos/chevron-light.png" alt="SMA" className="h-12 w-auto opacity-10" />
+        <div className="flex items-center justify-center w-14 h-14 rounded-md bg-blue-500/10 border border-blue-400/20">
+          <Route className="w-7 h-7 text-blue-400" />
         </div>
         <div>
-          <h2 className="text-lg font-semibold text-acars-text">No Active Bids</h2>
-          <p className="text-sm text-acars-muted mt-1">Browse the schedule and place a bid to start planning a cargo run</p>
+          <h2 className="text-sm font-semibold text-acars-text font-sans">No Active Bids</h2>
+          <p className="text-[11px] text-acars-muted font-sans mt-1">Browse the schedule and place a bid to start planning a cargo run</p>
         </div>
         <button
           onClick={() => navigate('/schedule')}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-md text-xs font-semibold text-acars-amber bg-acars-amber/10 border border-acars-amber/20 hover:bg-acars-amber/20 transition-colors"
+          className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md text-[10px] font-semibold font-sans text-amber-400 bg-amber-500/10 border border-amber-400/20 hover:bg-amber-500/20 transition-colors"
         >
-          <CalendarDays className="w-4 h-4" /> Browse Schedule
+          <CalendarDays className="w-3.5 h-3.5" /> Browse Schedule
         </button>
       </div>
     );
   }
 
-  // No bid selected yet, but bids exist → show bid picker prompt
+  // Bid picker
   if (!bidId && bidsLoaded && !activeBidId && bids.length > 0) {
     return (
-      <div className="flex flex-col items-center justify-center h-full text-center gap-5">
-        <img src="/logos/chevron-light.png" alt="SMA" className="h-14 w-auto opacity-15" />
-        <div className="flex items-center justify-center w-16 h-16 rounded-2xl bg-acars-blue/10 border border-acars-blue/20">
-          <Route className="w-8 h-8 text-acars-blue" />
+      <div className="flex flex-col items-center justify-center h-full text-center gap-4 bg-acars-bg">
+        <img src="/logos/chevron-light.png" alt="SMA" className="h-12 w-auto opacity-10" />
+        <div className="flex items-center justify-center w-14 h-14 rounded-md bg-blue-500/10 border border-blue-400/20">
+          <Route className="w-7 h-7 text-blue-400" />
         </div>
         <div>
-          <h2 className="text-lg font-semibold text-acars-text">Select a Bid to Plan</h2>
-          <p className="text-sm text-acars-muted mt-1">Choose one of your active bids</p>
+          <h2 className="text-sm font-semibold text-acars-text font-sans">Select a Bid to Plan</h2>
+          <p className="text-[11px] text-acars-muted font-sans mt-1">Choose one of your active bids</p>
         </div>
-        <div className="w-80">
+        <div className="w-72">
           <select
             onChange={(e) => {
               const id = parseInt(e.target.value, 10);
               if (!isNaN(id)) handleSelectBid(id);
             }}
             defaultValue=""
-            className="w-full rounded bg-acars-panel border border-acars-border text-acars-text text-sm px-3 py-2.5 outline-none focus:border-acars-blue transition-colors cursor-pointer"
+            className="select-field h-auto py-2 text-[11px]"
           >
             <option value="" disabled>Select a bid...</option>
             {bids.map((b) => (
@@ -241,23 +227,23 @@ export function FlightPlanningPage() {
     );
   }
 
-  // Still loading initial data
+  // Loading
   if (loading || !bidsLoaded) {
     return (
-      <div className="flex items-center justify-center h-full">
-        <Loader2 className="w-6 h-6 text-acars-blue animate-spin" />
+      <div className="flex items-center justify-center h-full bg-acars-bg">
+        <Loader2 className="w-5 h-5 text-blue-400 animate-spin" />
       </div>
     );
   }
 
-  // Error state
+  // Error
   if (error) {
     return (
-      <div className="flex flex-col items-center justify-center h-full text-center gap-3">
-        <p className="text-sm text-acars-red">{error}</p>
+      <div className="flex flex-col items-center justify-center h-full text-center gap-3 bg-acars-bg">
+        <p className="text-[11px] text-red-400 font-sans">{error}</p>
         <button
           onClick={() => navigate('/schedule')}
-          className="text-xs text-acars-blue hover:underline"
+          className="text-[10px] text-blue-400 hover:underline font-sans"
         >
           Back to Schedule
         </button>
@@ -266,18 +252,17 @@ export function FlightPlanningPage() {
   }
 
   return (
-    <div className="flex h-full overflow-hidden">
+    <div className="flex h-full overflow-hidden bg-acars-bg planning-tnum">
       {/* Left: Form */}
       <PlanningLeftPanel
         onGenerate={handleGenerate}
-        onFetchLatest={handleFetchLatest}
-        onSave={handleSave}
+        onStartFlight={handleStartFlight}
       />
 
       {/* Center: Map + Profile + Info */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {simbriefError && (
-          <div className="px-4 py-2 bg-acars-red/10 border-b border-acars-red/20 text-[11px] text-acars-red">
+          <div className="px-3 py-1.5 bg-red-500/10 border-b border-red-400/20 text-[11px] text-red-400 font-sans">
             {simbriefError}
           </div>
         )}
@@ -288,8 +273,30 @@ export function FlightPlanningPage() {
         <PlanningInfoPanel />
       </div>
 
-      {/* Right: Bid selector + phase */}
-      <PlanningRightPanel bids={bids} onSelectBid={handleSelectBid} />
+      {/* VATSIM Prefile slide-over */}
+      {showVatsimPrefile && (
+        <>
+          <div
+            className="fixed inset-0 bg-black/30 z-[9998]"
+            onClick={() => setShowVatsimPrefile(false)}
+          />
+          <div className="fixed top-0 right-0 bottom-0 w-80 bg-acars-panel border-l border-acars-border z-[9999] shadow-2xl">
+            <VatsimPrefile
+              form={form}
+              ofp={ofp}
+              aircraft={fleet.find(a => a.icaoType === form.aircraftType) ?? null}
+              onClose={() => setShowVatsimPrefile(false)}
+            />
+          </div>
+        </>
+      )}
+
+      {/* Right: Bid selector + VATSIM file */}
+      <PlanningRightPanel
+        bids={bids}
+        onSelectBid={handleSelectBid}
+        onFileVatsim={() => setShowVatsimPrefile(true)}
+      />
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react';
+import { type ReactNode } from 'react';
 
 interface CollapsibleSectionProps {
   title: string;
@@ -6,42 +6,56 @@ interface CollapsibleSectionProps {
   icon?: ReactNode;
   defaultOpen?: boolean;
   children: ReactNode;
+  /** Status indicator dot: green = data present, amber = warning, grey = empty */
+  status?: 'green' | 'amber' | 'grey';
+  /** Use checkmark icon instead of dot for completed status */
+  useCheckmark?: boolean;
+}
+
+const STATUS_COLORS = {
+  green: 'var(--status-green)',
+  amber: 'var(--status-amber)',
+  grey: 'var(--border-panel)',
+};
+
+function CheckmarkIcon() {
+  return (
+    <svg className="w-3 h-3 shrink-0" style={{ color: 'var(--status-green)' }} viewBox="0 0 16 16" fill="none">
+      <circle cx="8" cy="8" r="7" stroke="currentColor" strokeWidth="1.5" />
+      <path d="M5 8l2 2 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
 }
 
 export function CollapsibleSection({
   title,
-  summary,
   icon,
-  defaultOpen = false,
   children,
+  status = 'grey',
+  useCheckmark = false,
 }: CollapsibleSectionProps) {
-  const [open, setOpen] = useState(defaultOpen);
-
   return (
-    <div className="border-b border-acars-border">
-      <button
-        onClick={() => setOpen(!open)}
-        className="flex w-full items-center justify-between px-3 py-2 text-left hover:bg-acars-bg/50 transition-colors"
-      >
-        <div className="flex items-center gap-2">
-          {icon && <span className="text-acars-blue">{icon}</span>}
-          <span className="text-xs font-semibold text-acars-text">{title}</span>
-          {!open && summary && (
-            <span className="ml-2 text-[11px] text-acars-muted truncate max-w-[280px]">
-              {summary}
-            </span>
-          )}
-        </div>
-        <svg
-          className={`h-3.5 w-3.5 text-acars-muted transition-transform ${open ? 'rotate-180' : ''}`}
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-        </svg>
-      </button>
-      {open && <div className="px-3 pb-3">{children}</div>}
+    <div className="border-b" style={{ borderColor: 'var(--border-panel)' }}>
+      {/* Section header — static, no toggle */}
+      <div className="flex items-center gap-2 px-3 h-8">
+        {/* Status indicator */}
+        {useCheckmark && status === 'green' ? (
+          <CheckmarkIcon />
+        ) : (
+          <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: STATUS_COLORS[status] }} />
+        )}
+
+        {/* Icon (optional) */}
+        {icon && <span className="text-blue-400 shrink-0">{icon}</span>}
+
+        {/* Title */}
+        <span className="text-[10px] uppercase tracking-[0.06em] font-medium" style={{ color: 'var(--text-label)' }}>
+          {title}
+        </span>
+      </div>
+
+      {/* Content — always visible */}
+      <div className="px-3 pb-3 pt-1">{children}</div>
     </div>
   );
 }

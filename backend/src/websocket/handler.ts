@@ -1,11 +1,13 @@
 import type { Server as HttpServer } from 'http';
 import { Server as SocketServer, type Socket } from 'socket.io';
-import type { ServerToClientEvents, ClientToServerEvents, AuthPayload } from '@acars/shared';
+import type { ServerToClientEvents, ClientToServerEvents, AuthPayload, VatsimDataSnapshot, VatsimFlightStatus } from '@acars/shared';
 import type { TelemetryService } from '../services/telemetry.js';
 import type { ISimConnectManager } from '../simconnect/types.js';
-import { generateMockSnapshot } from '../services/mock-data.js';
+import type { VatsimService } from '../services/vatsim.js';
+import type { FlightEventTracker } from '../services/flight-event-tracker.js';
 import { AuthService } from '../services/auth.js';
 import { MessageService } from '../services/messages.js';
+import { TrackService } from '../services/track.js';
 import { getDb } from '../db/index.js';
 import { config } from '../config.js';
 
@@ -26,6 +28,8 @@ export function setupWebSocket(
   httpServer: HttpServer,
   telemetry: TelemetryService,
   simConnect: ISimConnectManager,
+  vatsimService?: VatsimService,
+  flightEventTracker?: FlightEventTracker,
 ): SocketServer<ClientToServerEvents, ServerToClientEvents> {
   const io = new SocketServer<ClientToServerEvents, ServerToClientEvents>(httpServer, {
     cors: {
@@ -37,15 +41,84 @@ export function setupWebSocket(
   let broadcastInterval: ReturnType<typeof setInterval> | null = null;
   let phaseCheckInterval: ReturnType<typeof setInterval> | null = null;
   const telemetrySubscribers = new Set<string>();
+  const vatsimSubscribers = new Set<string>();
+  const trackService = new TrackService();
+
+  // Cache the active bid query for track recording
+  const findActiveBid = () =>
+    getDb().prepare(
+      `SELECT ab.id AS bid_id, ab.user_id AS pilot_id
+       FROM active_bids ab
+       WHERE ab.flight_plan_phase = 'active'
+       LIMIT 1`,
+    );
+
+  // Wire up VATSIM broadcast callbacks
+  if (vatsimService) {
+    vatsimService.setOnUpdate((snapshot: VatsimDataSnapshot) => {
+      if (vatsimSubscribers.size > 0) {
+        const event = {
+          pilots: snapshot.pilots,
+          controllers: snapshot.controllers,
+          atis: snapshot.atis,
+          updatedAt: snapshot.updatedAt,
+        };
+        for (const sid of vatsimSubscribers) {
+          io.to(sid).emit('vatsim:update', event);
+        }
+      }
+    });
+
+    vatsimService.setOnFlightStatus((status: VatsimFlightStatus) => {
+      io.emit('dispatch:vatsimStatus', status);
+    });
+  }
 
   function startBroadcast(): void {
     if (broadcastInterval) return;
     console.log('[WebSocket] Starting telemetry broadcast');
     broadcastInterval = setInterval(() => {
       if (simConnect.connected) {
-        io.emit('telemetry:update', telemetry.getSnapshot());
-      } else {
-        io.emit('telemetry:update', generateMockSnapshot());
+        const snapshot = telemetry.getSnapshot();
+        io.emit('telemetry:update', snapshot);
+
+        // Track airborne VS for landing rate capture
+        if (flightEventTracker) {
+          flightEventTracker.updateAirborneVs(
+            snapshot.aircraft.position.verticalSpeed,
+            snapshot.flight.simOnGround,
+          );
+        }
+
+        // Record track point for active flight (throttled inside TrackService)
+        try {
+          const bid = findActiveBid().get() as { bid_id: number; pilot_id: number } | undefined;
+          if (bid) {
+            const pos = snapshot.aircraft.position;
+            const recorded = trackService.record(
+              bid.pilot_id, bid.bid_id,
+              pos.latitude, pos.longitude, pos.altitude,
+              pos.heading, pos.groundSpeed, pos.verticalSpeed,
+            );
+            // Emit real-time track point to dispatch room subscribers
+            if (recorded) {
+              io.to(`bid:${bid.bid_id}`).emit('track:point', {
+                bidId: bid.bid_id,
+                point: {
+                  lat: pos.latitude,
+                  lon: pos.longitude,
+                  altitudeFt: Math.round(pos.altitude),
+                  heading: Math.round(pos.heading),
+                  speedKts: Math.round(pos.groundSpeed),
+                  vsFpm: Math.round(pos.verticalSpeed),
+                  recordedAt: Date.now(),
+                },
+              });
+            }
+          }
+        } catch {
+          // Track recording is non-critical — don't break broadcast
+        }
       }
     }, config.simconnect.pollInterval);
 
@@ -92,6 +165,12 @@ export function setupWebSocket(
           current: flightData.phase,
           timestamp: new Date().toISOString(),
         });
+
+        // Capture flight events on phase transitions
+        if (flightEventTracker) {
+          const fuelLbs = telemetry.getFuelData().totalQuantityWeight;
+          flightEventTracker.onPhaseChange(previous, flightData.phase, fuelLbs);
+        }
       }
     }
   };
@@ -178,9 +257,19 @@ export function setupWebSocket(
       io.to(`bid:${data.bidId}`).emit('acars:message', message);
     });
 
+    // VATSIM live data subscription
+    socket.on('vatsim:subscribe', () => {
+      vatsimSubscribers.add(socket.id);
+    });
+
+    socket.on('vatsim:unsubscribe', () => {
+      vatsimSubscribers.delete(socket.id);
+    });
+
     socket.on('disconnect', () => {
       console.log(`[WebSocket] Client disconnected: ${socket.id}`);
       telemetrySubscribers.delete(socket.id);
+      vatsimSubscribers.delete(socket.id);
       stopBroadcast();
     });
   });

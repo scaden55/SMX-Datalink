@@ -32,14 +32,14 @@ import type {
 // ── Status badge configs ────────────────────────────────────────
 
 const ROLE_BADGE_CONFIG: Record<string, { bg: string; text: string; dot: string }> = {
-  admin:      { bg: 'bg-acars-amber/10', text: 'text-acars-amber', dot: 'bg-acars-amber' },
-  dispatcher: { bg: 'bg-acars-blue/10',  text: 'text-acars-blue',  dot: 'bg-acars-blue' },
-  pilot:      { bg: 'bg-emerald-500/10', text: 'text-emerald-400', dot: 'bg-emerald-400' },
+  admin:      { bg: 'bg-amber-500/10', text: 'text-amber-400', dot: 'bg-amber-500' },
+  dispatcher: { bg: 'bg-blue-500/10',  text: 'text-blue-400',  dot: 'bg-blue-500' },
+  pilot:      { bg: 'bg-emerald-500/10', text: 'text-emerald-400', dot: 'bg-emerald-500' },
 };
 
 const STATUS_BADGE_CONFIG: Record<string, { bg: string; text: string; dot: string }> = {
-  active:    { bg: 'bg-acars-green/10', text: 'text-acars-green', dot: 'bg-acars-green' },
-  suspended: { bg: 'bg-acars-red/10',   text: 'text-acars-red',   dot: 'bg-acars-red' },
+  active:    { bg: 'bg-emerald-500/10', text: 'text-emerald-400', dot: 'bg-emerald-500' },
+  suspended: { bg: 'bg-red-500/10',   text: 'text-red-400',   dot: 'bg-red-500' },
   deleted:   { bg: 'bg-gray-500/10',    text: 'text-gray-400',    dot: 'bg-gray-400' },
 };
 
@@ -47,11 +47,9 @@ const STATUS_BADGE_CONFIG: Record<string, { bg: string; text: string; dot: strin
 
 const PAGE_SIZE = 25;
 
-const INPUT_CLS =
-  'w-full px-3 py-2 text-xs rounded-md border border-acars-border bg-[#0d1117] text-acars-text placeholder:text-acars-muted/50 focus:outline-none focus:border-acars-blue/50 focus:ring-1 focus:ring-acars-blue/20';
+const INPUT_CLS = 'input-field text-xs';
 
-const SELECT_CLS =
-  'px-3 py-2 text-xs rounded-md border border-acars-border bg-[#0d1117] text-acars-text focus:outline-none focus:border-acars-blue/50 focus:ring-1 focus:ring-acars-blue/20 cursor-pointer';
+const SELECT_CLS = 'select-field';
 
 // ── Helpers ─────────────────────────────────────────────────────
 
@@ -164,15 +162,15 @@ function UserFormModal({
   return (
     <div className="fixed inset-0 z-[10000] flex items-center justify-center">
       <div className="absolute inset-0 bg-black/60" onClick={loading ? undefined : onClose} />
-      <div className="relative w-full max-w-lg mx-4 rounded-lg border border-acars-border bg-acars-panel shadow-2xl">
+      <div className="relative w-full max-w-lg mx-4 rounded-md border border-acars-border bg-acars-panel shadow-2xl">
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-acars-border">
           <div className="flex items-center gap-2.5">
-            <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-acars-blue/10">
+            <div className="flex items-center justify-center w-8 h-8 rounded-md bg-blue-500/10">
               {mode === 'create' ? (
-                <Plus className="w-4 h-4 text-acars-blue" />
+                <Plus className="w-4 h-4 text-blue-400" />
               ) : (
-                <Pencil className="w-4 h-4 text-acars-blue" />
+                <Pencil className="w-4 h-4 text-blue-400" />
               )}
             </div>
             <div>
@@ -192,7 +190,7 @@ function UserFormModal({
         {/* Form */}
         <form onSubmit={handleSubmit} className="px-5 py-4 space-y-4">
           {error && (
-            <div className="px-3 py-2 rounded-md border border-acars-red/30 bg-acars-red/5 text-[11px] text-acars-red">
+            <div className="px-3 py-2 rounded-md border border-red-400/30 bg-red-500/5 text-[11px] text-red-400">
               {error}
             </div>
           )}
@@ -262,7 +260,7 @@ function UserFormModal({
                 type="button"
                 onClick={handleGenerate}
                 title="Generate random password"
-                className="shrink-0 px-2.5 py-2 rounded border border-acars-border bg-[#161b22] text-acars-muted hover:text-acars-text hover:bg-[#1c2333] transition-colors"
+                className="btn-secondary btn-sm shrink-0 px-2.5 py-2"
               >
                 <RefreshCw className="w-3.5 h-3.5" />
               </button>
@@ -271,9 +269,9 @@ function UserFormModal({
                 onClick={handleCopyPassword}
                 title="Copy password"
                 disabled={!form.password}
-                className="shrink-0 px-2.5 py-2 rounded border border-acars-border bg-[#161b22] text-acars-muted hover:text-acars-text hover:bg-[#1c2333] transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                className="btn-secondary btn-sm shrink-0 px-2.5 py-2 disabled:opacity-30 disabled:cursor-not-allowed"
               >
-                {copied ? <Check className="w-3.5 h-3.5 text-acars-green" /> : <Copy className="w-3.5 h-3.5" />}
+                {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
               </button>
             </div>
           </div>
@@ -312,14 +310,14 @@ function UserFormModal({
               type="button"
               onClick={onClose}
               disabled={loading}
-              className="px-3 py-1.5 text-xs font-medium text-acars-muted hover:text-acars-text border border-acars-border rounded-md hover:bg-[#161b22] transition-colors disabled:opacity-50"
+              className="btn-secondary btn-sm disabled:opacity-50"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="flex items-center gap-1.5 px-4 py-1.5 text-xs font-medium text-white bg-acars-blue hover:bg-acars-blue/80 rounded-md transition-colors disabled:opacity-50"
+              className="flex items-center gap-1.5 px-4 py-1.5 text-xs font-medium text-white bg-blue-500 hover:bg-blue-500/80 rounded-md transition-colors disabled:opacity-50"
             >
               {loading && <Loader2 className="w-3 h-3 animate-spin" />}
               {mode === 'create' ? 'Create User' : 'Save Changes'}
@@ -570,7 +568,7 @@ export function AdminUsersPage() {
         header: 'Callsign',
         sortable: true,
         width: '100px',
-        render: (row) => <span className="font-mono font-semibold text-acars-blue">{row.callsign}</span>,
+        render: (row) => <span className="font-mono font-semibold text-blue-400">{row.callsign}</span>,
       },
       {
         key: 'name',
@@ -635,7 +633,7 @@ export function AdminUsersPage() {
             <button
               onClick={() => openEditModal(row)}
               title="Edit user"
-              className="p-1.5 rounded text-acars-muted hover:text-acars-blue hover:bg-acars-blue/10 transition-colors"
+              className="p-1.5 rounded text-acars-muted hover:text-blue-400 hover:bg-blue-500/10 transition-colors"
             >
               <Pencil className="w-3.5 h-3.5" />
             </button>
@@ -644,7 +642,7 @@ export function AdminUsersPage() {
               <button
                 onClick={() => setConfirmState({ type: 'suspend', user: row })}
                 title="Suspend user"
-                className="p-1.5 rounded text-acars-muted hover:text-acars-amber hover:bg-acars-amber/10 transition-colors"
+                className="p-1.5 rounded text-acars-muted hover:text-amber-400 hover:bg-amber-500/10 transition-colors"
               >
                 <UserX className="w-3.5 h-3.5" />
               </button>
@@ -652,7 +650,7 @@ export function AdminUsersPage() {
               <button
                 onClick={() => setConfirmState({ type: 'reactivate', user: row })}
                 title="Reactivate user"
-                className="p-1.5 rounded text-acars-muted hover:text-acars-green hover:bg-acars-green/10 transition-colors"
+                className="p-1.5 rounded text-acars-muted hover:text-emerald-400 hover:bg-emerald-500/10 transition-colors"
               >
                 <UserCheck className="w-3.5 h-3.5" />
               </button>
@@ -662,7 +660,7 @@ export function AdminUsersPage() {
               <button
                 onClick={() => setConfirmState({ type: 'impersonate', user: row })}
                 title="Impersonate user"
-                className="p-1.5 rounded text-acars-muted hover:text-acars-text hover:bg-[#1c2333] transition-colors"
+                className="p-1.5 rounded text-acars-muted hover:text-acars-text hover:bg-acars-hover transition-colors"
               >
                 <Eye className="w-3.5 h-3.5" />
               </button>
@@ -672,7 +670,7 @@ export function AdminUsersPage() {
               <button
                 onClick={() => setConfirmState({ type: 'delete', user: row })}
                 title="Delete user"
-                className="p-1.5 rounded text-acars-muted hover:text-acars-red hover:bg-acars-red/10 transition-colors"
+                className="p-1.5 rounded text-acars-muted hover:text-red-400 hover:bg-red-500/10 transition-colors"
               >
                 <Trash2 className="w-3.5 h-3.5" />
               </button>
@@ -695,14 +693,14 @@ export function AdminUsersPage() {
         subtitle="Manage pilot accounts, roles, and status"
         stats={[
           { label: 'Total Users', value: statCounts.total, color: 'text-acars-text' },
-          { label: 'Active', value: statCounts.active, color: 'text-acars-green' },
-          { label: 'Suspended', value: statCounts.suspended, color: 'text-acars-red' },
-          { label: 'Admins', value: statCounts.admins, color: 'text-acars-amber' },
+          { label: 'Active', value: statCounts.active, color: 'text-emerald-400' },
+          { label: 'Suspended', value: statCounts.suspended, color: 'text-red-400' },
+          { label: 'Admins', value: statCounts.admins, color: 'text-amber-400' },
         ]}
         actions={
           <button
             onClick={openCreateModal}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-acars-blue hover:bg-acars-blue/80 rounded-md transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-blue-500 hover:bg-blue-500/80 rounded-md transition-colors"
           >
             <Plus className="w-3.5 h-3.5" />
             Create User
@@ -712,7 +710,7 @@ export function AdminUsersPage() {
 
       {/* ── Error banner ─────────────────────────────────── */}
       {error && (
-        <div className="flex items-center justify-between px-4 py-2.5 rounded-lg border border-acars-red/30 bg-acars-red/5 text-xs text-acars-red">
+        <div className="flex items-center justify-between px-4 py-2.5 rounded-md border border-red-400/30 bg-red-500/5 text-xs text-red-400">
           <span>{error}</span>
           <button onClick={() => setError('')} className="p-0.5 hover:text-white transition-colors">
             <X className="w-3.5 h-3.5" />

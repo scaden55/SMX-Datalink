@@ -5,9 +5,10 @@ import 'leaflet/dist/leaflet.css';
 import type { Waypoint } from '@acars/shared';
 import { useFlightPlanStore } from '../../stores/flightPlanStore';
 
-const CLR_CLIMB = '#d2a8ff';
-const CLR_CRUISE = '#58a6ff';
-const CLR_DESCENT = '#3fb950';
+/** Resolve a CSS custom property from :root to its computed value (e.g. '#00cece'). */
+function getCssVar(name: string): string {
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+}
 
 function FitToRoute({ positions }: { positions: [number, number][] }) {
   const map = useMap();
@@ -29,33 +30,32 @@ function MapInvalidator() {
 }
 
 const SZ = 10;
-const FILL = '#161b22';
 const SW = 1.5;
 
-function shapeIcon(wpType: Waypoint['type'], color: string): L.DivIcon {
+function shapeIcon(wpType: Waypoint['type'], color: string, fill: string): L.DivIcon {
   let svg: string;
   const half = SZ / 2;
 
   switch (wpType) {
     case 'airport':
-      svg = `<rect x="1" y="1" width="${SZ - 2}" height="${SZ - 2}" fill="${FILL}" stroke="${color}" stroke-width="${SW}"/>`;
+      svg = `<rect x="1" y="1" width="${SZ - 2}" height="${SZ - 2}" fill="${fill}" stroke="${color}" stroke-width="${SW}"/>`;
       break;
     case 'vor': {
       const pts = Array.from({ length: 6 }, (_, i) => {
         const a = (Math.PI / 3) * i - Math.PI / 2;
         return `${half + (half - 1) * Math.cos(a)},${half + (half - 1) * Math.sin(a)}`;
       }).join(' ');
-      svg = `<polygon points="${pts}" fill="${FILL}" stroke="${color}" stroke-width="${SW}"/>`;
+      svg = `<polygon points="${pts}" fill="${fill}" stroke="${color}" stroke-width="${SW}"/>`;
       break;
     }
     case 'ndb':
-      svg = `<circle cx="${half}" cy="${half}" r="${half - 1}" fill="${FILL}" stroke="${color}" stroke-width="${SW}"/>`;
+      svg = `<circle cx="${half}" cy="${half}" r="${half - 1}" fill="${fill}" stroke="${color}" stroke-width="${SW}"/>`;
       break;
     case 'gps':
-      svg = `<polygon points="${half},1 ${SZ - 1},${half} ${half},${SZ - 1} 1,${half}" fill="${FILL}" stroke="${color}" stroke-width="${SW}"/>`;
+      svg = `<polygon points="${half},1 ${SZ - 1},${half} ${half},${SZ - 1} 1,${half}" fill="${fill}" stroke="${color}" stroke-width="${SW}"/>`;
       break;
     default:
-      svg = `<polygon points="${half},1 ${SZ - 1},${SZ - 1} 1,${SZ - 1}" fill="${FILL}" stroke="${color}" stroke-width="${SW}"/>`;
+      svg = `<polygon points="${half},1 ${SZ - 1},${SZ - 1} 1,${SZ - 1}" fill="${fill}" stroke="${color}" stroke-width="${SW}"/>`;
       break;
   }
 
@@ -71,6 +71,18 @@ export function PlanningMap() {
   const planningWaypoints = useFlightPlanStore((s) => s.planningWaypoints);
   const form = useFlightPlanStore((s) => s.form);
   const airports = useFlightPlanStore((s) => s.airports);
+
+  // Resolve CSS custom properties once for canvas/SVG rendering
+  const clr = useMemo(() => ({
+    climb:   getCssVar('--phase-climb'),
+    cruise:  getCssVar('--phase-cruise'),
+    descent: getCssVar('--phase-descent'),
+    fill:    getCssVar('--bg-panel'),
+    depArr:  getCssVar('--status-green'),
+    arrival: getCssVar('--status-red'),
+    alt:     getCssVar('--status-amber'),
+    mapBg:   getCssVar('--bg-map'),
+  }), []);
 
   const depAirport = airports.find((a) => a.icao === form.origin);
   const arrAirport = airports.find((a) => a.icao === form.destination);
@@ -127,7 +139,7 @@ export function PlanningMap() {
         className="h-full w-full"
         zoomControl={false}
         attributionControl={false}
-        style={{ background: '#0d1117' }}
+        style={{ background: 'var(--bg-map)' }}
       >
         <TileLayer
           url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
@@ -139,13 +151,13 @@ export function PlanningMap() {
           <>
             <FitToRoute positions={routePositions} />
             {climbPositions.length >= 2 && (
-              <Polyline key={`climb-${routeKey}`} positions={climbPositions} pathOptions={{ color: CLR_CLIMB, weight: 2, opacity: 0.8, dashArray: '6 4' }} />
+              <Polyline key={`climb-${routeKey}`} positions={climbPositions} pathOptions={{ color: clr.climb, weight: 2, opacity: 0.8, dashArray: '6 4' }} />
             )}
             {cruisePositions.length >= 2 && (
-              <Polyline key={`cruise-${routeKey}`} positions={cruisePositions} pathOptions={{ color: CLR_CRUISE, weight: 2, opacity: 0.8, dashArray: '6 4' }} />
+              <Polyline key={`cruise-${routeKey}`} positions={cruisePositions} pathOptions={{ color: clr.cruise, weight: 2, opacity: 0.8, dashArray: '6 4' }} />
             )}
             {descentPositions.length >= 2 && (
-              <Polyline key={`descent-${routeKey}`} positions={descentPositions} pathOptions={{ color: CLR_DESCENT, weight: 2, opacity: 0.8, dashArray: '6 4' }} />
+              <Polyline key={`descent-${routeKey}`} positions={descentPositions} pathOptions={{ color: clr.descent, weight: 2, opacity: 0.8, dashArray: '6 4' }} />
             )}
           </>
         )}
@@ -153,15 +165,15 @@ export function PlanningMap() {
         {/* Waypoint markers — shape by type, colored by phase */}
         {planningWaypoints.slice(1, -1).map((w, i) => {
           const absIdx = i + 1;
-          const clr = absIdx < tocIndex ? CLR_CLIMB : absIdx > todIndex ? CLR_DESCENT : CLR_CRUISE;
+          const phaseClr = absIdx < tocIndex ? clr.climb : absIdx > todIndex ? clr.descent : clr.cruise;
           return (
             <Marker
               key={`wp-${i}-${w.ident}`}
               position={[w.latitude, w.longitude]}
-              icon={shapeIcon(w.type, clr)}
+              icon={shapeIcon(w.type, phaseClr, clr.fill)}
             >
               <Tooltip direction="top" offset={[0, -6]} className="hub-tooltip">
-                <span style={{ fontFamily: 'JetBrains Mono, Consolas, monospace', fontSize: '9px' }}>
+                <span style={{ fontSize: '11px', fontFeatureSettings: '"tnum"' }}>
                   {w.ident}
                 </span>
               </Tooltip>
@@ -174,10 +186,10 @@ export function PlanningMap() {
           <CircleMarker
             center={[depAirport.lat, depAirport.lon]}
             radius={6}
-            pathOptions={{ color: '#3fb950', fillColor: '#3fb950', fillOpacity: 0.9, weight: 1.5 }}
+            pathOptions={{ color: clr.depArr, fillColor: clr.depArr, fillOpacity: 0.9, weight: 1.5 }}
           >
             <Tooltip direction="top" offset={[0, -8]} permanent className="hub-tooltip">
-              <span style={{ fontFamily: 'JetBrains Mono, Consolas, monospace', fontSize: '10px' }}>
+              <span style={{ fontSize: '11px', fontFeatureSettings: '"tnum"' }}>
                 {depAirport.icao}
               </span>
             </Tooltip>
@@ -189,10 +201,10 @@ export function PlanningMap() {
           <CircleMarker
             center={[arrAirport.lat, arrAirport.lon]}
             radius={6}
-            pathOptions={{ color: '#f85149', fillColor: '#f85149', fillOpacity: 0.9, weight: 1.5 }}
+            pathOptions={{ color: clr.arrival, fillColor: clr.arrival, fillOpacity: 0.9, weight: 1.5 }}
           >
             <Tooltip direction="top" offset={[0, -8]} permanent className="hub-tooltip">
-              <span style={{ fontFamily: 'JetBrains Mono, Consolas, monospace', fontSize: '10px' }}>
+              <span style={{ fontSize: '11px', fontFeatureSettings: '"tnum"' }}>
                 {arrAirport.icao}
               </span>
             </Tooltip>
@@ -204,10 +216,10 @@ export function PlanningMap() {
           <CircleMarker
             center={[alt1Airport.lat, alt1Airport.lon]}
             radius={5}
-            pathOptions={{ color: '#d29922', fillColor: '#d29922', fillOpacity: 0.8, weight: 1.5 }}
+            pathOptions={{ color: clr.alt, fillColor: clr.alt, fillOpacity: 0.8, weight: 1.5 }}
           >
             <Tooltip direction="top" offset={[0, -8]} className="hub-tooltip">
-              <span style={{ fontFamily: 'JetBrains Mono, Consolas, monospace', fontSize: '10px' }}>
+              <span style={{ fontSize: '11px', fontFeatureSettings: '"tnum"' }}>
                 {alt1Airport.icao} (ALT)
               </span>
             </Tooltip>
@@ -219,10 +231,10 @@ export function PlanningMap() {
           <CircleMarker
             center={[alt2Airport.lat, alt2Airport.lon]}
             radius={5}
-            pathOptions={{ color: '#d29922', fillColor: '#d29922', fillOpacity: 0.8, weight: 1.5 }}
+            pathOptions={{ color: clr.alt, fillColor: clr.alt, fillOpacity: 0.8, weight: 1.5 }}
           >
             <Tooltip direction="top" offset={[0, -8]} className="hub-tooltip">
-              <span style={{ fontFamily: 'JetBrains Mono, Consolas, monospace', fontSize: '10px' }}>
+              <span style={{ fontSize: '11px', fontFeatureSettings: '"tnum"' }}>
                 {alt2Airport.icao} (ALT)
               </span>
             </Tooltip>

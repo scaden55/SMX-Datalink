@@ -18,9 +18,11 @@ import {
   XCircle,
   Ban,
   Filter,
+  Radio,
 } from 'lucide-react';
 import { api } from '../lib/api';
 import { useAuthStore } from '../stores/authStore';
+import { VatsimBadge } from '../components/common/VatsimBadge';
 import type { LogbookEntry, LogbookListResponse, LogbookStatus } from '@acars/shared';
 
 // ─── Helpers ────────────────────────────────────────────────────
@@ -48,24 +50,24 @@ function formatDateTime(iso: string): string {
 function landingRateColor(fpm: number | null): string {
   if (fpm == null) return 'text-acars-muted';
   const abs = Math.abs(fpm);
-  if (abs <= 150) return 'text-acars-green';
-  if (abs <= 250) return 'text-acars-amber';
-  return 'text-acars-red';
+  if (abs <= 150) return 'text-emerald-400';
+  if (abs <= 250) return 'text-amber-400';
+  return 'text-red-400';
 }
 
 function scoreColor(score: number | null): string {
   if (score == null) return 'text-acars-muted';
-  if (score >= 90) return 'text-acars-green';
-  if (score >= 75) return 'text-acars-amber';
-  return 'text-acars-red';
+  if (score >= 90) return 'text-emerald-400';
+  if (score >= 75) return 'text-amber-400';
+  return 'text-red-400';
 }
 
 const STATUS_CONFIG: Record<LogbookStatus, { label: string; icon: typeof CheckCircle2; bg: string; text: string; border: string }> = {
-  pending:   { label: 'Pending',   icon: Clock,         bg: 'bg-acars-blue/10',  text: 'text-acars-blue',  border: 'border-acars-blue/20' },
-  approved:  { label: 'Approved',  icon: CheckCircle2,  bg: 'bg-acars-green/10', text: 'text-acars-green', border: 'border-acars-green/20' },
-  completed: { label: 'Completed', icon: CheckCircle2,  bg: 'bg-acars-green/10', text: 'text-acars-green', border: 'border-acars-green/20' },
-  diverted:  { label: 'Diverted',  icon: AlertTriangle, bg: 'bg-acars-amber/10', text: 'text-acars-amber', border: 'border-acars-amber/20' },
-  rejected:  { label: 'Rejected',  icon: XCircle,       bg: 'bg-acars-red/10',   text: 'text-acars-red',   border: 'border-acars-red/20' },
+  pending:   { label: 'Pending',   icon: Clock,         bg: 'bg-blue-500/10',  text: 'text-blue-400',  border: 'border-blue-400/20' },
+  approved:  { label: 'Approved',  icon: CheckCircle2,  bg: 'bg-emerald-500/10', text: 'text-emerald-400', border: 'border-emerald-400/20' },
+  completed: { label: 'Completed', icon: CheckCircle2,  bg: 'bg-emerald-500/10', text: 'text-emerald-400', border: 'border-emerald-400/20' },
+  diverted:  { label: 'Diverted',  icon: AlertTriangle, bg: 'bg-amber-500/10', text: 'text-amber-400', border: 'border-amber-400/20' },
+  rejected:  { label: 'Rejected',  icon: XCircle,       bg: 'bg-red-500/10',   text: 'text-red-400',   border: 'border-red-400/20' },
   cancelled: { label: 'Cancelled', icon: Ban,           bg: 'bg-acars-muted/10', text: 'text-acars-muted', border: 'border-acars-border' },
 };
 
@@ -99,6 +101,7 @@ export function LogbookPage() {
   // Filters
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<LogbookStatus | ''>('');
+  const [vatsimOnly, setVatsimOnly] = useState(false);
 
   // Sort
   const [sortField, setSortField] = useState<SortField>('date');
@@ -113,6 +116,7 @@ export function LogbookPage() {
       params.set('pageSize', String(pageSize));
       if (search) params.set('search', search);
       if (statusFilter) params.set('status', statusFilter);
+      if (vatsimOnly) params.set('vatsimOnly', 'true');
       if (user) params.set('userId', String(user.id));
 
       const data = await api.get<LogbookListResponse>(`/api/logbook?${params}`);
@@ -123,7 +127,7 @@ export function LogbookPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, pageSize, search, statusFilter, user]);
+  }, [page, pageSize, search, statusFilter, vatsimOnly, user]);
 
   useEffect(() => { fetchEntries(); }, [fetchEntries]);
 
@@ -158,10 +162,10 @@ export function LogbookPage() {
     return (
       <button
         onClick={() => toggleSort(field)}
-        className={`flex items-center gap-1 text-[10px] uppercase tracking-wider font-medium hover:text-acars-text transition-colors ${active ? 'text-acars-green' : 'text-acars-muted'} ${className}`}
+        className={`flex items-center gap-1 text-[10px] uppercase tracking-wider font-medium hover:text-acars-text transition-colors ${active ? 'text-emerald-400' : 'text-acars-muted'} ${className}`}
       >
         {label}
-        <ArrowUpDown className={`w-3 h-3 ${active ? 'text-acars-green' : 'text-acars-muted/50'}`} />
+        <ArrowUpDown className={`w-3 h-3 ${active ? 'text-emerald-400' : 'text-acars-muted/50'}`} />
       </button>
     );
   }
@@ -181,8 +185,8 @@ export function LogbookPage() {
       <div className="flex-none border-b border-acars-border bg-acars-bg/50 px-5 py-3">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-3">
-            <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-acars-amber/10 border border-acars-amber/20">
-              <BookOpen className="w-5 h-5 text-acars-amber" />
+            <div className="flex items-center justify-center w-9 h-9 rounded-md bg-amber-500/10 border border-amber-400/20">
+              <BookOpen className="w-5 h-5 text-amber-400" />
             </div>
             <div>
               <h1 className="text-base font-semibold text-acars-text">Pilot Logbook</h1>
@@ -202,26 +206,34 @@ export function LogbookPage() {
         </div>
 
         {/* Stats bar */}
-        <div className="flex gap-6 mb-3">
-          <div className="flex items-center gap-2 text-xs">
-            <Plane className="w-3.5 h-3.5 text-acars-blue" />
-            <span className="text-acars-muted">Flights</span>
-            <span className="text-acars-text font-semibold">{totalFlights}</span>
+        <div className="grid grid-cols-4 gap-3 mb-3">
+          <div className="flex items-center gap-3 rounded-md border border-acars-border bg-acars-panel/50 px-3 py-2">
+            <Plane className="w-3.5 h-3.5 text-sky-400 shrink-0" />
+            <div>
+              <div className="text-[10px] text-acars-muted uppercase tracking-wider">Flights</div>
+              <div className="text-sm font-semibold text-acars-text tabular-nums">{totalFlights}</div>
+            </div>
           </div>
-          <div className="flex items-center gap-2 text-xs">
-            <Clock className="w-3.5 h-3.5 text-acars-green" />
-            <span className="text-acars-muted">Hours (page)</span>
-            <span className="text-acars-text font-semibold">{formatDuration(totalHours)}</span>
+          <div className="flex items-center gap-3 rounded-md border border-acars-border bg-acars-panel/50 px-3 py-2">
+            <Clock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+            <div>
+              <div className="text-[10px] text-acars-muted uppercase tracking-wider">Hours</div>
+              <div className="text-sm font-semibold text-acars-text tabular-nums">{formatDuration(totalHours)}</div>
+            </div>
           </div>
-          <div className="flex items-center gap-2 text-xs">
-            <Ruler className="w-3.5 h-3.5 text-acars-amber" />
-            <span className="text-acars-muted">Distance (page)</span>
-            <span className="text-acars-text font-semibold">{totalDist.toLocaleString()} nm</span>
+          <div className="flex items-center gap-3 rounded-md border border-acars-border bg-acars-panel/50 px-3 py-2">
+            <Ruler className="w-3.5 h-3.5 text-blue-400 shrink-0" />
+            <div>
+              <div className="text-[10px] text-acars-muted uppercase tracking-wider">Distance</div>
+              <div className="text-sm font-semibold text-acars-text tabular-nums">{totalDist.toLocaleString()} nm</div>
+            </div>
           </div>
-          <div className="flex items-center gap-2 text-xs">
-            <CheckCircle2 className="w-3.5 h-3.5 text-acars-green" />
-            <span className="text-acars-muted">Avg Score</span>
-            <span className={`font-semibold ${scoreColor(avgScore)}`}>{avgScore || '—'}</span>
+          <div className="flex items-center gap-3 rounded-md border border-acars-border bg-acars-panel/50 px-3 py-2">
+            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+            <div>
+              <div className="text-[10px] text-acars-muted uppercase tracking-wider">Avg Score</div>
+              <div className={`text-sm font-semibold tabular-nums ${scoreColor(avgScore)}`}>{avgScore || '—'}</div>
+            </div>
           </div>
         </div>
 
@@ -234,16 +246,28 @@ export function LogbookPage() {
               value={search}
               onChange={e => { setSearch(e.target.value); setPage(1); }}
               placeholder="Search flight, ICAO, registration..."
-              className="w-full h-8 pl-8 pr-3 rounded-md border border-acars-border bg-acars-panel text-xs text-acars-text placeholder:text-acars-muted/50 outline-none focus:border-acars-green transition-colors font-mono"
+              className="w-full h-8 pl-8 pr-3 rounded-md border border-acars-border bg-acars-panel text-xs text-acars-text placeholder:text-acars-muted/50 outline-none focus:border-emerald-400 transition-colors font-mono"
             />
           </div>
+
+          <button
+            onClick={() => { setVatsimOnly(!vatsimOnly); setPage(1); }}
+            className={`h-8 px-3 rounded-md border text-xs font-medium transition-colors flex items-center gap-1.5 ${
+              vatsimOnly
+                ? 'bg-emerald-500/10 border-emerald-400/20 text-emerald-400'
+                : 'bg-acars-panel border-acars-border text-acars-muted hover:text-acars-text'
+            }`}
+          >
+            <Radio className="w-3 h-3" />
+            VATSIM
+          </button>
 
           <div className="relative">
             <Filter className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-acars-muted pointer-events-none" />
             <select
               value={statusFilter}
               onChange={e => { setStatusFilter(e.target.value as LogbookStatus | ''); setPage(1); }}
-              className="h-8 pl-7 pr-6 rounded-md border border-acars-border bg-acars-panel text-xs text-acars-text outline-none focus:border-acars-green transition-colors appearance-none cursor-pointer"
+              className="select-field pl-7"
             >
               <option value="">All Status</option>
               <option value="pending">Pending</option>
@@ -260,14 +284,15 @@ export function LogbookPage() {
       <div className="flex-1 overflow-auto">
         {loading ? (
           <div className="flex items-center justify-center h-64">
-            <Loader2 className="w-6 h-6 text-acars-amber animate-spin" />
+            <Loader2 className="w-6 h-6 text-amber-400 animate-spin" />
           </div>
         ) : error ? (
-          <div className="flex items-center justify-center h-64 text-sm text-acars-red">{error}</div>
+          <div className="flex items-center justify-center h-64 text-sm text-red-400">{error}</div>
         ) : sorted.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-64 gap-3">
-            <BookOpen className="w-10 h-10 text-acars-muted/30" />
-            <p className="text-sm text-acars-muted">No logbook entries found</p>
+          <div className="empty-state h-64">
+            <BookOpen className="empty-state-icon" />
+            <p className="empty-state-title">No Logbook Entries</p>
+            <p className="empty-state-desc">No flights match your current filters</p>
           </div>
         ) : (
           <table className="w-full text-xs">
@@ -280,6 +305,7 @@ export function LogbookPage() {
                 <th className="text-left px-3 py-2.5"><SortHeader field="duration" label="Duration" /></th>
                 <th className="text-right px-3 py-2.5"><SortHeader field="landing" label="Landing" className="justify-end" /></th>
                 <th className="text-right px-3 py-2.5"><SortHeader field="score" label="Score" className="justify-end" /></th>
+                <th className="text-center px-3 py-2.5 text-[10px] uppercase tracking-wider font-medium text-acars-muted">Net</th>
                 <th className="text-center px-3 py-2.5 text-[10px] uppercase tracking-wider font-medium text-acars-muted">Status</th>
               </tr>
             </thead>
@@ -288,7 +314,7 @@ export function LogbookPage() {
                 <tr
                   key={entry.id}
                   onClick={() => navigate(`/logbook/${entry.id}`)}
-                  className="border-b border-acars-border/50 hover:bg-[#1c2333] cursor-pointer transition-colors group"
+                  className="border-b border-acars-border hover:bg-acars-hover cursor-pointer transition-colors group"
                   title="Click to view details"
                 >
                   <td className="px-4 py-2.5">
@@ -301,7 +327,7 @@ export function LogbookPage() {
                   <td className="px-3 py-2.5">
                     <div className="flex items-center gap-1.5">
                       <span className="text-acars-text font-mono font-semibold">{entry.depIcao}</span>
-                      <ArrowRight className="w-3 h-3 text-acars-muted/50" />
+                      <ArrowRight className="w-3 h-3 text-sky-400/40" />
                       <span className="text-acars-text font-mono font-semibold">{entry.arrIcao}</span>
                     </div>
                     <div className="text-acars-muted text-[10px]">{entry.distanceNm.toLocaleString()} nm</div>
@@ -313,7 +339,7 @@ export function LogbookPage() {
                     )}
                   </td>
                   <td className="px-3 py-2.5">
-                    <span className="text-acars-text">{formatDuration(entry.flightTimeMin)}</span>
+                    <span className="text-acars-text font-mono">{formatDuration(entry.flightTimeMin)}</span>
                   </td>
                   <td className="text-right px-3 py-2.5">
                     <span className={`font-mono font-semibold ${landingRateColor(entry.landingRateFpm)}`}>
@@ -324,6 +350,9 @@ export function LogbookPage() {
                     <span className={`font-mono font-bold ${scoreColor(entry.score)}`}>
                       {entry.score ?? '—'}
                     </span>
+                  </td>
+                  <td className="text-center px-3 py-2.5">
+                    <VatsimBadge connected={entry.vatsimConnected} callsign={entry.vatsimCallsign} />
                   </td>
                   <td className="text-center px-3 py-2.5">
                     <StatusBadge status={entry.status} />

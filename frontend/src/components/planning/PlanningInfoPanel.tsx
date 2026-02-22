@@ -9,7 +9,7 @@ import { PlanningFlightLogTab } from './PlanningFlightLogTab';
 import type { PlanningInfoTab } from '@acars/shared';
 
 const TABS: { id: PlanningInfoTab; label: string }[] = [
-  { id: 'weather', label: 'Weather' },
+  { id: 'weather', label: 'WX' },
   { id: 'notam', label: 'NOTAMs' },
   { id: 'airport-info', label: 'Airport' },
   { id: 'ofp', label: 'OFP' },
@@ -30,15 +30,15 @@ function AirportButton({ label, icao, color, active, onClick }: AirportButtonPro
   return (
     <button
       onClick={onClick}
-      className={`flex items-center gap-1.5 px-2.5 py-1 rounded text-[11px] font-medium transition-colors ${
+      className={`flex items-center gap-1.5 px-2 py-1 rounded-md text-[11px] transition-colors ${
         active
-          ? 'bg-acars-bg border border-acars-border text-acars-text'
-          : 'text-acars-muted hover:text-acars-text hover:bg-acars-bg/50'
+          ? 'bg-acars-input border border-acars-border text-acars-text'
+          : 'text-acars-muted hover:text-acars-text hover:bg-acars-input/50'
       }`}
     >
       <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: color }} />
-      <span className="text-[9px] uppercase tracking-wider font-medium">{label}</span>
-      <span className="font-mono font-semibold">{icao}</span>
+      <span className="uppercase tracking-[0.08em] font-medium font-sans">{label}</span>
+      <span className="font-mono font-semibold text-acars-mono">{icao}</span>
     </button>
   );
 }
@@ -54,32 +54,32 @@ export function PlanningInfoPanel() {
     <div className="flex flex-col border-t border-acars-border flex-1 min-h-0 bg-acars-panel">
       <TabBar tabs={TABS} active={planningTab} onChange={setPlanningTab} />
       {planningTab === 'airport-info' && (
-        <div className="flex items-center gap-1 px-3 py-1.5 border-b border-acars-border bg-acars-bg/30">
+        <div className="flex items-center gap-1 px-3 py-1 border-b border-acars-border bg-acars-bg/30">
           <AirportButton
             label="Orig"
             icao={form.origin}
-            color="#3fb950"
+            color="var(--status-green)"
             active={selectedAirportIcao === form.origin}
             onClick={() => handleAirportClick(form.origin)}
           />
           <AirportButton
             label="Dest"
             icao={form.destination}
-            color="#f85149"
+            color="var(--status-red)"
             active={selectedAirportIcao === form.destination}
             onClick={() => handleAirportClick(form.destination)}
           />
           <AirportButton
             label="Alt1"
             icao={form.alternate1}
-            color="#d29922"
+            color="var(--status-amber)"
             active={selectedAirportIcao === form.alternate1}
             onClick={() => handleAirportClick(form.alternate1)}
           />
           <AirportButton
             label="Alt2"
             icao={form.alternate2}
-            color="#d29922"
+            color="var(--status-amber)"
             active={selectedAirportIcao === form.alternate2}
             onClick={() => handleAirportClick(form.alternate2)}
           />

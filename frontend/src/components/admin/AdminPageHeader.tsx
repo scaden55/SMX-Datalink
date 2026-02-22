@@ -19,8 +19,8 @@ export function AdminPageHeader({ icon: Icon, title, subtitle, stats, actions }:
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-acars-blue/10">
-            <Icon className="w-5 h-5 text-acars-blue" />
+          <div className="flex items-center justify-center w-10 h-10 rounded-md bg-blue-500/10">
+            <Icon className="w-5 h-5 text-blue-400" />
           </div>
           <div>
             <h1 className="text-lg font-semibold text-acars-text">{title}</h1>

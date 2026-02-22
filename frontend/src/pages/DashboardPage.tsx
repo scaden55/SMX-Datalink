@@ -35,6 +35,8 @@ import type {
   Airport,
   LeaderboardEntry,
   LeaderboardResponse,
+  LogbookEntry,
+  LogbookListResponse,
   NewsPost,
   NewsListResponse,
   CreateNewsRequest,
@@ -52,10 +54,10 @@ function formatDuration(min: number): string {
 // ─── Quick Actions (static nav links) ───────────────────────────
 
 const QUICK_ACTIONS = [
-  { label: 'Bid a Flight', icon: CalendarDays, to: '/schedule', iconBox: 'bg-acars-blue/10 border-acars-blue/20', iconColor: 'text-acars-blue' },
-  { label: 'File Flight Plan', icon: Route, to: '/planning', iconBox: 'bg-acars-magenta/10 border-acars-magenta/20', iconColor: 'text-acars-magenta' },
-  { label: 'View Logbook', icon: BookOpen, to: '/logbook', iconBox: 'bg-acars-amber/10 border-acars-amber/20', iconColor: 'text-acars-amber' },
-  { label: 'Open Dispatch', icon: Radio, to: '/dispatch', iconBox: 'bg-acars-green/10 border-acars-green/20', iconColor: 'text-acars-green' },
+  { label: 'Bid a Flight', icon: CalendarDays, to: '/schedule', iconBox: 'bg-blue-500/20 border-blue-500/30', iconColor: 'text-blue-400' },
+  { label: 'File Flight Plan', icon: Route, to: '/planning', iconBox: 'bg-violet-500/20 border-violet-500/30', iconColor: 'text-violet-400' },
+  { label: 'View Logbook', icon: BookOpen, to: '/logbook', iconBox: 'bg-amber-500/20 border-amber-500/30', iconColor: 'text-amber-400' },
+  { label: 'Open Dispatch', icon: Radio, to: '/dispatch', iconBox: 'bg-emerald-500/20 border-emerald-500/30', iconColor: 'text-emerald-400' },
 ] as const;
 
 // ─── Sub-Components ─────────────────────────────────────────────
@@ -82,6 +84,29 @@ function StatCard({ label, value, icon: Icon, iconBox, iconColor }: StatCardProp
   );
 }
 
+// ─── Bid phase badge ─────────────────────────────────────────────
+
+const PHASE_STYLES: Record<string, string> = {
+  reserved:  'bg-blue-500/15 text-blue-400 border-blue-400/30',
+  preflight: 'bg-amber-500/15 text-amber-400 border-amber-400/30',
+  taxiout:   'bg-amber-500/15 text-amber-400 border-amber-400/30',
+  climb:     'bg-emerald-500/15 text-emerald-400 border-emerald-400/30',
+  cruise:    'bg-sky-500/15 text-sky-400 border-sky-400/30',
+  descent:   'bg-violet-500/15 text-violet-400 border-violet-400/30',
+  approach:  'bg-amber-500/15 text-amber-400 border-amber-400/30',
+  landed:    'bg-emerald-500/15 text-emerald-400 border-emerald-400/30',
+};
+
+function PhaseBadge({ phase }: { phase: string }) {
+  const style = PHASE_STYLES[phase] ?? PHASE_STYLES.reserved;
+  const label = phase.charAt(0).toUpperCase() + phase.slice(1);
+  return (
+    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-semibold uppercase tracking-wider border ${style}`}>
+      {label}
+    </span>
+  );
+}
+
 function ActiveBidsTable({ bids }: { bids: ActiveBidEntry[] }) {
   const navigate = useNavigate();
 
@@ -90,26 +115,27 @@ function ActiveBidsTable({ bids }: { bids: ActiveBidEntry[] }) {
       <div className="flex items-center justify-between px-4 py-3 border-b border-acars-border">
         <div className="flex items-center gap-2">
           <h3 className="text-sm font-semibold text-acars-text">Active Bids</h3>
-          <span className="inline-flex items-center justify-center min-w-[20px] h-5 rounded-full bg-acars-blue/10 border border-acars-blue/20 text-[10px] font-semibold text-acars-blue tabular-nums px-1.5">
+          <span className="inline-flex items-center justify-center min-w-[20px] h-5 rounded-full bg-blue-500/20 border border-blue-400/30 text-[10px] font-semibold text-blue-400 tabular-nums px-1.5">
             {bids.length}
           </span>
         </div>
         <button
           onClick={() => navigate('/schedule')}
-          className="flex items-center gap-1 text-[11px] font-medium text-acars-blue hover:text-acars-text transition-colors"
+          className="flex items-center gap-1 text-[11px] font-medium text-blue-400 hover:text-acars-text transition-colors"
         >
           Bid a Flight <ArrowRight className="w-3 h-3" />
         </button>
       </div>
       {bids.length === 0 ? (
-        <div className="flex-1 flex flex-col items-center justify-center py-12">
-          <img src="/logos/chevron-light.png" alt="SMA" className="h-10 w-auto opacity-10 mb-3" />
-          <p className="text-xs text-acars-muted">No active cargo runs across the VA</p>
+        <div className="empty-state">
+          <CalendarDays className="empty-state-icon" />
+          <p className="empty-state-title">No Active Cargo Runs</p>
+          <p className="empty-state-desc">No pilots currently have active bids across the VA</p>
           <button
             onClick={() => navigate('/schedule')}
-            className="mt-2 text-[11px] font-medium text-acars-blue hover:text-acars-text transition-colors"
+            className="btn-primary btn-sm mt-4"
           >
-            Be the first — browse the schedule
+            Browse Schedule
           </button>
         </div>
       ) : (
@@ -123,30 +149,32 @@ function ActiveBidsTable({ bids }: { bids: ActiveBidEntry[] }) {
                 <th className="text-left px-4 py-2 font-medium">Dep (Z)</th>
                 <th className="text-left px-4 py-2 font-medium hidden lg:table-cell">Duration</th>
                 <th className="text-left px-4 py-2 font-medium">Pilot</th>
+                <th className="text-left px-4 py-2 font-medium">Status</th>
               </tr>
             </thead>
             <tbody>
-              {bids.map((bid, i) => (
+              {bids.map((bid) => (
                 <tr
                   key={bid.id}
-                  className={`border-b border-acars-border/50 hover:bg-[#1c2433] transition-colors ${
-                    i % 2 === 0 ? 'bg-acars-panel' : 'bg-acars-bg'
-                  }`}
+                  className="hover:bg-acars-hover transition-colors"
                 >
-                  <td className="px-4 py-2.5 font-mono font-medium text-acars-text">{bid.flightNumber}</td>
-                  <td className="px-4 py-2.5 text-acars-muted">
-                    <span className="font-mono text-acars-text">{bid.depIcao}</span>
-                    <ArrowRight className="w-3 h-3 text-acars-muted/50 inline mx-1" />
-                    <span className="font-mono text-acars-text">{bid.arrIcao}</span>
+                  <td className="px-4 py-2.5 font-mono font-semibold text-acars-text">{bid.flightNumber}</td>
+                  <td className="px-4 py-2.5 text-acars-muted/80">
+                    <span className="font-mono">{bid.depIcao}</span>
+                    <ArrowRight className="w-3 h-3 text-blue-400/60 inline mx-1" />
+                    <span className="font-mono">{bid.arrIcao}</span>
                   </td>
-                  <td className="px-4 py-2.5 text-acars-muted hidden xl:table-cell">{bid.aircraftType}</td>
-                  <td className="px-4 py-2.5 font-mono text-acars-muted tabular-nums">{bid.depTime}Z</td>
-                  <td className="px-4 py-2.5 font-mono text-acars-muted tabular-nums hidden lg:table-cell">{formatDuration(bid.flightTimeMin)}</td>
+                  <td className="px-4 py-2.5 text-acars-muted/80 hidden xl:table-cell font-mono">{bid.aircraftType}</td>
+                  <td className="px-4 py-2.5 font-mono text-acars-muted/80 tabular-nums">{bid.depTime}Z</td>
+                  <td className="px-4 py-2.5 font-mono text-acars-muted/80 tabular-nums hidden lg:table-cell">{formatDuration(bid.flightTimeMin)}</td>
                   <td className="px-4 py-2.5">
                     <div className="flex items-center gap-1.5">
-                      <span className="text-acars-text text-[11px] font-medium">{bid.pilotCallsign}</span>
-                      <span className="text-acars-muted hidden xl:inline">{bid.pilotName}</span>
+                      <span className="text-acars-muted/80 text-[11px]">{bid.pilotCallsign}</span>
+                      <span className="text-acars-muted/60 hidden xl:inline">{bid.pilotName}</span>
                     </div>
+                  </td>
+                  <td className="px-4 py-2.5">
+                    <PhaseBadge phase="reserved" />
                   </td>
                 </tr>
               ))}
@@ -173,12 +201,12 @@ function QuickActions() {
             <button
               key={action.label}
               onClick={() => navigate(action.to)}
-              className="flex flex-col items-center justify-center gap-2.5 rounded-lg border border-acars-border bg-acars-bg hover:border-acars-blue hover:bg-[#1c2433] transition-all duration-200 p-4"
+              className="flex flex-col items-center justify-center gap-2.5 rounded-md border border-acars-border bg-acars-bg hover:border-blue-400/50 hover:bg-acars-hover hover:-translate-y-0.5 hover:shadow-lg hover:shadow-black/20 transition-all duration-200 p-4"
             >
               <div className={`flex items-center justify-center w-10 h-10 rounded-xl border ${action.iconBox}`}>
                 <Icon className={`w-5 h-5 ${action.iconColor}`} />
               </div>
-              <span className="text-xs font-medium text-acars-muted">{action.label}</span>
+              <span className={`text-xs font-medium ${action.iconColor}`}>{action.label}</span>
             </button>
           );
         })}
@@ -187,7 +215,7 @@ function QuickActions() {
   );
 }
 
-// ─── Network Map (Leaflet with hub airports) ───────────────────
+// ─── Network Map ────────────────────────────────────────────────
 
 function NetworkMapPreview({ airports }: { airports: Airport[] }) {
   const navigate = useNavigate();
@@ -198,18 +226,15 @@ function NetworkMapPreview({ airports }: { airports: Airport[] }) {
         <div className="flex items-center gap-2.5">
           <img src="/logos/chevron-light.png" alt="SMA" className="h-5 w-auto opacity-60" />
           <h3 className="text-sm font-semibold text-acars-text">Network Map</h3>
-          {airports.length > 0 && (
-            <span className="text-[10px] text-acars-muted tabular-nums">{airports.length} hubs</span>
-          )}
         </div>
         <button
           onClick={() => navigate('/map')}
-          className="flex items-center gap-1 text-[11px] font-medium text-acars-blue hover:text-acars-text transition-colors"
+          className="flex items-center gap-1 text-[11px] font-medium text-blue-400 hover:text-acars-text transition-colors"
         >
           Expand <Maximize2 className="w-3 h-3" />
         </button>
       </div>
-      <div className="flex-1 relative overflow-hidden">
+      <div className="flex-1 relative overflow-hidden shadow-[inset_0_2px_8px_rgba(0,0,0,0.3)]">
         <MapContainer
           center={[37.5, -96.0]}
           zoom={3.5}
@@ -217,7 +242,7 @@ function NetworkMapPreview({ airports }: { airports: Airport[] }) {
           className="h-full w-full"
           zoomControl={false}
           attributionControl={false}
-          style={{ background: '#0d1117' }}
+          style={{ background: 'var(--bg-map)' }}
           scrollWheelZoom={false}
           dragging={false}
           doubleClickZoom={false}
@@ -233,8 +258,8 @@ function NetworkMapPreview({ airports }: { airports: Airport[] }) {
               center={[apt.lat, apt.lon]}
               radius={5}
               pathOptions={{
-                color: '#58a6ff',
-                fillColor: '#58a6ff',
+                color: 'var(--cyan)',
+                fillColor: 'var(--cyan)',
                 fillOpacity: 0.7,
                 weight: 1,
               }}
@@ -245,7 +270,7 @@ function NetworkMapPreview({ airports }: { airports: Airport[] }) {
                 className="hub-tooltip"
                 permanent={false}
               >
-                <span style={{ fontFamily: 'JetBrains Mono, Consolas, monospace', fontSize: '10px' }}>
+                <span style={{ fontSize: '10px', fontFeatureSettings: '"tnum"' }}>
                   {apt.icao} — {apt.city}
                 </span>
               </Tooltip>
@@ -257,66 +282,83 @@ function NetworkMapPreview({ airports }: { airports: Airport[] }) {
   );
 }
 
-function MyInfoCard() {
+// ─── My Info Card ───────────────────────────────────────────────
+
+function MyInfoCard({ recentFlights }: { recentFlights: LogbookEntry[] }) {
   const user = useAuthStore(s => s.user);
 
   if (!user) return null;
 
   const initials = `${user.firstName[0]}${user.lastName[0]}`.toUpperCase();
-  const hoursDisplay = user.hoursTotal.toLocaleString(undefined, { maximumFractionDigits: 0 });
 
   return (
-    <div className="panel flex flex-col h-[320px]">
+    <div className="panel flex flex-col">
       <div className="flex items-center justify-between px-4 py-3 border-b border-acars-border">
         <h3 className="text-sm font-semibold text-acars-text">My Info</h3>
       </div>
-      <div className="flex-1 overflow-auto px-4 py-3 space-y-4">
+      <div className="flex-1 overflow-auto px-4 py-4 space-y-4">
         {/* Profile header */}
         <div className="flex items-center gap-3">
-          <div className="flex items-center justify-center w-11 h-11 rounded-full bg-acars-blue/20 text-acars-blue text-sm font-semibold shrink-0">
+          <div className="flex items-center justify-center w-11 h-11 rounded-full bg-blue-500/25 border border-blue-400/40 text-blue-400 text-sm font-semibold shrink-0">
             {initials}
           </div>
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <p className="text-sm font-semibold text-acars-text">{user.firstName} {user.lastName}</p>
-            <div className="flex items-center gap-2 text-[11px] text-acars-muted">
-              <span>{user.callsign}</span>
+            <div className="flex items-center gap-2 text-[11px] text-acars-muted mt-0.5">
+              <span className="font-mono">{user.callsign}</span>
               <span className="text-acars-border">|</span>
-              <span>{user.email}</span>
+              <span className="truncate">{user.email}</span>
             </div>
           </div>
-          <span className="ml-auto inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-acars-amber bg-acars-amber/10 border border-acars-amber/20 px-2 py-0.5 rounded-full">
+        </div>
+
+        {/* Role & Rank row */}
+        <div className="flex items-center gap-2">
+          <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-amber-400 bg-amber-500/15 border border-amber-400/30 px-2 py-0.5 rounded-full">
             <Award className="w-3 h-3" /> {user.rank}
+          </span>
+          <span className="inline-flex items-center text-[10px] font-semibold uppercase tracking-wide text-blue-400 bg-blue-500/15 border border-blue-400/30 px-2 py-0.5 rounded-full">
+            {user.role === 'admin' ? 'Admin' : 'Pilot'}
+          </span>
+          <span className="text-[10px] text-acars-muted ml-auto">
+            Member since {new Date(user.createdAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
           </span>
         </div>
 
-        {/* Stats row */}
-        <div className="grid grid-cols-3 gap-2">
-          {[
-            { label: 'Hours', value: hoursDisplay },
-            { label: 'Role', value: user.role === 'admin' ? 'Admin' : 'Pilot' },
-            { label: 'Member Since', value: new Date(user.createdAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) },
-          ].map((s) => (
-            <div key={s.label} className="text-center">
-              <p className="text-sm font-semibold text-acars-text tabular-nums">{s.value}</p>
-              <p className="text-[9px] uppercase tracking-wider text-acars-muted">{s.label}</p>
-            </div>
-          ))}
-        </div>
-
-        {/* Rank display */}
+        {/* Recent Flights */}
         <div>
-          <div className="flex items-center justify-between text-[11px] mb-1.5">
-            <span className="text-acars-muted">{user.rank}</span>
-            <span className="text-acars-muted tabular-nums">{hoursDisplay} hrs</span>
-          </div>
-          <div className="h-1.5 rounded-full bg-acars-border/50 overflow-hidden">
-            <div className="h-full rounded-full bg-acars-amber" style={{ width: `${Math.min(100, (user.hoursTotal / 1000) * 100)}%` }} />
-          </div>
+          <p className="text-[10px] uppercase tracking-wider text-acars-muted font-medium mb-2">Recent Flights</p>
+          {recentFlights.length === 0 ? (
+            <p className="text-[11px] text-acars-muted/60 italic">No flights logged yet</p>
+          ) : (
+            <div className="space-y-1">
+              {recentFlights.map(flight => {
+                const date = new Date(flight.createdAt);
+                const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                const fpm = flight.landingRateFpm;
+                const fpmColor = fpm == null ? 'text-acars-muted/60' : Math.abs(fpm) <= 200 ? 'text-emerald-400' : Math.abs(fpm) <= 400 ? 'text-amber-400' : 'text-red-400';
+                return (
+                  <div key={flight.id} className="flex items-center gap-3 text-[11px] py-1.5">
+                    <span className="text-acars-muted/80 tabular-nums w-14 shrink-0">{dateStr}</span>
+                    <span className="font-mono text-acars-text">
+                      {flight.depIcao}
+                      <ArrowRight className="w-3 h-3 text-blue-400/60 inline mx-1" />
+                      {flight.arrIcao}
+                    </span>
+                    <span className="text-acars-muted/60 tabular-nums ml-auto">{formatDuration(flight.flightTimeMin)}</span>
+                    <span className={`font-mono tabular-nums ${fpmColor}`}>
+                      {fpm != null ? `${fpm > 0 ? '-' : '-'}${Math.abs(fpm)}fpm` : '---'}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
 
         {/* Hub info */}
         <div className="flex items-center gap-2 text-[11px] text-acars-muted">
-          <MapPin className="w-3.5 h-3.5" />
+          <MapPin className="w-3.5 h-3.5 text-blue-400" />
           <span>Home hub assignment coming soon</span>
         </div>
       </div>
@@ -367,15 +409,15 @@ function PilotLeaderboard() {
     <div className="panel flex flex-col h-[380px]">
       <div className="flex items-center justify-between px-4 py-3 border-b border-acars-border">
         <div className="flex items-center gap-2">
-          <Trophy className="w-4 h-4 text-acars-amber" />
+          <Trophy className="w-4 h-4 text-yellow-500" />
           <h3 className="text-sm font-semibold text-acars-text">Pilot Leaderboard</h3>
         </div>
         <div className="flex items-center gap-1">
-          <button onClick={() => setMonth(m => shiftMonth(m, -1))} className="p-1 rounded hover:bg-acars-border/30 text-acars-muted hover:text-acars-text transition-colors">
+          <button onClick={() => setMonth(m => shiftMonth(m, -1))} className="p-1 rounded hover:bg-acars-border text-acars-muted hover:text-acars-text transition-colors">
             <ChevronLeft className="w-4 h-4" />
           </button>
           <span className="text-xs text-acars-muted tabular-nums min-w-[120px] text-center">{formatMonth(month)}</span>
-          <button onClick={() => canGoNext && setMonth(m => shiftMonth(m, 1))} disabled={!canGoNext} className="p-1 rounded hover:bg-acars-border/30 text-acars-muted hover:text-acars-text transition-colors disabled:opacity-30 disabled:cursor-not-allowed">
+          <button onClick={() => canGoNext && setMonth(m => shiftMonth(m, 1))} disabled={!canGoNext} className="p-1 rounded hover:bg-acars-border text-acars-muted hover:text-acars-text transition-colors disabled:opacity-30 disabled:cursor-not-allowed">
             <ChevronRight className="w-4 h-4" />
           </button>
         </div>
@@ -383,7 +425,7 @@ function PilotLeaderboard() {
 
       {loading ? (
         <div className="flex-1 flex items-center justify-center">
-          <Loader2 className="w-5 h-5 text-acars-blue animate-spin" />
+          <Loader2 className="w-5 h-5 text-blue-400 animate-spin" />
         </div>
       ) : entries.length === 0 ? (
         <div className="flex-1 flex flex-col items-center justify-center">
@@ -407,16 +449,25 @@ function PilotLeaderboard() {
               {entries.map((e, i) => (
                 <tr
                   key={e.callsign}
-                  className={`border-b border-acars-border/50 hover:bg-[#1c2433] transition-colors ${
+                  className={`border-b border-acars-border hover:bg-acars-hover transition-colors ${
                     i % 2 === 0 ? 'bg-acars-panel' : 'bg-acars-bg'
                   }`}
                 >
                   <td className={`text-center px-3 py-2.5 tabular-nums ${RANK_STYLES[e.rank] ?? 'text-acars-muted'}`}>
-                    {e.rank}
+                    <span className="inline-flex items-center gap-1">
+                      {e.rank <= 3 && (
+                        <span className={`inline-block w-4 h-4 rounded-full text-[9px] font-bold leading-4 text-center ${
+                          e.rank === 1 ? 'bg-yellow-500/25 text-yellow-400' :
+                          e.rank === 2 ? 'bg-gray-400/25 text-gray-300' :
+                          'bg-amber-700/25 text-amber-600'
+                        }`}>{e.rank}</span>
+                      )}
+                      {e.rank > 3 && e.rank}
+                    </span>
                   </td>
                   <td className="px-3 py-2.5">
                     <div className="flex items-center gap-1.5">
-                      <span className="font-mono font-medium text-acars-text">{e.callsign}</span>
+                      <span className="font-mono text-acars-text">{e.callsign}</span>
                       <span className="text-acars-muted hidden xl:inline">{e.pilotName}</span>
                     </div>
                   </td>
@@ -425,7 +476,7 @@ function PilotLeaderboard() {
                   <td className="text-right px-3 py-2.5 font-mono text-acars-muted tabular-nums hidden xl:table-cell">{e.cargoLbs.toLocaleString()} lb</td>
                   <td className="text-right px-3 py-2.5 tabular-nums">
                     {e.avgScore != null ? (
-                      <span className={e.avgScore >= 90 ? 'text-acars-green' : e.avgScore >= 75 ? 'text-acars-amber' : 'text-acars-red'}>
+                      <span className={e.avgScore >= 90 ? 'text-emerald-400' : e.avgScore >= 75 ? 'text-amber-400' : 'text-red-400'}>
                         {e.avgScore}
                       </span>
                     ) : (
@@ -527,16 +578,16 @@ function NewsFeed() {
     <div className="panel flex flex-col h-[380px]">
       <div className="flex items-center justify-between px-4 py-3 border-b border-acars-border">
         <div className="flex items-center gap-2">
-          <Megaphone className="w-4 h-4 text-acars-blue" />
+          <Megaphone className="w-4 h-4 text-blue-400" />
           <h3 className="text-sm font-semibold text-acars-text">Announcements</h3>
           {posts.length > 0 && (
-            <span className="inline-flex items-center justify-center min-w-[20px] h-5 rounded-full bg-acars-blue/10 border border-acars-blue/20 text-[10px] font-semibold text-acars-blue tabular-nums px-1.5">
+            <span className="inline-flex items-center justify-center min-w-[20px] h-5 rounded-full bg-blue-500/20 border border-blue-400/30 text-[10px] font-semibold text-blue-400 tabular-nums px-1.5">
               {posts.length}
             </span>
           )}
         </div>
         {isAdmin && editing === null && (
-          <button onClick={startCreate} className="flex items-center gap-1 text-[11px] font-medium text-acars-blue hover:text-acars-text transition-colors">
+          <button onClick={startCreate} className="btn-green btn-sm flex items-center gap-1">
             <Plus className="w-3.5 h-3.5" /> New Post
           </button>
         )}
@@ -550,25 +601,30 @@ function NewsFeed() {
             value={formTitle}
             onChange={e => setFormTitle(e.target.value)}
             placeholder="Title"
-            className="w-full px-2.5 py-1.5 bg-acars-bg border border-acars-border rounded text-xs text-acars-text placeholder:text-acars-muted/50 focus:outline-none focus:border-acars-blue"
+            className="w-full px-2.5 py-1.5 bg-acars-bg border border-acars-border rounded text-xs text-acars-text placeholder:text-acars-muted/60 focus:outline-none focus:border-blue-400"
           />
           <textarea
             value={formBody}
             onChange={e => setFormBody(e.target.value)}
             placeholder="Body"
             rows={3}
-            className="w-full px-2.5 py-1.5 bg-acars-bg border border-acars-border rounded text-xs text-acars-text placeholder:text-acars-muted/50 focus:outline-none focus:border-acars-blue resize-none"
+            className="w-full px-2.5 py-1.5 bg-acars-bg border border-acars-border rounded text-xs text-acars-text placeholder:text-acars-muted/60 focus:outline-none focus:border-blue-400 resize-none"
           />
           <div className="flex items-center justify-between">
-            <label className="flex items-center gap-1.5 text-[11px] text-acars-muted cursor-pointer">
-              <input type="checkbox" checked={formPinned} onChange={e => setFormPinned(e.target.checked)} className="rounded border-acars-border" />
+            <label className="flex items-center gap-1.5 text-[11px] text-amber-400 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={formPinned}
+                onChange={e => setFormPinned(e.target.checked)}
+                className="w-3.5 h-3.5 rounded border-amber-400/40 bg-acars-bg text-amber-400 focus:ring-amber-400/40 focus:ring-offset-0 accent-amber-500"
+              />
               <Pin className="w-3 h-3" /> Pin post
             </label>
             <div className="flex items-center gap-2">
-              <button onClick={cancelEdit} className="flex items-center gap-1 px-2.5 py-1 rounded text-[11px] text-acars-muted hover:text-acars-text hover:bg-acars-border/30 transition-colors">
+              <button onClick={cancelEdit} className="btn-danger btn-sm flex items-center gap-1">
                 <X className="w-3 h-3" /> Cancel
               </button>
-              <button onClick={handleSave} disabled={saving || !formTitle.trim() || !formBody.trim()} className="flex items-center gap-1 px-2.5 py-1 rounded text-[11px] font-medium bg-acars-blue text-white hover:bg-acars-blue/80 transition-colors disabled:opacity-50">
+              <button onClick={handleSave} disabled={saving || !formTitle.trim() || !formBody.trim()} className="btn-green btn-sm flex items-center gap-1">
                 <Save className="w-3 h-3" /> {saving ? 'Saving...' : 'Save'}
               </button>
             </div>
@@ -578,12 +634,12 @@ function NewsFeed() {
 
       {loading ? (
         <div className="flex-1 flex items-center justify-center">
-          <Loader2 className="w-5 h-5 text-acars-blue animate-spin" />
+          <Loader2 className="w-5 h-5 text-blue-400 animate-spin" />
         </div>
       ) : posts.length === 0 ? (
         <div className="flex-1 flex flex-col items-center justify-center">
           <Megaphone className="w-8 h-8 text-acars-muted/30 mb-2" />
-          <p className="text-xs text-acars-muted">No announcements yet</p>
+          <p className="text-xs text-acars-muted">No announcements yet — check back soon!</p>
         </div>
       ) : (
         <div className="flex-1 overflow-auto">
@@ -592,17 +648,17 @@ function NewsFeed() {
             return (
               <div
                 key={post.id}
-                className="px-4 py-3 border-b border-acars-border/50 hover:bg-[#1c2433] transition-colors group cursor-pointer"
+                className="px-4 py-3 border-b border-acars-border hover:bg-acars-hover transition-colors group cursor-pointer"
                 onClick={() => setExpandedId(isExpanded ? null : post.id)}
               >
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-1.5 mb-0.5">
-                      {post.pinned && <Pin className="w-3 h-3 text-acars-amber shrink-0" />}
+                      {post.pinned && <Pin className="w-3 h-3 text-amber-400 shrink-0" />}
                       <h4 className="text-xs font-semibold text-acars-text truncate">{post.title}</h4>
                     </div>
                     <p className={`text-[11px] text-acars-muted mb-1 ${isExpanded ? 'whitespace-pre-wrap' : 'line-clamp-2'}`}>{post.body}</p>
-                    <div className="flex items-center gap-2 text-[10px] text-acars-muted/70">
+                    <div className="flex items-center gap-2 text-[10px] text-acars-muted/80">
                       <span className="font-mono">{post.authorCallsign}</span>
                       <span className="text-acars-border">|</span>
                       <span>{relativeTime(post.createdAt)}</span>
@@ -616,7 +672,7 @@ function NewsFeed() {
                   </div>
                   {isAdmin && editing === null && (
                     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" onClick={e => e.stopPropagation()}>
-                      <button onClick={() => startEdit(post)} className="p-1 rounded hover:bg-acars-border/30 text-acars-muted hover:text-acars-text transition-colors">
+                      <button onClick={() => startEdit(post)} className="p-1 rounded hover:bg-acars-border text-acars-muted hover:text-acars-text transition-colors">
                         <Pencil className="w-3 h-3" />
                       </button>
                       <button onClick={() => handleDelete(post.id)} className="p-1 rounded hover:bg-red-500/10 text-acars-muted hover:text-red-400 transition-colors">
@@ -640,6 +696,7 @@ export function DashboardPage() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [bids, setBids] = useState<ActiveBidEntry[]>([]);
   const [airports, setAirports] = useState<Airport[]>([]);
+  const [recentFlights, setRecentFlights] = useState<LogbookEntry[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -648,10 +705,12 @@ export function DashboardPage() {
       api.get<DashboardStats>('/api/stats'),
       api.get<AllBidsResponse>('/api/bids/all'),
       api.get<Airport[]>('/api/airports'),
-    ]).then(([statsData, bidsData, airportsData]) => {
+      api.get<LogbookListResponse>('/api/logbook?pageSize=5').catch(() => ({ entries: [] as LogbookEntry[], total: 0, page: 1, pageSize: 5 })),
+    ]).then(([statsData, bidsData, airportsData, logbookData]) => {
       setStats(statsData);
       setBids(bidsData.bids);
       setAirports(airportsData);
+      setRecentFlights(logbookData.entries);
     }).catch(err => {
       console.error('[Dashboard] Load error:', err);
     }).finally(() => {
@@ -662,7 +721,7 @@ export function DashboardPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full">
-        <Loader2 className="w-6 h-6 text-acars-blue animate-spin" />
+        <Loader2 className="w-6 h-6 text-blue-400 animate-spin" />
       </div>
     );
   }
@@ -670,27 +729,27 @@ export function DashboardPage() {
   return (
     <div className="p-5 space-y-5 overflow-auto h-full">
       {/* Row 1: Stats Bar */}
-      <div className="grid grid-cols-4 gap-4">
-        <StatCard label="Cargo Routes" value={stats?.totalSchedules ?? '—'} icon={CalendarDays} iconBox="bg-acars-green/10 border-acars-green/20" iconColor="text-acars-green" />
-        <StatCard label="Registered Pilots" value={stats?.totalPilots ?? '—'} icon={Users} iconBox="bg-acars-blue/10 border-acars-blue/20" iconColor="text-acars-blue" />
-        <StatCard label="Fleet Aircraft" value={stats?.totalFleet ?? '—'} icon={Plane} iconBox="bg-acars-amber/10 border-acars-amber/20" iconColor="text-acars-amber" />
-        <StatCard label="Active Hubs" value={stats?.totalHubs ?? '—'} icon={Clock} iconBox="bg-acars-cyan/10 border-acars-cyan/20" iconColor="text-acars-cyan" />
+      <div className="grid grid-cols-4 gap-5">
+        <StatCard label="Active Flights" value={stats?.activeFlights ?? '—'} icon={Plane} iconBox="bg-emerald-500/20 border-emerald-500/30" iconColor="text-emerald-400" />
+        <StatCard label="Pilots Online" value={stats?.pilotsOnline ?? '—'} icon={Users} iconBox="bg-blue-500/20 border-blue-500/30" iconColor="text-blue-400" />
+        <StatCard label="Flights this Month" value={stats?.flightsThisMonth ?? '—'} icon={CalendarDays} iconBox="bg-amber-500/20 border-amber-500/30" iconColor="text-amber-400" />
+        <StatCard label="Total Flight Hours" value={stats?.totalHours ?? '—'} icon={Clock} iconBox="bg-blue-400/20 border-blue-400/30" iconColor="text-blue-300" />
       </div>
 
       {/* Row 2: Active Bids + Quick Actions */}
-      <div className="grid grid-cols-[1fr_340px] gap-4">
+      <div className="grid grid-cols-[1fr_340px] gap-5">
         <ActiveBidsTable bids={bids} />
         <QuickActions />
       </div>
 
       {/* Row 3: Network Map + My Info */}
-      <div className="grid grid-cols-[1fr_380px] gap-4">
+      <div className="grid grid-cols-[1fr_420px] gap-5">
         <NetworkMapPreview airports={airports} />
-        <MyInfoCard />
+        <MyInfoCard recentFlights={recentFlights} />
       </div>
 
       {/* Row 4: Pilot Leaderboard + News */}
-      <div className="grid grid-cols-[1fr_380px] gap-4">
+      <div className="grid grid-cols-[1fr_380px] gap-5">
         <PilotLeaderboard />
         <NewsFeed />
       </div>

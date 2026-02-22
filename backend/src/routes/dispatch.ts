@@ -5,13 +5,21 @@ import { authMiddleware, adminMiddleware } from '../middleware/auth.js';
 import { DispatchService } from '../services/dispatch.js';
 import { FlightPlanService } from '../services/flight-plan.js';
 import { MessageService } from '../services/messages.js';
+import { PirepService } from '../services/pirep.js';
+import type { TelemetryService } from '../services/telemetry.js';
+import type { FlightEventTracker } from '../services/flight-event-tracker.js';
 import type { DispatchFlightsResponse, DispatchEditPayload } from '@acars/shared';
 
-export function dispatchRouter(io?: SocketServer<ClientToServerEvents, ServerToClientEvents>): Router {
+export function dispatchRouter(
+  io?: SocketServer<ClientToServerEvents, ServerToClientEvents>,
+  telemetry?: TelemetryService,
+  flightEventTracker?: FlightEventTracker,
+): Router {
   const router = Router();
   const dispatchService = new DispatchService();
   const flightPlanService = new FlightPlanService();
   const messageService = new MessageService();
+  const pirepService = new PirepService();
 
   // GET /api/dispatch/flights — active flights with saved flight plans
   // Admin: all flights; Pilot: only own flights
@@ -134,6 +142,69 @@ export function dispatchRouter(io?: SocketServer<ClientToServerEvents, ServerToC
     } catch (err) {
       console.error('[Dispatch] Send message error:', err);
       res.status(500).json({ error: 'Failed to send message' });
+    }
+  });
+
+  // POST /api/dispatch/flights/:bidId/complete — end flight and file PIREP
+  router.post('/dispatch/flights/:bidId/complete', authMiddleware, (req, res) => {
+    try {
+      const bidId = Number(req.params.bidId);
+      if (isNaN(bidId)) {
+        res.status(400).json({ error: 'Invalid bid ID' });
+        return;
+      }
+
+      // Verify ownership — pilot must own the bid (or admin)
+      if (req.user!.role !== 'admin') {
+        const bid = dispatchService.findBidOwner(bidId);
+        if (!bid || bid.userId !== req.user!.userId) {
+          res.status(404).json({ error: 'Bid not found' });
+          return;
+        }
+      }
+
+      const { remarks } = req.body as { remarks?: string };
+
+      // Read current fuel from telemetry
+      const currentFuelLbs = telemetry
+        ? telemetry.getFuelData().totalQuantityWeight
+        : 0;
+
+      // Read flight events (landing rate, takeoff fuel/time)
+      const flightEvents = flightEventTracker
+        ? flightEventTracker.getEvents()
+        : { landingRateFpm: null, takeoffFuelLbs: null, takeoffTime: null };
+
+      const result = pirepService.submit(
+        bidId,
+        req.user!.userId,
+        currentFuelLbs,
+        flightEvents,
+        remarks?.trim()?.slice(0, 2000),
+      );
+
+      // Reset tracker for next flight
+      if (flightEventTracker) {
+        flightEventTracker.reset();
+      }
+
+      // Broadcast flight completion to dispatch room subscribers
+      if (io) {
+        io.to(`bid:${bidId}`).emit('flight:completed', {
+          bidId,
+          logbookId: result.logbookId,
+        });
+      }
+
+      res.status(201).json(result);
+    } catch (err: any) {
+      console.error('[Dispatch] Complete flight error:', err);
+      const status = err.message?.includes('not found') || err.message?.includes('Not your')
+        ? 404
+        : err.message?.includes('not active')
+          ? 409
+          : 500;
+      res.status(status).json({ error: err.message || 'Failed to complete flight' });
     }
   });
 

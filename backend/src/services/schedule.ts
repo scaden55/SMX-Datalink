@@ -151,7 +151,18 @@ export class ScheduleService {
     const totalPilots = (db.prepare('SELECT COUNT(*) as c FROM users WHERE is_active = 1').get() as { c: number }).c;
     const totalFleet = (db.prepare('SELECT COUNT(*) as c FROM fleet WHERE is_active = 1').get() as { c: number }).c;
     const totalHubs = (db.prepare('SELECT COUNT(DISTINCT dep_icao) as c FROM scheduled_flights WHERE is_active = 1').get() as { c: number }).c;
-    return { totalSchedules, totalPilots, totalFleet, totalHubs };
+
+    const activeFlights = (db.prepare('SELECT COUNT(*) as c FROM active_bids').get() as { c: number }).c;
+    const pilotsOnline = (db.prepare('SELECT COUNT(DISTINCT user_id) as c FROM active_bids').get() as { c: number }).c;
+
+    const now = new Date();
+    const monthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
+    const flightsThisMonth = (db.prepare('SELECT COUNT(*) as c FROM logbook WHERE created_at >= ?').get(monthStart) as { c: number }).c;
+
+    const totalHoursRow = (db.prepare('SELECT COALESCE(SUM(flight_time_min), 0) as m FROM logbook').get() as { m: number });
+    const totalHours = Math.round(totalHoursRow.m / 60);
+
+    return { totalSchedules, totalPilots, totalFleet, totalHubs, activeFlights, pilotsOnline, flightsThisMonth, totalHours };
   }
 
   // ── Schedules ────────────────────────────────────────────────
@@ -183,13 +194,15 @@ export class ScheduleService {
     const sql = `
       SELECT
         sf.*,
-        dep.name  AS dep_name,
-        arr.name  AS arr_name,
+        COALESCE(dep.name, oa_dep.name) AS dep_name,
+        COALESCE(arr.name, oa_arr.name) AS arr_name,
         (SELECT COUNT(*) FROM active_bids ab WHERE ab.schedule_id = sf.id) AS bid_count,
         (SELECT COUNT(*) FROM active_bids ab WHERE ab.schedule_id = sf.id AND ab.user_id = ?) AS has_bid
       FROM scheduled_flights sf
-      JOIN airports dep ON dep.icao = sf.dep_icao
-      JOIN airports arr ON arr.icao = sf.arr_icao
+      LEFT JOIN airports dep ON dep.icao = sf.dep_icao
+      LEFT JOIN airports arr ON arr.icao = sf.arr_icao
+      LEFT JOIN oa_airports oa_dep ON oa_dep.ident = sf.dep_icao
+      LEFT JOIN oa_airports oa_arr ON oa_arr.ident = sf.arr_icao
       WHERE ${conditions.join(' AND ')}
       ORDER BY sf.flight_number
     `;
@@ -207,13 +220,15 @@ export class ScheduleService {
     const row = getDb().prepare(`
       SELECT
         sf.*,
-        dep.name  AS dep_name,
-        arr.name  AS arr_name,
+        COALESCE(dep.name, oa_dep.name) AS dep_name,
+        COALESCE(arr.name, oa_arr.name) AS arr_name,
         (SELECT COUNT(*) FROM active_bids ab WHERE ab.schedule_id = sf.id) AS bid_count,
         (SELECT COUNT(*) FROM active_bids ab WHERE ab.schedule_id = sf.id AND ab.user_id = ?) AS has_bid
       FROM scheduled_flights sf
-      JOIN airports dep ON dep.icao = sf.dep_icao
-      JOIN airports arr ON arr.icao = sf.arr_icao
+      LEFT JOIN airports dep ON dep.icao = sf.dep_icao
+      LEFT JOIN airports arr ON arr.icao = sf.arr_icao
+      LEFT JOIN oa_airports oa_dep ON oa_dep.ident = sf.dep_icao
+      LEFT JOIN oa_airports oa_arr ON oa_arr.ident = sf.arr_icao
       WHERE sf.id = ?
     `).get(userIdParam, id) as ScheduleRow | undefined;
 
@@ -268,12 +283,14 @@ export class ScheduleService {
         sf.flight_number, sf.dep_icao, sf.arr_icao, sf.aircraft_type,
         sf.dep_time, sf.arr_time, sf.distance_nm, sf.flight_time_min, sf.days_of_week,
         sf.charter_type,
-        dep.name AS dep_name,
-        arr.name AS arr_name
+        COALESCE(dep.name, oa_dep.name) AS dep_name,
+        COALESCE(arr.name, oa_arr.name) AS arr_name
       FROM active_bids ab
       JOIN scheduled_flights sf ON sf.id = ab.schedule_id
-      JOIN airports dep ON dep.icao = sf.dep_icao
-      JOIN airports arr ON arr.icao = sf.arr_icao
+      LEFT JOIN airports dep ON dep.icao = sf.dep_icao
+      LEFT JOIN airports arr ON arr.icao = sf.arr_icao
+      LEFT JOIN oa_airports oa_dep ON oa_dep.ident = sf.dep_icao
+      LEFT JOIN oa_airports oa_arr ON oa_arr.ident = sf.arr_icao
       WHERE ab.user_id = ?
       ORDER BY sf.flight_number
     `).all(userId) as BidRow[];
@@ -288,15 +305,17 @@ export class ScheduleService {
         sf.flight_number, sf.dep_icao, sf.arr_icao, sf.aircraft_type,
         sf.dep_time, sf.arr_time, sf.distance_nm, sf.flight_time_min, sf.days_of_week,
         sf.charter_type,
-        dep.name AS dep_name,
-        arr.name AS arr_name,
+        COALESCE(dep.name, oa_dep.name) AS dep_name,
+        COALESCE(arr.name, oa_arr.name) AS arr_name,
         u.callsign AS pilot_callsign,
         u.first_name AS pilot_first_name,
         u.last_name AS pilot_last_name
       FROM active_bids ab
       JOIN scheduled_flights sf ON sf.id = ab.schedule_id
-      JOIN airports dep ON dep.icao = sf.dep_icao
-      JOIN airports arr ON arr.icao = sf.arr_icao
+      LEFT JOIN airports dep ON dep.icao = sf.dep_icao
+      LEFT JOIN airports arr ON arr.icao = sf.arr_icao
+      LEFT JOIN oa_airports oa_dep ON oa_dep.ident = sf.dep_icao
+      LEFT JOIN oa_airports oa_arr ON oa_arr.ident = sf.arr_icao
       JOIN users u ON u.id = ab.user_id
       ORDER BY ab.created_at DESC
     `).all() as AllBidRow[];
@@ -375,12 +394,14 @@ export class ScheduleService {
         sf.flight_number, sf.dep_icao, sf.arr_icao, sf.aircraft_type,
         sf.dep_time, sf.arr_time, sf.distance_nm, sf.flight_time_min, sf.days_of_week,
         sf.charter_type,
-        dep.name AS dep_name,
-        arr.name AS arr_name
+        COALESCE(dep.name, oa_dep.name) AS dep_name,
+        COALESCE(arr.name, oa_arr.name) AS arr_name
       FROM active_bids ab
       JOIN scheduled_flights sf ON sf.id = ab.schedule_id
-      JOIN airports dep ON dep.icao = sf.dep_icao
-      JOIN airports arr ON arr.icao = sf.arr_icao
+      LEFT JOIN airports dep ON dep.icao = sf.dep_icao
+      LEFT JOIN airports arr ON arr.icao = sf.arr_icao
+      LEFT JOIN oa_airports oa_dep ON oa_dep.ident = sf.dep_icao
+      LEFT JOIN oa_airports oa_arr ON oa_arr.ident = sf.arr_icao
       WHERE ab.user_id = ? AND ab.schedule_id = ?
     `).get(userId, scheduleId) as BidRow | undefined;
 

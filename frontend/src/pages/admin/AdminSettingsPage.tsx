@@ -9,10 +9,12 @@ import {
   ClipboardCheck,
   DollarSign,
   Ticket,
+  Code2,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { api } from '../../lib/api';
 import { AdminPageHeader } from '../../components/admin/AdminPageHeader';
+import { useUIStore } from '../../stores/uiStore';
 import type { VaSetting, VaSettingsResponse } from '@acars/shared';
 
 // ─── Types ──────────────────────────────────────────────────────
@@ -58,7 +60,7 @@ const SECTIONS: SectionDef[] = [
     title: 'VA Identity',
     description: 'Core virtual airline branding and identification.',
     icon: Building2,
-    iconColor: 'text-acars-blue',
+    iconColor: 'text-blue-400',
     fields: [
       { key: 'va.name', label: 'VA Name', type: 'text', placeholder: 'SMA Virtual' },
       { key: 'va.icao', label: 'ICAO Code', type: 'text', placeholder: 'SMA' },
@@ -69,7 +71,7 @@ const SECTIONS: SectionDef[] = [
     title: 'PIREP Settings',
     description: 'Configure how pilot reports are processed and scored.',
     icon: ClipboardCheck,
-    iconColor: 'text-acars-green',
+    iconColor: 'text-emerald-400',
     fields: [
       { key: 'pirep.auto_approve', label: 'Auto-Approve PIREPs', type: 'boolean' },
       { key: 'pirep.min_score', label: 'Minimum Score for Auto-Approve', type: 'number', placeholder: '0' },
@@ -80,7 +82,7 @@ const SECTIONS: SectionDef[] = [
     title: 'Financial Rates',
     description: 'Set pay rates and cargo/passenger revenue multipliers.',
     icon: DollarSign,
-    iconColor: 'text-acars-amber',
+    iconColor: 'text-amber-400',
     fields: [
       { key: 'finance.pay_per_hour', label: 'Pay per Flight Hour', type: 'number', placeholder: '50.00', prefix: '$', step: '0.01' },
       { key: 'finance.cargo_rate', label: 'Cargo Rate per lb', type: 'number', placeholder: '0.0005', prefix: '$', step: '0.0001' },
@@ -92,9 +94,19 @@ const SECTIONS: SectionDef[] = [
     title: 'Bid Settings',
     description: 'Control how many active bids a pilot may hold.',
     icon: Ticket,
-    iconColor: 'text-acars-blue',
+    iconColor: 'text-blue-400',
     fields: [
       { key: 'bid.max_active', label: 'Max Active Bids per Pilot', type: 'number', placeholder: '5' },
+    ],
+  },
+  {
+    id: 'developer',
+    title: 'Developer Tools',
+    description: 'Enable diagnostic tools and debug overlay for admin users.',
+    icon: Code2,
+    iconColor: 'text-blue-400',
+    fields: [
+      { key: 'dev.enabled', label: 'Enable Developer Mode', type: 'boolean' },
     ],
   },
 ];
@@ -121,8 +133,8 @@ function ToggleSwitch({ checked, onChange }: { checked: boolean; onChange: (val:
       role="switch"
       aria-checked={checked}
       onClick={() => onChange(!checked)}
-      className={`relative inline-flex items-center w-11 h-[22px] rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-acars-blue/40 ${
-        checked ? 'bg-acars-blue' : 'bg-acars-border'
+      className={`relative inline-flex items-center w-11 h-[22px] rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-400/40 ${
+        checked ? 'bg-blue-500' : 'bg-acars-border'
       }`}
     >
       <span
@@ -144,10 +156,10 @@ function ToastNotification({ toast, onDismiss }: { toast: Toast; onDismiss: () =
 
   return (
     <div
-      className={`fixed top-4 right-4 z-50 flex items-center gap-2 px-4 py-2.5 rounded-lg shadow-lg border text-sm animate-in fade-in slide-in-from-top-2 ${
+      className={`fixed top-24 right-4 z-50 flex items-center gap-2 px-4 py-2.5 rounded-md shadow-lg border text-sm animate-in fade-in slide-in-from-top-2 ${
         toast.type === 'success'
-          ? 'bg-acars-green/10 border-acars-green/30 text-acars-green'
-          : 'bg-acars-red/10 border-acars-red/30 text-acars-red'
+          ? 'bg-emerald-500/10 border-emerald-400/30 text-emerald-400'
+          : 'bg-red-500/10 border-red-400/30 text-red-400'
       }`}
     >
       {toast.type === 'success' ? (
@@ -183,14 +195,14 @@ function PrefixedInput({
         placeholder={placeholder}
         step={step}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full bg-[#0d1117] border border-acars-border rounded px-3 py-1.5 text-sm text-acars-text focus:border-acars-blue focus:outline-none"
+        className="input-field"
       />
     );
   }
 
   return (
     <div className="relative flex items-stretch">
-      <span className="flex items-center justify-center px-2.5 bg-[#161b22] border border-r-0 border-acars-border rounded-l text-xs text-acars-muted font-medium select-none">
+      <span className="flex items-center justify-center px-2.5 bg-acars-bg border border-r-0 border-acars-border rounded-l text-xs text-acars-muted font-medium select-none">
         {prefix}
       </span>
       <input
@@ -199,7 +211,7 @@ function PrefixedInput({
         placeholder={placeholder}
         step={step}
         onChange={(e) => onChange(e.target.value)}
-        className="flex-1 bg-[#0d1117] border border-acars-border rounded-r px-3 py-1.5 text-sm text-acars-text focus:border-acars-blue focus:outline-none min-w-0"
+        className="input-field rounded-l-none min-w-0"
       />
     </div>
   );
@@ -236,10 +248,10 @@ function SectionCard({
   }
 
   return (
-    <div className="panel rounded-lg border border-acars-border overflow-hidden">
+    <div className="panel rounded-md border border-acars-border overflow-hidden">
       {/* Section header */}
-      <div className="flex items-center gap-3 px-5 py-4 border-b border-acars-border/50 bg-[#0d1117]/40">
-        <div className={`flex items-center justify-center w-8 h-8 rounded-md bg-[#1c2433] ${section.iconColor}`}>
+      <div className="flex items-center gap-3 px-5 py-4 border-b border-acars-border bg-acars-bg/40">
+        <div className={`flex items-center justify-center w-8 h-8 rounded-md bg-acars-hover ${section.iconColor}`}>
           <Icon className="w-4 h-4" />
         </div>
         <div className="flex-1 min-w-0">
@@ -278,7 +290,7 @@ function SectionCard({
                 value={values[field.key] ?? ''}
                 placeholder={field.placeholder}
                 onChange={(e) => onValueChange(field.key, e.target.value)}
-                className="w-full bg-[#0d1117] border border-acars-border rounded px-3 py-1.5 text-sm text-acars-text focus:border-acars-blue focus:outline-none"
+                className="input-field"
               />
             )}
           </div>
@@ -286,7 +298,7 @@ function SectionCard({
       </div>
 
       {/* Footer: metadata + save button */}
-      <div className="flex items-center justify-between px-5 py-3 border-t border-acars-border/50 bg-[#0d1117]/20">
+      <div className="flex items-center justify-between px-5 py-3 border-t border-acars-border bg-acars-bg/20">
         <div className="text-[10px] text-acars-muted/60">
           {latestMeta?.updatedAt ? (
             <>
@@ -302,7 +314,7 @@ function SectionCard({
         <button
           onClick={() => onSave(section.id)}
           disabled={saveState.saving}
-          className="inline-flex items-center gap-1.5 bg-acars-blue hover:bg-acars-blue/80 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-medium px-4 py-1.5 rounded transition-colors"
+          className="inline-flex items-center gap-1.5 bg-blue-500 hover:bg-blue-500/80 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-medium px-4 py-1.5 rounded transition-colors"
         >
           {saveState.saving ? (
             <>
@@ -329,6 +341,7 @@ function SectionCard({
 // ─── Main Page ──────────────────────────────────────────────────
 
 export function AdminSettingsPage() {
+  const setDevMode = useUIStore((s) => s.setDevMode);
   const [values, setValues] = useState<Record<string, string>>({});
   const [meta, setMeta] = useState<Record<string, SettingMeta>>({});
   const [loading, setLoading] = useState(true);
@@ -445,6 +458,11 @@ export function AdminSettingsPage() {
           }));
         }, 2500);
 
+        // Sync dev mode into UI store when developer section is saved
+        if (sectionId === 'developer') {
+          setDevMode(values['dev.enabled'] === 'true');
+        }
+
         setToast({ type: 'success', message: `${section.title} saved successfully` });
       } catch (err) {
         setSectionStates((prev) => ({
@@ -454,7 +472,7 @@ export function AdminSettingsPage() {
         setToast({ type: 'error', message: err instanceof Error ? err.message : 'Failed to save settings' });
       }
     },
-    [values],
+    [values, setDevMode],
   );
 
   // ── Dismiss toast ────────────────────────────────────────────

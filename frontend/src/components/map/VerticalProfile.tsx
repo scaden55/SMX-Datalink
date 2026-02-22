@@ -38,7 +38,7 @@ export function VerticalProfile() {
         .attr('x', innerW / 2)
         .attr('y', innerH / 2)
         .attr('text-anchor', 'middle')
-        .attr('fill', '#8b949e')
+        .attr('fill', 'rgb(var(--text-secondary-rgb))')
         .attr('font-size', '11px')
         .text('No flight plan loaded — vertical profile unavailable');
       return;
@@ -140,7 +140,7 @@ export function VerticalProfile() {
       const cx = xScale(i) ?? 0;
       const cy = yScale(pt.alt);
       const color = i < tocIndex ? CLR_CLIMB : i > todIndex ? CLR_DESCENT : CLR_CRUISE;
-      const fill = '#0d1117';
+      const fill = 'var(--bg-app)';
 
       switch (pt.wpType) {
         case 'airport': // Square
@@ -180,9 +180,9 @@ export function VerticalProfile() {
       .attr('x', (d) => xScale(d.i) ?? 0)
       .attr('y', innerH + 14)
       .attr('text-anchor', 'middle')
-      .attr('fill', '#8b949e')
+      .attr('fill', 'rgb(var(--text-secondary-rgb))')
       .attr('font-size', '8px')
-      .attr('font-family', 'monospace')
+      .attr('font-family', 'Inter, system-ui, sans-serif')
       .text((d) => d.ident);
 
     // Y-axis (FL labels)
@@ -194,10 +194,10 @@ export function VerticalProfile() {
     g.append('g')
       .call(yAxis)
       .selectAll('text')
-      .attr('fill', '#8b949e')
+      .attr('fill', 'rgb(var(--text-secondary-rgb))')
       .attr('font-size', '9px');
 
-    g.selectAll('.domain, .tick line').attr('stroke', '#30363d');
+    g.selectAll('.domain, .tick line').attr('stroke', 'var(--border-panel)');
 
     // Current altitude indicator — only when SimConnect is actively returning data
     if (aircraft && connected && !isStale) {
@@ -236,7 +236,7 @@ export function VerticalProfile() {
   return (
     <div
       ref={containerRef}
-      className="bg-acars-panel/90 border-t border-acars-border backdrop-blur-sm"
+      className="bg-acars-panel border-t border-acars-border"
     >
       <svg ref={svgRef} className="w-full" />
     </div>

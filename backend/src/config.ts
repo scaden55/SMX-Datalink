@@ -25,7 +25,7 @@ export const config = {
   simconnectEnabled: process.env.SIMCONNECT_ENABLED !== 'false',
   simconnect: {
     appName: 'ACARS System',
-    pollInterval: parseInt(process.env.SIMCONNECT_POLL_INTERVAL || '1000', 10),
+    pollInterval: parseInt(process.env.SIMCONNECT_POLL_INTERVAL || '200', 10),
     reconnectInterval: parseInt(process.env.SIMCONNECT_RECONNECT_INTERVAL || '5000', 10),
   },
   jwtSecret: process.env.JWT_SECRET || devJwtSecret,
@@ -35,4 +35,10 @@ export const config = {
   simbriefApiKey: process.env.SIMBRIEF_API_KEY || '',
   /** Maximum JSON body size for Express requests */
   maxBodySize: process.env.MAX_BODY_SIZE || '1mb',
+  vatsim: {
+    enabled: process.env.VATSIM_ENABLED !== 'false',
+    pollIntervalMs: parseInt(process.env.VATSIM_POLL_INTERVAL || '15000', 10),
+    dataUrl: process.env.VATSIM_DATA_URL || 'https://data.vatsim.net/v3/vatsim-data.json',
+    transceiversUrl: process.env.VATSIM_TRANSCEIVERS_URL || 'https://data.vatsim.net/v3/transceivers-data.json',
+  },
 } as const;

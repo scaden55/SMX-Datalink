@@ -27,6 +27,9 @@ interface ElectronAPI {
   openFileDialog: (options?: unknown) => Promise<{ canceled: boolean; filePaths: string[] }>;
   saveFileDialog: (options?: unknown) => Promise<{ canceled: boolean; filePath: string }>;
 
+  // Developer tools
+  toggleDevTools: () => void;
+
   // Auto-updater
   checkForUpdates: () => void;
   installUpdate: () => void;

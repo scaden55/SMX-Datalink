@@ -6,6 +6,22 @@ export function adminSchedulesRouter(): Router {
   const router = Router();
   const scheduleService = new ScheduleAdminService();
 
+  // GET /api/admin/schedules/autofill — progressive airport/distance/time lookup
+  router.get('/admin/schedules/autofill', authMiddleware, dispatcherMiddleware, (req, res) => {
+    try {
+      const result = scheduleService.autofill({
+        depIcao: req.query.depIcao as string | undefined,
+        arrIcao: req.query.arrIcao as string | undefined,
+        aircraftType: req.query.aircraftType as string | undefined,
+        depTime: req.query.depTime as string | undefined,
+      });
+      res.json(result);
+    } catch (err) {
+      console.error('[Admin] Autofill error:', err);
+      res.status(500).json({ error: 'Autofill lookup failed' });
+    }
+  });
+
   // GET /api/admin/schedules
   router.get('/admin/schedules', authMiddleware, dispatcherMiddleware, (req, res) => {
     try {

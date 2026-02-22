@@ -13,13 +13,12 @@ import { PlanningGenerateBar } from './PlanningGenerateBar';
 
 interface Props {
   onGenerate: () => void;
-  onFetchLatest: () => void;
-  onSave: () => void;
+  onStartFlight: () => void;
 }
 
-export function PlanningLeftPanel({ onGenerate, onFetchLatest, onSave }: Props) {
+export function PlanningLeftPanel({ onGenerate, onStartFlight }: Props) {
   return (
-    <div className="w-[380px] shrink-0 border-r border-acars-border flex flex-col bg-acars-panel overflow-hidden">
+    <div className="w-[420px] shrink-0 border-r border-acars-border flex flex-col bg-acars-panel overflow-hidden">
       <div className="flex-1 overflow-auto">
         <PlanningHeader />
         <PlanningAircraftSection />
@@ -33,7 +32,7 @@ export function PlanningLeftPanel({ onGenerate, onFetchLatest, onSave }: Props) 
         <PlanningTerrainSection />
         <PlanningRemarksSection />
       </div>
-      <PlanningGenerateBar onGenerate={onGenerate} onFetchLatest={onFetchLatest} onSave={onSave} />
+      <PlanningGenerateBar onGenerate={onGenerate} onStartFlight={onStartFlight} />
     </div>
   );
 }

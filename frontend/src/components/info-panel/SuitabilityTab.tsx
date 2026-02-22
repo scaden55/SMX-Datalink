@@ -124,7 +124,7 @@ function overallLevel(checks: Check[]): SuitLevel {
 
 function OverallBadge({ level }: { level: SuitLevel }) {
   const styles = {
-    green: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
+    green: 'bg-emerald-500/15 text-emerald-400 border-emerald-400/20',
     amber: 'bg-amber-500/15 text-amber-400 border-amber-500/30',
     red: 'bg-red-500/15 text-red-400 border-red-500/30',
   };
@@ -142,7 +142,7 @@ function AirportSuitability({ icao, label, checks }: { icao: string; label: stri
   return (
     <div className="panel p-3 space-y-2">
       <div className="flex items-center gap-2">
-        <span className="text-xs font-bold text-acars-cyan">{icao}</span>
+        <span className="text-xs font-bold text-sky-400">{icao}</span>
         <span className="text-[10px] text-acars-muted">({label})</span>
         <OverallBadge level={level} />
       </div>
@@ -192,7 +192,7 @@ export function SuitabilityTab({ dispatchData }: { dispatchData: DispatchData })
       <div className="flex items-center gap-2">
         <h3 className="text-xs font-semibold text-acars-text">Airport Suitability</h3>
         {dispatchData.loading && (
-          <span className="text-[10px] text-acars-cyan animate-pulse">Fetching...</span>
+          <span className="text-[10px] text-sky-400 animate-pulse">Fetching...</span>
         )}
       </div>
 

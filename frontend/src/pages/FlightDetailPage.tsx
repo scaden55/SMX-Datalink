@@ -23,6 +23,7 @@ import {
   Navigation,
 } from 'lucide-react';
 import { api } from '../lib/api';
+import { VatsimBadge } from '../components/common/VatsimBadge';
 import type { LogbookEntry, LogbookStatus } from '@acars/shared';
 
 // ─── Helpers ────────────────────────────────────────────────────
@@ -52,39 +53,40 @@ function fmt(val: number | null | undefined, suffix = ''): string {
 
 function landingRateLabel(fpm: number): { label: string; color: string } {
   const abs = Math.abs(fpm);
-  if (abs <= 100) return { label: 'Butter', color: 'text-acars-green' };
-  if (abs <= 150) return { label: 'Smooth', color: 'text-acars-green' };
-  if (abs <= 200) return { label: 'Normal', color: 'text-acars-blue' };
-  if (abs <= 250) return { label: 'Firm', color: 'text-acars-amber' };
-  return { label: 'Hard', color: 'text-acars-red' };
+  if (abs <= 100) return { label: 'Butter', color: 'text-emerald-400' };
+  if (abs <= 150) return { label: 'Smooth', color: 'text-emerald-400' };
+  if (abs <= 200) return { label: 'Normal', color: 'text-blue-400' };
+  if (abs <= 250) return { label: 'Firm', color: 'text-amber-400' };
+  return { label: 'Hard', color: 'text-red-400' };
 }
 
 function scoreLabel(score: number): { label: string; color: string } {
-  if (score >= 95) return { label: 'Excellent', color: 'text-acars-green' };
-  if (score >= 85) return { label: 'Good', color: 'text-acars-green' };
-  if (score >= 75) return { label: 'Fair', color: 'text-acars-amber' };
-  if (score >= 60) return { label: 'Below Average', color: 'text-acars-amber' };
-  return { label: 'Poor', color: 'text-acars-red' };
+  if (score >= 95) return { label: 'Excellent', color: 'text-emerald-400' };
+  if (score >= 85) return { label: 'Good', color: 'text-emerald-400' };
+  if (score >= 75) return { label: 'Fair', color: 'text-amber-400' };
+  if (score >= 60) return { label: 'Below Average', color: 'text-amber-400' };
+  return { label: 'Poor', color: 'text-red-400' };
 }
 
 const STATUS_CONFIG: Record<LogbookStatus, { label: string; icon: typeof CheckCircle2; color: string }> = {
-  pending:   { label: 'Pending',   icon: Clock,         color: 'text-acars-blue' },
-  approved:  { label: 'Approved',  icon: CheckCircle2,  color: 'text-acars-green' },
-  completed: { label: 'Completed', icon: CheckCircle2,  color: 'text-acars-green' },
-  diverted:  { label: 'Diverted',  icon: AlertTriangle, color: 'text-acars-amber' },
-  rejected:  { label: 'Rejected',  icon: XCircle,       color: 'text-acars-red' },
+  pending:   { label: 'Pending',   icon: Clock,         color: 'text-blue-400' },
+  approved:  { label: 'Approved',  icon: CheckCircle2,  color: 'text-emerald-400' },
+  completed: { label: 'Completed', icon: CheckCircle2,  color: 'text-emerald-400' },
+  diverted:  { label: 'Diverted',  icon: AlertTriangle, color: 'text-amber-400' },
+  rejected:  { label: 'Rejected',  icon: XCircle,       color: 'text-red-400' },
   cancelled: { label: 'Cancelled', icon: Ban,           color: 'text-acars-muted' },
 };
 
-function InfoRow({ label, value, icon: Icon, valueClass = '' }: {
+function InfoRow({ label, value, icon: Icon, iconColor, valueClass = '' }: {
   label: string;
   value: string;
   icon?: typeof Plane;
+  iconColor?: string;
   valueClass?: string;
 }) {
   return (
     <div className="flex items-start gap-3 py-2">
-      {Icon && <Icon className="w-4 h-4 text-acars-muted mt-0.5 flex-none" />}
+      {Icon && <Icon className={`w-4 h-4 mt-0.5 flex-none ${iconColor ?? 'text-acars-muted'}`} />}
       <div className="min-w-0">
         <div className="text-[10px] uppercase tracking-wider text-acars-muted font-medium">{label}</div>
         <div className={`text-sm text-acars-text font-medium ${valueClass}`}>{value}</div>
@@ -114,7 +116,7 @@ export function FlightDetailPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full">
-        <Loader2 className="w-6 h-6 text-acars-amber animate-spin" />
+        <Loader2 className="w-6 h-6 text-amber-400 animate-spin" />
       </div>
     );
   }
@@ -122,8 +124,8 @@ export function FlightDetailPage() {
   if (error || !entry) {
     return (
       <div className="flex flex-col items-center justify-center h-full gap-4">
-        <p className="text-sm text-acars-red">{error || 'Flight not found'}</p>
-        <button onClick={() => navigate('/logbook')} className="text-xs text-acars-blue hover:underline">
+        <p className="text-sm text-red-400">{error || 'Flight not found'}</p>
+        <button onClick={() => navigate('/logbook')} className="text-xs text-blue-400 hover:underline">
           Back to Logbook
         </button>
       </div>
@@ -150,26 +152,35 @@ export function FlightDetailPage() {
 
         <div className="flex items-center justify-between mb-5">
           <div className="flex items-center gap-3">
-            <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-acars-amber/10 border border-acars-amber/20">
-              <Plane className="w-5 h-5 text-acars-amber" />
+            <div className="flex items-center justify-center w-10 h-10 rounded-md bg-amber-500/10 border border-amber-400/20">
+              <Plane className="w-5 h-5 text-amber-400" />
             </div>
             <div>
               <h1 className="text-lg font-bold text-acars-text font-mono">{entry.flightNumber}</h1>
               <p className="text-xs text-acars-muted">{formatDateTime(entry.actualDep)}</p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <StatusIcon className={`w-5 h-5 ${statusCfg.color}`} />
-            <span className={`text-sm font-semibold ${statusCfg.color}`}>{statusCfg.label}</span>
+          <div className="flex items-center gap-3">
+            <VatsimBadge connected={entry.vatsimConnected} callsign={entry.vatsimCallsign} mode="full" />
+            <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-semibold ${
+              entry.status === 'approved' || entry.status === 'completed' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-400/20' :
+              entry.status === 'pending' ? 'bg-blue-500/10 text-blue-400 border border-blue-400/20' :
+              entry.status === 'rejected' ? 'bg-red-500/10 text-red-400 border border-red-400/20' :
+              entry.status === 'diverted' ? 'bg-amber-500/10 text-amber-400 border border-amber-400/20' :
+              'bg-acars-muted/10 text-acars-muted border border-acars-border'
+            }`}>
+              <StatusIcon className="w-3.5 h-3.5" />
+              {statusCfg.label}
+            </span>
           </div>
         </div>
 
         {/* ── Route Hero ─────────────────────────────────────── */}
-        <div className="bg-acars-card border border-acars-border rounded-lg p-5 mb-4">
+        <div className="panel rounded-md p-5 mb-4">
           <div className="flex items-center justify-center gap-8">
             {/* Departure */}
             <div className="text-center">
-              <PlaneTakeoff className="w-5 h-5 text-acars-green mx-auto mb-1" />
+              <PlaneTakeoff className="w-5 h-5 text-emerald-400 mx-auto mb-1" />
               <div className="text-2xl font-bold font-mono text-acars-text">{entry.depIcao}</div>
               {entry.depName && <div className="text-xs text-acars-muted mt-0.5">{entry.depName}</div>}
               <div className="text-xs text-acars-muted mt-1">
@@ -182,18 +193,18 @@ export function FlightDetailPage() {
 
             {/* Connection line */}
             <div className="flex flex-col items-center flex-1 max-w-xs">
-              <div className="text-xs text-acars-muted mb-1">{formatDuration(entry.flightTimeMin)}</div>
+              <div className="text-xs text-acars-muted font-mono mb-1">{formatDuration(entry.flightTimeMin)}</div>
               <div className="w-full flex items-center">
                 <div className="h-px flex-1 bg-acars-border" />
-                <ArrowRight className="w-4 h-4 text-acars-muted/50 mx-2" />
+                <ArrowRight className="w-4 h-4 text-sky-400/40 mx-2" />
                 <div className="h-px flex-1 bg-acars-border" />
               </div>
-              <div className="text-xs text-acars-muted mt-1">{entry.distanceNm.toLocaleString()} nm</div>
+              <div className="text-xs text-acars-muted font-mono mt-1">{entry.distanceNm.toLocaleString()} nm</div>
             </div>
 
             {/* Arrival */}
             <div className="text-center">
-              <PlaneLanding className="w-5 h-5 text-acars-blue mx-auto mb-1" />
+              <PlaneLanding className="w-5 h-5 text-red-400 mx-auto mb-1" />
               <div className="text-2xl font-bold font-mono text-acars-text">{entry.arrIcao}</div>
               {entry.arrName && <div className="text-xs text-acars-muted mt-0.5">{entry.arrName}</div>}
               <div className="text-xs text-acars-muted mt-1">
@@ -209,9 +220,9 @@ export function FlightDetailPage() {
         {/* ── Performance + Score ─────────────────────────────── */}
         <div className="grid grid-cols-2 gap-4 mb-4">
           {/* Landing & Score */}
-          <div className="bg-acars-card border border-acars-border rounded-lg p-4">
+          <div className="panel rounded-md p-4">
             <h3 className="text-[11px] uppercase tracking-wider text-acars-muted font-medium mb-3 flex items-center gap-2">
-              <BarChart3 className="w-3.5 h-3.5" />
+              <BarChart3 className="w-3.5 h-3.5 text-emerald-400" />
               Performance
             </h3>
             <div className="grid grid-cols-2 gap-4">
@@ -245,9 +256,9 @@ export function FlightDetailPage() {
           </div>
 
           {/* Fuel */}
-          <div className="bg-acars-card border border-acars-border rounded-lg p-4">
+          <div className="panel rounded-md p-4">
             <h3 className="text-[11px] uppercase tracking-wider text-acars-muted font-medium mb-3 flex items-center gap-2">
-              <Fuel className="w-3.5 h-3.5" />
+              <Fuel className="w-3.5 h-3.5 text-amber-400" />
               Fuel
             </h3>
             <div className="grid grid-cols-2 gap-4">
@@ -270,7 +281,7 @@ export function FlightDetailPage() {
               <div className="mt-2 pt-2 border-t border-acars-border">
                 <div className="text-[10px] uppercase tracking-wider text-acars-muted">Variance</div>
                 <div className={`text-sm font-mono font-semibold ${
-                  entry.fuelUsedLbs <= entry.fuelPlannedLbs ? 'text-acars-green' : 'text-acars-amber'
+                  entry.fuelUsedLbs <= entry.fuelPlannedLbs ? 'text-emerald-400' : 'text-amber-400'
                 }`}>
                   {entry.fuelUsedLbs <= entry.fuelPlannedLbs ? '' : '+'}
                   {(entry.fuelUsedLbs - entry.fuelPlannedLbs).toLocaleString()} lbs
@@ -283,27 +294,32 @@ export function FlightDetailPage() {
 
         {/* ── Flight Details ──────────────────────────────────── */}
         <div className="grid grid-cols-2 gap-4 mb-4">
-          <div className="bg-acars-card border border-acars-border rounded-lg p-4">
+          <div className="panel rounded-md p-4">
             <h3 className="text-[11px] uppercase tracking-wider text-acars-muted font-medium mb-3 flex items-center gap-2">
-              <Plane className="w-3.5 h-3.5" />
+              <Plane className="w-3.5 h-3.5 text-sky-400" />
               Aircraft
             </h3>
-            <InfoRow label="Type" value={entry.aircraftType} icon={Plane} />
+            <InfoRow label="Type" value={entry.aircraftType} icon={Plane} iconColor="text-sky-400" />
             {entry.aircraftRegistration && (
-              <InfoRow label="Registration" value={entry.aircraftRegistration} icon={Navigation} />
+              <InfoRow label="Registration" value={entry.aircraftRegistration} icon={Navigation} iconColor="text-blue-400" />
             )}
-            <InfoRow label="Passengers" value={fmt(entry.paxCount)} icon={Users} />
-            <InfoRow label="Cargo" value={fmt(entry.cargoLbs, 'lbs')} icon={Package} />
+            <InfoRow label="Passengers" value={fmt(entry.paxCount)} icon={Users} iconColor="text-blue-400" />
+            <InfoRow label="Cargo" value={fmt(entry.cargoLbs, 'lbs')} icon={Package} iconColor="text-amber-400" />
           </div>
 
-          <div className="bg-acars-card border border-acars-border rounded-lg p-4">
+          <div className="panel rounded-md p-4">
             <h3 className="text-[11px] uppercase tracking-wider text-acars-muted font-medium mb-3 flex items-center gap-2">
-              <Route className="w-3.5 h-3.5" />
+              <Route className="w-3.5 h-3.5 text-blue-400" />
               Flight Plan
             </h3>
-            <InfoRow label="Cruise Altitude" value={entry.cruiseAltitude ?? '—'} icon={Gauge} />
-            <InfoRow label="Distance" value={fmt(entry.distanceNm, 'nm')} icon={Ruler} />
-            <InfoRow label="Flight Time" value={formatDuration(entry.flightTimeMin)} icon={Clock} />
+            <InfoRow label="Cruise Altitude" value={entry.cruiseAltitude ?? '—'} icon={Gauge} iconColor="text-blue-400" />
+            <InfoRow label="Distance" value={fmt(entry.distanceNm, 'nm')} icon={Ruler} iconColor="text-sky-400" />
+            <InfoRow label="Flight Time" value={formatDuration(entry.flightTimeMin)} icon={Clock} iconColor="text-amber-400" />
+            <InfoRow
+              label="Network"
+              value={entry.vatsimConnected ? `VATSIM (${entry.vatsimCallsign ?? 'Connected'})` : 'Offline'}
+              valueClass={entry.vatsimConnected ? 'text-emerald-400' : ''}
+            />
             {entry.route && (
               <div className="mt-2 pt-2 border-t border-acars-border">
                 <div className="text-[10px] uppercase tracking-wider text-acars-muted font-medium mb-1">Route</div>
@@ -316,9 +332,9 @@ export function FlightDetailPage() {
         </div>
 
         {/* ── Pilot & Remarks ─────────────────────────────────── */}
-        <div className="bg-acars-card border border-acars-border rounded-lg p-4 mb-4">
+        <div className="panel rounded-md p-4 mb-4">
           <h3 className="text-[11px] uppercase tracking-wider text-acars-muted font-medium mb-3 flex items-center gap-2">
-            <MessageSquare className="w-3.5 h-3.5" />
+            <MessageSquare className="w-3.5 h-3.5 text-blue-400" />
             Pilot Notes
           </h3>
           <div className="flex items-center gap-4 mb-3">

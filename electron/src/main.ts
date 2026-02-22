@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, dialog, shell } from 'electron';
+import { app, BrowserWindow, ipcMain, dialog, shell, Menu } from 'electron';
 import { autoUpdater } from 'electron-updater';
 import * as path from 'path';
 import { fork, ChildProcess } from 'child_process';
@@ -111,11 +111,16 @@ function stopBackend(): void {
 // ----- Window Creation -----
 
 function createWindow(): void {
+  // Remove Electron's default application menu (File/Edit/View/Window/Help)
+  Menu.setApplicationMenu(null);
+
   mainWindow = new BrowserWindow({
     width: 1440,
     height: 900,
     minWidth: 1024,
     minHeight: 700,
+    frame: false,
+    autoHideMenuBar: true,
     backgroundColor: '#0d1117',
     show: false, // show after ready-to-show
     webPreferences: {
@@ -130,11 +135,18 @@ function createWindow(): void {
   // Load content
   if (IS_DEV) {
     mainWindow.loadURL(VITE_DEV_URL);
-    mainWindow.webContents.openDevTools({ mode: 'detach' });
   } else {
     const indexPath = path.join(process.resourcesPath, 'frontend', 'index.html');
     mainWindow.loadFile(indexPath);
   }
+
+  // Forward maximize state changes to renderer for titlebar icon updates
+  mainWindow.on('maximize', () => {
+    mainWindow?.webContents.send(IpcChannels.WINDOW_MAXIMIZED_CHANGE, true);
+  });
+  mainWindow.on('unmaximize', () => {
+    mainWindow?.webContents.send(IpcChannels.WINDOW_MAXIMIZED_CHANGE, false);
+  });
 
   // Show when ready (avoids white flash)
   mainWindow.once('ready-to-show', () => {
@@ -213,6 +225,15 @@ function registerIpcHandlers(): void {
   ipcMain.handle(IpcChannels.FILE_SAVE_DIALOG, async (_event, options) => {
     if (!mainWindow) return { canceled: true, filePath: '' };
     return dialog.showSaveDialog(mainWindow, options);
+  });
+
+  // Developer tools toggle
+  ipcMain.on(IpcChannels.DEVTOOLS_TOGGLE, () => {
+    if (mainWindow?.webContents.isDevToolsOpened()) {
+      mainWindow.webContents.closeDevTools();
+    } else {
+      mainWindow?.webContents.openDevTools({ mode: 'detach' });
+    }
   });
 
   // Auto-updater

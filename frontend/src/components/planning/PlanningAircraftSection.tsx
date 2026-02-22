@@ -21,11 +21,17 @@ export function PlanningAircraftSection() {
   };
 
   return (
-    <CollapsibleSection title="Aircraft" summary={summary} icon={<Plane className="w-3.5 h-3.5" />} defaultOpen>
+    <CollapsibleSection
+      title="Aircraft"
+      summary={summary}
+      icon={<Plane className="w-3.5 h-3.5" />}
+      status={selected ? 'green' : 'grey'}
+      defaultOpen
+    >
       <select
         value={form.aircraftId ?? ''}
         onChange={handleSelect}
-        className="w-full rounded bg-acars-bg border border-acars-border text-acars-text text-[11px] px-2 py-1.5 outline-none focus:border-acars-blue transition-colors"
+        className="planning-select"
       >
         <option value="">Select aircraft</option>
         {fleet.map((a) => (
@@ -35,18 +41,18 @@ export function PlanningAircraftSection() {
         ))}
       </select>
       {selected && (
-        <div className="grid grid-cols-3 gap-2 mt-2 text-[10px]">
+        <div className="grid grid-cols-3 gap-2.5 mt-2">
           <div>
-            <span className="text-acars-muted block">Range</span>
-            <span className="text-acars-text font-mono">{selected.rangeNm.toLocaleString()} nm</span>
+            <span className="planning-label">Range</span>
+            <span className="data-value">{selected.rangeNm.toLocaleString()} nm</span>
           </div>
           <div>
-            <span className="text-acars-muted block">Cruise</span>
-            <span className="text-acars-text font-mono">{selected.cruiseSpeed} kts</span>
+            <span className="planning-label">Cruise</span>
+            <span className="data-value">{selected.cruiseSpeed} kts</span>
           </div>
           <div>
-            <span className="text-acars-muted block">PAX</span>
-            <span className="text-acars-text font-mono">{selected.paxCapacity}</span>
+            <span className="planning-label">PAX</span>
+            <span className="data-value">{selected.paxCapacity}</span>
           </div>
         </div>
       )}

@@ -2,6 +2,60 @@ import { getDb } from '../db/index.js';
 import { AuditService } from './audit.js';
 import type { CreateScheduleRequest, UpdateScheduleRequest } from '@acars/shared';
 
+// ── Airport lookup types ─────────────────────────────────────────
+
+interface OaAirportRow {
+  id: number;
+  ident: string;
+  name: string;
+  latitude_deg: number | null;
+  longitude_deg: number | null;
+  elevation_ft: number | null;
+  iso_country: string | null;
+  municipality: string | null;
+}
+
+interface LegacyAirportRow {
+  icao: string;
+  name: string;
+  lat: number;
+  lon: number;
+  elevation: number;
+  city: string;
+  country: string;
+}
+
+interface AirportInfo {
+  icao: string;
+  name: string;
+  municipality: string | null;
+  country: string | null;
+  lat: number;
+  lon: number;
+  elevation: number | null;
+}
+
+export interface AutofillResult {
+  depAirport?: AirportInfo;
+  arrAirport?: AirportInfo;
+  distanceNm?: number;
+  flightTimeMin?: number;
+  arrTime?: string;
+  cruiseSpeed?: number;
+}
+
+// ── Haversine (nautical miles) ───────────────────────────────────
+
+function haversineNm(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 3440.065;
+  const toRad = (d: number) => d * Math.PI / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return Math.round(R * c);
+}
+
 interface ScheduleRow {
   id: number;
   flight_number: string;
@@ -45,12 +99,14 @@ export class ScheduleAdminService {
     const offset = (page - 1) * pageSize;
     const sql = `
       SELECT sf.*,
-        dep.name AS dep_name,
-        arr.name AS arr_name,
+        COALESCE(dep.name, oa_dep.name) AS dep_name,
+        COALESCE(arr.name, oa_arr.name) AS arr_name,
         (SELECT COUNT(*) FROM active_bids ab WHERE ab.schedule_id = sf.id) AS bid_count
       FROM scheduled_flights sf
       LEFT JOIN airports dep ON dep.icao = sf.dep_icao
       LEFT JOIN airports arr ON arr.icao = sf.arr_icao
+      LEFT JOIN oa_airports oa_dep ON oa_dep.ident = sf.dep_icao
+      LEFT JOIN oa_airports oa_arr ON oa_arr.ident = sf.arr_icao
       ${where}
       ORDER BY sf.flight_number
       LIMIT ? OFFSET ?
@@ -97,12 +153,14 @@ export class ScheduleAdminService {
   findById(id: number): any | undefined {
     const row = getDb().prepare(`
       SELECT sf.*,
-        dep.name AS dep_name,
-        arr.name AS arr_name,
+        COALESCE(dep.name, oa_dep.name) AS dep_name,
+        COALESCE(arr.name, oa_arr.name) AS arr_name,
         (SELECT COUNT(*) FROM active_bids ab WHERE ab.schedule_id = sf.id) AS bid_count
       FROM scheduled_flights sf
       LEFT JOIN airports dep ON dep.icao = sf.dep_icao
       LEFT JOIN airports arr ON arr.icao = sf.arr_icao
+      LEFT JOIN oa_airports oa_dep ON oa_dep.ident = sf.dep_icao
+      LEFT JOIN oa_airports oa_arr ON oa_arr.ident = sf.arr_icao
       WHERE sf.id = ?
     `).get(id) as ScheduleRow | undefined;
 
@@ -175,6 +233,91 @@ export class ScheduleAdminService {
 
     auditService.log({ actorId, action: 'schedule.toggle', targetType: 'schedule', targetId: id });
     return this.findById(id);
+  }
+
+  // ── Autofill: progressive airport/distance/time lookup ───────
+
+  autofill(params: { depIcao?: string; arrIcao?: string; aircraftType?: string; depTime?: string }): AutofillResult {
+    const db = getDb();
+    const result: AutofillResult = {};
+
+    const lookupAirport = (icao: string): AirportInfo | undefined => {
+      // Try oa_airports first (47k global), then legacy airports table (26 US hubs)
+      const oa = db.prepare(
+        'SELECT ident, name, latitude_deg, longitude_deg, elevation_ft, iso_country, municipality FROM oa_airports WHERE ident = ?'
+      ).get(icao) as OaAirportRow | undefined;
+
+      if (oa && oa.latitude_deg != null && oa.longitude_deg != null) {
+        return {
+          icao: oa.ident,
+          name: oa.name,
+          municipality: oa.municipality,
+          country: oa.iso_country,
+          lat: oa.latitude_deg,
+          lon: oa.longitude_deg,
+          elevation: oa.elevation_ft,
+        };
+      }
+
+      const legacy = db.prepare(
+        'SELECT icao, name, lat, lon, elevation, city, country FROM airports WHERE icao = ?'
+      ).get(icao) as LegacyAirportRow | undefined;
+
+      if (legacy) {
+        return {
+          icao: legacy.icao,
+          name: legacy.name,
+          municipality: legacy.city,
+          country: legacy.country,
+          lat: legacy.lat,
+          lon: legacy.lon,
+          elevation: legacy.elevation,
+        };
+      }
+
+      return undefined;
+    };
+
+    // Lookup departure airport
+    if (params.depIcao && params.depIcao.length >= 3) {
+      result.depAirport = lookupAirport(params.depIcao);
+    }
+
+    // Lookup arrival airport
+    if (params.arrIcao && params.arrIcao.length >= 3) {
+      result.arrAirport = lookupAirport(params.arrIcao);
+    }
+
+    // Calculate distance if both airports have coordinates
+    if (result.depAirport && result.arrAirport) {
+      result.distanceNm = haversineNm(
+        result.depAirport.lat, result.depAirport.lon,
+        result.arrAirport.lat, result.arrAirport.lon,
+      );
+
+      // Get cruise speed from fleet for flight time estimation
+      if (params.aircraftType) {
+        const fleetRow = db.prepare(
+          'SELECT cruise_speed FROM fleet WHERE icao_type = ? AND is_active = 1 LIMIT 1'
+        ).get(params.aircraftType) as { cruise_speed: number } | undefined;
+
+        if (fleetRow && fleetRow.cruise_speed > 0) {
+          result.cruiseSpeed = fleetRow.cruise_speed;
+          result.flightTimeMin = Math.round((result.distanceNm / fleetRow.cruise_speed) * 60);
+
+          // Calculate arrival time if departure time provided
+          if (params.depTime && /^\d{2}:\d{2}$/.test(params.depTime)) {
+            const [depH, depM] = params.depTime.split(':').map(Number);
+            const arrTotalMin = depH * 60 + depM + result.flightTimeMin;
+            const arrH = Math.floor(arrTotalMin / 60) % 24;
+            const arrM = arrTotalMin % 60;
+            result.arrTime = `${String(arrH).padStart(2, '0')}:${String(arrM).padStart(2, '0')}`;
+          }
+        }
+      }
+    }
+
+    return result;
   }
 
   clone(id: number, newFlightNumber: string, actorId: number): any | null {

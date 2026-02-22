@@ -4,19 +4,19 @@ import { Scale } from 'lucide-react';
 function WeightRow({ label, value, max }: { label: string; value: number; max?: number }) {
   const over = max !== undefined && value > max;
   return (
-    <div className="flex items-center justify-between py-1.5 border-b border-acars-border/30 last:border-0">
-      <span className="text-[11px] text-acars-muted">{label}</span>
+    <div className="flex items-center justify-between py-1 border-b border-acars-border last:border-0">
+      <span className="text-[11px] text-acars-muted font-sans">{label}</span>
       <div className="flex items-center gap-2">
-        <span className={`text-[11px] font-mono font-semibold ${over ? 'text-acars-red' : 'text-acars-text'}`}>
-          {value ? value.toLocaleString() : '—'}
+        <span className={`text-[12px] font-mono font-semibold ${over ? 'text-red-400' : 'text-acars-mono'}`}>
+          {value ? value.toLocaleString() : '\u2014'}
         </span>
         {max !== undefined && (
-          <span className="text-[9px] text-acars-muted">
+          <span className="text-[11px] text-acars-muted font-mono">
             / {max.toLocaleString()}
           </span>
         )}
         {over && (
-          <span className="text-[8px] font-bold text-acars-red uppercase">OVER</span>
+          <span className="text-[9px] font-bold text-red-400 uppercase tracking-[0.08em] font-sans">OVER</span>
         )}
       </div>
     </div>
@@ -29,8 +29,8 @@ export function PlanningWeightBalanceTab() {
   if (!ofp) {
     return (
       <div className="flex flex-col items-center justify-center h-full text-center gap-2 p-4">
-        <Scale className="w-6 h-6 text-acars-muted/30" />
-        <p className="text-[11px] text-acars-muted">Generate OFP to see weight & balance</p>
+        <Scale className="w-6 h-6 text-acars-muted/20" />
+        <p className="text-[11px] text-acars-muted font-sans">Generate OFP to see weight & balance</p>
       </div>
     );
   }
@@ -40,8 +40,8 @@ export function PlanningWeightBalanceTab() {
   return (
     <div className="p-3 space-y-3 overflow-auto">
       <div>
-        <span className="text-[10px] uppercase tracking-wider text-acars-muted font-medium mb-1 block">Weights</span>
-        <div className="rounded border border-acars-border bg-acars-bg">
+        <span className="planning-label mb-1">Weights</span>
+        <div className="rounded-md border border-acars-border bg-acars-input">
           <div className="px-3">
             <WeightRow label="Zero Fuel Weight" value={weights.estZfw} max={weights.maxZfw} />
             <WeightRow label="Takeoff Weight" value={weights.estTow} max={weights.maxTow} />
@@ -54,8 +54,8 @@ export function PlanningWeightBalanceTab() {
       </div>
 
       <div>
-        <span className="text-[10px] uppercase tracking-wider text-acars-muted font-medium mb-1 block">Fuel</span>
-        <div className="rounded border border-acars-border bg-acars-bg">
+        <span className="planning-label mb-1">Fuel</span>
+        <div className="rounded-md border border-acars-border bg-acars-input">
           <div className="px-3">
             <WeightRow label="Enroute Burn" value={fuel.burnLbs} />
             <WeightRow label="Reserve" value={fuel.reserveLbs} />

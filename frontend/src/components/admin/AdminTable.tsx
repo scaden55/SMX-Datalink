@@ -79,7 +79,7 @@ export function AdminTable<T>({
       <div className="overflow-x-auto">
         <table className="w-full text-xs">
           <thead>
-            <tr className="border-b border-acars-border bg-[#0d1117]">
+            <tr className="border-b border-acars-border bg-acars-bg">
               {selectable && (
                 <th className="w-8 px-3 py-2.5">
                   <input
@@ -129,9 +129,9 @@ export function AdminTable<T>({
                   <tr
                     key={rowId ?? idx}
                     onClick={() => onRowClick?.(row)}
-                    className={`border-b border-acars-border/50 last:border-0 transition-colors ${
-                      isSelected ? 'bg-acars-blue/5' : idx % 2 === 0 ? 'bg-transparent' : 'bg-[#0d1117]/30'
-                    } ${onRowClick ? 'cursor-pointer hover:bg-[#1c2433]' : 'hover:bg-[#161b22]'}`}
+                    className={`border-b border-acars-border last:border-0 transition-colors ${
+                      isSelected ? 'bg-blue-500/5' : idx % 2 === 0 ? 'bg-transparent' : 'bg-acars-bg/30'
+                    } ${onRowClick ? 'cursor-pointer hover:bg-acars-hover' : 'hover:bg-acars-hover'}`}
                   >
                     {selectable && (
                       <td className="w-8 px-3 py-2" onClick={e => e.stopPropagation()}>
@@ -158,7 +158,7 @@ export function AdminTable<T>({
 
       {/* Pagination footer */}
       {total > pageSize && (
-        <div className="flex items-center justify-between px-3 py-2 border-t border-acars-border bg-[#0d1117]/50">
+        <div className="flex items-center justify-between px-3 py-2 border-t border-acars-border bg-acars-bg/50">
           <span className="text-[10px] text-acars-muted">
             Showing {((page - 1) * pageSize) + 1}–{Math.min(page * pageSize, total)} of {total}
           </span>
@@ -181,7 +181,7 @@ export function AdminTable<T>({
                   key={p}
                   onClick={() => onPageChange(p)}
                   className={`min-w-[24px] h-6 rounded text-[10px] font-medium ${
-                    p === page ? 'bg-acars-blue text-white' : 'text-acars-muted hover:text-acars-text hover:bg-[#161b22]'
+                    p === page ? 'bg-blue-500 text-white' : 'text-acars-muted hover:text-acars-text hover:bg-acars-hover'
                   }`}
                 >
                   {p}

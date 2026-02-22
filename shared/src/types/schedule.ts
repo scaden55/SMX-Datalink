@@ -235,4 +235,8 @@ export interface DashboardStats {
   totalPilots: number;
   totalFleet: number;
   totalHubs: number;
+  activeFlights: number;
+  pilotsOnline: number;
+  flightsThisMonth: number;
+  totalHours: number;
 }

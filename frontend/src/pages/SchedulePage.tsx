@@ -54,10 +54,10 @@ function DaysIndicator({ days }: { days: string }) {
         return (
           <div
             key={i}
-            className={`w-3.5 h-3.5 rounded-sm flex items-center justify-center text-[8px] font-semibold ${
+            className={`w-3.5 h-3.5 rounded-md flex items-center justify-center text-[8px] font-semibold ${
               active
-                ? 'bg-acars-blue/20 text-acars-blue border border-acars-blue/30'
-                : 'bg-acars-bg text-acars-muted/40 border border-acars-border/50'
+                ? 'bg-blue-500/20 text-blue-400 border border-blue-400/30'
+                : 'bg-acars-bg text-acars-muted/40 border border-acars-border'
             }`}
             title={active ? `Day ${i + 1} active` : `Day ${i + 1} inactive`}
           >
@@ -154,7 +154,7 @@ function AirportSearch({ airports, value, onChange, label, placeholder = 'Type I
             onChange={e => { setQuery(e.target.value); setOpen(true); }}
             onFocus={() => setOpen(true)}
             placeholder={placeholder}
-            className="w-full h-9 rounded-md border border-acars-magenta bg-acars-bg text-xs text-acars-text pl-8 pr-2.5 outline-none transition-colors placeholder:text-acars-muted/50"
+            className="w-full h-9 rounded-md border border-blue-400 bg-acars-bg text-xs text-acars-text pl-8 pr-2.5 outline-none transition-colors placeholder:text-acars-muted/50"
             autoComplete="off"
           />
         </div>
@@ -169,8 +169,8 @@ function AirportSearch({ airports, value, onChange, label, placeholder = 'Type I
                 key={a.icao}
                 type="button"
                 onClick={() => handleSelect(a.icao)}
-                className={`w-full text-left px-3 py-2 flex items-center gap-2 text-xs hover:bg-acars-blue/10 transition-colors ${
-                  a.icao === value ? 'bg-acars-blue/10 text-acars-blue' : 'text-acars-text'
+                className={`w-full text-left px-3 py-2 flex items-center gap-2 text-xs hover:bg-blue-500/10 transition-colors ${
+                  a.icao === value ? 'bg-blue-500/10 text-blue-400' : 'text-acars-text'
                 }`}
               >
                 <span className="font-mono font-semibold w-10 shrink-0">{a.icao}</span>
@@ -227,16 +227,16 @@ function CharterModal({ airports, aircraftTypes, onClose, onCreated }: CharterMo
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center" onClick={onClose}>
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+      <div className="absolute inset-0 bg-black/60" />
       <div
-        className="relative w-[520px] max-h-[90vh] overflow-auto rounded-xl border border-acars-border bg-acars-panel shadow-2xl"
+        className="relative w-[520px] max-h-[90vh] overflow-auto rounded-md border border-acars-border bg-acars-panel shadow-2xl"
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-acars-border">
           <div className="flex items-center gap-2.5">
-            <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-acars-magenta/10 border border-acars-magenta/20">
-              <Plus className="w-4.5 h-4.5 text-acars-magenta" />
+            <div className="flex items-center justify-center w-9 h-9 rounded-md bg-blue-500/10 border border-blue-400/20">
+              <Plus className="w-4.5 h-4.5 text-blue-400" />
             </div>
             <div>
               <h2 className="text-sm font-semibold text-acars-text">Create Charter Flight</h2>
@@ -261,9 +261,9 @@ function CharterModal({ airports, aircraftTypes, onClose, onCreated }: CharterMo
                   <button
                     key={ct.value}
                     onClick={() => setCharterType(ct.value)}
-                    className={`flex flex-col items-center gap-1.5 p-3 rounded-lg border transition-all text-center ${
+                    className={`flex flex-col items-center gap-1.5 p-3 rounded-md border transition-all text-center ${
                       active
-                        ? 'border-acars-magenta bg-acars-magenta/10 text-acars-magenta'
+                        ? 'border-blue-400 bg-blue-500/10 text-blue-400'
                         : 'border-acars-border bg-acars-bg text-acars-muted hover:border-acars-muted/50'
                     }`}
                   >
@@ -295,7 +295,7 @@ function CharterModal({ airports, aircraftTypes, onClose, onCreated }: CharterMo
           </div>
 
           {depIcao && arrIcao && depIcao === arrIcao && (
-            <p className="text-[11px] text-acars-red">Departure and arrival must be different airports</p>
+            <p className="text-[11px] text-red-400">Departure and arrival must be different airports</p>
           )}
 
           {/* Aircraft + Time */}
@@ -305,7 +305,7 @@ function CharterModal({ airports, aircraftTypes, onClose, onCreated }: CharterMo
               <select
                 value={aircraftType}
                 onChange={e => setAircraftType(e.target.value)}
-                className="w-full h-9 rounded-md border border-acars-border bg-acars-bg text-xs text-acars-text px-2.5 outline-none focus:border-acars-magenta transition-colors"
+                className="w-full h-9 rounded-md border border-acars-border bg-acars-bg text-xs text-acars-text px-2.5 outline-none focus:border-blue-400 transition-colors"
               >
                 <option value="">Select aircraft</option>
                 {aircraftTypes.map(t => (
@@ -319,14 +319,14 @@ function CharterModal({ airports, aircraftTypes, onClose, onCreated }: CharterMo
                 type="time"
                 value={depTime}
                 onChange={e => setDepTime(e.target.value)}
-                className="w-full h-9 rounded-md border border-acars-border bg-acars-bg text-xs text-acars-text font-mono px-2.5 outline-none focus:border-acars-magenta transition-colors"
+                className="w-full h-9 rounded-md border border-acars-border bg-acars-bg text-xs text-acars-text font-mono px-2.5 outline-none focus:border-blue-400 transition-colors"
               />
             </div>
           </div>
 
           {/* Error */}
           {error && (
-            <p className="text-[11px] text-acars-red bg-acars-red/10 border border-acars-red/20 rounded-md px-3 py-2">{error}</p>
+            <p className="text-[11px] text-red-400 bg-red-500/10 border border-red-400/20 rounded-md px-3 py-2">{error}</p>
           )}
         </div>
 
@@ -334,14 +334,14 @@ function CharterModal({ airports, aircraftTypes, onClose, onCreated }: CharterMo
         <div className="flex items-center justify-end gap-2 px-5 py-3 border-t border-acars-border">
           <button
             onClick={onClose}
-            className="px-4 py-2 rounded-md text-xs font-medium text-acars-muted hover:text-acars-text hover:bg-acars-bg border border-acars-border transition-colors"
+            className="btn-secondary btn-md"
           >
             Cancel
           </button>
           <button
             disabled={!canSubmit}
             onClick={handleSubmit}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-md text-xs font-semibold text-white bg-acars-magenta hover:bg-acars-magenta/80 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            className="btn-primary btn-md"
           >
             {submitting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
             Create Charter
@@ -380,7 +380,7 @@ function FlightPreviewPanel({ schedule: s, depAirport, arrAirport, hasBid, isBid
   return (
     <div className="flex gap-4 p-4 animate-in fade-in slide-in-from-top-1 duration-200">
       {/* Route map */}
-      <div className="w-[320px] h-[200px] rounded-lg overflow-hidden border border-acars-border shrink-0">
+      <div className="w-[320px] h-[200px] rounded-md overflow-hidden border border-acars-border shrink-0">
         {depPos && arrPos ? (
           <MapContainer
             center={depPos}
@@ -388,7 +388,7 @@ function FlightPreviewPanel({ schedule: s, depAirport, arrAirport, hasBid, isBid
             className="h-full w-full"
             zoomControl={false}
             attributionControl={false}
-            style={{ background: '#0d1117' }}
+            style={{ background: 'var(--bg-map)' }}
             scrollWheelZoom={false}
             dragging={false}
             doubleClickZoom={false}
@@ -401,15 +401,15 @@ function FlightPreviewPanel({ schedule: s, depAirport, arrAirport, hasBid, isBid
             <FitBounds dep={depPos} arr={arrPos} />
             <Polyline
               positions={[depPos, arrPos]}
-              pathOptions={{ color: '#58a6ff', weight: 2, opacity: 0.8, dashArray: '6 4' }}
+              pathOptions={{ color: 'var(--cyan)', weight: 2, opacity: 0.8, dashArray: '6 4' }}
             />
             <CircleMarker
               center={depPos}
               radius={6}
-              pathOptions={{ color: '#3fb950', fillColor: '#3fb950', fillOpacity: 0.9, weight: 1.5 }}
+              pathOptions={{ color: 'var(--status-green)', fillColor: 'var(--status-green)', fillOpacity: 0.9, weight: 1.5 }}
             >
               <Tooltip direction="top" offset={[0, -8]} permanent className="hub-tooltip">
-                <span style={{ fontFamily: 'JetBrains Mono, Consolas, monospace', fontSize: '10px' }}>
+                <span style={{ fontSize: '10px', fontFeatureSettings: '"tnum"' }}>
                   {s.depIcao}
                 </span>
               </Tooltip>
@@ -417,10 +417,10 @@ function FlightPreviewPanel({ schedule: s, depAirport, arrAirport, hasBid, isBid
             <CircleMarker
               center={arrPos}
               radius={6}
-              pathOptions={{ color: '#f85149', fillColor: '#f85149', fillOpacity: 0.9, weight: 1.5 }}
+              pathOptions={{ color: 'var(--status-red)', fillColor: 'var(--status-red)', fillOpacity: 0.9, weight: 1.5 }}
             >
               <Tooltip direction="top" offset={[0, -8]} permanent className="hub-tooltip">
-                <span style={{ fontFamily: 'JetBrains Mono, Consolas, monospace', fontSize: '10px' }}>
+                <span style={{ fontSize: '10px', fontFeatureSettings: '"tnum"' }}>
                   {s.arrIcao}
                 </span>
               </Tooltip>
@@ -438,41 +438,41 @@ function FlightPreviewPanel({ schedule: s, depAirport, arrAirport, hasBid, isBid
         {/* Departure */}
         <div className="space-y-1">
           <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-acars-muted font-medium">
-            <PlaneTakeoff className="w-3 h-3 text-acars-green" /> Departure
+            <PlaneTakeoff className="w-3 h-3 text-emerald-400" /> Departure
           </div>
           <p className="text-sm font-mono font-semibold text-acars-text">{s.depIcao}</p>
           <p className="text-[11px] text-acars-muted truncate">{depAirport?.name ?? '—'}</p>
           <p className="text-[10px] text-acars-muted">{depAirport?.city}, {depAirport?.state}</p>
-          <p className="text-xs font-mono text-acars-text tabular-nums mt-1">{s.depTime}Z</p>
+          <p className="text-xs font-mono text-acars-muted tabular-nums mt-1">{s.depTime}Z</p>
         </div>
 
         {/* Arrival */}
         <div className="space-y-1">
           <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-acars-muted font-medium">
-            <PlaneLanding className="w-3 h-3 text-acars-red" /> Arrival
+            <PlaneLanding className="w-3 h-3 text-red-400" /> Arrival
           </div>
           <p className="text-sm font-mono font-semibold text-acars-text">{s.arrIcao}</p>
           <p className="text-[11px] text-acars-muted truncate">{arrAirport?.name ?? '—'}</p>
           <p className="text-[10px] text-acars-muted">{arrAirport?.city}, {arrAirport?.state}</p>
-          <p className="text-xs font-mono text-acars-text tabular-nums mt-1">{s.arrTime}Z</p>
+          <p className="text-xs font-mono text-acars-muted tabular-nums mt-1">{s.arrTime}Z</p>
         </div>
 
         {/* Stats row */}
-        <div className="col-span-2 flex items-center gap-5 pt-1 border-t border-acars-border/50">
+        <div className="col-span-2 flex items-center gap-5 pt-1 border-t border-acars-border">
           <div className="flex items-center gap-1.5 text-[11px] text-acars-muted">
-            <Ruler className="w-3.5 h-3.5 text-acars-blue" />
+            <Ruler className="w-3.5 h-3.5 text-blue-400" />
             <span className="font-mono tabular-nums text-acars-text">{s.distanceNm.toLocaleString()}</span> nm
           </div>
           <div className="flex items-center gap-1.5 text-[11px] text-acars-muted">
-            <Timer className="w-3.5 h-3.5 text-acars-amber" />
+            <Timer className="w-3.5 h-3.5 text-amber-400" />
             <span className="font-mono tabular-nums text-acars-text">{formatDuration(s.flightTimeMin)}</span>
           </div>
           <div className="flex items-center gap-1.5 text-[11px] text-acars-muted">
-            <Plane className="w-3.5 h-3.5 text-acars-cyan" />
+            <Plane className="w-3.5 h-3.5 text-sky-400" />
             <span className="text-acars-text">{s.aircraftType}</span>
           </div>
           <div className="flex items-center gap-1.5 text-[11px] text-acars-muted">
-            <CalendarDays className="w-3.5 h-3.5 text-acars-magenta" />
+            <CalendarDays className="w-3.5 h-3.5 text-blue-400" />
             <DaysIndicator days={s.daysOfWeek} />
           </div>
           <div className="ml-auto">
@@ -480,7 +480,7 @@ function FlightPreviewPanel({ schedule: s, depAirport, arrAirport, hasBid, isBid
               <button
                 disabled={isBidding}
                 onClick={(e) => { e.stopPropagation(); onRemoveBid(); }}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded text-[11px] font-semibold uppercase tracking-wide bg-acars-red/10 text-acars-red border border-acars-red/20 hover:bg-acars-red/20 transition-colors disabled:opacity-50"
+                className="btn-danger btn-sm uppercase tracking-wide"
               >
                 {isBidding ? <Loader2 className="w-3 h-3 animate-spin" /> : 'Remove Bid'}
               </button>
@@ -488,7 +488,7 @@ function FlightPreviewPanel({ schedule: s, depAirport, arrAirport, hasBid, isBid
               <button
                 disabled={isBidding}
                 onClick={(e) => { e.stopPropagation(); onBid(); }}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded text-[11px] font-semibold uppercase tracking-wide bg-acars-blue/10 text-acars-blue border border-acars-blue/20 hover:bg-acars-blue/20 transition-colors disabled:opacity-50"
+                className="btn-primary btn-sm uppercase tracking-wide"
               >
                 {isBidding ? <Loader2 className="w-3 h-3 animate-spin" /> : 'Place Bid'}
               </button>
@@ -661,18 +661,18 @@ export function SchedulePage() {
         <div className="panel m-5 mb-0">
           <div className="flex items-center justify-between px-4 py-3 border-b border-acars-border">
             <div className="flex items-center gap-2">
-              <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-acars-amber/10 border border-acars-amber/20">
-                <CalendarDays className="w-4 h-4 text-acars-amber" />
+              <div className="flex items-center justify-center w-8 h-8 rounded-md bg-amber-500/10 border border-amber-400/20">
+                <CalendarDays className="w-4 h-4 text-amber-400" />
               </div>
               <h2 className="text-sm font-semibold text-acars-text">Flight Schedule</h2>
               <span className="text-[11px] text-acars-muted tabular-nums">
                 {loading ? '' : `${schedules.length} flights`}
               </span>
-              {loading && <Loader2 className="w-3.5 h-3.5 text-acars-blue animate-spin" />}
+              {loading && <Loader2 className="w-3.5 h-3.5 text-blue-400 animate-spin" />}
             </div>
             <button
               onClick={() => setCharterOpen(true)}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[11px] font-semibold text-acars-magenta bg-acars-magenta/10 border border-acars-magenta/20 hover:bg-acars-magenta/20 transition-colors"
+              className="btn-primary btn-sm"
             >
               <Plus className="w-3.5 h-3.5" /> Create Charter
             </button>
@@ -682,7 +682,7 @@ export function SchedulePage() {
             <select
               value={depFilter}
               onChange={e => setDepFilter(e.target.value)}
-              className="h-8 rounded-md border border-acars-border bg-acars-bg text-xs text-acars-text px-2 outline-none focus:border-acars-blue transition-colors min-w-[140px]"
+              className="select-field min-w-[140px]"
             >
               <option value="">All Departures</option>
               {airports.map(a => (
@@ -694,7 +694,7 @@ export function SchedulePage() {
             <select
               value={arrFilter}
               onChange={e => setArrFilter(e.target.value)}
-              className="h-8 rounded-md border border-acars-border bg-acars-bg text-xs text-acars-text px-2 outline-none focus:border-acars-blue transition-colors min-w-[140px]"
+              className="select-field min-w-[140px]"
             >
               <option value="">All Arrivals</option>
               {airports.map(a => (
@@ -706,7 +706,7 @@ export function SchedulePage() {
             <select
               value={typeFilter}
               onChange={e => setTypeFilter(e.target.value)}
-              className="h-8 rounded-md border border-acars-border bg-acars-bg text-xs text-acars-text px-2 outline-none focus:border-acars-blue transition-colors min-w-[120px]"
+              className="select-field min-w-[140px]"
             >
               <option value="">All Aircraft</option>
               {aircraftTypes.map(t => (
@@ -722,7 +722,7 @@ export function SchedulePage() {
                 value={searchInput}
                 onChange={e => handleSearchChange(e.target.value)}
                 placeholder="Search flights..."
-                className="w-full h-8 rounded-md border border-acars-border bg-acars-bg text-xs text-acars-text pl-8 pr-3 outline-none focus:border-acars-blue transition-colors placeholder:text-acars-muted/50"
+                className="w-full h-8 rounded-md border border-acars-border bg-acars-bg text-xs text-acars-text pl-8 pr-3 outline-none focus:border-blue-400 transition-colors placeholder:text-acars-muted/50"
               />
             </div>
 
@@ -730,7 +730,7 @@ export function SchedulePage() {
             {hasFilters && (
               <button
                 onClick={resetFilters}
-                className="flex items-center gap-1.5 h-8 px-3 rounded-md text-[11px] font-medium text-acars-muted hover:text-acars-text hover:bg-acars-bg border border-acars-border transition-colors"
+                className="btn-secondary btn-sm flex items-center gap-1.5 h-8"
               >
                 <RotateCcw className="w-3 h-3" /> Reset
               </button>
@@ -760,7 +760,7 @@ export function SchedulePage() {
                 {loading && schedules.length === 0 ? (
                   <tr>
                     <td colSpan={10} className="py-16 text-center">
-                      <Loader2 className="w-5 h-5 text-acars-blue animate-spin mx-auto mb-2" />
+                      <Loader2 className="w-5 h-5 text-blue-400 animate-spin mx-auto mb-2" />
                       <span className="text-xs text-acars-muted">Loading schedules...</span>
                     </td>
                   </tr>
@@ -780,8 +780,8 @@ export function SchedulePage() {
                       <Fragment key={s.id}>
                         <tr
                           onClick={() => setExpandedId(isExpanded ? null : s.id)}
-                          className={`border-b border-acars-border/50 hover:bg-[#1c2433] transition-colors cursor-pointer ${
-                            isExpanded ? 'bg-[#1c2433]' : i % 2 === 0 ? 'bg-acars-panel' : 'bg-acars-bg'
+                          className={`border-b border-acars-border hover:bg-acars-hover transition-colors cursor-pointer ${
+                            isExpanded ? 'bg-acars-hover' : i % 2 === 0 ? 'bg-acars-panel' : 'bg-acars-bg'
                           }`}
                         >
                           <td className="px-4 py-2.5">
@@ -790,9 +790,9 @@ export function SchedulePage() {
                               <span className="font-mono font-medium text-acars-text">{s.flightNumber}</span>
                               {s.charterType && (
                                 <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-wide ${
-                                  s.charterType === 'reposition' ? 'bg-acars-cyan/10 text-acars-cyan border border-acars-cyan/20' :
-                                  s.charterType === 'cargo' ? 'bg-acars-amber/10 text-acars-amber border border-acars-amber/20' :
-                                  'bg-acars-magenta/10 text-acars-magenta border border-acars-magenta/20'
+                                  s.charterType === 'reposition' ? 'bg-sky-500/10 text-sky-400 border border-sky-400/20' :
+                                  s.charterType === 'cargo' ? 'bg-amber-500/10 text-amber-400 border border-amber-400/20' :
+                                  'bg-blue-500/10 text-blue-400 border border-blue-400/20'
                                 }`}>
                                   {s.charterType === 'reposition' ? 'REPO' : s.charterType === 'cargo' ? 'CARGO' : 'PAX'}
                                 </span>
@@ -801,7 +801,7 @@ export function SchedulePage() {
                           </td>
                           <td className="px-4 py-2.5">
                             <span className="text-acars-text font-mono">{s.depIcao}</span>
-                            <ArrowRight className="w-3 h-3 text-acars-muted/50 inline mx-1.5" />
+                            <ArrowRight className="w-3 h-3 text-sky-400/40 inline mx-1.5" />
                             <span className="text-acars-text font-mono">{s.arrIcao}</span>
                           </td>
                           <td className="px-4 py-2.5 text-acars-muted">{s.aircraftType}</td>
@@ -824,7 +824,7 @@ export function SchedulePage() {
                               <button
                                 disabled={isBidding}
                                 onClick={(e) => { e.stopPropagation(); bid && handleRemoveBid(bid.id, s.id); }}
-                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded text-[10px] font-semibold uppercase tracking-wide bg-acars-red/10 text-acars-red border border-acars-red/20 hover:bg-acars-red/20 transition-colors disabled:opacity-50"
+                                className="btn-danger btn-sm text-[10px] uppercase tracking-wide"
                               >
                                 {isBidding ? <Loader2 className="w-3 h-3 animate-spin" /> : 'Remove'}
                               </button>
@@ -832,7 +832,7 @@ export function SchedulePage() {
                               <button
                                 disabled={isBidding}
                                 onClick={(e) => { e.stopPropagation(); handleBid(s.id); }}
-                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded text-[10px] font-semibold uppercase tracking-wide bg-acars-blue/10 text-acars-blue border border-acars-blue/20 hover:bg-acars-blue/20 transition-colors disabled:opacity-50"
+                                className="btn-primary btn-sm text-[10px] uppercase tracking-wide"
                               >
                                 {isBidding ? <Loader2 className="w-3 h-3 animate-spin" /> : 'Bid'}
                               </button>
@@ -840,7 +840,7 @@ export function SchedulePage() {
                           </td>
                         </tr>
                         {isExpanded && (
-                          <tr className="bg-[#141b27] border-b border-acars-border">
+                          <tr className="bg-acars-panel border-b border-acars-border">
                             <td colSpan={10}>
                               <FlightPreviewPanel
                                 schedule={s}
@@ -868,29 +868,29 @@ export function SchedulePage() {
       <div className="w-[300px] shrink-0 border-l border-acars-border flex flex-col bg-acars-panel overflow-hidden">
         <div className="flex items-center justify-between px-4 py-3 border-b border-acars-border">
           <h3 className="text-sm font-semibold text-acars-text">My Bids</h3>
-          <span className="inline-flex items-center justify-center min-w-[20px] h-5 rounded-full bg-acars-blue/10 border border-acars-blue/20 text-[10px] font-semibold text-acars-blue tabular-nums px-1.5">
+          <span className="inline-flex items-center justify-center min-w-[20px] h-5 rounded-full bg-blue-500/10 border border-blue-400/20 text-[10px] font-semibold text-blue-400 tabular-nums px-1.5">
             {myBids.length}
           </span>
         </div>
         <div className="flex-1 overflow-auto">
           {myBids.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full text-center px-4">
-              <img src="/logos/chevron-light.png" alt="SMA" className="h-8 w-auto opacity-10 mb-3" />
-              <p className="text-xs text-acars-muted">No active bids</p>
-              <p className="text-[10px] text-acars-muted/60 mt-1">Browse the cargo schedule and place a bid to get started</p>
+            <div className="empty-state h-full">
+              <CalendarDays className="empty-state-icon" />
+              <p className="empty-state-title">No Active Bids</p>
+              <p className="empty-state-desc">Browse the cargo schedule and place a bid to get started</p>
             </div>
           ) : (
             <div className="p-3 space-y-2">
               {myBids.map(bid => (
                 <div
                   key={bid.id}
-                  className="group relative rounded-md border border-acars-border bg-acars-bg p-3 hover:border-acars-blue/30 transition-colors"
+                  className="group relative rounded-md border border-acars-border bg-acars-bg p-3 hover:border-blue-400/30 transition-colors"
                 >
                   <div className="flex items-center justify-between mb-1.5">
                     <span className="font-mono font-semibold text-xs text-acars-text">{bid.flightNumber}</span>
                     <button
                       onClick={() => handleRemoveBid(bid.id, bid.scheduleId)}
-                      className="opacity-0 group-hover:opacity-100 flex items-center justify-center w-5 h-5 rounded bg-acars-red/10 text-acars-red hover:bg-acars-red/20 transition-all"
+                      className="opacity-0 group-hover:opacity-100 flex items-center justify-center w-5 h-5 rounded bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-all"
                       title="Remove bid"
                     >
                       <X className="w-3 h-3" />
@@ -898,20 +898,20 @@ export function SchedulePage() {
                   </div>
                   <div className="flex items-center gap-1.5 text-[11px] text-acars-muted mb-1">
                     <span className="font-mono text-acars-text">{bid.depIcao}</span>
-                    <ArrowRight className="w-3 h-3 text-acars-muted/40" />
+                    <ArrowRight className="w-3 h-3 text-sky-400/40" />
                     <span className="font-mono text-acars-text">{bid.arrIcao}</span>
                   </div>
                   <div className="flex items-center gap-3 text-[10px] text-acars-muted">
-                    <span>{bid.aircraftType}</span>
+                    <span className="text-sky-400">{bid.aircraftType}</span>
                     <span className="flex items-center gap-0.5 tabular-nums">
-                      <Clock className="w-3 h-3" />
+                      <Clock className="w-3 h-3 text-amber-400" />
                       {bid.depTime}Z
                     </span>
                     <span className="tabular-nums">{formatDuration(bid.flightTimeMin)}</span>
                   </div>
                   <button
                     onClick={() => navigate(`/planning/${bid.id}`)}
-                    className="mt-2 w-full inline-flex items-center justify-center gap-1 px-2 py-1 rounded text-[9px] font-semibold uppercase tracking-wide bg-acars-magenta/10 text-acars-magenta border border-acars-magenta/20 hover:bg-acars-magenta/20 transition-colors"
+                    className="mt-2 w-full btn-primary btn-sm text-[9px] uppercase tracking-wide"
                   >
                     <Route className="w-3 h-3" /> Plan Flight
                   </button>

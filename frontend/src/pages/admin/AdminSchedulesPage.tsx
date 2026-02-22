@@ -84,8 +84,7 @@ const DAY_LABELS = [
   { value: '7', short: 'Sun', full: 'Sunday' },
 ];
 
-const INPUT_CLS =
-  'w-full h-9 rounded-md border border-acars-border bg-acars-bg text-xs text-acars-text px-2.5 font-mono outline-none focus:border-acars-blue transition-colors placeholder:text-acars-muted/50';
+const INPUT_CLS = 'input-field text-xs font-mono';
 const LABEL_CLS =
   'text-[10px] uppercase tracking-wider text-acars-muted font-medium mb-1.5 block';
 
@@ -123,8 +122,8 @@ function DayChips({ daysOfWeek }: { daysOfWeek: string }) {
             title={day.full}
             className={`inline-flex items-center justify-center w-6 h-5 rounded text-[9px] font-bold tracking-wide transition-colors ${
               active
-                ? 'bg-acars-blue/20 text-acars-blue border border-acars-blue/30'
-                : 'bg-transparent text-acars-muted/30 border border-acars-border/30'
+                ? 'bg-blue-500/20 text-blue-400 border border-blue-400/30'
+                : 'bg-transparent text-acars-muted/30 border border-acars-border'
             }`}
           >
             {day.short[0]}
@@ -168,7 +167,7 @@ function DayCheckboxGroup({
             onClick={() => toggle(day.value)}
             className={`flex items-center justify-center w-10 h-8 rounded-md text-[10px] font-bold tracking-wide transition-colors border ${
               active
-                ? 'bg-acars-blue/20 text-acars-blue border-acars-blue/40 hover:bg-acars-blue/30'
+                ? 'bg-blue-500/20 text-blue-400 border-blue-400/40 hover:bg-blue-500/30'
                 : 'bg-acars-bg text-acars-muted/50 border-acars-border hover:text-acars-muted hover:border-acars-border'
             }`}
           >
@@ -177,6 +176,47 @@ function DayCheckboxGroup({
         );
       })}
     </div>
+  );
+}
+
+// ─── Autofill Types ─────────────────────────────────────────────
+
+interface AirportInfo {
+  icao: string;
+  name: string;
+  municipality: string | null;
+  country: string | null;
+  elevation: number | null;
+}
+
+interface AutofillResult {
+  depAirport?: AirportInfo;
+  arrAirport?: AirportInfo;
+  distanceNm?: number;
+  flightTimeMin?: number;
+  arrTime?: string;
+  cruiseSpeed?: number;
+}
+
+// ─── Airport Info Label ─────────────────────────────────────────
+
+function AirportLabel({ airport }: { airport?: AirportInfo }) {
+  if (!airport) return null;
+  const parts = [airport.name];
+  if (airport.municipality) parts.push(airport.municipality);
+  if (airport.country) parts.push(airport.country);
+  return (
+    <div className="mt-1 text-[10px] text-blue-400/80 truncate" title={parts.join(' — ')}>
+      {parts.join(' — ')}
+    </div>
+  );
+}
+
+function AutoTag() {
+  return (
+    <span className="ml-1.5 text-[8px] uppercase tracking-wider font-bold text-blue-400/60 bg-blue-500/8 border border-blue-400/15 px-1 py-0.5 rounded">
+      auto
+    </span>
   );
 }
 
@@ -202,9 +242,75 @@ function ScheduleFormModal({
   onClose,
 }: ScheduleFormModalProps) {
   const [form, setForm] = useState<ScheduleFormData>(initialData);
+  const [autofill, setAutofill] = useState<AutofillResult>({});
+  const [autoFields, setAutoFields] = useState<Set<string>>(new Set());
+  const autoFieldsRef = useRef<Set<string>>(new Set());
+  const autofillTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
-  const set = (key: keyof ScheduleFormData, value: string | number) =>
+  const set = (key: keyof ScheduleFormData, value: string | number) => {
     setForm(prev => ({ ...prev, [key]: value }));
+    // When the user manually changes an auto-filled field, remove the auto tag
+    if (autoFieldsRef.current.has(key)) {
+      const next = new Set(autoFieldsRef.current);
+      next.delete(key);
+      autoFieldsRef.current = next;
+      setAutoFields(next);
+    }
+  };
+
+  // ── Debounced autofill call ──────────────────────────────────
+  useEffect(() => {
+    clearTimeout(autofillTimer.current);
+
+    // Need at least one ICAO to look up
+    const hasDepIcao = form.depIcao.length >= 3;
+    const hasArrIcao = form.arrIcao.length >= 3;
+    if (!hasDepIcao && !hasArrIcao) return;
+
+    autofillTimer.current = setTimeout(async () => {
+      try {
+        const params = new URLSearchParams();
+        if (hasDepIcao) params.set('depIcao', form.depIcao);
+        if (hasArrIcao) params.set('arrIcao', form.arrIcao);
+        if (form.aircraftType) params.set('aircraftType', form.aircraftType);
+        if (form.depTime) params.set('depTime', form.depTime);
+
+        const result = await api.get<AutofillResult>(`/api/admin/schedules/autofill?${params}`);
+        setAutofill(result);
+
+        // Auto-populate fields only if user hasn't manually set them
+        const af = autoFieldsRef.current;
+        setForm(prev => {
+          const updates: Partial<ScheduleFormData> = {};
+          const newAutoFields = new Set(af);
+
+          if (result.distanceNm != null && (prev.distanceNm === '' || af.has('distanceNm'))) {
+            updates.distanceNm = result.distanceNm;
+            newAutoFields.add('distanceNm');
+          }
+          if (result.flightTimeMin != null && (prev.flightTimeMin === '' || af.has('flightTimeMin'))) {
+            updates.flightTimeMin = result.flightTimeMin;
+            newAutoFields.add('flightTimeMin');
+          }
+          if (result.arrTime && (!prev.arrTime || af.has('arrTime'))) {
+            updates.arrTime = result.arrTime;
+            newAutoFields.add('arrTime');
+          }
+
+          if (Object.keys(updates).length > 0) {
+            autoFieldsRef.current = newAutoFields;
+            setAutoFields(newAutoFields);
+            return { ...prev, ...updates };
+          }
+          return prev;
+        });
+      } catch {
+        // Silently fail — autofill is best-effort
+      }
+    }, 350);
+
+    return () => clearTimeout(autofillTimer.current);
+  }, [form.depIcao, form.arrIcao, form.aircraftType, form.depTime]);
 
   const canSubmit =
     form.flightNumber &&
@@ -220,16 +326,16 @@ function ScheduleFormModal({
 
   return (
     <div className="fixed inset-0 z-[10000] flex items-center justify-center" onClick={onClose}>
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+      <div className="absolute inset-0 bg-black/60" />
       <div
-        className="relative w-[560px] max-h-[90vh] overflow-auto rounded-xl border border-acars-border bg-acars-panel shadow-2xl"
+        className="relative w-[560px] max-h-[90vh] overflow-auto rounded-md border border-acars-border bg-acars-panel shadow-2xl"
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-acars-border">
           <div className="flex items-center gap-2.5">
-            <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-acars-blue/10 border border-acars-blue/20">
-              <CalendarDays className="w-4.5 h-4.5 text-acars-blue" />
+            <div className="flex items-center justify-center w-9 h-9 rounded-md bg-blue-500/10 border border-blue-400/20">
+              <CalendarDays className="w-4.5 h-4.5 text-blue-400" />
             </div>
             <h2 className="text-sm font-semibold text-acars-text">{title}</h2>
           </div>
@@ -255,7 +361,7 @@ function ScheduleFormModal({
             />
           </div>
 
-          {/* Row 2: Dep / Arr ICAO */}
+          {/* Row 2: Dep / Arr ICAO with airport name labels */}
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className={LABEL_CLS}>Departure ICAO *</label>
@@ -267,6 +373,7 @@ function ScheduleFormModal({
                 maxLength={4}
                 className={INPUT_CLS}
               />
+              <AirportLabel airport={autofill.depAirport} />
             </div>
             <div>
               <label className={LABEL_CLS}>Arrival ICAO *</label>
@@ -278,6 +385,7 @@ function ScheduleFormModal({
                 maxLength={4}
                 className={INPUT_CLS}
               />
+              <AirportLabel airport={autofill.arrAirport} />
             </div>
           </div>
 
@@ -287,7 +395,7 @@ function ScheduleFormModal({
             <select
               value={form.aircraftType}
               onChange={e => set('aircraftType', e.target.value)}
-              className={INPUT_CLS.replace('font-mono ', '')}
+              className="select-field"
             >
               <option value="">Select aircraft type...</option>
               {aircraftTypes.map(t => (
@@ -296,6 +404,11 @@ function ScheduleFormModal({
                 </option>
               ))}
             </select>
+            {autofill.cruiseSpeed ? (
+              <div className="mt-1 text-[10px] text-acars-muted">
+                Cruise: {autofill.cruiseSpeed} kts
+              </div>
+            ) : null}
           </div>
 
           {/* Row 4: Times */}
@@ -310,7 +423,10 @@ function ScheduleFormModal({
               />
             </div>
             <div>
-              <label className={LABEL_CLS}>Arrival Time (UTC) *</label>
+              <label className={LABEL_CLS}>
+                Arrival Time (UTC) *
+                {autoFields.has('arrTime') && <AutoTag />}
+              </label>
               <input
                 type="time"
                 value={form.arrTime}
@@ -323,7 +439,10 @@ function ScheduleFormModal({
           {/* Row 5: Distance + Flight Time */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className={LABEL_CLS}>Distance (nm) *</label>
+              <label className={LABEL_CLS}>
+                Distance (nm) *
+                {autoFields.has('distanceNm') && <AutoTag />}
+              </label>
               <input
                 type="number"
                 value={form.distanceNm}
@@ -335,7 +454,10 @@ function ScheduleFormModal({
               />
             </div>
             <div>
-              <label className={LABEL_CLS}>Flight Time (min) *</label>
+              <label className={LABEL_CLS}>
+                Flight Time (min) *
+                {autoFields.has('flightTimeMin') && <AutoTag />}
+              </label>
               <input
                 type="number"
                 value={form.flightTimeMin}
@@ -365,12 +487,12 @@ function ScheduleFormModal({
               value={form.charterType ?? ''}
               onChange={e => set('charterType', e.target.value)}
               placeholder="e.g. cargo, passenger, medical"
-              className={INPUT_CLS.replace('font-mono ', '')}
+              className="input-field text-xs"
             />
           </div>
 
           {error && (
-            <p className="text-[11px] text-acars-red bg-acars-red/10 border border-acars-red/20 rounded-md px-3 py-2">
+            <p className="text-[11px] text-red-400 bg-red-500/10 border border-red-400/20 rounded-md px-3 py-2">
               {error}
             </p>
           )}
@@ -380,14 +502,14 @@ function ScheduleFormModal({
         <div className="flex items-center justify-end gap-2 px-5 py-3 border-t border-acars-border">
           <button
             onClick={onClose}
-            className="px-4 py-2 rounded-md text-xs font-medium text-acars-muted hover:text-acars-text hover:bg-acars-bg border border-acars-border transition-colors"
+            className="btn-secondary btn-md"
           >
             Cancel
           </button>
           <button
             disabled={!canSubmit}
             onClick={() => onSubmit(form)}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-md text-xs font-semibold text-white bg-acars-blue hover:bg-acars-blue/80 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-md text-xs font-semibold text-white bg-blue-500 hover:bg-blue-500/80 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
             {submitting ? (
               <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -417,16 +539,16 @@ function CloneModal({ schedule, onClone, onClose, submitting, error }: CloneModa
 
   return (
     <div className="fixed inset-0 z-[10000] flex items-center justify-center" onClick={onClose}>
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+      <div className="absolute inset-0 bg-black/60" />
       <div
-        className="relative w-[400px] rounded-xl border border-acars-border bg-acars-panel shadow-2xl"
+        className="relative w-[400px] rounded-md border border-acars-border bg-acars-panel shadow-2xl"
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-acars-border">
           <div className="flex items-center gap-2.5">
-            <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-acars-amber/10 border border-acars-amber/20">
-              <Copy className="w-4.5 h-4.5 text-acars-amber" />
+            <div className="flex items-center justify-center w-9 h-9 rounded-md bg-amber-500/10 border border-amber-400/20">
+              <Copy className="w-4.5 h-4.5 text-amber-400" />
             </div>
             <div>
               <h2 className="text-sm font-semibold text-acars-text">Clone Schedule</h2>
@@ -457,7 +579,7 @@ function CloneModal({ schedule, onClone, onClose, submitting, error }: CloneModa
             />
           </div>
           {error && (
-            <p className="text-[11px] text-acars-red bg-acars-red/10 border border-acars-red/20 rounded-md px-3 py-2">
+            <p className="text-[11px] text-red-400 bg-red-500/10 border border-red-400/20 rounded-md px-3 py-2">
               {error}
             </p>
           )}
@@ -467,14 +589,14 @@ function CloneModal({ schedule, onClone, onClose, submitting, error }: CloneModa
         <div className="flex items-center justify-end gap-2 px-5 py-3 border-t border-acars-border">
           <button
             onClick={onClose}
-            className="px-4 py-2 rounded-md text-xs font-medium text-acars-muted hover:text-acars-text hover:bg-acars-bg border border-acars-border transition-colors"
+            className="btn-secondary btn-md"
           >
             Cancel
           </button>
           <button
             disabled={!flightNumber.trim() || submitting}
             onClick={() => onClone(flightNumber.trim())}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-md text-xs font-semibold text-white bg-acars-amber hover:bg-acars-amber/80 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-md text-xs font-semibold text-white bg-amber-500 hover:bg-amber-500/80 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
             {submitting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Copy className="w-3.5 h-3.5" />}
             Clone
@@ -712,13 +834,13 @@ export function AdminSchedulesPage() {
         subtitle="Manage scheduled flight routes"
         stats={[
           { label: 'Total Routes', value: total, color: 'text-acars-text' },
-          { label: 'Active Routes', value: stats.activeCount, color: 'text-acars-green' },
-          { label: 'Total Bids', value: stats.totalBids, color: 'text-acars-blue' },
+          { label: 'Active Routes', value: stats.activeCount, color: 'text-emerald-400' },
+          { label: 'Total Bids', value: stats.totalBids, color: 'text-blue-400' },
         ]}
         actions={
           <button
             onClick={() => setCreateOpen(true)}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[11px] font-semibold text-acars-green bg-acars-green/10 border border-acars-green/20 hover:bg-acars-green/20 transition-colors"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[11px] font-semibold text-emerald-400 bg-emerald-500/10 border border-emerald-400/20 hover:bg-emerald-500/20 transition-colors"
           >
             <Plus className="w-3.5 h-3.5" /> Add Route
           </button>
@@ -736,7 +858,7 @@ export function AdminSchedulesPage() {
               value={searchInput}
               onChange={e => handleSearchChange(e.target.value)}
               placeholder="Search flight #, ICAO..."
-              className="w-full h-8 rounded-md border border-acars-border bg-acars-bg text-xs text-acars-text pl-8 pr-3 outline-none focus:border-acars-blue transition-colors placeholder:text-acars-muted/50 font-mono"
+              className="input-field text-xs font-mono h-8 pl-8"
             />
           </div>
 
@@ -747,7 +869,7 @@ export function AdminSchedulesPage() {
               setTypeFilter(e.target.value);
               setPage(1);
             }}
-            className="h-8 rounded-md border border-acars-border bg-acars-bg text-xs text-acars-text px-2 outline-none focus:border-acars-blue transition-colors min-w-[140px]"
+            className="select-field h-8 min-w-[140px]"
           >
             <option value="">All Types</option>
             {aircraftTypes.map(t => (
@@ -768,7 +890,7 @@ export function AdminSchedulesPage() {
                 }}
                 className={`px-3 h-8 text-[10px] font-semibold uppercase tracking-wider transition-colors ${
                   activeFilter === val
-                    ? 'bg-acars-blue/20 text-acars-blue'
+                    ? 'bg-blue-500/20 text-blue-400'
                     : 'bg-acars-bg text-acars-muted hover:text-acars-text'
                 }`}
               >
@@ -781,7 +903,7 @@ export function AdminSchedulesPage() {
           {hasFilters && (
             <button
               onClick={resetFilters}
-              className="flex items-center gap-1.5 h-8 px-3 rounded-md text-[11px] font-medium text-acars-muted hover:text-acars-text hover:bg-acars-bg border border-acars-border transition-colors"
+              className="btn-secondary btn-sm flex items-center gap-1.5 h-8"
             >
               <RotateCcw className="w-3 h-3" /> Reset
             </button>
@@ -820,7 +942,7 @@ export function AdminSchedulesPage() {
               {loading && schedules.length === 0 ? (
                 <tr>
                   <td colSpan={10} className="py-16 text-center">
-                    <Loader2 className="w-5 h-5 text-acars-blue animate-spin mx-auto mb-2" />
+                    <Loader2 className="w-5 h-5 text-blue-400 animate-spin mx-auto mb-2" />
                     <span className="text-xs text-acars-muted">Loading schedules...</span>
                   </td>
                 </tr>
@@ -835,7 +957,7 @@ export function AdminSchedulesPage() {
                 schedules.map((s, i) => (
                   <tr
                     key={s.id}
-                    className={`border-b border-acars-border/50 hover:bg-[#1c2433] transition-colors ${
+                    className={`border-b border-acars-border hover:bg-acars-hover transition-colors ${
                       i % 2 === 0 ? 'bg-acars-panel' : 'bg-acars-bg'
                     }`}
                   >
@@ -845,7 +967,7 @@ export function AdminSchedulesPage() {
                         {s.flightNumber}
                       </span>
                       {s.charterType && (
-                        <span className="ml-1.5 text-[9px] uppercase font-bold tracking-wide text-acars-amber bg-acars-amber/10 border border-acars-amber/20 px-1.5 py-0.5 rounded">
+                        <span className="ml-1.5 text-[9px] uppercase font-bold tracking-wide text-amber-400 bg-amber-500/10 border border-amber-400/20 px-1.5 py-0.5 rounded">
                           {s.charterType}
                         </span>
                       )}
@@ -897,7 +1019,7 @@ export function AdminSchedulesPage() {
                     <td className="px-3 py-2.5 text-right">
                       <span
                         className={`font-mono font-semibold tabular-nums ${
-                          s.bidCount > 0 ? 'text-acars-blue' : 'text-acars-muted/40'
+                          s.bidCount > 0 ? 'text-blue-400' : 'text-acars-muted/40'
                         }`}
                       >
                         {s.bidCount}
@@ -909,8 +1031,8 @@ export function AdminSchedulesPage() {
                       <span
                         className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide border ${
                           s.isActive
-                            ? 'bg-acars-green/10 text-acars-green border-acars-green/20'
-                            : 'bg-acars-red/10 text-acars-red border-acars-red/20'
+                            ? 'bg-emerald-500/10 text-emerald-400 border-emerald-400/20'
+                            : 'bg-red-500/10 text-red-400 border-red-400/20'
                         }`}
                       >
                         {s.isActive ? 'Active' : 'Inactive'}
@@ -925,7 +1047,7 @@ export function AdminSchedulesPage() {
                             setModalError('');
                             setEditTarget(s);
                           }}
-                          className="p-1.5 rounded-md text-acars-muted hover:text-acars-blue hover:bg-acars-blue/10 transition-colors"
+                          className="p-1.5 rounded-md text-acars-muted hover:text-blue-400 hover:bg-blue-500/10 transition-colors"
                           title="Edit"
                         >
                           <Pencil className="w-3.5 h-3.5" />
@@ -934,8 +1056,8 @@ export function AdminSchedulesPage() {
                           onClick={() => handleToggle(s)}
                           className={`p-1.5 rounded-md transition-colors ${
                             s.isActive
-                              ? 'text-acars-green hover:text-acars-red hover:bg-acars-red/10'
-                              : 'text-acars-muted hover:text-acars-green hover:bg-acars-green/10'
+                              ? 'text-emerald-400 hover:text-red-400 hover:bg-red-500/10'
+                              : 'text-acars-muted hover:text-emerald-400 hover:bg-emerald-500/10'
                           }`}
                           title={s.isActive ? 'Deactivate' : 'Activate'}
                         >
@@ -950,14 +1072,14 @@ export function AdminSchedulesPage() {
                             setModalError('');
                             setCloneTarget(s);
                           }}
-                          className="p-1.5 rounded-md text-acars-muted hover:text-acars-amber hover:bg-acars-amber/10 transition-colors"
+                          className="p-1.5 rounded-md text-acars-muted hover:text-amber-400 hover:bg-amber-500/10 transition-colors"
                           title="Clone"
                         >
                           <Copy className="w-3.5 h-3.5" />
                         </button>
                         <button
                           onClick={() => setDeleteTarget(s)}
-                          className="p-1.5 rounded-md text-acars-muted hover:text-acars-red hover:bg-acars-red/10 transition-colors"
+                          className="p-1.5 rounded-md text-acars-muted hover:text-red-400 hover:bg-red-500/10 transition-colors"
                           title="Delete"
                         >
                           <Trash2 className="w-3.5 h-3.5" />

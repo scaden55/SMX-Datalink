@@ -167,13 +167,13 @@ export function MessagesTab() {
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder={`Send as ${user?.role === 'admin' ? 'Dispatcher' : 'Pilot'}...`}
-            className="flex-1 rounded bg-acars-bg border border-acars-border text-acars-text text-[11px] px-2 py-1.5 focus:outline-none focus:border-acars-cyan"
+            className="flex-1 rounded bg-acars-bg border border-acars-border text-acars-text text-[11px] px-2 py-1.5 focus:outline-none focus:border-sky-400"
             disabled={sending}
           />
           <button
             onClick={handleSend}
             disabled={!input.trim() || sending}
-            className="px-3 py-1.5 rounded text-[11px] font-medium bg-acars-cyan/10 text-acars-cyan border border-acars-cyan/20 hover:bg-acars-cyan/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            className="px-3 py-1.5 rounded text-[11px] font-medium bg-sky-500/10 text-sky-400 border border-sky-400/20 hover:bg-sky-500/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
             Send
           </button>

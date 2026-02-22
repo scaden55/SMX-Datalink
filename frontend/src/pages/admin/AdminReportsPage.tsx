@@ -92,11 +92,11 @@ export function AdminReportsPage() {
       <div className="p-6">
         <AdminPageHeader icon={BarChart3} title="Admin Reports" subtitle="Operational overview and analytics" />
         <div className="panel mt-6 p-8 flex flex-col items-center gap-3">
-          <AlertCircle className="w-6 h-6 text-acars-red" />
-          <p className="text-sm text-acars-red">{error ?? 'No data available'}</p>
+          <AlertCircle className="w-6 h-6 text-red-400" />
+          <p className="text-sm text-red-400">{error ?? 'No data available'}</p>
           <button
             onClick={fetchData}
-            className="mt-2 px-4 py-1.5 text-xs rounded bg-acars-blue/20 text-acars-blue hover:bg-acars-blue/30 transition-colors"
+            className="mt-2 px-4 py-1.5 text-xs rounded bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 transition-colors"
           >
             Retry
           </button>
@@ -119,7 +119,7 @@ export function AdminReportsPage() {
         actions={
           <button
             onClick={fetchData}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded bg-acars-panel border border-acars-border text-acars-muted hover:text-acars-text transition-colors"
+            className="btn-secondary btn-sm flex items-center gap-1.5"
           >
             <RefreshCw className="w-3.5 h-3.5" />
             Refresh
@@ -133,30 +133,30 @@ export function AdminReportsPage() {
           icon={Plane}
           label="Total Flights"
           value={fmtNum(summary.totalFlights)}
-          color="text-acars-blue"
-          iconBg="bg-acars-blue/10"
+          color="text-blue-400"
+          iconBg="bg-blue-500/10"
         />
         <StatCard
           icon={Clock}
           label="Total Hours"
           value={fmtHours(summary.totalHoursMin)}
-          color="text-acars-green"
-          iconBg="bg-acars-green/10"
+          color="text-emerald-400"
+          iconBg="bg-emerald-500/10"
         />
         <StatCard
           icon={AlertCircle}
           label="Pending PIREPs"
           value={fmtNum(pendingPireps)}
-          color={pendingPireps > 0 ? 'text-acars-amber' : 'text-acars-muted'}
-          iconBg={pendingPireps > 0 ? 'bg-acars-amber/10' : 'bg-acars-panel'}
+          color={pendingPireps > 0 ? 'text-amber-400' : 'text-acars-muted'}
+          iconBg={pendingPireps > 0 ? 'bg-amber-500/10' : 'bg-acars-panel'}
           highlight={pendingPireps > 0}
         />
         <StatCard
           icon={DollarSign}
           label="Net Revenue"
           value={fmtCurrency(financials.netProfit)}
-          color={financials.netProfit >= 0 ? 'text-acars-green' : 'text-acars-red'}
-          iconBg={financials.netProfit >= 0 ? 'bg-acars-green/10' : 'bg-acars-red/10'}
+          color={financials.netProfit >= 0 ? 'text-emerald-400' : 'text-red-400'}
+          iconBg={financials.netProfit >= 0 ? 'bg-emerald-500/10' : 'bg-red-500/10'}
         />
       </div>
 
@@ -166,7 +166,7 @@ export function AdminReportsPage() {
         {/* ── Top Routes ────────────────────────────────────────── */}
         <div className="panel p-0 overflow-hidden">
           <div className="flex items-center gap-2 px-4 py-3 border-b border-acars-border">
-            <MapPin className="w-4 h-4 text-acars-blue" />
+            <MapPin className="w-4 h-4 text-blue-400" />
             <h2 className="text-sm font-semibold text-acars-text">Top Routes</h2>
             <span className="ml-auto text-[10px] text-acars-muted uppercase tracking-wider">
               {topRoutes.length} route{topRoutes.length !== 1 ? 's' : ''}
@@ -189,18 +189,18 @@ export function AdminReportsPage() {
                   {topRoutes.map((route, i) => {
                     const pct = (route.flights / maxRouteCount) * 100;
                     return (
-                      <tr key={`${route.depIcao}-${route.arrIcao}`} className="border-b border-acars-border/50 hover:bg-white/[0.02] transition-colors">
+                      <tr key={`${route.depIcao}-${route.arrIcao}`} className="border-b border-acars-border hover:bg-white/[0.02] transition-colors">
                         <td className="px-4 py-2 text-acars-muted font-mono">{i + 1}</td>
                         <td className="px-4 py-2">
-                          <span className="text-acars-text font-medium">{route.depIcao}</span>
+                          <span className="text-acars-text font-mono font-medium">{route.depIcao}</span>
                           <span className="text-acars-muted mx-1.5">&rarr;</span>
-                          <span className="text-acars-text font-medium">{route.arrIcao}</span>
+                          <span className="text-acars-text font-mono font-medium">{route.arrIcao}</span>
                         </td>
-                        <td className="px-4 py-2 text-right text-acars-text font-mono">{route.flights}</td>
+                        <td className="px-4 py-2 text-right text-blue-400 font-mono">{route.flights}</td>
                         <td className="px-4 py-2">
-                          <div className="h-1.5 rounded-full bg-acars-blue/20 overflow-hidden">
+                          <div className="h-1.5 rounded-full bg-blue-500/20 overflow-hidden">
                             <div
-                              className="h-full rounded-full bg-acars-blue transition-all duration-500"
+                              className="h-full rounded-full bg-blue-500 transition-all duration-500"
                               style={{ width: `${pct}%` }}
                             />
                           </div>
@@ -217,7 +217,7 @@ export function AdminReportsPage() {
         {/* ── Top Pilots ────────────────────────────────────────── */}
         <div className="panel p-0 overflow-hidden">
           <div className="flex items-center gap-2 px-4 py-3 border-b border-acars-border">
-            <Trophy className="w-4 h-4 text-acars-amber" />
+            <Trophy className="w-4 h-4 text-amber-400" />
             <h2 className="text-sm font-semibold text-acars-text">Top Pilots</h2>
             <span className="ml-auto text-[10px] text-acars-muted uppercase tracking-wider">
               {byPilot.length} pilot{byPilot.length !== 1 ? 's' : ''}
@@ -240,15 +240,15 @@ export function AdminReportsPage() {
                 </thead>
                 <tbody>
                   {byPilot.slice(0, 10).map((pilot, i) => (
-                    <tr key={pilot.callsign} className="border-b border-acars-border/50 hover:bg-white/[0.02] transition-colors">
+                    <tr key={pilot.callsign} className="border-b border-acars-border hover:bg-white/[0.02] transition-colors">
                       <td className="px-4 py-2 text-acars-muted font-mono">{i + 1}</td>
-                      <td className="px-4 py-2 text-acars-blue font-medium font-mono">{pilot.callsign}</td>
+                      <td className="px-4 py-2 text-blue-400 font-medium font-mono">{pilot.callsign}</td>
                       <td className="px-4 py-2 text-acars-text">{pilot.pilotName}</td>
                       <td className="px-4 py-2 text-right text-acars-text font-mono">{pilot.flights}</td>
                       <td className="px-4 py-2 text-right text-acars-muted font-mono">{fmtHours(pilot.hoursMin)}</td>
                       <td className="px-4 py-2 text-right">
                         {pilot.avgScore != null ? (
-                          <span className={pilot.avgScore >= 80 ? 'text-acars-green' : pilot.avgScore >= 60 ? 'text-acars-amber' : 'text-acars-red'}>
+                          <span className={pilot.avgScore >= 80 ? 'text-emerald-400' : pilot.avgScore >= 60 ? 'text-amber-400' : 'text-red-400'}>
                             {pilot.avgScore}%
                           </span>
                         ) : (
@@ -268,16 +268,16 @@ export function AdminReportsPage() {
       {financeSummary && (
         <div className="panel p-0 overflow-hidden">
           <div className="flex items-center gap-2 px-4 py-3 border-b border-acars-border">
-            <DollarSign className="w-4 h-4 text-acars-green" />
+            <DollarSign className="w-4 h-4 text-emerald-400" />
             <h2 className="text-sm font-semibold text-acars-text">Financial Summary</h2>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-px bg-acars-border/30">
-            <FinanceCard label="Total Pay" value={financeSummary.totalPay} color="text-acars-blue" />
-            <FinanceCard label="Bonuses" value={financeSummary.totalBonuses} color="text-acars-green" />
-            <FinanceCard label="Deductions" value={financeSummary.totalDeductions} color="text-acars-red" negative />
-            <FinanceCard label="Expenses" value={financeSummary.totalExpenses} color="text-acars-red" negative />
-            <FinanceCard label="Income" value={financeSummary.totalIncome} color="text-acars-green" />
-            <FinanceCard label="Net Total" value={financeSummary.netTotal} color={financeSummary.netTotal >= 0 ? 'text-acars-green' : 'text-acars-red'} />
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-px bg-acars-border">
+            <FinanceCard label="Total Pay" value={financeSummary.totalPay} color="text-blue-400" />
+            <FinanceCard label="Bonuses" value={financeSummary.totalBonuses} color="text-emerald-400" />
+            <FinanceCard label="Deductions" value={financeSummary.totalDeductions} color="text-red-400" negative />
+            <FinanceCard label="Expenses" value={financeSummary.totalExpenses} color="text-red-400" negative />
+            <FinanceCard label="Income" value={financeSummary.totalIncome} color="text-emerald-400" />
+            <FinanceCard label="Net Total" value={financeSummary.netTotal} color={financeSummary.netTotal >= 0 ? 'text-emerald-400' : 'text-red-400'} />
           </div>
         </div>
       )}
@@ -288,7 +288,7 @@ export function AdminReportsPage() {
         {/* ── Flight Volume ──────────────────────────────────────── */}
         <div className="panel p-0 overflow-hidden">
           <div className="flex items-center gap-2 px-4 py-3 border-b border-acars-border">
-            <BarChart3 className="w-4 h-4 text-acars-blue" />
+            <BarChart3 className="w-4 h-4 text-blue-400" />
             <h2 className="text-sm font-semibold text-acars-text">Flight Volume</h2>
             <span className="ml-auto text-[10px] text-acars-muted uppercase tracking-wider">
               {report.period === 'all-time' ? 'All Time (Monthly)' : report.period}
@@ -311,7 +311,7 @@ export function AdminReportsPage() {
                         {v.date}: {v.flights}
                       </div>
                       <div
-                        className="w-full rounded-t bg-acars-blue/80 hover:bg-acars-blue transition-colors min-h-[2px]"
+                        className="w-full rounded-t bg-blue-500/80 hover:bg-blue-500 transition-colors min-h-[2px]"
                         style={{ height: `${Math.max(pct, 2)}%` }}
                       />
                     </div>
@@ -329,7 +329,7 @@ export function AdminReportsPage() {
         {/* ── Additional Stats ────────────────────────────────────── */}
         <div className="panel p-0 overflow-hidden">
           <div className="flex items-center gap-2 px-4 py-3 border-b border-acars-border">
-            <Users className="w-4 h-4 text-acars-blue" />
+            <Users className="w-4 h-4 text-blue-400" />
             <h2 className="text-sm font-semibold text-acars-text">Additional Stats</h2>
           </div>
           <div className="p-4 space-y-3">
@@ -340,7 +340,7 @@ export function AdminReportsPage() {
             <MiniStat label="Total Cargo" value={`${fmtNum(summary.totalCargoLbs)} lbs`} />
             <MiniStat label="Avg Score" value={summary.avgScore != null ? `${summary.avgScore}%` : '--'} />
             <MiniStat label="Avg Landing Rate" value={summary.avgLandingRate != null ? `${summary.avgLandingRate} fpm` : '--'} />
-            <MiniStat label="Profit Margin" value={`${financials.profitMargin}%`} color={financials.profitMargin >= 0 ? 'text-acars-green' : 'text-acars-red'} />
+            <MiniStat label="Profit Margin" value={`${financials.profitMargin}%`} color={financials.profitMargin >= 0 ? 'text-emerald-400' : 'text-red-400'} />
           </div>
         </div>
       </div>
@@ -366,8 +366,8 @@ function StatCard({
   highlight?: boolean;
 }) {
   return (
-    <div className={`panel px-4 py-3 flex items-center gap-3 ${highlight ? 'ring-1 ring-acars-amber/40' : ''}`}>
-      <div className={`flex items-center justify-center w-9 h-9 rounded-lg ${iconBg} shrink-0`}>
+    <div className={`panel px-4 py-3 flex items-center gap-3 ${highlight ? 'ring-1 ring-amber-400/40' : ''}`}>
+      <div className={`flex items-center justify-center w-9 h-9 rounded-md ${iconBg} shrink-0`}>
         <Icon className={`w-4 h-4 ${color}`} />
       </div>
       <div className="min-w-0">
@@ -409,7 +409,7 @@ function MiniStat({
   color?: string;
 }) {
   return (
-    <div className="flex items-center justify-between py-1.5 border-b border-acars-border/30 last:border-0">
+    <div className="flex items-center justify-between py-1.5 border-b border-acars-border last:border-0">
       <span className="text-xs text-acars-muted">{label}</span>
       <span className={`text-xs font-medium font-mono ${color ?? 'text-acars-text'}`}>{value}</span>
     </div>

@@ -27,6 +27,7 @@ export function logbookRouter(): Router {
         search: req.query.search as string | undefined,
         dateFrom: req.query.dateFrom as string | undefined,
         dateTo: req.query.dateTo as string | undefined,
+        vatsimOnly: req.query.vatsimOnly === 'true',
       };
 
       const { entries, total } = service.findAll(filters, page, pageSize);

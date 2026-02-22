@@ -28,7 +28,7 @@ export class ErrorBoundary extends Component<Props, State> {
       return (
         <div className="flex h-screen w-screen items-center justify-center bg-acars-bg">
           <div className="max-w-md text-center space-y-4 p-8">
-            <div className="text-4xl text-acars-red/60">&#9888;</div>
+            <div className="text-4xl text-red-400/60">&#9888;</div>
             <h1 className="text-lg font-semibold text-acars-text">Something went wrong</h1>
             <p className="text-sm text-acars-muted">
               {this.state.error?.message || 'An unexpected error occurred'}
@@ -39,7 +39,7 @@ export class ErrorBoundary extends Component<Props, State> {
                 window.location.hash = '#/';
                 window.location.reload();
               }}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded text-xs font-semibold bg-acars-cyan/10 text-acars-cyan border border-acars-cyan/20 hover:bg-acars-cyan/20 transition-colors"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded text-xs font-semibold bg-sky-500/10 text-sky-400 border border-sky-400/20 hover:bg-sky-500/20 transition-colors"
             >
               Reload Application
             </button>

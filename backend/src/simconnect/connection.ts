@@ -16,6 +16,7 @@ export class SimConnectManager extends EventEmitter implements ISimConnectManage
   private _connected = false;
   private _simInfo: Partial<RecvOpen> = {};
   private _closing = false;
+  private _loggedReadError = false;
 
   get connected(): boolean {
     return this._connected;
@@ -91,28 +92,36 @@ export class SimConnectManager extends EventEmitter implements ISimConnectManage
 
   private setupDataHandlers(handle: SimConnectConnection): void {
     handle.on('simObjectData', (recv) => {
-      switch (recv.requestID) {
-        case RequestID.POSITION:
-          this.emit('positionUpdate', readPosition(recv.data));
-          break;
-        case RequestID.ENGINE:
-          this.emit('engineUpdate', readEngine(recv.data));
-          break;
-        case RequestID.FUEL:
-          this.emit('fuelUpdate', readFuel(recv.data));
-          break;
-        case RequestID.FLIGHT:
-          this.emit('flightStateUpdate', readFlightState(recv.data));
-          break;
-        case RequestID.AUTOPILOT:
-          this.emit('autopilotUpdate', readAutopilot(recv.data));
-          break;
-        case RequestID.RADIO:
-          this.emit('radioUpdate', readRadio(recv.data));
-          break;
-        case RequestID.AIRCRAFT_INFO:
-          this.emit('aircraftInfoUpdate', readAircraftInfo(recv.data));
-          break;
+      try {
+        switch (recv.requestID) {
+          case RequestID.POSITION:
+            this.emit('positionUpdate', readPosition(recv.data));
+            break;
+          case RequestID.ENGINE:
+            this.emit('engineUpdate', readEngine(recv.data));
+            break;
+          case RequestID.FUEL:
+            this.emit('fuelUpdate', readFuel(recv.data));
+            break;
+          case RequestID.FLIGHT:
+            this.emit('flightStateUpdate', readFlightState(recv.data));
+            break;
+          case RequestID.AUTOPILOT:
+            this.emit('autopilotUpdate', readAutopilot(recv.data));
+            break;
+          case RequestID.RADIO:
+            this.emit('radioUpdate', readRadio(recv.data));
+            break;
+          case RequestID.AIRCRAFT_INFO:
+            this.emit('aircraftInfoUpdate', readAircraftInfo(recv.data));
+            break;
+        }
+      } catch (err) {
+        // Buffer read errors are non-fatal — skip this frame rather than crashing
+        if (!this._loggedReadError) {
+          console.warn(`[SimConnect] Data read error (requestID=${recv.requestID}):`, (err as Error).message);
+          this._loggedReadError = true;
+        }
       }
     });
   }

@@ -1,3 +1,5 @@
+@import './planning-tokens.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -5,58 +7,288 @@
 @layer base {
   * {
     scrollbar-width: thin;
-    scrollbar-color: #30363d #161b22;
+    scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
   }
   *::-webkit-scrollbar {
     width: 6px;
     height: 6px;
   }
   *::-webkit-scrollbar-track {
-    background: #161b22;
+    background: var(--scrollbar-track);
   }
   *::-webkit-scrollbar-thumb {
-    background: #30363d;
+    background: var(--scrollbar-thumb);
     border-radius: 3px;
+  }
+
+  /* Form elements use IBM Plex Mono for clear numeric/data input */
+  input,
+  select,
+  textarea {
+    font-family: 'IBM Plex Mono', monospace;
+    font-feature-settings: "tnum";
+  }
+
+  body {
+    @apply bg-[hsl(var(--background))] text-[hsl(var(--foreground))];
   }
 }
 
-/* Tint neutral-gray CartoDB tiles to match the app's blue-dark palette */
-.leaflet-tile-pane {
-  filter: sepia(0.15) hue-rotate(180deg) brightness(0.9) saturate(1.8);
+/* ── Tabular numbers — font-mono now means IBM Plex Mono ──── */
+.font-mono {
+  font-feature-settings: "tnum";
+}
+
+/* Planning page: tnum + ss01 globally */
+.planning-tnum {
+  font-feature-settings: "tnum", "ss01";
+}
+
+/* Suppress browser focus outline on map elements */
+.leaflet-interactive:focus {
+  outline: none;
 }
 
 @layer components {
+  /* ── Panels ─────────────────────────────────────────────────── */
   .panel {
-    @apply bg-acars-panel border border-acars-border rounded-md;
+    @apply rounded-md relative overflow-hidden;
+    background: var(--bg-panel);
+    border: 1px solid var(--border-panel);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03),
+                0 2px 8px rgba(0, 0, 0, 0.2);
   }
+  .panel::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    opacity: 0.03;
+    pointer-events: none;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    background-repeat: repeat;
+    background-size: 128px 128px;
+    mix-blend-mode: overlay;
+  }
+
+  /* ── Focus Ring ─────────────────────────────────────────────── */
+  .focus-ring {
+    @apply focus-visible:ring-2 focus-visible:ring-blue-400/40 focus-visible:ring-offset-1 focus-visible:ring-offset-acars-bg;
+  }
+
+  /* ── Buttons ────────────────────────────────────────────────── */
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-1.5 rounded-md text-[11px] font-semibold
+           text-white
+           hover:brightness-110 active:brightness-95
+           disabled:opacity-40 disabled:cursor-not-allowed
+           transition-all focus-ring;
+    background: linear-gradient(135deg, #4d9cf6 0%, #3478e0 100%);
+    box-shadow: 0 2px 8px rgba(77, 156, 246, 0.30);
+  }
+  .btn-primary:hover {
+    box-shadow: 0 4px 16px rgba(77, 156, 246, 0.45);
+  }
+  .btn-primary.btn-sm { @apply px-3 py-1.5 text-[10px]; }
+  .btn-primary.btn-md { @apply px-4 py-2; }
+
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-1.5 rounded-md text-[11px] font-semibold
+           bg-blue-500/10 text-blue-400 border border-blue-400/20
+           hover:bg-blue-500/20 active:bg-blue-500/25
+           disabled:opacity-40 disabled:cursor-not-allowed
+           transition-all focus-ring;
+  }
+  .btn-secondary.btn-sm { @apply px-3 py-1.5 text-[10px]; }
+  .btn-secondary.btn-md { @apply px-4 py-2; }
+
+  .btn-danger {
+    @apply inline-flex items-center justify-center gap-1.5 rounded-md text-[11px] font-semibold
+           text-white
+           hover:brightness-110 active:brightness-95
+           disabled:opacity-40 disabled:cursor-not-allowed
+           transition-all focus-ring;
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    box-shadow: 0 2px 8px rgba(239, 68, 68, 0.30);
+  }
+  .btn-danger:hover {
+    box-shadow: 0 4px 16px rgba(239, 68, 68, 0.45);
+  }
+  .btn-danger.btn-sm { @apply px-3 py-1.5 text-[10px]; }
+  .btn-danger.btn-md { @apply px-4 py-2; }
+
+  .btn-green {
+    @apply inline-flex items-center justify-center gap-1.5 rounded-md text-[11px] font-semibold
+           text-white
+           hover:brightness-110 active:brightness-95
+           disabled:opacity-40 disabled:cursor-not-allowed
+           transition-all focus-ring;
+    background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+    box-shadow: 0 2px 8px rgba(34, 197, 94, 0.30);
+  }
+  .btn-green:hover {
+    box-shadow: 0 4px 16px rgba(34, 197, 94, 0.45);
+  }
+  .btn-green.btn-sm { @apply px-3 py-1.5 text-[10px]; }
+  .btn-green.btn-md { @apply px-4 py-2; }
+
+  /* ── Inputs ─────────────────────────────────────────────────── */
+  .input-field {
+    @apply w-full rounded-md bg-acars-input border border-acars-border
+           text-[11px] font-mono px-2.5 py-1.5
+           placeholder:text-acars-muted/40
+           focus:outline-none focus:border-blue-400
+           disabled:opacity-50 disabled:cursor-not-allowed
+           transition-colors;
+    color: var(--text-primary);
+  }
+
+  .select-field {
+    @apply w-full h-7 rounded-md border border-acars-border bg-acars-input
+           text-[11px] font-mono px-2.5
+           outline-none focus:border-blue-400
+           transition-colors cursor-pointer
+           appearance-none
+           bg-[url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='12'%20height='12'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='%2394a3b8'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpath%20d='m6%209%206%206%206-6'/%3E%3C/svg%3E")]
+           bg-[length:12px] bg-[right_6px_center] bg-no-repeat pr-6;
+    color: var(--text-primary);
+  }
+
+  /* ── Planning-specific input (dense) ─────────────────────────── */
+  .planning-input {
+    @apply w-full rounded-md text-[12px] font-mono px-2.5 py-1.5
+           focus:outline-none transition-colors;
+    background: var(--bg-input);
+    border: 1px solid var(--border-input);
+    color: var(--text-primary);
+  }
+  .planning-input:focus { border-color: var(--accent); }
+  .planning-input::placeholder { color: var(--text-hint); }
+
+  .planning-select {
+    @apply w-full rounded-md text-[12px] font-mono px-2.5 py-1.5
+           outline-none transition-colors;
+    background: var(--bg-input);
+    border: 1px solid var(--border-input);
+    color: var(--text-primary);
+  }
+  .planning-select:focus { border-color: var(--accent); }
+
+  .planning-textarea {
+    @apply w-full rounded-md text-[12px] font-mono px-2.5 py-1.5
+           focus:outline-none transition-colors resize-none;
+    background: var(--bg-input);
+    border: 1px solid var(--border-input);
+    color: var(--text-primary);
+  }
+  .planning-textarea:focus { border-color: var(--accent); }
+  .planning-textarea::placeholder { color: var(--text-hint); }
+
+  .planning-label {
+    @apply text-[10px] uppercase tracking-[0.06em] font-medium block;
+    color: var(--text-label);
+  }
+
+  /* ── Table ──────────────────────────────────────────────────── */
+  .table-header-cell {
+    @apply text-[10px] uppercase tracking-[0.08em] text-acars-muted font-medium px-4 py-2.5;
+  }
+  .table-row {
+    @apply border-b border-acars-border transition-colors;
+  }
+  .table-row:hover {
+    background: var(--bg-hover);
+  }
+  .table-row-alt:nth-child(even) {
+    @apply bg-acars-bg/30;
+  }
+
+  /* ── Stat Card ──────────────────────────────────────────────── */
+  .stat-card {
+    @apply panel p-4 flex items-center gap-4;
+  }
+
+  /* ── Empty State ────────────────────────────────────────────── */
+  .empty-state {
+    @apply flex flex-col items-center justify-center text-center py-12 px-6;
+  }
+  .empty-state-icon {
+    @apply w-10 h-10 text-acars-muted/30 mb-3;
+  }
+  .empty-state-title {
+    @apply text-sm font-semibold text-acars-text mb-1;
+  }
+  .empty-state-desc {
+    @apply text-[11px] text-acars-muted leading-relaxed max-w-sm;
+  }
+
+  /* ── Page Header ────────────────────────────────────────────── */
+  .page-header {
+    @apply flex items-center gap-3;
+  }
+  .page-header-icon {
+    @apply flex items-center justify-center w-9 h-9 rounded-md border;
+  }
+
+  /* ── Badges ─────────────────────────────────────────────────── */
   .badge {
-    @apply inline-flex items-center px-2 py-0.5 rounded text-xs font-medium;
+    @apply inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-[0.08em];
   }
   .badge-green {
-    @apply badge bg-acars-green/20 text-acars-green border border-acars-green/30;
+    @apply badge bg-emerald-500/15 text-emerald-400;
   }
   .badge-amber {
-    @apply badge bg-acars-amber/20 text-acars-amber border border-acars-amber/30;
+    @apply badge bg-amber-500/15 text-amber-400;
   }
   .badge-red {
-    @apply badge bg-acars-red/20 text-acars-red border border-acars-red/30;
+    @apply badge bg-red-500/15 text-red-400;
   }
   .badge-blue {
-    @apply badge bg-acars-blue/20 text-acars-blue border border-acars-blue/30;
+    @apply badge bg-blue-500/15 text-blue-400;
+  }
+  .badge-cyan {
+    @apply badge bg-sky-500/15 text-sky-400;
   }
   .badge-magenta {
-    @apply badge bg-acars-magenta/20 text-acars-magenta border border-acars-magenta/30;
+    @apply badge bg-fuchsia-500/15 text-fuchsia-400;
   }
+
+  /* ── Data Display ───────────────────────────────────────────── */
   .data-label {
-    @apply text-[10px] uppercase tracking-wider text-acars-muted font-medium;
+    @apply text-[10px] uppercase tracking-[0.06em] font-medium;
+    color: var(--text-label);
   }
   .data-value {
-    @apply text-sm font-mono text-acars-text;
+    @apply text-[12px] font-mono;
+    color: var(--text-primary);
   }
+
+  /* ── Tabs ────────────────────────────────────────────────────── */
   .tab-active {
-    @apply text-acars-blue border-b-2 border-acars-blue;
+    @apply border-b-2;
+    color: var(--accent);
+    border-color: var(--accent);
   }
   .tab-inactive {
-    @apply text-acars-muted hover:text-acars-text;
+    color: var(--text-label);
   }
+  .tab-inactive:hover {
+    color: var(--text-secondary);
+  }
+
+  /* ── ACARS Message Block ──────────────────────────────────── */
+  pre.acars-msg {
+    @apply font-mono text-[11px] leading-relaxed p-3 rounded-md overflow-x-auto;
+    background: var(--bg-input);
+    border: 1px solid var(--border-panel);
+    color: var(--text-primary);
+  }
+}
+
+/* ── Animations ───────────────────────────────────────────────── */
+@keyframes pulse-ring {
+  0% { transform: scale(1); opacity: 1; }
+  100% { transform: scale(1.6); opacity: 0; }
+}
+.animate-pulse-ring {
+  animation: pulse-ring 1.5s ease-out infinite;
 }

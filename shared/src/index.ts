@@ -125,6 +125,42 @@ export type {
   AdminDashboardStats,
 } from './types/admin.js';
 
+export type {
+  VatsimFacilityType,
+  VatsimFlightPlan,
+  VatsimPilot,
+  VatsimController,
+  VatsimAtis,
+  VatsimGeneral,
+  VatsimTransceiverPosition,
+  VatsimTransceiverEntry,
+  ParsedCallsign,
+  VatsimControllerWithPosition,
+  VatsimDataSnapshot,
+  VatsimUpdateEvent,
+  VatsimFlightStatus,
+} from './types/vatsim.js';
+export { VATSIM_FACILITY_NAMES } from './types/vatsim.js';
+export type { TrackPoint, PilotTrack } from './types/track.js';
+export type { NavdataSearchResult, RouteFixResult, NavaidMapItem } from './types/navdata.js';
+export type {
+  FlightClassification,
+  ClassificationResult,
+  EtopsAssessment,
+  RvsmAssessment,
+  OpSpecCategory,
+  OpSpecEnforcement,
+  OpSpec,
+  AircraftStatusCheck,
+  ComplianceItem,
+  RegulatoryAssessment,
+  OpSpecListResponse,
+  UpdateOpSpecRequest,
+} from './types/regulatory.js';
+
+// Utilities
+export { altitudeToColor } from './utils/altitudeColor.js';
+
 // Constants
 export { FlightPhase, PhaseThresholds } from './constants/flight-phases.js';
 export {

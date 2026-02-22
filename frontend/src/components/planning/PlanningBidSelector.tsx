@@ -21,7 +21,7 @@ export function PlanningBidSelector({ bids, onSelect }: Props) {
             const id = parseInt(e.target.value, 10);
             if (!isNaN(id)) onSelect(id);
           }}
-          className="w-full appearance-none rounded bg-acars-bg border border-acars-border text-acars-text text-[11px] pl-7 pr-7 py-1.5 font-mono outline-none focus:border-acars-blue transition-colors cursor-pointer"
+          className="w-full appearance-none rounded bg-acars-bg border border-acars-border text-acars-text text-[11px] pl-7 pr-7 py-1.5 font-mono outline-none focus:border-blue-400 transition-colors cursor-pointer"
         >
           {!activeBidId && <option value="">Select a bid to plan...</option>}
           {bids.map((b) => (
@@ -30,7 +30,7 @@ export function PlanningBidSelector({ bids, onSelect }: Props) {
             </option>
           ))}
         </select>
-        <Plane className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-acars-blue pointer-events-none" />
+        <Plane className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-blue-400 pointer-events-none" />
         <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-acars-muted pointer-events-none" />
       </div>
       {active && (

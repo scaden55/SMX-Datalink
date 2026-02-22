@@ -22,7 +22,7 @@ export function RemarksSection({ dispatcherRemarks: initialDispatcher = '', auto
               <textarea
                 value={dispatcherRemarks}
                 onChange={(e) => onFieldChange('dispatcherRemarks', e.target.value)}
-                className="w-full h-16 rounded bg-acars-bg border border-acars-border text-acars-text text-[11px] px-2 py-1.5 font-mono resize-none focus:outline-none focus:border-acars-cyan"
+                className="w-full h-16 rounded bg-acars-bg border border-acars-border text-acars-text text-[11px] px-2 py-1.5 font-mono resize-none focus:outline-none focus:border-sky-400"
                 placeholder="No dispatcher remarks"
               />
             ) : (
@@ -37,7 +37,7 @@ export function RemarksSection({ dispatcherRemarks: initialDispatcher = '', auto
               <textarea
                 value={fuelAutoRemarks}
                 onChange={(e) => onFieldChange('autoRemarks', e.target.value)}
-                className="w-full h-16 rounded bg-acars-bg border border-acars-border text-acars-text text-[11px] px-2 py-1.5 font-mono resize-none focus:outline-none focus:border-acars-cyan"
+                className="w-full h-16 rounded bg-acars-bg border border-acars-border text-acars-text text-[11px] px-2 py-1.5 font-mono resize-none focus:outline-none focus:border-sky-400"
                 placeholder="No auto remarks"
               />
             ) : (

@@ -7,6 +7,8 @@ export interface DispatchFlight {
   ofpJson: SimBriefOFP | null;
   phase: FlightPlanPhase;
   pilot: { callsign: string; name: string };
+  vatsimConnected: boolean;
+  vatsimCallsign: string | null;
 }
 
 export interface DispatchFlightsResponse {

@@ -79,7 +79,7 @@ export function FlightLogTab() {
             </tbody>
           </table>
           {fuel?.tanks && fuel.tanks.length > 0 && (
-            <div className="mt-2 pt-2 border-t border-acars-border/50">
+            <div className="mt-2 pt-2 border-t border-acars-border">
               <table className="w-full text-[11px]">
                 <thead>
                   <tr className="text-acars-muted">
@@ -90,7 +90,7 @@ export function FlightLogTab() {
                 </thead>
                 <tbody className="font-mono">
                   {fuel.tanks.map((t) => (
-                    <tr key={t.name} className="border-t border-acars-border/30">
+                    <tr key={t.name} className="border-t border-acars-border">
                       <td className="py-0.5 text-acars-muted">{t.name}</td>
                       <td className="py-0.5 text-right">{Math.round(t.quantityGallons).toLocaleString()}</td>
                       <td className="py-0.5 text-right text-acars-muted">{Math.round(t.capacityGallons).toLocaleString()}</td>
@@ -124,16 +124,16 @@ export function FlightLogTab() {
 
 function Row({ label, value, highlight }: { label: string; value: string; highlight?: boolean }) {
   return (
-    <tr className="border-b border-acars-border/30">
+    <tr className="border-b border-acars-border">
       <td className="py-0.5 text-acars-muted">{label}</td>
-      <td className={`py-0.5 text-right ${highlight ? 'text-acars-cyan font-semibold' : ''}`}>{value}</td>
+      <td className={`py-0.5 text-right ${highlight ? 'text-sky-400 font-semibold' : ''}`}>{value}</td>
     </tr>
   );
 }
 
 function EngRow({ label, values }: { label: string; values: string[] }) {
   return (
-    <tr className="border-b border-acars-border/30">
+    <tr className="border-b border-acars-border">
       <td className="py-0.5 text-acars-muted">{label}</td>
       {values.map((v, i) => (
         <td key={i} className="py-0.5 text-right">{v}</td>

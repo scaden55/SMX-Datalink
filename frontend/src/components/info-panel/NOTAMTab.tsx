@@ -22,7 +22,7 @@ function AirportAdvisories({ icao, label, faaEvent }: { icao: string; label: str
   return (
     <div className="panel p-3 space-y-2">
       <div className="flex items-center gap-2">
-        <span className="text-xs font-bold text-acars-cyan">{icao}</span>
+        <span className="text-xs font-bold text-sky-400">{icao}</span>
         <span className="text-[10px] text-acars-muted">({label})</span>
       </div>
 
@@ -94,7 +94,7 @@ export function NOTAMTab({ dispatchData }: { dispatchData: DispatchData }) {
       <div className="flex items-center gap-2">
         <h3 className="text-xs font-semibold text-acars-text">NOTAMs & Advisories</h3>
         {dispatchData.loading && (
-          <span className="text-[10px] text-acars-cyan animate-pulse">Fetching...</span>
+          <span className="text-[10px] text-sky-400 animate-pulse">Fetching...</span>
         )}
       </div>
 

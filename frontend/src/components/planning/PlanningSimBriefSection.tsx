@@ -5,33 +5,31 @@ import { useFlightPlanStore } from '../../stores/flightPlanStore';
 export function PlanningSimBriefSection() {
   const { form, setFormField } = useFlightPlanStore();
 
-  const labelClass = 'text-[9px] uppercase tracking-wider text-acars-muted font-medium mb-1 block';
-  const selectClass = 'w-full rounded bg-acars-bg border border-acars-border text-acars-text text-[11px] px-2 py-1.5 outline-none focus:border-acars-blue transition-colors';
-  const checkboxRow = 'flex items-center gap-2 text-[11px] text-acars-text';
-  const checkboxClass = 'w-3.5 h-3.5 rounded border-acars-border bg-acars-bg accent-acars-blue';
+  const checkboxRow = 'flex items-center gap-2.5 text-[11px] text-acars-text font-sans';
+  const checkboxClass = 'w-3.5 h-3.5 rounded-md border-acars-border bg-acars-input accent-acars-blue';
 
   return (
     <CollapsibleSection title="Generation Options" icon={<Cog className="w-3.5 h-3.5" />} defaultOpen>
-      <div className="space-y-3">
+      <div className="space-y-2">
         {/* Row 1: Units, Cont Fuel, Reserve */}
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-3 gap-2.5">
           <div>
-            <label className={labelClass}>Units</label>
+            <label className="planning-label mb-1">Units</label>
             <select
               value={form.units}
               onChange={(e) => setFormField('units', e.target.value as 'LBS' | 'KGS')}
-              className={selectClass}
+              className="planning-select"
             >
               <option value="LBS">LBS</option>
               <option value="KGS">KGS</option>
             </select>
           </div>
           <div>
-            <label className={labelClass}>Cont Fuel</label>
+            <label className="planning-label mb-1">Cont Fuel</label>
             <select
               value={form.contpct}
               onChange={(e) => setFormField('contpct', e.target.value)}
-              className={selectClass}
+              className="planning-select"
             >
               <option value="auto">AUTO</option>
               <option value="0">0%</option>
@@ -44,11 +42,11 @@ export function PlanningSimBriefSection() {
             </select>
           </div>
           <div>
-            <label className={labelClass}>Reserve</label>
+            <label className="planning-label mb-1">Reserve</label>
             <select
               value={form.resvrule}
               onChange={(e) => setFormField('resvrule', e.target.value)}
-              className={selectClass}
+              className="planning-select"
             >
               <option value="auto">AUTO</option>
               <option value="0">0 min</option>
@@ -63,13 +61,13 @@ export function PlanningSimBriefSection() {
         </div>
 
         {/* Row 2: Plan Format, Maps */}
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-2 gap-2.5">
           <div>
-            <label className={labelClass}>OFP Format</label>
+            <label className="planning-label mb-1">OFP Format</label>
             <select
               value={form.planformat}
               onChange={(e) => setFormField('planformat', e.target.value)}
-              className={selectClass}
+              className="planning-select"
             >
               <option value="lido">LIDO</option>
               <option value="aal">AAL</option>
@@ -84,11 +82,11 @@ export function PlanningSimBriefSection() {
             </select>
           </div>
           <div>
-            <label className={labelClass}>Maps</label>
+            <label className="planning-label mb-1">Maps</label>
             <select
               value={form.maps}
               onChange={(e) => setFormField('maps', e.target.value as 'detail' | 'simple' | 'none')}
-              className={selectClass}
+              className="planning-select"
             >
               <option value="detail">Detailed</option>
               <option value="simple">Simple</option>

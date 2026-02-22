@@ -21,7 +21,7 @@ export function FlightMap() {
         className="h-full w-full"
         zoomControl={false}
         attributionControl={false}
-        style={{ background: '#0d1117' }}
+        style={{ background: 'var(--bg-app)' }}
       >
         {/* Dark aviation-style tiles */}
         <TileLayer

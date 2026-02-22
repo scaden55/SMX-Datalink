@@ -54,16 +54,16 @@ function formatTimestamp(iso: string): string {
 
 function getActionBadgeClasses(action: string): string {
   if (action.includes('.create')) {
-    return 'bg-acars-green/10 text-acars-green border-acars-green/20';
+    return 'bg-emerald-500/10 text-emerald-400 border-emerald-400/20';
   }
   if (action.includes('.update')) {
-    return 'bg-acars-blue/10 text-acars-blue border-acars-blue/20';
+    return 'bg-blue-500/10 text-blue-400 border-blue-400/20';
   }
   if (action.includes('.delete') || action.includes('.suspend')) {
-    return 'bg-acars-red/10 text-acars-red border-acars-red/20';
+    return 'bg-red-500/10 text-red-400 border-red-400/20';
   }
   if (action.includes('.review')) {
-    return 'bg-acars-amber/10 text-acars-amber border-acars-amber/20';
+    return 'bg-amber-500/10 text-amber-400 border-amber-400/20';
   }
   return 'bg-acars-muted/10 text-acars-muted border-acars-border';
 }
@@ -94,7 +94,7 @@ function JsonBlock({ label, data }: { label: string; data: Record<string, unknow
       <p className="text-[10px] uppercase tracking-wider font-medium text-acars-muted mb-1.5">
         {label}
       </p>
-      <pre className="bg-[#0d1117] rounded p-3 text-[11px] font-mono text-acars-muted overflow-x-auto whitespace-pre-wrap break-words">
+      <pre className="bg-acars-bg rounded p-3 text-[11px] font-mono text-acars-muted overflow-x-auto whitespace-pre-wrap break-words">
         {data ? formatJson(data) : <span className="italic text-acars-muted/50">No data</span>}
       </pre>
     </div>
@@ -173,7 +173,7 @@ export function AdminAuditPage() {
             <select
               value={actionFilter}
               onChange={e => { setActionFilter(e.target.value); setPage(1); }}
-              className="h-8 pl-7 pr-6 rounded-md border border-acars-border bg-acars-panel text-xs text-acars-text outline-none focus:border-acars-blue transition-colors appearance-none cursor-pointer"
+              className="select-field h-8 pl-7"
             >
               {ACTION_OPTIONS.map(opt => (
                 <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -187,7 +187,7 @@ export function AdminAuditPage() {
             <select
               value={targetTypeFilter}
               onChange={e => { setTargetTypeFilter(e.target.value); setPage(1); }}
-              className="h-8 pl-7 pr-6 rounded-md border border-acars-border bg-acars-panel text-xs text-acars-text outline-none focus:border-acars-blue transition-colors appearance-none cursor-pointer"
+              className="select-field h-8 pl-7"
             >
               {TARGET_TYPE_OPTIONS.map(opt => (
                 <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -203,7 +203,7 @@ export function AdminAuditPage() {
               value={dateFrom}
               onChange={e => { setDateFrom(e.target.value); setPage(1); }}
               placeholder="From"
-              className="h-8 pl-7 pr-3 rounded-md border border-acars-border bg-acars-panel text-xs text-acars-text outline-none focus:border-acars-blue transition-colors cursor-pointer [color-scheme:dark]"
+              className="input-field text-xs h-8 pl-7 pr-3 cursor-pointer [color-scheme:dark]"
             />
           </div>
 
@@ -217,7 +217,7 @@ export function AdminAuditPage() {
               value={dateTo}
               onChange={e => { setDateTo(e.target.value); setPage(1); }}
               placeholder="To"
-              className="h-8 pl-7 pr-3 rounded-md border border-acars-border bg-acars-panel text-xs text-acars-text outline-none focus:border-acars-blue transition-colors cursor-pointer [color-scheme:dark]"
+              className="input-field text-xs h-8 pl-7 pr-3 cursor-pointer [color-scheme:dark]"
             />
           </div>
 
@@ -231,7 +231,7 @@ export function AdminAuditPage() {
                 setDateTo('');
                 setPage(1);
               }}
-              className="h-8 px-3 rounded-md border border-acars-border bg-acars-panel text-xs text-acars-muted hover:text-acars-text transition-colors"
+              className="btn-secondary btn-sm h-8"
             >
               Clear
             </button>
@@ -243,10 +243,10 @@ export function AdminAuditPage() {
       <div className="flex-1 overflow-auto px-6">
         {loading ? (
           <div className="flex items-center justify-center h-64">
-            <Loader2 className="w-6 h-6 text-acars-blue animate-spin" />
+            <Loader2 className="w-6 h-6 text-blue-400 animate-spin" />
           </div>
         ) : error ? (
-          <div className="flex items-center justify-center h-64 text-sm text-acars-red">
+          <div className="flex items-center justify-center h-64 text-sm text-red-400">
             {error}
           </div>
         ) : entries.length === 0 ? (
@@ -288,11 +288,11 @@ export function AdminAuditPage() {
                     <Fragment key={entry.id}>
                       <tr
                         onClick={() => hasDetails && toggleExpand(entry.id)}
-                        className={`border-b border-acars-border/50 transition-colors ${
+                        className={`border-b border-acars-border transition-colors ${
                           hasDetails
-                            ? 'hover:bg-[#1c2333] cursor-pointer'
+                            ? 'hover:bg-acars-hover cursor-pointer'
                             : ''
-                        } ${isExpanded ? 'bg-[#1c2333]' : ''}`}
+                        } ${isExpanded ? 'bg-acars-hover' : ''}`}
                       >
                         <td className="px-3 py-2.5 text-center">
                           {hasDetails && (
@@ -341,7 +341,7 @@ export function AdminAuditPage() {
                       </tr>
                       {/* Expanded detail row */}
                       {isExpanded && (
-                        <tr className="bg-[#151c2c]">
+                        <tr className="bg-acars-panel">
                           <td colSpan={7} className="px-6 py-4">
                             <div className="flex flex-col md:flex-row gap-4">
                               <JsonBlock label="Before" data={entry.beforeData} />

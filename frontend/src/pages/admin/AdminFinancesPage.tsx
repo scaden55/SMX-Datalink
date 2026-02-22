@@ -72,17 +72,16 @@ interface BalancesResponse {
 
 // ─── Constants ──────────────────────────────────────────────────
 
-const INPUT_CLS =
-  'w-full h-9 rounded-md border border-acars-border bg-acars-bg text-xs text-acars-text px-2.5 font-mono outline-none focus:border-acars-blue transition-colors placeholder:text-acars-muted/50';
+const INPUT_CLS = 'input-field text-xs font-mono h-9';
 const LABEL_CLS =
   'text-[10px] uppercase tracking-wider text-acars-muted font-medium mb-1.5 block';
 
 const TYPE_CONFIG: Record<FinanceType, { label: string; bg: string; text: string; border: string }> = {
-  pay:       { label: 'Pay',       bg: 'bg-acars-green/10',  text: 'text-acars-green',  border: 'border-acars-green/20' },
-  bonus:     { label: 'Bonus',     bg: 'bg-acars-blue/10',   text: 'text-acars-blue',   border: 'border-acars-blue/20' },
-  deduction: { label: 'Deduction', bg: 'bg-acars-red/10',    text: 'text-acars-red',    border: 'border-acars-red/20' },
-  expense:   { label: 'Expense',   bg: 'bg-acars-amber/10',  text: 'text-acars-amber',  border: 'border-acars-amber/20' },
-  income:    { label: 'Income',    bg: 'bg-acars-green/10',  text: 'text-acars-green',  border: 'border-acars-green/20' },
+  pay:       { label: 'Pay',       bg: 'bg-emerald-500/10',  text: 'text-emerald-400',  border: 'border-emerald-400/20' },
+  bonus:     { label: 'Bonus',     bg: 'bg-blue-500/10',   text: 'text-blue-400',   border: 'border-blue-400/20' },
+  deduction: { label: 'Deduction', bg: 'bg-red-500/10',    text: 'text-red-400',    border: 'border-red-400/20' },
+  expense:   { label: 'Expense',   bg: 'bg-amber-500/10',  text: 'text-amber-400',  border: 'border-amber-400/20' },
+  income:    { label: 'Income',    bg: 'bg-emerald-500/10',  text: 'text-emerald-400',  border: 'border-emerald-400/20' },
 };
 
 type Tab = 'ledger' | 'balances' | 'summary';
@@ -122,7 +121,7 @@ function TypeBadge({ type }: { type: FinanceType }) {
 function AmountCell({ amount }: { amount: number }) {
   const isPositive = amount >= 0;
   return (
-    <span className={`font-mono font-semibold tabular-nums ${isPositive ? 'text-acars-green' : 'text-acars-red'}`}>
+    <span className={`font-mono font-semibold tabular-nums ${isPositive ? 'text-emerald-400' : 'text-red-400'}`}>
       {isPositive ? '+' : '-'}{formatCurrency(amount)}
     </span>
   );
@@ -166,16 +165,16 @@ function AddEntryModal({ onClose, onCreated }: AddEntryModalProps) {
 
   return (
     <div className="fixed inset-0 z-[10000] flex items-center justify-center" onClick={onClose}>
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+      <div className="absolute inset-0 bg-black/60" />
       <div
-        className="relative w-full max-w-md mx-4 rounded-lg border border-acars-border bg-acars-panel shadow-2xl"
+        className="relative w-full max-w-md mx-4 rounded-md border border-acars-border bg-acars-panel shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-acars-border">
           <div className="flex items-center gap-2.5">
-            <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-acars-green/10 border border-acars-green/20">
-              <Plus className="w-4 h-4 text-acars-green" />
+            <div className="flex items-center justify-center w-9 h-9 rounded-md bg-emerald-500/10 border border-emerald-400/20">
+              <Plus className="w-4 h-4 text-emerald-400" />
             </div>
             <div>
               <h2 className="text-sm font-semibold text-acars-text">Add Finance Entry</h2>
@@ -210,7 +209,7 @@ function AddEntryModal({ onClose, onCreated }: AddEntryModalProps) {
             <select
               value={type}
               onChange={(e) => setType(e.target.value as FinanceType)}
-              className={INPUT_CLS.replace('font-mono ', '')}
+              className="select-field"
             >
               <option value="pay">Pay</option>
               <option value="bonus">Bonus</option>
@@ -241,12 +240,12 @@ function AddEntryModal({ onClose, onCreated }: AddEntryModalProps) {
               onChange={(e) => setDescription(e.target.value)}
               rows={3}
               placeholder="Optional description..."
-              className="w-full rounded-md border border-acars-border bg-acars-bg text-xs text-acars-text px-2.5 py-2 outline-none focus:border-acars-blue transition-colors placeholder:text-acars-muted/50 resize-none"
+              className="input-field text-xs resize-none"
             />
           </div>
 
           {error && (
-            <p className="text-[11px] text-acars-red bg-acars-red/10 border border-acars-red/20 rounded-md px-3 py-2">
+            <p className="text-[11px] text-red-400 bg-red-500/10 border border-red-400/20 rounded-md px-3 py-2">
               {error}
             </p>
           )}
@@ -256,14 +255,14 @@ function AddEntryModal({ onClose, onCreated }: AddEntryModalProps) {
         <div className="flex items-center justify-end gap-2 px-5 py-3 border-t border-acars-border">
           <button
             onClick={onClose}
-            className="px-4 py-2 rounded-md text-xs font-medium text-acars-muted hover:text-acars-text hover:bg-acars-bg border border-acars-border transition-colors"
+            className="btn-secondary btn-md"
           >
             Cancel
           </button>
           <button
             disabled={!canSubmit}
             onClick={handleSubmit}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-md text-xs font-semibold text-white bg-acars-green hover:bg-acars-green/80 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-md text-xs font-semibold text-white bg-emerald-500 hover:bg-emerald-500/80 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
             {submitting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
             Add Entry
@@ -362,7 +361,7 @@ function LedgerTab() {
               setDateFrom(e.target.value);
               setPage(1);
             }}
-            className="h-8 pl-7 pr-2 rounded-md border border-acars-border bg-acars-bg text-xs text-acars-text outline-none focus:border-acars-blue transition-colors"
+            className="input-field text-xs h-8 pl-7 pr-2"
             title="From date"
           />
         </div>
@@ -376,7 +375,7 @@ function LedgerTab() {
               setDateTo(e.target.value);
               setPage(1);
             }}
-            className="h-8 pl-7 pr-2 rounded-md border border-acars-border bg-acars-bg text-xs text-acars-text outline-none focus:border-acars-blue transition-colors"
+            className="input-field text-xs h-8 pl-7 pr-2"
             title="To date"
           />
         </div>
@@ -389,7 +388,7 @@ function LedgerTab() {
               setTypeFilter(e.target.value as FinanceType | '');
               setPage(1);
             }}
-            className="h-8 pl-7 pr-6 rounded-md border border-acars-border bg-acars-bg text-xs text-acars-text outline-none focus:border-acars-blue transition-colors appearance-none cursor-pointer"
+            className="select-field h-8 pl-7"
           >
             <option value="">All Types</option>
             <option value="pay">Pay</option>
@@ -410,14 +409,14 @@ function LedgerTab() {
               setPage(1);
             }}
             placeholder="Pilot ID..."
-            className="w-full h-8 pl-8 pr-3 rounded-md border border-acars-border bg-acars-bg text-xs text-acars-text placeholder:text-acars-muted/50 outline-none focus:border-acars-blue transition-colors font-mono"
+            className="input-field text-xs font-mono h-8 pl-8"
           />
         </div>
 
         {hasFilters && (
           <button
             onClick={resetFilters}
-            className="flex items-center gap-1.5 h-8 px-3 rounded-md text-[11px] font-medium text-acars-muted hover:text-acars-text hover:bg-acars-bg border border-acars-border transition-colors"
+            className="btn-secondary btn-sm flex items-center gap-1.5 h-8"
           >
             <RotateCcw className="w-3 h-3" /> Reset
           </button>
@@ -427,7 +426,7 @@ function LedgerTab() {
 
         <button
           onClick={() => setAddModalOpen(true)}
-          className="inline-flex items-center gap-1.5 h-8 px-3 rounded-md text-[11px] font-semibold text-acars-green bg-acars-green/10 border border-acars-green/20 hover:bg-acars-green/20 transition-colors"
+          className="inline-flex items-center gap-1.5 h-8 px-3 rounded-md text-[11px] font-semibold text-emerald-400 bg-emerald-500/10 border border-emerald-400/20 hover:bg-emerald-500/20 transition-colors"
         >
           <Plus className="w-3.5 h-3.5" /> Add Entry
         </button>
@@ -437,10 +436,10 @@ function LedgerTab() {
       <div className="flex-1 overflow-auto">
         {loading ? (
           <div className="flex items-center justify-center h-64">
-            <Loader2 className="w-6 h-6 text-acars-blue animate-spin" />
+            <Loader2 className="w-6 h-6 text-blue-400 animate-spin" />
           </div>
         ) : error ? (
-          <div className="flex items-center justify-center h-64 text-sm text-acars-red">{error}</div>
+          <div className="flex items-center justify-center h-64 text-sm text-red-400">{error}</div>
         ) : entries.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-64 gap-3">
             <DollarSign className="w-10 h-10 text-acars-muted/30" />
@@ -463,7 +462,7 @@ function LedgerTab() {
               {entries.map((entry, i) => (
                 <tr
                   key={entry.id}
-                  className={`border-b border-acars-border/50 hover:bg-[#1c2333] transition-colors ${
+                  className={`border-b border-acars-border hover:bg-acars-hover transition-colors ${
                     i % 2 === 0 ? 'bg-acars-panel' : 'bg-acars-bg'
                   }`}
                 >
@@ -499,7 +498,7 @@ function LedgerTab() {
                   <td className="px-3 py-2.5 text-center">
                     <button
                       onClick={() => setDeleteTarget(entry.id)}
-                      className="p-1 rounded hover:bg-acars-red/10 text-acars-muted hover:text-acars-red transition-colors"
+                      className="p-1 rounded hover:bg-red-500/10 text-acars-muted hover:text-red-400 transition-colors"
                       title="Delete entry"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
@@ -631,11 +630,11 @@ function BalancesTab() {
       <button
         onClick={() => toggleSort(field)}
         className={`flex items-center gap-1 text-[10px] uppercase tracking-wider font-medium hover:text-acars-text transition-colors ${
-          active ? 'text-acars-blue' : 'text-acars-muted'
+          active ? 'text-blue-400' : 'text-acars-muted'
         } ${className}`}
       >
         {label}
-        <ArrowUpDown className={`w-3 h-3 ${active ? 'text-acars-blue' : 'text-acars-muted/50'}`} />
+        <ArrowUpDown className={`w-3 h-3 ${active ? 'text-blue-400' : 'text-acars-muted/50'}`} />
       </button>
     );
   }
@@ -644,10 +643,10 @@ function BalancesTab() {
     <div className="flex-1 overflow-auto">
       {loading ? (
         <div className="flex items-center justify-center h-64">
-          <Loader2 className="w-6 h-6 text-acars-blue animate-spin" />
+          <Loader2 className="w-6 h-6 text-blue-400 animate-spin" />
         </div>
       ) : error ? (
-        <div className="flex items-center justify-center h-64 text-sm text-acars-red">{error}</div>
+        <div className="flex items-center justify-center h-64 text-sm text-red-400">{error}</div>
       ) : sorted.length === 0 ? (
         <div className="flex flex-col items-center justify-center h-64 gap-3">
           <Wallet className="w-10 h-10 text-acars-muted/30" />
@@ -681,7 +680,7 @@ function BalancesTab() {
             {sorted.map((pilot, i) => (
               <tr
                 key={pilot.pilotId}
-                className={`border-b border-acars-border/50 hover:bg-[#1c2333] transition-colors ${
+                className={`border-b border-acars-border hover:bg-acars-hover transition-colors ${
                   i % 2 === 0 ? 'bg-acars-panel' : 'bg-acars-bg'
                 }`}
               >
@@ -695,13 +694,13 @@ function BalancesTab() {
                   <AmountCell amount={pilot.balance} />
                 </td>
                 <td className="px-3 py-2.5 text-right">
-                  <span className="font-mono text-acars-green tabular-nums">{formatCurrency(pilot.totalPay)}</span>
+                  <span className="font-mono text-emerald-400 tabular-nums">{formatCurrency(pilot.totalPay)}</span>
                 </td>
                 <td className="px-3 py-2.5 text-right">
-                  <span className="font-mono text-acars-blue tabular-nums">{formatCurrency(pilot.totalBonus)}</span>
+                  <span className="font-mono text-blue-400 tabular-nums">{formatCurrency(pilot.totalBonus)}</span>
                 </td>
                 <td className="px-3 py-2.5 text-right">
-                  <span className="font-mono text-acars-red tabular-nums">{formatCurrency(pilot.totalDeductions)}</span>
+                  <span className="font-mono text-red-400 tabular-nums">{formatCurrency(pilot.totalDeductions)}</span>
                 </td>
               </tr>
             ))}
@@ -754,47 +753,47 @@ function SummaryTab() {
     {
       label: 'Total Pay',
       key: 'totalPay',
-      color: 'bg-acars-green/10',
-      textColor: 'text-acars-green',
-      borderColor: 'border-acars-green/20',
+      color: 'bg-emerald-500/10',
+      textColor: 'text-emerald-400',
+      borderColor: 'border-emerald-400/20',
       icon: DollarSign,
-      iconColor: 'text-acars-green',
+      iconColor: 'text-emerald-400',
     },
     {
       label: 'Total Bonus',
       key: 'totalBonus',
-      color: 'bg-acars-blue/10',
-      textColor: 'text-acars-blue',
-      borderColor: 'border-acars-blue/20',
+      color: 'bg-blue-500/10',
+      textColor: 'text-blue-400',
+      borderColor: 'border-blue-400/20',
       icon: Award,
-      iconColor: 'text-acars-blue',
+      iconColor: 'text-blue-400',
     },
     {
       label: 'Total Deductions',
       key: 'totalDeductions',
-      color: 'bg-acars-red/10',
-      textColor: 'text-acars-red',
-      borderColor: 'border-acars-red/20',
+      color: 'bg-red-500/10',
+      textColor: 'text-red-400',
+      borderColor: 'border-red-400/20',
       icon: TrendingDown,
-      iconColor: 'text-acars-red',
+      iconColor: 'text-red-400',
     },
     {
       label: 'Total Expenses',
       key: 'totalExpenses',
-      color: 'bg-acars-amber/10',
-      textColor: 'text-acars-amber',
-      borderColor: 'border-acars-amber/20',
+      color: 'bg-amber-500/10',
+      textColor: 'text-amber-400',
+      borderColor: 'border-amber-400/20',
       icon: Receipt,
-      iconColor: 'text-acars-amber',
+      iconColor: 'text-amber-400',
     },
     {
       label: 'Total Income',
       key: 'totalIncome',
-      color: 'bg-acars-green/10',
-      textColor: 'text-acars-green',
-      borderColor: 'border-acars-green/20',
+      color: 'bg-emerald-500/10',
+      textColor: 'text-emerald-400',
+      borderColor: 'border-emerald-400/20',
       icon: TrendingUp,
-      iconColor: 'text-acars-green',
+      iconColor: 'text-emerald-400',
     },
     {
       label: 'Net Balance',
@@ -803,7 +802,7 @@ function SummaryTab() {
       textColor: 'text-acars-text',
       borderColor: 'border-acars-border',
       icon: Wallet,
-      iconColor: 'text-acars-blue',
+      iconColor: 'text-blue-400',
     },
   ];
 
@@ -817,7 +816,7 @@ function SummaryTab() {
             type="date"
             value={dateFrom}
             onChange={(e) => setDateFrom(e.target.value)}
-            className="h-8 pl-7 pr-2 rounded-md border border-acars-border bg-acars-bg text-xs text-acars-text outline-none focus:border-acars-blue transition-colors"
+            className="input-field text-xs h-8 pl-7 pr-2"
             title="From date"
           />
         </div>
@@ -828,7 +827,7 @@ function SummaryTab() {
             type="date"
             value={dateTo}
             onChange={(e) => setDateTo(e.target.value)}
-            className="h-8 pl-7 pr-2 rounded-md border border-acars-border bg-acars-bg text-xs text-acars-text outline-none focus:border-acars-blue transition-colors"
+            className="input-field text-xs h-8 pl-7 pr-2"
             title="To date"
           />
         </div>
@@ -838,7 +837,7 @@ function SummaryTab() {
               setDateFrom('');
               setDateTo('');
             }}
-            className="flex items-center gap-1.5 h-8 px-3 rounded-md text-[11px] font-medium text-acars-muted hover:text-acars-text hover:bg-acars-bg border border-acars-border transition-colors"
+            className="btn-secondary btn-sm flex items-center gap-1.5 h-8"
           >
             <RotateCcw className="w-3 h-3" /> Reset
           </button>
@@ -848,26 +847,26 @@ function SummaryTab() {
       {/* Cards */}
       {loading ? (
         <div className="flex items-center justify-center h-64">
-          <Loader2 className="w-6 h-6 text-acars-blue animate-spin" />
+          <Loader2 className="w-6 h-6 text-blue-400 animate-spin" />
         </div>
       ) : error ? (
-        <div className="flex items-center justify-center h-64 text-sm text-acars-red">{error}</div>
+        <div className="flex items-center justify-center h-64 text-sm text-red-400">{error}</div>
       ) : summary ? (
         <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
           {cards.map((card) => {
             const Icon = card.icon;
             const value = summary[card.key];
             const isNet = card.key === 'netBalance';
-            const displayColor = isNet ? (value >= 0 ? 'text-acars-green' : 'text-acars-red') : card.textColor;
+            const displayColor = isNet ? (value >= 0 ? 'text-emerald-400' : 'text-red-400') : card.textColor;
 
             return (
               <div
                 key={card.key}
-                className={`rounded-lg border ${card.borderColor} ${card.color} p-5`}
+                className={`rounded-md border ${card.borderColor} ${card.color} p-5`}
               >
                 <div className="flex items-center gap-2 mb-3">
                   <div
-                    className={`flex items-center justify-center w-8 h-8 rounded-lg ${card.color} border ${card.borderColor}`}
+                    className={`flex items-center justify-center w-8 h-8 rounded-md ${card.color} border ${card.borderColor}`}
                   >
                     <Icon className={`w-4 h-4 ${card.iconColor}`} />
                   </div>
@@ -911,13 +910,13 @@ export function AdminFinancesPage() {
             onClick={() => setActiveTab(tab.key)}
             className={`pb-2.5 text-xs font-medium transition-colors relative ${
               activeTab === tab.key
-                ? 'text-acars-blue'
+                ? 'text-blue-400'
                 : 'text-acars-muted hover:text-acars-text'
             }`}
           >
             {tab.label}
             {activeTab === tab.key && (
-              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-acars-blue rounded-full" />
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-500 rounded-full" />
             )}
           </button>
         ))}

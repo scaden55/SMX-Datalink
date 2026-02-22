@@ -33,6 +33,9 @@ interface LogbookRow {
   reviewer_id: number | null;
   reviewed_at: string | null;
   review_notes: string | null;
+  vatsim_connected: number;
+  vatsim_callsign: string | null;
+  vatsim_cid: number | null;
   pilot_callsign?: string;
   pilot_name?: string;
   dep_name?: string;
@@ -201,6 +204,9 @@ export class PirepAdminService {
       reviewNotes: row.review_notes,
       reviewerCallsign: row.reviewer_callsign ?? null,
       reviewerName: row.reviewer_name ?? null,
+      vatsimConnected: row.vatsim_connected === 1,
+      vatsimCallsign: row.vatsim_callsign ?? null,
+      vatsimCid: row.vatsim_cid ?? null,
       pilotCallsign: row.pilot_callsign,
       pilotName: row.pilot_name,
       depName: row.dep_name,

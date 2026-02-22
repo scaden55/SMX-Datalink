@@ -42,10 +42,10 @@ import type {
 // ─── Helpers ────────────────────────────────────────────────────
 
 const STATUS_CONFIG: Record<FleetStatus, { label: string; bg: string; text: string; border: string }> = {
-  active:      { label: 'Active',      bg: 'bg-acars-green/10',  text: 'text-acars-green',  border: 'border-acars-green/20' },
-  stored:      { label: 'Stored',      bg: 'bg-acars-amber/10',  text: 'text-acars-amber',  border: 'border-acars-amber/20' },
-  retired:     { label: 'Retired',     bg: 'bg-acars-red/10',    text: 'text-acars-red',    border: 'border-acars-red/20' },
-  maintenance: { label: 'Maintenance', bg: 'bg-acars-cyan/10',   text: 'text-acars-cyan',   border: 'border-acars-cyan/20' },
+  active:      { label: 'Active',      bg: 'bg-emerald-500/10',  text: 'text-emerald-400',  border: 'border-emerald-400/20' },
+  stored:      { label: 'Stored',      bg: 'bg-amber-500/10',  text: 'text-amber-400',  border: 'border-amber-400/20' },
+  retired:     { label: 'Retired',     bg: 'bg-red-500/10',    text: 'text-red-400',    border: 'border-red-400/20' },
+  maintenance: { label: 'Maintenance', bg: 'bg-sky-500/10',   text: 'text-sky-400',   border: 'border-sky-400/20' },
 };
 
 function StatusBadge({ status }: { status: FleetStatus }) {
@@ -62,7 +62,7 @@ function fmt(val: number | null | undefined, suffix = ''): string {
   return val.toLocaleString() + (suffix ? ` ${suffix}` : '');
 }
 
-const INPUT_CLS = 'w-full h-9 rounded-md border border-acars-border bg-acars-bg text-xs text-acars-text px-2.5 font-mono outline-none focus:border-acars-green transition-colors placeholder:text-acars-muted/50';
+const INPUT_CLS = 'w-full h-9 rounded-md border border-acars-border bg-acars-bg text-xs text-acars-text px-2.5 font-mono outline-none focus:border-emerald-400 transition-colors placeholder:text-acars-muted/50';
 const LABEL_CLS = 'text-[10px] uppercase tracking-wider text-acars-muted font-medium mb-1.5 block';
 
 // ─── Add Aircraft Modal ─────────────────────────────────────────
@@ -152,16 +152,16 @@ function AddAircraftModal({ onClose, onCreated }: AddAircraftModalProps) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center" onClick={onClose}>
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+      <div className="absolute inset-0 bg-black/60" />
       <div
-        className="relative w-[640px] max-h-[90vh] overflow-auto rounded-xl border border-acars-border bg-acars-panel shadow-2xl"
+        className="relative w-[640px] max-h-[90vh] overflow-auto rounded-md border border-acars-border bg-acars-panel shadow-2xl"
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-acars-border">
           <div className="flex items-center gap-2.5">
-            <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-acars-green/10 border border-acars-green/20">
-              <Plus className="w-4.5 h-4.5 text-acars-green" />
+            <div className="flex items-center justify-center w-9 h-9 rounded-md bg-emerald-500/10 border border-emerald-400/20">
+              <Plus className="w-4.5 h-4.5 text-emerald-400" />
             </div>
             <div>
               <h2 className="text-sm font-semibold text-acars-text">Add Aircraft</h2>
@@ -186,9 +186,9 @@ function AddAircraftModal({ onClose, onCreated }: AddAircraftModalProps) {
                 value={sbQuery}
                 onChange={e => searchSimBrief(e.target.value)}
                 placeholder='Type to search (e.g. "737", "A320", "CRJ")'
-                className="w-full h-9 rounded-md border border-acars-border bg-acars-bg text-xs text-acars-text pl-8 pr-3 outline-none focus:border-acars-cyan transition-colors placeholder:text-acars-muted/50"
+                className="w-full h-9 rounded-md border border-acars-border bg-acars-bg text-xs text-acars-text pl-8 pr-3 outline-none focus:border-sky-400 transition-colors placeholder:text-acars-muted/50"
               />
-              {sbLoading && <Loader2 className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-acars-cyan animate-spin" />}
+              {sbLoading && <Loader2 className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-sky-400 animate-spin" />}
             </div>
             {sbResults.length > 0 && (
               <div className="mt-1.5 max-h-[180px] overflow-auto rounded-md border border-acars-border bg-acars-bg">
@@ -196,9 +196,9 @@ function AddAircraftModal({ onClose, onCreated }: AddAircraftModalProps) {
                   <button
                     key={ac.aircraftIcao}
                     onClick={() => selectSimBrief(ac)}
-                    className="w-full flex items-center gap-3 px-3 py-2 text-left hover:bg-acars-panel transition-colors border-b border-acars-border/30 last:border-0"
+                    className="w-full flex items-center gap-3 px-3 py-2 text-left hover:bg-acars-panel transition-colors border-b border-acars-border last:border-0"
                   >
-                    <span className="font-mono font-bold text-xs text-acars-cyan w-[48px] shrink-0">{ac.aircraftIcao}</span>
+                    <span className="font-mono font-bold text-xs text-sky-400 w-[48px] shrink-0">{ac.aircraftIcao}</span>
                     <span className="text-xs text-acars-text flex-1 truncate">{ac.aircraftName}</span>
                     <span className="text-[10px] text-acars-muted truncate max-w-[100px]">{ac.engines}</span>
                     <span className="text-[10px] text-acars-muted tabular-nums w-[40px] text-right">{ac.maxPax} pax</span>
@@ -208,7 +208,7 @@ function AddAircraftModal({ onClose, onCreated }: AddAircraftModalProps) {
               </div>
             )}
             {sbSelected && (
-              <div className="mt-1.5 flex items-center gap-2 px-2.5 py-1.5 rounded-md bg-acars-cyan/10 border border-acars-cyan/20 text-[10px] text-acars-cyan">
+              <div className="mt-1.5 flex items-center gap-2 px-2.5 py-1.5 rounded-md bg-sky-500/10 border border-sky-400/20 text-[10px] text-sky-400">
                 <Plane className="w-3 h-3" />
                 Auto-filled from SimBrief: <span className="font-mono font-bold">{sbSelected.aircraftIcao}</span> — {sbSelected.aircraftName}
               </div>
@@ -216,9 +216,9 @@ function AddAircraftModal({ onClose, onCreated }: AddAircraftModalProps) {
           </div>
 
           <div className="relative flex items-center gap-3">
-            <div className="flex-1 border-t border-acars-border/50" />
+            <div className="flex-1 border-t border-acars-border" />
             <span className="text-[10px] text-acars-muted/60 uppercase tracking-wider">or enter details manually</span>
-            <div className="flex-1 border-t border-acars-border/50" />
+            <div className="flex-1 border-t border-acars-border" />
           </div>
 
           {/* Row 1: Type + Name */}
@@ -337,12 +337,12 @@ function AddAircraftModal({ onClose, onCreated }: AddAircraftModalProps) {
               onChange={e => set('remarks', e.target.value)}
               rows={2}
               placeholder="Optional notes..."
-              className="w-full rounded-md border border-acars-border bg-acars-bg text-xs text-acars-text px-2.5 py-2 outline-none focus:border-acars-green transition-colors placeholder:text-acars-muted/50 resize-none"
+              className="w-full rounded-md border border-acars-border bg-acars-bg text-xs text-acars-text px-2.5 py-2 outline-none focus:border-emerald-400 transition-colors placeholder:text-acars-muted/50 resize-none"
             />
           </div>
 
           {error && (
-            <p className="text-[11px] text-acars-red bg-acars-red/10 border border-acars-red/20 rounded-md px-3 py-2">{error}</p>
+            <p className="text-[11px] text-red-400 bg-red-500/10 border border-red-400/20 rounded-md px-3 py-2">{error}</p>
           )}
         </div>
 
@@ -350,14 +350,14 @@ function AddAircraftModal({ onClose, onCreated }: AddAircraftModalProps) {
         <div className="flex items-center justify-end gap-2 px-5 py-3 border-t border-acars-border">
           <button
             onClick={onClose}
-            className="px-4 py-2 rounded-md text-xs font-medium text-acars-muted hover:text-acars-text hover:bg-acars-bg border border-acars-border transition-colors"
+            className="btn-secondary btn-md"
           >
             Cancel
           </button>
           <button
             disabled={!canSubmit}
             onClick={handleSubmit}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-md text-xs font-semibold text-white bg-acars-green hover:bg-acars-green/80 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            className="btn-green btn-md"
           >
             {submitting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
             Add Aircraft
@@ -372,9 +372,9 @@ function AddAircraftModal({ onClose, onCreated }: AddAircraftModalProps) {
 
 function SpecRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex items-center justify-between py-1.5 border-b border-acars-border/30 last:border-0">
+    <div className="flex items-center justify-between py-1.5 border-b border-acars-border last:border-0">
       <span className="text-[10px] text-acars-muted uppercase tracking-wider">{label}</span>
-      <span className="text-xs font-mono font-semibold text-acars-text tabular-nums">{value}</span>
+      <span className="text-xs font-mono font-semibold tabular-nums text-acars-text">{value}</span>
     </div>
   );
 }
@@ -404,9 +404,9 @@ function UtilizationStats({ aircraftId }: { aircraftId: number }) {
   }, [aircraftId]);
 
   return (
-    <div className="rounded-lg border border-acars-border/50 bg-acars-panel/50 p-3">
+    <div className="rounded-md border border-acars-border bg-acars-panel/50 p-3">
       <div className="flex items-center gap-2 mb-3">
-        <BarChart3 className="w-3.5 h-3.5 text-acars-cyan" />
+        <BarChart3 className="w-3.5 h-3.5 text-sky-400" />
         <span className="text-[10px] uppercase tracking-wider text-acars-muted font-medium">Utilization</span>
       </div>
       {loading ? (
@@ -428,11 +428,11 @@ function UtilizationStats({ aircraftId }: { aircraftId: number }) {
           </div>
           <div>
             <div className="text-[10px] text-acars-muted">Avg Score</div>
-            <div className="text-sm font-semibold text-acars-green">{stats.avgScore?.toFixed(0) ?? '—'}</div>
+            <div className="text-sm font-semibold text-emerald-400">{stats.avgScore?.toFixed(0) ?? '—'}</div>
           </div>
           <div>
             <div className="text-[10px] text-acars-muted">Avg Landing</div>
-            <div className={`text-sm font-semibold ${(stats.avgLandingRate ?? 999) < 200 ? 'text-acars-green' : (stats.avgLandingRate ?? 999) < 400 ? 'text-acars-amber' : 'text-acars-red'}`}>
+            <div className={`text-sm font-semibold ${(stats.avgLandingRate ?? 999) < 200 ? 'text-emerald-400' : (stats.avgLandingRate ?? 999) < 400 ? 'text-amber-400' : 'text-red-400'}`}>
               {stats.avgLandingRate?.toFixed(0) ?? '—'} fpm
             </div>
           </div>
@@ -481,7 +481,7 @@ function FleetDetailPanel({ aircraft, isAdmin, onSave, onDelete }: FleetDetailPa
   const [deleting, setDeleting] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
 
-  const EDIT_INPUT = 'w-full h-8 rounded-md border border-acars-border bg-acars-bg text-xs text-acars-text px-2 font-mono outline-none focus:border-acars-blue transition-colors placeholder:text-acars-muted/50';
+  const EDIT_INPUT = 'w-full h-8 rounded-md border border-acars-border bg-acars-bg text-xs text-acars-text px-2 font-mono outline-none focus:border-blue-400 transition-colors placeholder:text-acars-muted/50';
 
   const handleSave = async () => {
     setSaving(true);
@@ -527,9 +527,9 @@ function FleetDetailPanel({ aircraft, isAdmin, onSave, onDelete }: FleetDetailPa
       {/* Section 1: Aircraft Info + Specifications */}
       <div className="grid grid-cols-2 gap-4">
         {/* Left: Aircraft Info */}
-        <div className="rounded-lg border border-acars-border/50 bg-acars-panel/50 p-3">
+        <div className="rounded-md border border-acars-border bg-acars-panel/50 p-3">
           <div className="flex items-center gap-2 mb-3">
-            <Plane className="w-3.5 h-3.5 text-acars-cyan" />
+            <Plane className="w-3.5 h-3.5 text-sky-400" />
             <span className="text-[10px] uppercase tracking-wider text-acars-muted font-medium">Aircraft Info</span>
           </div>
           <div className="space-y-0">
@@ -547,9 +547,9 @@ function FleetDetailPanel({ aircraft, isAdmin, onSave, onDelete }: FleetDetailPa
         </div>
 
         {/* Right: Specifications */}
-        <div className="rounded-lg border border-acars-border/50 bg-acars-panel/50 p-3">
+        <div className="rounded-md border border-acars-border bg-acars-panel/50 p-3">
           <div className="flex items-center gap-2 mb-3">
-            <Weight className="w-3.5 h-3.5 text-acars-blue" />
+            <Weight className="w-3.5 h-3.5 text-blue-400" />
             <span className="text-[10px] uppercase tracking-wider text-acars-muted font-medium">Specifications</span>
           </div>
           <div className="space-y-0">
@@ -569,9 +569,9 @@ function FleetDetailPanel({ aircraft, isAdmin, onSave, onDelete }: FleetDetailPa
 
       {/* Equipment codes (if any exist) */}
       {(a.equipCode || a.transponderCode || a.pbn || a.selcal || a.hexCode) && (
-        <div className="rounded-lg border border-acars-border/50 bg-acars-panel/50 p-3">
+        <div className="rounded-md border border-acars-border bg-acars-panel/50 p-3">
           <div className="flex items-center gap-2 mb-3">
-            <Radio className="w-3.5 h-3.5 text-acars-magenta" />
+            <Radio className="w-3.5 h-3.5 text-blue-400" />
             <span className="text-[10px] uppercase tracking-wider text-acars-muted font-medium">Equipment Codes</span>
           </div>
           <div className="grid grid-cols-5 gap-3">
@@ -585,18 +585,18 @@ function FleetDetailPanel({ aircraft, isAdmin, onSave, onDelete }: FleetDetailPa
       )}
 
       {/* Section 2: Maintenance placeholder */}
-      <div className="rounded-lg border border-acars-border/50 bg-acars-panel/50 p-3">
+      <div className="rounded-md border border-acars-border bg-acars-panel/50 p-3">
         <div className="flex items-center gap-2 mb-2">
-          <Wrench className="w-3.5 h-3.5 text-acars-amber" />
+          <Wrench className="w-3.5 h-3.5 text-amber-400" />
           <span className="text-[10px] uppercase tracking-wider text-acars-muted font-medium">Maintenance</span>
         </div>
         <p className="text-[11px] text-acars-muted/60 italic">Maintenance tracking coming soon</p>
       </div>
 
       {/* Section 3: Flight Reports placeholder */}
-      <div className="rounded-lg border border-acars-border/50 bg-acars-panel/50 p-3">
+      <div className="rounded-md border border-acars-border bg-acars-panel/50 p-3">
         <div className="flex items-center gap-2 mb-2">
-          <FileText className="w-3.5 h-3.5 text-acars-green" />
+          <FileText className="w-3.5 h-3.5 text-emerald-400" />
           <span className="text-[10px] uppercase tracking-wider text-acars-muted font-medium">Flight Reports</span>
         </div>
         <p className="text-[11px] text-acars-muted/60 italic">No flights recorded for this aircraft</p>
@@ -607,7 +607,7 @@ function FleetDetailPanel({ aircraft, isAdmin, onSave, onDelete }: FleetDetailPa
 
       {/* Remarks (pilot view) */}
       {a.remarks && !isAdmin && (
-        <div className="rounded-lg border border-acars-border/50 bg-acars-panel/50 p-3">
+        <div className="rounded-md border border-acars-border bg-acars-panel/50 p-3">
           <div className="flex items-center gap-1.5 text-[10px] text-acars-muted mb-1">
             <MessageSquare className="w-3 h-3" /> Remarks
           </div>
@@ -617,9 +617,9 @@ function FleetDetailPanel({ aircraft, isAdmin, onSave, onDelete }: FleetDetailPa
 
       {/* Section 5: Admin Controls */}
       {isAdmin && (
-        <div className="rounded-lg border border-acars-border/50 bg-acars-panel/50 p-4">
+        <div className="rounded-md border border-acars-border bg-acars-panel/50 p-4">
           <div className="flex items-center gap-2 mb-3">
-            <Settings2 className="w-3.5 h-3.5 text-acars-red" />
+            <Settings2 className="w-3.5 h-3.5 text-red-400" />
             <span className="text-[10px] uppercase tracking-wider text-acars-muted font-medium">Admin Controls</span>
           </div>
 
@@ -721,7 +721,7 @@ function FleetDetailPanel({ aircraft, isAdmin, onSave, onDelete }: FleetDetailPa
                 onChange={e => setEditRemarks(e.target.value)}
                 rows={2}
                 placeholder="Add notes..."
-                className="w-full rounded-md border border-acars-border bg-acars-bg text-xs text-acars-text px-2 py-1.5 outline-none focus:border-acars-blue transition-colors placeholder:text-acars-muted/50 resize-none"
+                className="w-full rounded-md border border-acars-border bg-acars-bg text-xs text-acars-text px-2 py-1.5 outline-none focus:border-blue-400 transition-colors placeholder:text-acars-muted/50 resize-none"
               />
             </div>
 
@@ -730,7 +730,7 @@ function FleetDetailPanel({ aircraft, isAdmin, onSave, onDelete }: FleetDetailPa
               <button
                 disabled={saving}
                 onClick={handleSave}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[11px] font-semibold text-white bg-acars-blue hover:bg-acars-blue/80 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                className="btn-primary btn-sm"
               >
                 {saving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />}
                 Save Changes
@@ -738,7 +738,7 @@ function FleetDetailPanel({ aircraft, isAdmin, onSave, onDelete }: FleetDetailPa
               {!confirmDelete ? (
                 <button
                   onClick={() => setConfirmDelete(true)}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[11px] font-semibold text-acars-red bg-acars-red/10 border border-acars-red/20 hover:bg-acars-red/20 transition-colors"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[11px] font-semibold text-red-400 bg-red-500/10 border border-red-400/20 hover:bg-red-500/20 transition-colors"
                 >
                   <Trash2 className="w-3 h-3" /> Delete
                 </button>
@@ -747,14 +747,14 @@ function FleetDetailPanel({ aircraft, isAdmin, onSave, onDelete }: FleetDetailPa
                   <button
                     disabled={deleting}
                     onClick={handleDelete}
-                    className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-md text-[10px] font-bold text-white bg-acars-red hover:bg-acars-red/80 transition-colors disabled:opacity-50"
+                    className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-md text-[10px] font-bold text-white bg-red-500 hover:bg-red-500/80 transition-colors disabled:opacity-50"
                   >
                     {deleting ? <Loader2 className="w-3 h-3 animate-spin" /> : <AlertTriangle className="w-3 h-3" />}
                     Confirm
                   </button>
                   <button
                     onClick={() => setConfirmDelete(false)}
-                    className="px-2.5 py-1.5 rounded-md text-[10px] font-medium text-acars-muted hover:text-acars-text border border-acars-border hover:bg-acars-bg transition-colors"
+                    className="btn-secondary btn-sm"
                   >
                     Cancel
                   </button>
@@ -879,8 +879,8 @@ export function FleetPage() {
       <div className="panel m-5 mb-0">
         <div className="flex items-center justify-between px-4 py-3 border-b border-acars-border">
           <div className="flex items-center gap-2">
-            <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-acars-cyan/10 border border-acars-cyan/20">
-              <Plane className="w-4 h-4 text-acars-cyan" />
+            <div className="flex items-center justify-center w-8 h-8 rounded-md bg-sky-500/10 border border-sky-400/20">
+              <Plane className="w-4 h-4 text-sky-400" />
             </div>
             <h2 className="text-sm font-semibold text-acars-text">Fleet Management</h2>
             <span className="text-[11px] text-acars-muted tabular-nums">
@@ -888,17 +888,17 @@ export function FleetPage() {
             </span>
             {!loading && (
               <div className="flex items-center gap-1.5 ml-2">
-                <span className="text-[10px] text-acars-green tabular-nums">{statusCounts.active} active</span>
-                {statusCounts.stored > 0 && <span className="text-[10px] text-acars-amber tabular-nums">{statusCounts.stored} stored</span>}
-                {statusCounts.retired > 0 && <span className="text-[10px] text-acars-red tabular-nums">{statusCounts.retired} retired</span>}
+                <span className="text-[10px] text-emerald-400 tabular-nums">{statusCounts.active} active</span>
+                {statusCounts.stored > 0 && <span className="text-[10px] text-amber-400 tabular-nums">{statusCounts.stored} stored</span>}
+                {statusCounts.retired > 0 && <span className="text-[10px] text-red-400 tabular-nums">{statusCounts.retired} retired</span>}
               </div>
             )}
-            {loading && <Loader2 className="w-3.5 h-3.5 text-acars-blue animate-spin" />}
+            {loading && <Loader2 className="w-3.5 h-3.5 text-blue-400 animate-spin" />}
           </div>
           {isAdmin && (
             <button
               onClick={() => setAddModalOpen(true)}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[11px] font-semibold text-acars-green bg-acars-green/10 border border-acars-green/20 hover:bg-acars-green/20 transition-colors"
+              className="btn-green btn-sm"
             >
               <Plus className="w-3.5 h-3.5" /> Add Aircraft
             </button>
@@ -909,7 +909,7 @@ export function FleetPage() {
           <select
             value={typeFilter}
             onChange={e => setTypeFilter(e.target.value)}
-            className="h-8 rounded-md border border-acars-border bg-acars-bg text-xs text-acars-text px-2 outline-none focus:border-acars-blue transition-colors min-w-[140px]"
+            className="select-field min-w-[140px]"
           >
             <option value="">All Types</option>
             {aircraftTypes.map(t => (
@@ -921,7 +921,7 @@ export function FleetPage() {
           <select
             value={statusFilter}
             onChange={e => setStatusFilter(e.target.value)}
-            className="h-8 rounded-md border border-acars-border bg-acars-bg text-xs text-acars-text px-2 outline-none focus:border-acars-blue transition-colors min-w-[120px]"
+            className="select-field min-w-[120px]"
           >
             <option value="">All Statuses</option>
             <option value="active">Active</option>
@@ -937,7 +937,7 @@ export function FleetPage() {
               value={searchInput}
               onChange={e => handleSearchChange(e.target.value)}
               placeholder="Search registration, type..."
-              className="w-full h-8 rounded-md border border-acars-border bg-acars-bg text-xs text-acars-text pl-8 pr-3 outline-none focus:border-acars-blue transition-colors placeholder:text-acars-muted/50"
+              className="w-full h-8 rounded-md border border-acars-border bg-acars-bg text-xs text-acars-text pl-8 pr-3 outline-none focus:border-blue-400 transition-colors placeholder:text-acars-muted/50"
             />
           </div>
 
@@ -945,7 +945,7 @@ export function FleetPage() {
           {hasFilters && (
             <button
               onClick={resetFilters}
-              className="flex items-center gap-1.5 h-8 px-3 rounded-md text-[11px] font-medium text-acars-muted hover:text-acars-text hover:bg-acars-bg border border-acars-border transition-colors"
+              className="btn-secondary btn-sm flex items-center gap-1.5 h-8"
             >
               <RotateCcw className="w-3 h-3" /> Reset
             </button>
@@ -974,15 +974,18 @@ export function FleetPage() {
               {loading && fleet.length === 0 ? (
                 <tr>
                   <td colSpan={9} className="py-16 text-center">
-                    <Loader2 className="w-5 h-5 text-acars-blue animate-spin mx-auto mb-2" />
+                    <Loader2 className="w-5 h-5 text-blue-400 animate-spin mx-auto mb-2" />
                     <span className="text-xs text-acars-muted">Loading fleet...</span>
                   </td>
                 </tr>
               ) : fleet.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="py-16 text-center">
-                    <img src="/logos/chevron-light.png" alt="SMA" className="h-10 w-auto opacity-10 mx-auto mb-3" />
-                    <span className="text-xs text-acars-muted">No aircraft match your filters</span>
+                  <td colSpan={9} className="py-16">
+                    <div className="empty-state">
+                      <Plane className="empty-state-icon" />
+                      <p className="empty-state-title">No Aircraft Found</p>
+                      <p className="empty-state-desc">No aircraft match your current filters</p>
+                    </div>
                   </td>
                 </tr>
               ) : (
@@ -992,8 +995,8 @@ export function FleetPage() {
                     <Fragment key={a.id}>
                       <tr
                         onClick={() => setExpandedId(isExpanded ? null : a.id)}
-                        className={`border-b border-acars-border/50 hover:bg-[#1c2433] transition-colors cursor-pointer ${
-                          isExpanded ? 'bg-[#1c2433]' : i % 2 === 0 ? 'bg-acars-panel' : 'bg-acars-bg'
+                        className={`border-b border-acars-border hover:bg-acars-hover transition-colors cursor-pointer ${
+                          isExpanded ? 'bg-acars-hover' : i % 2 === 0 ? 'bg-acars-panel' : 'bg-acars-bg'
                         }`}
                       >
                         <td className="px-4 py-2.5">
@@ -1014,7 +1017,7 @@ export function FleetPage() {
                         </td>
                       </tr>
                       {isExpanded && (
-                        <tr className="bg-[#141b27] border-b border-acars-border">
+                        <tr className="bg-acars-panel border-b border-acars-border">
                           <td colSpan={9}>
                             <FleetDetailPanel
                               aircraft={a}

@@ -8,7 +8,7 @@ const CLR_CRUISE = '#58a6ff';
 const CLR_DESCENT = '#3fb950';
 
 const SZ = 10;
-const FILL = '#161b22';
+const FILL = 'var(--bg-panel)';
 const SW = 1.5;
 
 /** SVG shape markup per waypoint type */
@@ -80,7 +80,7 @@ export function WaypointLabels() {
               permanent
               direction="top"
               offset={[0, -6]}
-              className="!bg-transparent !border-none !shadow-none !text-[10px] !text-acars-magenta !font-mono !p-0"
+              className="!bg-transparent !border-none !shadow-none !text-[10px] !text-blue-400 !font-mono !p-0"
             >
               {wp.ident}
             </Tooltip>

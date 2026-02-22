@@ -10,10 +10,8 @@ import type {
   FlightData,
   TelemetrySnapshot,
 } from '@acars/shared';
-import { FlightPhase } from '@acars/shared';
 import type { ISimConnectManager } from '../simconnect/types.js';
 import { FlightPhaseService } from './flight-phase.js';
-import { generateMockSnapshot } from './mock-data.js';
 
 /**
  * Aggregates all SimConnect data into a single telemetry state.
@@ -100,12 +98,7 @@ export class TelemetryService {
     });
   }
 
-  private get useMock(): boolean {
-    return !this.simConnect.connected;
-  }
-
   getAircraftData(): AircraftData {
-    if (this.useMock) return generateMockSnapshot().aircraft;
     return {
       position: this.position,
       autopilot: this.autopilot,
@@ -119,17 +112,14 @@ export class TelemetryService {
   }
 
   getEngineData(): EngineData {
-    if (this.useMock) return generateMockSnapshot().engine;
     return this.engine;
   }
 
   getFuelData(): FuelData {
-    if (this.useMock) return generateMockSnapshot().fuel;
     return this.fuel;
   }
 
   getFlightData(): FlightData {
-    if (this.useMock) return generateMockSnapshot().flight;
     const phase = this.phaseService.update({
       groundSpeed: this.position.groundSpeed,
       verticalSpeed: this.position.verticalSpeed,

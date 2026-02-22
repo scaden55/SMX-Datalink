@@ -16,9 +16,9 @@ function StatusBadge({ color, children }: { color: 'red' | 'amber' | 'green' | '
   const colors = {
     red: 'bg-red-500/15 text-red-400 border-red-500/30',
     amber: 'bg-amber-500/15 text-amber-400 border-amber-500/30',
-    green: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
+    green: 'bg-emerald-500/15 text-emerald-400 border-emerald-400/20',
     blue: 'bg-blue-500/15 text-blue-400 border-blue-500/30',
-    cyan: 'bg-acars-cyan/15 text-acars-cyan border-acars-cyan/30',
+    cyan: 'bg-sky-500/15 text-sky-400 border-sky-400/30',
   };
   return (
     <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold border ${colors[color]}`}>
@@ -260,7 +260,7 @@ export function AirportInfoTab({ dispatchData }: { dispatchData: DispatchData })
           onClick={() => setView('origin')}
           className={`px-2 py-1 rounded text-xs font-semibold transition-colors ${
             view === 'origin'
-              ? 'bg-acars-cyan/15 text-acars-cyan border border-acars-cyan/30'
+              ? 'bg-sky-500/15 text-sky-400 border border-sky-400/30'
               : 'text-acars-muted border border-acars-border hover:border-acars-muted'
           }`}
         >
@@ -270,7 +270,7 @@ export function AirportInfoTab({ dispatchData }: { dispatchData: DispatchData })
           onClick={() => setView('destination')}
           className={`px-2 py-1 rounded text-xs font-semibold transition-colors ${
             view === 'destination'
-              ? 'bg-acars-cyan/15 text-acars-cyan border border-acars-cyan/30'
+              ? 'bg-sky-500/15 text-sky-400 border border-sky-400/30'
               : 'text-acars-muted border border-acars-border hover:border-acars-muted'
           }`}
         >
@@ -282,13 +282,13 @@ export function AirportInfoTab({ dispatchData }: { dispatchData: DispatchData })
           </span>
         )}
         {dispatchData.loading && (
-          <span className="text-[10px] text-acars-cyan animate-pulse ml-auto">Updating...</span>
+          <span className="text-[10px] text-sky-400 animate-pulse ml-auto">Updating...</span>
         )}
       </div>
 
       {/* Airport header */}
       <div className="flex items-center gap-2">
-        <span className="font-bold text-acars-cyan text-sm">{selectedIcao}</span>
+        <span className="font-bold text-sky-400 text-sm">{selectedIcao}</span>
         {selectedAirport && (
           <span className="text-xs text-acars-muted">
             {selectedAirport.name} — {selectedAirport.city}, {selectedAirport.state}
@@ -312,7 +312,7 @@ export function AirportInfoTab({ dispatchData }: { dispatchData: DispatchData })
           <div className="grid grid-cols-2 gap-2">
             {altAirports.map((alt, i) => (
               <div key={altIcaos[i]} className="panel p-2">
-                <div className="text-xs font-bold text-acars-cyan">{altIcaos[i]}</div>
+                <div className="text-xs font-bold text-sky-400">{altIcaos[i]}</div>
                 {alt ? (
                   <div className="text-[10px] text-acars-muted mt-0.5">
                     {alt.name} — {alt.city}, {alt.state}

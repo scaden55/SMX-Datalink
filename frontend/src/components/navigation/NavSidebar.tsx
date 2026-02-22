@@ -9,18 +9,21 @@ import {
   BookOpen,
   BarChart3,
   Settings,
-  PanelLeftClose,
-  PanelLeftOpen,
   Users,
   ClipboardCheck,
   DollarSign,
-  Shield,
   ScrollText,
+  PanelLeftClose,
+  PanelLeftOpen,
+  Bell,
+  LogOut,
+  Shield,
   type LucideIcon,
 } from 'lucide-react';
 import { useUIStore } from '../../stores/uiStore';
 import { useTelemetry } from '../../hooks/useTelemetry';
 import { useAuthStore } from '../../stores/authStore';
+import { useNotificationStore } from '../../stores/notificationStore';
 
 interface NavItem {
   to: string;
@@ -54,25 +57,79 @@ const adminOnlyItems: NavItem[] = [
   { to: '/admin/audit', label: 'Audit Log', icon: ScrollText },
 ];
 
-function ConnectionDot() {
-  const { connected, connectionStatus, flight } = useTelemetry();
+function ConnectionDot({ collapsed }: { collapsed: boolean }) {
+  const { connected, flight } = useTelemetry();
 
-  let color = 'bg-acars-red';
+  let color = 'bg-red-500';
+  let textColor = 'text-red-400/70';
   let label = 'Disconnected';
 
   if (connected && flight) {
-    color = 'bg-acars-green';
+    color = 'bg-emerald-500';
+    textColor = 'text-emerald-400/70';
     label = 'SimConnect Live';
   } else if (connected) {
-    color = 'bg-acars-amber';
+    color = 'bg-amber-500';
+    textColor = 'text-amber-400/70';
     label = 'Sim Connected';
   }
 
   return (
-    <span className="flex items-center gap-2">
-      <span className={`inline-block h-2 w-2 rounded-full ${color}`} />
-      <span className="text-[11px] text-acars-muted truncate">{label}</span>
+    <span className={`flex items-center gap-2 ${collapsed ? 'justify-center' : ''}`}>
+      <span className={`inline-block h-2 w-2 rounded-full shrink-0 ${color}`} />
+      {!collapsed && (
+        <span className={`text-[10px] truncate ${textColor}`}>{label}</span>
+      )}
     </span>
+  );
+}
+
+function NavItemLink({
+  item,
+  isActive,
+  collapsed,
+  accentClass = 'blue',
+}: {
+  item: NavItem;
+  isActive: boolean;
+  collapsed: boolean;
+  accentClass?: 'blue' | 'orange';
+}) {
+  const Icon = item.icon;
+
+  const isOrange = accentClass === 'orange';
+
+  // Active styles
+  const activeText = isOrange ? 'text-orange-500' : 'text-blue-400';
+  const activeBg = isOrange ? 'bg-orange-500/10' : 'bg-blue-500/10';
+  const activeBorder = isOrange ? 'border-orange-500' : 'border-blue-400';
+
+  // Hover styles — tinted with the section's accent color
+  const hoverBg = isOrange ? 'hover:bg-orange-500/[0.08]' : 'hover:bg-blue-500/[0.08]';
+  const hoverText = isOrange ? 'hover:text-orange-400' : 'hover:text-blue-400';
+  const hoverIcon = isOrange ? 'group-hover:text-orange-400' : 'group-hover:text-blue-400';
+
+  return (
+    <li>
+      <NavLink
+        to={item.to}
+        title={collapsed ? item.label : undefined}
+        className={`group flex items-center rounded-md ${
+          collapsed ? 'justify-center p-2.5' : 'gap-3 px-3 py-2'
+        } ${
+          isActive
+            ? `${activeBg} ${activeText} ${collapsed ? '' : `border-l-[3px] ${activeBorder} pl-[9px]`}`
+            : `text-acars-muted ${hoverText} ${hoverBg} ${collapsed ? '' : 'border-l-[3px] border-transparent pl-[9px]'}`
+        }`}
+      >
+        <Icon
+          className={`w-[18px] h-[18px] shrink-0 ${
+            isActive ? activeText : `text-acars-muted ${hoverIcon}`
+          }`}
+        />
+        {!collapsed && <span className="text-sm truncate">{item.label}</span>}
+      </NavLink>
+    </li>
   );
 }
 
@@ -81,6 +138,8 @@ export function NavSidebar() {
   const toggleNav = useUIStore((s) => s.toggleNav);
   const location = useLocation();
   const user = useAuthStore((s) => s.user);
+  const logout = useAuthStore((s) => s.logout);
+  const unreadCount = useNotificationStore((s) => s.unreadCount);
 
   const initials = user ? `${user.firstName[0]}${user.lastName[0]}` : '??';
   const displayName = user ? `${user.firstName} ${user.lastName}` : 'Unknown';
@@ -88,12 +147,14 @@ export function NavSidebar() {
 
   return (
     <aside
-      className={`flex flex-col h-full border-r border-acars-border bg-[#0d1117] transition-[width] duration-200 ease-in-out ${
-        collapsed ? 'w-16' : 'w-60'
+      className={`flex flex-col h-full bg-acars-bg border-r border-acars-border shrink-0 transition-[width] duration-200 ease-in-out ${
+        collapsed ? 'w-[60px]' : 'w-[220px]'
       }`}
     >
-      {/* Logo / Brand */}
-      <div className="flex items-center gap-3 px-4 h-12 border-b border-acars-border shrink-0">
+      {/* Header: Logo */}
+      <div className={`flex items-center h-12 border-b border-acars-border shrink-0 ${
+        collapsed ? 'justify-center px-2' : 'px-4 gap-3'
+      }`}>
         <img src="/logos/chevron-light.png" alt="SMA" className="h-7 w-auto shrink-0" />
         {!collapsed && (
           <div className="flex flex-col min-w-0">
@@ -105,28 +166,19 @@ export function NavSidebar() {
 
       {/* Navigation Items */}
       <nav className="flex-1 py-2 overflow-y-auto">
-        <ul className="space-y-0.5 px-2">
+        <ul className={`space-y-0.5 ${collapsed ? 'px-1.5' : 'px-2'}`}>
           {navItems.map((item) => {
-            const Icon = item.icon;
             const isActive = item.to === '/'
               ? location.pathname === '/'
               : location.pathname.startsWith(item.to);
 
             return (
-              <li key={item.to}>
-                <NavLink
-                  to={item.to}
-                  className={`group flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors duration-150 ${
-                    isActive
-                      ? 'bg-[#1c2433] text-acars-blue border-l-[3px] border-acars-blue pl-[9px]'
-                      : 'text-acars-muted hover:text-acars-text hover:bg-[#161b22] border-l-[3px] border-transparent pl-[9px]'
-                  }`}
-                  title={collapsed ? item.label : undefined}
-                >
-                  <Icon className={`w-[18px] h-[18px] shrink-0 ${isActive ? 'text-acars-blue' : 'text-acars-muted group-hover:text-acars-text'}`} />
-                  {!collapsed && <span className="truncate">{item.label}</span>}
-                </NavLink>
-              </li>
+              <NavItemLink
+                key={item.to}
+                item={item}
+                isActive={isActive}
+                collapsed={collapsed}
+              />
             );
           })}
         </ul>
@@ -134,33 +186,33 @@ export function NavSidebar() {
         {/* Admin Section */}
         {(roleBadge === 'admin' || roleBadge === 'dispatcher') && (
           <>
-            <div className="mx-4 my-2 border-t border-acars-border" />
-            {!collapsed && (
-              <div className="flex items-center gap-1.5 px-4 mb-1">
-                <Shield className="w-3 h-3 text-acars-amber" />
-                <span className="text-[10px] font-semibold uppercase tracking-wider text-acars-amber">Admin</span>
-              </div>
-            )}
-            <ul className="space-y-0.5 px-2">
+            <div className={`flex items-center gap-2 my-3 ${collapsed ? 'mx-2' : 'mx-4'}`}>
+              {collapsed ? (
+                <div className="w-full flex flex-col items-center gap-1">
+                  <div className="w-full h-px bg-orange-500/30" />
+                  <Shield className="w-3 h-3 text-orange-500/60" />
+                </div>
+              ) : (
+                <>
+                  <div className="flex-1 h-px bg-acars-border" />
+                  <Shield className="w-3 h-3 text-orange-500" />
+                  <span className="text-[10px] font-semibold uppercase tracking-wider text-orange-500">Admin</span>
+                  <div className="flex-1 h-px bg-acars-border" />
+                </>
+              )}
+            </div>
+            <ul className={`space-y-0.5 ${collapsed ? 'px-1.5' : 'px-2'}`}>
               {[...dispatcherAdminItems, ...(roleBadge === 'admin' ? adminOnlyItems : [])].map((item) => {
-                const Icon = item.icon;
                 const isActive = location.pathname.startsWith(item.to);
 
                 return (
-                  <li key={item.to}>
-                    <NavLink
-                      to={item.to}
-                      className={`group flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors duration-150 ${
-                        isActive
-                          ? 'bg-acars-amber/10 text-acars-amber border-l-[3px] border-acars-amber pl-[9px]'
-                          : 'text-acars-muted hover:text-acars-text hover:bg-[#161b22] border-l-[3px] border-transparent pl-[9px]'
-                      }`}
-                      title={collapsed ? item.label : undefined}
-                    >
-                      <Icon className={`w-[18px] h-[18px] shrink-0 ${isActive ? 'text-acars-amber' : 'text-acars-muted group-hover:text-acars-text'}`} />
-                      {!collapsed && <span className="truncate">{item.label}</span>}
-                    </NavLink>
-                  </li>
+                  <NavItemLink
+                    key={item.to}
+                    item={item}
+                    isActive={isActive}
+                    collapsed={collapsed}
+                    accentClass="orange"
+                  />
                 );
               })}
             </ul>
@@ -169,52 +221,80 @@ export function NavSidebar() {
       </nav>
 
       {/* Bottom section */}
-      <div className="border-t border-acars-border px-3 py-3 space-y-3 shrink-0">
-        {/* Connection Status */}
-        {!collapsed && <ConnectionDot />}
-        {collapsed && (
-          <div className="flex justify-center">
-            <ConnectionDot />
-          </div>
+      <div className={`border-t border-acars-border py-3 space-y-2.5 shrink-0 ${
+        collapsed ? 'px-2' : 'px-3'
+      }`}>
+        <ConnectionDot collapsed={collapsed} />
+
+        {/* Notifications indicator */}
+        {unreadCount > 0 && (
+          <NavLink
+            to="/settings"
+            title={collapsed ? `${unreadCount} notifications` : undefined}
+            className={`flex items-center gap-2 text-acars-muted hover:text-acars-text transition-colors ${
+              collapsed ? 'justify-center' : ''
+            }`}
+          >
+            <div className="relative">
+              <Bell className="w-4 h-4" />
+              <span className="absolute -top-1 -right-1 flex items-center justify-center min-w-[12px] h-3 rounded-full bg-red-500 text-[7px] font-bold text-white px-0.5">
+                {unreadCount > 99 ? '99+' : unreadCount}
+              </span>
+            </div>
+            {!collapsed && (
+              <span className="text-[11px]">{unreadCount} new</span>
+            )}
+          </NavLink>
         )}
 
         {/* User Info */}
-        {!collapsed && (
-          <div className="flex items-center gap-2.5">
-            <div className="flex items-center justify-center w-8 h-8 rounded-full bg-acars-blue/20 text-acars-blue text-xs font-semibold shrink-0">
-              {initials}
-            </div>
-            <div className="flex flex-col min-w-0">
+        <div className={`flex items-center ${collapsed ? 'justify-center' : 'gap-2.5'}`}>
+          <div className="flex items-center justify-center w-8 h-8 rounded-full bg-blue-500/20 text-blue-400 text-xs font-semibold shrink-0">
+            {initials}
+          </div>
+          {!collapsed && (
+            <div className="flex flex-col min-w-0 flex-1">
               <span className="text-xs text-acars-text truncate">{displayName}</span>
               <span className="inline-flex items-center gap-1">
-                <span className="text-[10px] font-medium uppercase tracking-wide text-acars-blue bg-acars-blue/10 px-1.5 py-0.5 rounded">{roleBadge}</span>
+                <span className="text-[10px] font-medium uppercase tracking-wide text-blue-400 bg-blue-500/10 px-1.5 py-0.5 rounded">{roleBadge}</span>
               </span>
             </div>
-          </div>
-        )}
-        {collapsed && (
-          <div className="flex justify-center">
-            <div className="flex items-center justify-center w-8 h-8 rounded-full bg-acars-blue/20 text-acars-blue text-xs font-semibold">
-              {initials}
-            </div>
-          </div>
-        )}
-
-        {/* Collapse Toggle */}
-        <button
-          onClick={toggleNav}
-          className="flex items-center justify-center w-full gap-2 rounded-md px-2 py-1.5 text-acars-muted hover:text-acars-text hover:bg-[#161b22] transition-colors"
-          title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-        >
-          {collapsed ? (
-            <PanelLeftOpen className="w-4 h-4" />
-          ) : (
-            <>
-              <PanelLeftClose className="w-4 h-4" />
-              <span className="text-xs">Collapse</span>
-            </>
           )}
-        </button>
+        </div>
+
+        {/* Logout + Collapse toggle */}
+        <div className={`flex items-center ${collapsed ? 'flex-col gap-1' : 'justify-between'}`}>
+          {!collapsed && (
+            <button
+              onClick={logout}
+              className="flex items-center gap-1.5 text-[11px] text-acars-muted hover:text-red-400 transition-colors"
+              title="Sign out"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              Sign Out
+            </button>
+          )}
+          <button
+            onClick={toggleNav}
+            className="flex items-center justify-center w-7 h-7 rounded-md text-acars-muted hover:text-acars-text hover:bg-acars-hover transition-colors"
+            title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          >
+            {collapsed ? (
+              <PanelLeftOpen className="w-4 h-4" />
+            ) : (
+              <PanelLeftClose className="w-4 h-4" />
+            )}
+          </button>
+          {collapsed && (
+            <button
+              onClick={logout}
+              className="flex items-center justify-center w-7 h-7 rounded-md text-acars-muted hover:text-red-400 transition-colors"
+              title="Sign out"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+            </button>
+          )}
+        </div>
       </div>
     </aside>
   );

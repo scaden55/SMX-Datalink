@@ -24,6 +24,9 @@ interface DispatchBidRow {
   pilot_callsign: string;
   pilot_first_name: string;
   pilot_last_name: string;
+  vatsim_connected: number;
+  vatsim_callsign: string | null;
+  vatsim_cid: number | null;
 }
 
 export class DispatchService {
@@ -48,18 +51,23 @@ export class DispatchService {
         sf.flight_number, sf.dep_icao, sf.arr_icao, sf.aircraft_type,
         sf.dep_time, sf.arr_time, sf.distance_nm, sf.flight_time_min, sf.days_of_week,
         sf.charter_type,
-        dep.name AS dep_name,
-        arr.name AS arr_name,
+        COALESCE(dep.name, oa_dep.name, sf.dep_icao) AS dep_name,
+        COALESCE(arr.name, oa_arr.name, sf.arr_icao) AS arr_name,
         ab.simbrief_ofp_json,
         ab.flight_plan_data,
         ab.flight_plan_phase,
+        ab.vatsim_connected,
+        ab.vatsim_callsign,
+        ab.vatsim_cid,
         u.callsign AS pilot_callsign,
         u.first_name AS pilot_first_name,
         u.last_name AS pilot_last_name
       FROM active_bids ab
       JOIN scheduled_flights sf ON sf.id = ab.schedule_id
-      JOIN airports dep ON dep.icao = sf.dep_icao
-      JOIN airports arr ON arr.icao = sf.arr_icao
+      LEFT JOIN airports dep ON dep.icao = sf.dep_icao
+      LEFT JOIN airports arr ON arr.icao = sf.arr_icao
+      LEFT JOIN oa_airports oa_dep ON oa_dep.ident = sf.dep_icao
+      LEFT JOIN oa_airports oa_arr ON oa_arr.ident = sf.arr_icao
       JOIN users u ON u.id = ab.user_id
       WHERE ${conditions.join(' AND ')}
       ORDER BY ab.created_at DESC
@@ -103,6 +111,8 @@ export class DispatchService {
         callsign: row.pilot_callsign,
         name: `${row.pilot_first_name} ${row.pilot_last_name}`,
       },
+      vatsimConnected: row.vatsim_connected === 1,
+      vatsimCallsign: row.vatsim_callsign ?? null,
     };
   }
 }

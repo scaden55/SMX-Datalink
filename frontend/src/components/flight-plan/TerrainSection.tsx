@@ -14,7 +14,13 @@ export function TerrainSection({ ofp }: TerrainSectionProps) {
   const summary = cruiseAlt ? `Cruise ${cruiseStr} | CI ${costStr}` : '---';
 
   return (
-    <CollapsibleSection title="Terrain & Perf" summary={summary} defaultOpen>
+    <CollapsibleSection
+      title="Terrain"
+      summary={summary}
+      useCheckmark
+      status={cruiseAlt ? 'green' : 'grey'}
+      defaultOpen
+    >
       <div className="grid grid-cols-3 gap-2 text-[11px]">
         <div>
           <span className="data-label">Cruise Alt</span>

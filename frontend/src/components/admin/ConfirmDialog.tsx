@@ -14,21 +14,21 @@ interface ConfirmDialogProps {
 const VARIANT_STYLES = {
   danger: {
     icon: AlertTriangle,
-    iconColor: 'text-acars-red',
-    iconBg: 'bg-acars-red/10',
-    btn: 'bg-acars-red hover:bg-acars-red/80',
+    iconColor: 'text-red-400',
+    iconBg: 'bg-red-500/10',
+    btn: 'bg-red-500 hover:bg-red-500/80',
   },
   warning: {
     icon: AlertTriangle,
-    iconColor: 'text-acars-amber',
-    iconBg: 'bg-acars-amber/10',
-    btn: 'bg-acars-amber hover:bg-acars-amber/80 text-black',
+    iconColor: 'text-amber-400',
+    iconBg: 'bg-amber-500/10',
+    btn: 'bg-amber-500 hover:bg-amber-500/80 text-black',
   },
   default: {
     icon: Info,
-    iconColor: 'text-acars-blue',
-    iconBg: 'bg-acars-blue/10',
-    btn: 'bg-acars-blue hover:bg-acars-blue/80',
+    iconColor: 'text-blue-400',
+    iconBg: 'bg-blue-500/10',
+    btn: 'bg-blue-500 hover:bg-blue-500/80',
   },
 };
 
@@ -50,7 +50,7 @@ export function ConfirmDialog({
   return (
     <div className="fixed inset-0 z-[10000] flex items-center justify-center">
       <div className="absolute inset-0 bg-black/60" onClick={onCancel} />
-      <div className="relative w-full max-w-md mx-4 rounded-lg border border-acars-border bg-acars-panel shadow-2xl">
+      <div className="relative w-full max-w-md mx-4 rounded-md border border-acars-border bg-acars-panel shadow-2xl">
         <div className="flex items-start gap-3 p-4">
           <div className={`flex items-center justify-center w-10 h-10 rounded-full shrink-0 ${styles.iconBg}`}>
             <Icon className={`w-5 h-5 ${styles.iconColor}`} />
@@ -67,7 +67,7 @@ export function ConfirmDialog({
           <button
             onClick={onCancel}
             disabled={loading}
-            className="px-3 py-1.5 text-xs font-medium text-acars-muted hover:text-acars-text border border-acars-border rounded-md hover:bg-[#161b22] transition-colors disabled:opacity-50"
+            className="btn-secondary btn-sm"
           >
             Cancel
           </button>
