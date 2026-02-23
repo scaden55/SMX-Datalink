@@ -16,11 +16,14 @@ import { PilotMarkers } from '../components/map/PilotMarkers';
 import { AirportLabels } from '../components/map/AirportLabels';
 import { AirportDetailPanel } from '../components/map/AirportDetailPanel';
 import { PilotDetailPanel } from '../components/map/PilotDetailPanel';
+import { AirspaceDetailPanel } from '../components/map/AirspaceDetailPanel';
+import { AirspaceHoverCard } from '../components/map/AirspaceHoverCard';
 import { NavaidMarkers } from '../components/map/NavaidMarkers';
 import { PilotTrailLine } from '../components/map/PilotTrailLine';
 import { FlightTrackLine } from '../components/map/FlightTrackLine';
 import { PredictedPath } from '../components/map/PredictedPath';
 import { TrackInfoCard } from '../components/map/TrackInfoCard';
+import { GroundChartOverlay } from '../components/map/GroundChartOverlay';
 import { useTrack } from '../hooks/useTrack';
 import { useTrackStore } from '../stores/trackStore';
 import type { Airport, ActiveBidEntry, AllBidsResponse, VatsimPilot } from '@acars/shared';
@@ -412,6 +415,18 @@ export function LiveMapPage() {
   const [routes, setRoutes] = useState<RouteInfo[]>([]);
   const [selectedAirport, setSelectedAirport] = useState<string | null>(null);
   const [selectedPilot, setSelectedPilot] = useState<VatsimPilot | null>(null);
+  const [selectedAirspace, setSelectedAirspace] = useState<{
+    type: 'fir' | 'tracon';
+    boundaryId: string;
+    feature: GeoJSON.Feature;
+  } | null>(null);
+  const [hoveredAirspace, setHoveredAirspace] = useState<{
+    id: string;
+    type: 'fir' | 'tracon';
+    feature: GeoJSON.Feature;
+    x: number;
+    y: number;
+  } | null>(null);
   const [pilotRouteDep, setPilotRouteDep] = useState<[number, number] | null>(null);
   const [pilotRouteArr, setPilotRouteArr] = useState<[number, number] | null>(null);
 
@@ -424,7 +439,7 @@ export function LiveMapPage() {
   const bidTrack = useTrackStore((s) => s.selectedBidTrack);
   const ofpSteps = useTrackStore((s) => s.ofpSteps);
 
-  const detailPanelOpen = selectedAirport != null || selectedPilot != null;
+  const detailPanelOpen = selectedAirport != null || selectedPilot != null || selectedAirspace != null;
 
   // Close pilot panel when VATSIM pilots layer is toggled off
   useEffect(() => {
@@ -461,6 +476,36 @@ export function LiveMapPage() {
     return () => clearInterval(interval);
   }, [fetchData]);
 
+  const handleFirHover = useCallback((id: string | null, feature: GeoJSON.Feature | null, e: L.LeafletMouseEvent | null) => {
+    if (id && feature && e) {
+      setHoveredAirspace({ id, type: 'fir', feature, x: e.containerPoint.x, y: e.containerPoint.y });
+    } else {
+      setHoveredAirspace(null);
+    }
+  }, []);
+
+  const handleTraconHover = useCallback((id: string | null, feature: GeoJSON.Feature | null, e: L.LeafletMouseEvent | null) => {
+    if (id && feature && e) {
+      setHoveredAirspace({ id, type: 'tracon', feature, x: e.containerPoint.x, y: e.containerPoint.y });
+    } else {
+      setHoveredAirspace(null);
+    }
+  }, []);
+
+  const handleFirSelect = useCallback((id: string, feature: GeoJSON.Feature) => {
+    setSelectedAirspace({ type: 'fir', boundaryId: id, feature });
+    setSelectedAirport(null);
+    setSelectedPilot(null);
+    setHoveredAirspace(null);
+  }, []);
+
+  const handleTraconSelect = useCallback((id: string, feature: GeoJSON.Feature) => {
+    setSelectedAirspace({ type: 'tracon', boundaryId: id, feature });
+    setSelectedAirport(null);
+    setSelectedPilot(null);
+    setHoveredAirspace(null);
+  }, []);
+
   // Derive aircraft position for sub-components
   const aircraftLat = connected && aircraft ? aircraft.position.latitude : null;
   const aircraftLon = connected && aircraft ? aircraft.position.longitude : null;
@@ -481,16 +526,25 @@ export function LiveMapPage() {
           maxZoom={19}
         />
 
+        {/* Ground chart overlay (appears at high zoom near airports) */}
+        <GroundChartOverlay />
+
         {/* VATSIM boundary layers (render below SMA flights) */}
         {vatsimSnapshot && (
           <>
             <FirBoundaryLayer
               controllers={vatsimSnapshot.controllers}
               visible={vatsimLayers.showFirBoundaries}
+              hoveredAirspaceId={hoveredAirspace?.type === 'fir' ? hoveredAirspace.id : null}
+              onHoverAirspace={handleFirHover}
+              onSelectAirspace={handleFirSelect}
             />
             <TraconBoundaryLayer
               controllers={vatsimSnapshot.controllers}
               visible={vatsimLayers.showTraconBoundaries}
+              hoveredAirspaceId={hoveredAirspace?.type === 'tracon' ? hoveredAirspace.id : null}
+              onHoverAirspace={handleTraconHover}
+              onSelectAirspace={handleTraconSelect}
             />
           </>
         )}
@@ -528,7 +582,7 @@ export function LiveMapPage() {
           controllers={vatsimSnapshot?.controllers ?? []}
           atis={vatsimSnapshot?.atis ?? []}
           visible={vatsimLayers.showAirportLabels}
-          onSelectAirport={(icao) => { setSelectedAirport(icao); setSelectedPilot(null); }}
+          onSelectAirport={(icao) => { setSelectedAirport(icao); setSelectedPilot(null); setSelectedAirspace(null); }}
         />
 
         {/* Navaid markers (VOR/NDB/DME) */}
@@ -559,7 +613,7 @@ export function LiveMapPage() {
         {vatsimSnapshot && vatsimLayers.showPilots && (
           <PilotMarkers
             pilots={vatsimSnapshot.pilots}
-            onSelectPilot={(p) => { setSelectedPilot(p); setSelectedAirport(null); }}
+            onSelectPilot={(p) => { setSelectedPilot(p); setSelectedAirport(null); setSelectedAirspace(null); }}
           />
         )}
 
@@ -610,6 +664,28 @@ export function LiveMapPage() {
           pilot={selectedPilot}
           onClose={() => { setSelectedPilot(null); setPilotRouteDep(null); setPilotRouteArr(null); }}
           onRouteResolved={(dep, arr) => { setPilotRouteDep(dep); setPilotRouteArr(arr); }}
+        />
+      )}
+      {selectedAirspace && (
+        <AirspaceDetailPanel
+          airspaceId={selectedAirspace.boundaryId}
+          airspaceType={selectedAirspace.type}
+          feature={selectedAirspace.feature}
+          controllers={vatsimSnapshot?.controllers ?? []}
+          pilots={vatsimSnapshot?.pilots ?? []}
+          atis={vatsimSnapshot?.atis ?? []}
+          onClose={() => setSelectedAirspace(null)}
+        />
+      )}
+      {hoveredAirspace && !selectedAirspace && (
+        <AirspaceHoverCard
+          airspaceId={hoveredAirspace.id}
+          airspaceType={hoveredAirspace.type}
+          feature={hoveredAirspace.feature}
+          controllers={vatsimSnapshot?.controllers ?? []}
+          pilots={vatsimSnapshot?.pilots ?? []}
+          x={hoveredAirspace.x}
+          y={hoveredAirspace.y}
         />
       )}
 
