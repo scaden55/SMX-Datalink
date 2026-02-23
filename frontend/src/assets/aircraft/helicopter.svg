@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="currentColor">
+  <!-- Helicopter - original design -->
+  <!-- Teardrop fuselage with rotor disc and tail boom -->
+  <!-- Main rotor disc -->
+  <circle cx="32" cy="26" r="14" fill-opacity="0.2"/>
+  <!-- Fuselage -->
+  <path d="M32 18C35 18 37 21 37 26C37 31 35 35 32 35C29 35 27 31 27 26C27 21 29 18 32 18Z"/>
+  <!-- Tail boom -->
+  <path d="M33 35L33 54L31 54L31 35Z"/>
+  <!-- Tail rotor -->
+  <path d="M33 54L33 51L38 52.5L33 54Z M31 54L31 51L26 52.5L31 54Z" fill-opacity="0.5"/>
+  <!-- Skids -->
+  <path d="M26 30L26 33L24 33M38 30L38 33L40 33" fill="none" stroke="currentColor" stroke-width="1.2"/>
+</svg>

@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="currentColor">
+  <!-- Business jet (Gulfstream/Citation class) - original design -->
+  <!-- Sleek fuselage, swept wings, rear-mounted engines -->
+  <path d="M32 3C33 3 33.5 4 33.5 6L33.5 22L48 30C49.5 30.8 49.5 32 48 32.5L33.5 31.5V44L39.5 48C40.5 48.8 40 50 39.5 50L33.5 48.5L32.5 52C32.3 53 31.7 53 31.5 52L30.5 48.5L24.5 50C24 50 23.5 48.8 24.5 48L30.5 44V31.5L16 32.5C14.5 32 14.5 30.8 16 30L30.5 22V6C30.5 4 31 3 32 3Z"/>
+  <!-- Rear engine pods -->
+  <ellipse cx="28.5" cy="45" rx="1.5" ry="3"/>
+  <ellipse cx="35.5" cy="45" rx="1.5" ry="3"/>
+</svg>

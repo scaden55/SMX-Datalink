@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="currentColor">
+  <!-- Wide-body jet (B777/A330 class) - original design -->
+  <!-- Wider fuselage, larger wingspan -->
+  <path d="M32 1C33.5 1 35 2.5 35 5L35 18L56 27C58 28 58 30.5 56 31L35 29.5V46L43 52C44 53 43.8 54.5 43 55L35 52.5L33 58.5C32.5 60 31.5 60 31 58.5L29 52.5L21 55C20.2 54.5 20 53 21 52L29 46V29.5L8 31C6 30.5 6 28 8 27L29 18V5C29 2.5 30.5 1 32 1Z"/>
+  <!-- Engine pods -->
+  <ellipse cx="22" cy="24" rx="2" ry="3.5"/>
+  <ellipse cx="42" cy="24" rx="2" ry="3.5"/>
+</svg>

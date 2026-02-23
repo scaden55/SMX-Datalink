@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="currentColor">
+  <!-- General aviation single-engine (C172/PA28 class) - original design -->
+  <!-- High wing, single prop -->
+  <path d="M32 8C32.8 8 33 9 33 10L33 25L47 31C48 31.5 48 32.5 47 33L33 32V48L38 51.5C39 52.2 38.5 53 38 53L33 51.5L32.5 54.5C32.3 55 31.7 55 31.5 54.5L31 51.5L26 53C25.5 53 25 52.2 26 51.5L31 48V32L17 33C16 32.5 16 31.5 17 31L31 25V10C31 9 31.2 8 32 8Z"/>
+  <!-- Propeller disc -->
+  <circle cx="32" cy="7" r="2.5" fill-opacity="0.4"/>
+</svg>

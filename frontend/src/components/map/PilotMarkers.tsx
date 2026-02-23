@@ -2,35 +2,63 @@ import { useMemo, useState, useCallback } from 'react';
 import { Marker, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import type { VatsimPilot } from '@acars/shared';
+import { getAircraftIcon, getIconSize, type AircraftCategory } from '../../lib/aircraft-icons';
 
 // ── Constants ────────────────────────────────────────────────
 
-const PILOT_SIZE = 20;
 const PILOT_COLOR = '#4a9eff';
 const LOW_ZOOM_THRESHOLD = 5;
 
-/** Small rotated plane SVG for VATSIM pilots */
-function pilotIcon(heading: number): L.DivIcon {
-  const svg = `<svg viewBox="0 0 64 64" width="${PILOT_SIZE}" height="${PILOT_SIZE}" style="transform:rotate(${heading}deg);filter:drop-shadow(0 1px 2px rgba(0,0,0,0.5));">
-    <path d="M32 2 C33 2 34 3 34 5 L34 20 L54 30 C56 31 56 33 55 34 L34 32 L34 48 L42 54 C43 55 43 56 42 57 L34 55 L33 58 C32.5 59 31.5 59 31 58 L30 55 L22 57 C21 56 21 55 22 54 L30 48 L30 32 L9 34 C8 33 8 31 10 30 L30 20 L30 5 C30 3 31 2 32 2 Z" fill="${PILOT_COLOR}" stroke="rgba(0,0,0,0.3)" stroke-width="0.5"/>
-  </svg>`;
+// ── Icon factory ─────────────────────────────────────────────
+
+/**
+ * Build a Leaflet DivIcon that renders the aircraft SVG as an <img>,
+ * tinted via CSS filter, rotated to the pilot's heading.
+ *
+ * We use an <img> tag with the Vite-resolved SVG URL and apply
+ * a CSS brightness/sepia/hue-rotate filter chain to tint it blue.
+ * This keeps the SVG crisp at any size while allowing color control.
+ */
+function buildIcon(svgUrl: string, size: number, heading: number): L.DivIcon {
+  // CSS filter to tint "currentColor" (black) SVGs to our pilot blue (#4a9eff)
+  // brightness(0) → black, then saturate + invert + sepia + hue-rotate → blue
+  const html = `<img
+    src="${svgUrl}"
+    width="${size}" height="${size}"
+    style="
+      transform: rotate(${heading}deg);
+      filter: drop-shadow(0 1px 2px rgba(0,0,0,0.5))
+              brightness(0) saturate(100%) invert(55%) sepia(70%) saturate(500%) hue-rotate(190deg) brightness(105%);
+      display: block;
+    "
+    draggable="false"
+    alt=""
+  />`;
 
   return L.divIcon({
-    html: svg,
-    className: '',
-    iconSize: [PILOT_SIZE, PILOT_SIZE],
-    iconAnchor: [PILOT_SIZE / 2, PILOT_SIZE / 2],
+    html,
+    className: 'pilot-marker-icon',
+    iconSize: [size, size],
+    iconAnchor: [size / 2, size / 2],
   });
 }
 
-// Cache icons by heading (rounded to nearest 5 degrees)
-const iconCache = new Map<number, L.DivIcon>();
-function getCachedIcon(heading: number): L.DivIcon {
-  const rounded = Math.round(heading / 5) * 5;
-  let icon = iconCache.get(rounded);
+// ── Icon cache ───────────────────────────────────────────────
+// Key: `${category}-${headingRounded5}-${size}`
+
+const iconCache = new Map<string, L.DivIcon>();
+
+function getCachedIcon(pilot: VatsimPilot): L.DivIcon {
+  const typeCode = pilot.flight_plan?.aircraft_short ?? null;
+  const info = getAircraftIcon(typeCode);
+  const size = getIconSize(info);
+  const headingRound = Math.round(pilot.heading / 5) * 5;
+  const key = `${info.category}-${headingRound}-${size}`;
+
+  let icon = iconCache.get(key);
   if (!icon) {
-    icon = pilotIcon(rounded);
-    iconCache.set(rounded, icon);
+    icon = buildIcon(info.svgUrl, size, headingRound);
+    iconCache.set(key, icon);
   }
   return icon;
 }
@@ -59,7 +87,6 @@ export function PilotMarkers({ pilots, onSelectPilot }: Props) {
 
   // Initialize bounds on first render
   if (!bounds) {
-    // Schedule for next tick so map is ready
     setTimeout(() => updateView(map), 0);
   }
 
@@ -67,15 +94,11 @@ export function PilotMarkers({ pilots, onSelectPilot }: Props) {
   const visiblePilots = useMemo(() => {
     if (!bounds) return [];
 
-    const filtered = pilots.filter((p) => {
-      // Must be within viewport
+    return pilots.filter((p) => {
       if (!bounds.contains([p.latitude, p.longitude])) return false;
-      // At low zoom, only show pilots with flight plans (reduces clutter)
       if (zoom < LOW_ZOOM_THRESHOLD && !p.flight_plan) return false;
       return true;
     });
-
-    return filtered;
   }, [pilots, bounds, zoom]);
 
   return (
@@ -84,7 +107,7 @@ export function PilotMarkers({ pilots, onSelectPilot }: Props) {
         <Marker
           key={pilot.cid}
           position={[pilot.latitude, pilot.longitude]}
-          icon={getCachedIcon(pilot.heading)}
+          icon={getCachedIcon(pilot)}
           eventHandlers={{
             click: () => onSelectPilot(pilot),
           }}

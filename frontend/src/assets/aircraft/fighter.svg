@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="currentColor">
+  <!-- Military fighter jet - original design -->
+  <!-- Delta/swept wing, single tail -->
+  <path d="M32 2C33 2 33.5 3 33.5 4.5L34 18L48 28C49 29 49 30 48 30.5L34 28V38L44 44C44.5 44.5 44.5 45.5 44 46L34 44V48L37 51C37.5 51.5 37 52.5 36.5 52.5L32.5 51L32 53C32 53.5 32 53.5 32 53L31.5 51L27.5 52.5C27 52.5 26.5 51.5 27 51L30 48V44L20 46C19.5 45.5 19.5 44.5 20 44L30 38V28L16 30.5C15 30 15 29 16 28L30 18L30.5 4.5C30.5 3 31 2 32 2Z"/>
+</svg>

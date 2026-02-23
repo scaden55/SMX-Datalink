@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="currentColor">
+  <!-- Turboprop (ATR/Dash-8 class) - original design -->
+  <!-- High wing, shorter with straight wing planform -->
+  <path d="M32 5C33 5 33.5 6.5 33.5 8L33.5 23L50 29C51 29.5 51 31 50 31.5L33.5 30.5V48L39 52C40 52.8 39.5 54 39 54L33 52L32.5 56C32.2 57 31.8 57 31.5 56L31 52L25 54C24.5 54 24 52.8 25 52L30.5 48V30.5L14 31.5C13 31 13 29.5 14 29L30.5 23V8C30.5 6.5 31 5 32 5Z"/>
+  <!-- Propeller discs -->
+  <circle cx="24" cy="29" r="3" fill-opacity="0.4"/>
+  <circle cx="40" cy="29" r="3" fill-opacity="0.4"/>
+</svg>
