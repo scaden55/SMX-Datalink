@@ -14,6 +14,55 @@ interface GeoJsonCollection {
 }
 
 /**
+ * VATSIM callsign prefix → FIR boundary ID mapping.
+ *
+ * VATSIM controllers use informal city/region callsign prefixes that don't match
+ * the ICAO FIR identifiers in the boundary GeoJSON. For example, Chicago Center
+ * uses callsign prefix "CHI" but the FIR boundary ID is "KZAU".
+ *
+ * International controllers typically match their ICAO codes directly (e.g.
+ * ZSSS_CTR → "ZSSS"), so only regions with divergent naming need entries here.
+ */
+const CALLSIGN_TO_FIR: Record<string, string> = {
+  // ── VATUSA ARTCCs ─────────────────────────────────
+  ABQ: 'KZAB',   // Albuquerque Center
+  ATL: 'KZTL',   // Atlanta Center
+  BOS: 'KZBW',   // Boston Center
+  CHI: 'KZAU',   // Chicago Center
+  CLV: 'KZOB',   // Cleveland Center
+  CLE: 'KZOB',   // Cleveland Center (alt prefix)
+  DC:  'KZDC',   // Washington Center
+  PCT: 'KZDC',   // Washington Center (Potomac alt)
+  DEN: 'KZDV',   // Denver Center
+  FTW: 'KZFW',   // Fort Worth Center
+  HOU: 'KZHU',   // Houston Center
+  IND: 'KZID',   // Indianapolis Center
+  JAX: 'KZJX',   // Jacksonville Center
+  KC:  'KZKC',   // Kansas City Center
+  ZKC: 'KZKC',   // Kansas City Center (ICAO style)
+  LA:  'KZLA',   // Los Angeles Center
+  SLC: 'KZLC',   // Salt Lake Center
+  MIA: 'KZMA',   // Miami Center
+  MEM: 'KZME',   // Memphis Center
+  MSP: 'KZMP',   // Minneapolis Center
+  MIN: 'KZMP',   // Minneapolis Center (alt prefix)
+  NY:  'KZNY',   // New York Center
+  OAK: 'KZOA',   // Oakland Center
+  SEA: 'KZSE',   // Seattle Center
+  ANC: 'PAZA',   // Anchorage Center
+  HNL: 'PHZH',   // Honolulu Center
+
+  // ── VATCAN ARTCCs ─────────────────────────────────
+  WPG: 'CZWG',   // Winnipeg Center
+  MTL: 'CZUL',   // Montreal Center
+  TOR: 'CZYZ',   // Toronto Center
+  VAN: 'CZVR',   // Vancouver Center
+  EDM: 'CZEG',   // Edmonton Center
+  MON: 'CZQM',   // Moncton Center
+  GDR: 'CZQX',   // Gander Center
+};
+
+/**
  * Resolves controller callsigns to FIR/TRACON boundary IDs.
  *
  * Boundary matching strategy:
@@ -41,12 +90,25 @@ export class VatsimBoundaryService {
         for (const feature of this.firGeoJson!.features) {
           const id = feature.properties.id || feature.properties.icao || feature.properties.ICAO;
           if (id) {
-            // Index by various name forms: EDGG, EDGG_CTR, etc.
             this.firIndex.set(id, id);
-            // Also support properties like "prefix" if present
+
+            // Strip country prefix so "ZAU" also resolves to "KZAU", "ZYZ" to "CZYZ"
+            if (/^K[A-Z]/.test(id)) {
+              this.firIndex.set(id.slice(1), id);      // KZAU → ZAU
+            } else if (/^C[A-Z]/.test(id)) {
+              this.firIndex.set(id.slice(1), id);      // CZWG → ZWG
+            }
+
             if (feature.properties.prefix) {
               this.firIndex.set(feature.properties.prefix, id);
             }
+          }
+        }
+
+        // Apply VATSIM callsign prefix → FIR ID mapping
+        for (const [prefix, firId] of Object.entries(CALLSIGN_TO_FIR)) {
+          if (this.firIndex.has(firId)) {
+            this.firIndex.set(prefix, firId);
           }
         }
         console.log(`[VatsimBoundaries] Loaded ${this.firGeoJson!.features.length} FIR boundaries`);
