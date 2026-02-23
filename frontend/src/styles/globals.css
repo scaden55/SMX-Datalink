@@ -431,6 +431,21 @@
   border-top-color: rgba(15, 18, 25, 0.92) !important;
 }
 
+/* ── Planned Route Waypoint Tooltip ───────────────────────────── */
+.planned-route-tooltip {
+  background: rgba(15, 18, 25, 0.92) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: 4px !important;
+  color: #e6e9ee !important;
+  font-size: 10px !important;
+  font-family: 'IBM Plex Mono', monospace !important;
+  padding: 2px 6px !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5) !important;
+}
+.planned-route-tooltip::before {
+  border-top-color: rgba(15, 18, 25, 0.92) !important;
+}
+
 /* ── Animations ───────────────────────────────────────────────── */
 @keyframes pulse-ring {
   0% { transform: scale(1); opacity: 1; }

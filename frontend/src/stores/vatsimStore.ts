@@ -9,7 +9,7 @@ export interface VatsimTrailPoint {
   alt: number;
 }
 
-const MAX_TRACK_POINTS = 80; // ~20 min at 15s VATSIM update interval
+const MAX_TRACK_POINTS = 2000; // ~8h at 15s VATSIM update interval
 
 // ── Layer toggles ───────────────────────────────────────────
 

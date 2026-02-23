@@ -20,6 +20,7 @@ import { AirspaceDetailPanel } from '../components/map/AirspaceDetailPanel';
 import { AirspaceHoverCard } from '../components/map/AirspaceHoverCard';
 import { NavaidMarkers } from '../components/map/NavaidMarkers';
 import { PilotTrailLine } from '../components/map/PilotTrailLine';
+import { PilotPlannedRoute } from '../components/map/PilotPlannedRoute';
 import { FlightTrackLine } from '../components/map/FlightTrackLine';
 import { PredictedPath } from '../components/map/PredictedPath';
 import { TrackInfoCard } from '../components/map/TrackInfoCard';
@@ -82,30 +83,34 @@ function FlightsSidebar({
   aircraft: ReturnType<typeof useTelemetry>['aircraft'];
   flight: ReturnType<typeof useTelemetry>['flight'];
 }) {
+  if (collapsed) {
+    return (
+      <div className="absolute top-3 left-3 z-[1000]">
+        <button
+          onClick={onToggle}
+          className="flex items-center justify-center w-9 h-9 bg-acars-panel rounded-md border border-acars-border hover:bg-acars-border transition-colors"
+        >
+          <ChevronRight className="w-4 h-4 text-acars-muted" />
+        </button>
+      </div>
+    );
+  }
+
   return (
-    <div
-      className={`absolute top-3 left-3 bottom-3 z-[1000] transition-all duration-300 flex ${
-        collapsed ? 'w-10' : 'w-72'
-      }`}
-    >
+    <div className="absolute top-3 left-3 bottom-3 z-[1000] w-72 transition-all duration-300 flex">
       <div className="flex-1 bg-acars-panel rounded-md border border-acars-border overflow-hidden flex flex-col">
         {/* Toggle button */}
         <button
           onClick={onToggle}
           className="flex items-center justify-center h-9 border-b border-acars-border hover:bg-acars-border transition-colors shrink-0"
         >
-          {collapsed ? (
-            <ChevronRight className="w-4 h-4 text-acars-muted" />
-          ) : (
-            <div className="flex items-center justify-between w-full px-3">
-              <span className="text-[11px] font-bold text-acars-text tracking-wider uppercase">Flights</span>
-              <ChevronLeft className="w-4 h-4 text-acars-muted" />
-            </div>
-          )}
+          <div className="flex items-center justify-between w-full px-3">
+            <span className="text-[11px] font-bold text-acars-text tracking-wider uppercase">Flights</span>
+            <ChevronLeft className="w-4 h-4 text-acars-muted" />
+          </div>
         </button>
 
-        {!collapsed && (
-          <div className="flex-1 overflow-y-auto">
+        <div className="flex-1 overflow-y-auto">
             {/* Your Flight card */}
             {connected && aircraft && (
               <div className="mx-2 mt-2 mb-1 p-2.5 rounded-md bg-sky-500/10 border border-sky-400/20">
@@ -185,7 +190,6 @@ function FlightsSidebar({
               );
             })}
           </div>
-        )}
       </div>
     </div>
   );
@@ -427,8 +431,6 @@ export function LiveMapPage() {
     x: number;
     y: number;
   } | null>(null);
-  const [pilotRouteDep, setPilotRouteDep] = useState<[number, number] | null>(null);
-  const [pilotRouteArr, setPilotRouteArr] = useState<[number, number] | null>(null);
 
   const { aircraft, flight, connected } = useTelemetry();
   useVatsim();
@@ -593,19 +595,14 @@ export function LiveMapPage() {
           <PilotTrailLine track={pilotTracks.get(selectedPilot.cid) ?? []} />
         )}
 
-        {/* Selected VATSIM pilot: dashed line to destination (remaining) */}
-        {selectedPilot && pilotRouteArr && (
-          <Polyline
-            positions={[
-              [selectedPilot.latitude, selectedPilot.longitude],
-              pilotRouteArr,
-            ]}
-            pathOptions={{
-              color: '#79c0ff',
-              weight: 2,
-              opacity: 0.4,
-              dashArray: '6 4',
-            }}
+        {/* Selected VATSIM pilot: planned route through waypoints (remaining) */}
+        {selectedPilot && selectedPilot.flight_plan?.route && (
+          <PilotPlannedRoute
+            pilotLat={selectedPilot.latitude}
+            pilotLon={selectedPilot.longitude}
+            routeString={selectedPilot.flight_plan.route}
+            departure={selectedPilot.flight_plan.departure}
+            arrival={selectedPilot.flight_plan.arrival}
           />
         )}
 
@@ -662,8 +659,7 @@ export function LiveMapPage() {
       {selectedPilot && (
         <PilotDetailPanel
           pilot={selectedPilot}
-          onClose={() => { setSelectedPilot(null); setPilotRouteDep(null); setPilotRouteArr(null); }}
-          onRouteResolved={(dep, arr) => { setPilotRouteDep(dep); setPilotRouteArr(arr); }}
+          onClose={() => setSelectedPilot(null)}
         />
       )}
       {selectedAirspace && (
