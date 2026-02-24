@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { LogbookService } from '../services/logbook.js';
 import { authMiddleware } from '../middleware/auth.js';
-import type { LogbookFilters } from '@acars/shared';
+import type { LogbookFilters, LogbookStatus } from '@acars/shared';
 
 export function logbookRouter(): Router {
   const router = Router();
@@ -23,7 +23,7 @@ export function logbookRouter(): Router {
         depIcao: req.query.depIcao as string | undefined,
         arrIcao: req.query.arrIcao as string | undefined,
         aircraftType: req.query.aircraftType as string | undefined,
-        status: req.query.status as any,
+        status: typeof req.query.status === 'string' ? req.query.status as LogbookStatus : undefined,
         search: req.query.search as string | undefined,
         dateFrom: req.query.dateFrom as string | undefined,
         dateTo: req.query.dateTo as string | undefined,

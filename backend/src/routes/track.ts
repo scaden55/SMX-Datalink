@@ -17,7 +17,7 @@ export function trackRouter(): Router {
       }
 
       // Check bid ownership (unless admin)
-      const user = (req as any).user;
+      const user = req.user!;
       if (user.role !== 'admin' && user.role !== 'dispatcher') {
         const bid = getDb()
           .prepare('SELECT user_id FROM active_bids WHERE id = ?')

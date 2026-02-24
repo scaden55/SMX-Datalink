@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { PirepAdminService } from '../services/pirep-admin.js';
 import { LogbookService } from '../services/logbook.js';
 import { authMiddleware, dispatcherMiddleware } from '../middleware/auth.js';
+import type { LogbookStatus } from '@acars/shared';
 
 export function adminPirepsRouter(): Router {
   const router = Router();
@@ -13,7 +14,7 @@ export function adminPirepsRouter(): Router {
     try {
       const filters = {
         userId: req.query.userId ? parseInt(req.query.userId as string) : undefined,
-        status: req.query.status as any,
+        status: typeof req.query.status === 'string' ? req.query.status as LogbookStatus : undefined,
         search: req.query.search as string | undefined,
         dateFrom: req.query.dateFrom as string | undefined,
         dateTo: req.query.dateTo as string | undefined,

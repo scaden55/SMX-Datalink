@@ -4,7 +4,7 @@ import { UserService } from '../services/user.js';
 import { UserAdminService } from '../services/user-admin.js';
 import { AuditService } from '../services/audit.js';
 import { authMiddleware, adminMiddleware } from '../middleware/auth.js';
-import type { AdminUserFilters } from '@acars/shared';
+import type { AdminUserFilters, UserRole, UserStatus } from '@acars/shared';
 
 export function adminUsersRouter(): Router {
   const router = Router();
@@ -17,8 +17,8 @@ export function adminUsersRouter(): Router {
   router.get('/admin/users', authMiddleware, adminMiddleware, (req, res) => {
     try {
       const filters: AdminUserFilters = {
-        role: req.query.role as any,
-        status: req.query.status as any,
+        role: typeof req.query.role === 'string' ? req.query.role as UserRole : undefined,
+        status: typeof req.query.status === 'string' ? req.query.status as UserStatus : undefined,
         search: req.query.search as string | undefined,
       };
       const page = Math.max(1, parseInt(req.query.page as string) || 1);
@@ -65,7 +65,7 @@ export function adminUsersRouter(): Router {
       const user = userService.create({ email, passwordHash, firstName, lastName, role, rank });
       const profile = userAdminService.findById(user.id)!;
 
-      auditService.log({ actorId: req.user!.userId, action: 'user.create', targetType: 'user', targetId: user.id, after: profile as any });
+      auditService.log({ actorId: req.user!.userId, action: 'user.create', targetType: 'user', targetId: user.id, after: profile as unknown as Record<string, unknown> });
       res.status(201).json(profile);
     } catch (err) {
       console.error('[Admin] Create user error:', err);

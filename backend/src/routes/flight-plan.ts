@@ -4,6 +4,7 @@ import { authMiddleware } from '../middleware/auth.js';
 import { UserService } from '../services/user.js';
 import { FlightPlanService } from '../services/flight-plan.js';
 import { config } from '../config.js';
+import type { FlightPlanPhase } from '@acars/shared';
 
 const SIMBRIEF_FETCH_URL = 'https://www.simbrief.com/api/xml.fetcher.php';
 const AWC_BASE = 'https://aviationweather.gov/api/data';
@@ -201,7 +202,7 @@ export function flightPlanRouter(): Router {
       const updated = fpService.saveFlightPlan(bidId, req.user!.userId, {
         ofpJson: ofpJson !== undefined ? JSON.stringify(ofpJson) : undefined,
         flightPlanData: flightPlanData !== undefined ? JSON.stringify(flightPlanData) : undefined,
-        phase: phase as any,
+        phase: phase as FlightPlanPhase,
       });
 
       if (!updated) {

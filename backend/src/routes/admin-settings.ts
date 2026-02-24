@@ -28,7 +28,7 @@ export function adminSettingsRouter(): Router {
         return;
       }
       settingsService.bulkUpdate(settings, req.user!.userId);
-      auditService.log({ actorId: req.user!.userId, action: 'settings.update', targetType: 'settings', after: { settings } as any });
+      auditService.log({ actorId: req.user!.userId, action: 'settings.update', targetType: 'settings', after: { settings } as Record<string, unknown> });
       res.json({ ok: true });
     } catch (err) {
       console.error('[Admin] Update settings error:', err);

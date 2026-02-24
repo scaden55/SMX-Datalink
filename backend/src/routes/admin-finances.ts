@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { FinanceService } from '../services/finance.js';
 import { AuditService } from '../services/audit.js';
 import { authMiddleware, adminMiddleware } from '../middleware/auth.js';
+import type { FinanceType } from '@acars/shared';
 
 export function adminFinancesRouter(): Router {
   const router = Router();
@@ -13,7 +14,7 @@ export function adminFinancesRouter(): Router {
     try {
       const filters = {
         pilotId: req.query.pilotId ? parseInt(req.query.pilotId as string) : undefined,
-        type: req.query.type as any,
+        type: typeof req.query.type === 'string' ? req.query.type as FinanceType : undefined,
         dateFrom: req.query.dateFrom as string | undefined,
         dateTo: req.query.dateTo as string | undefined,
       };
