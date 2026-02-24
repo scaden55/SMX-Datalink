@@ -10,6 +10,7 @@ import type { TelemetryService } from '../services/telemetry.js';
 import type { FlightEventTracker } from '../services/flight-event-tracker.js';
 import type { DispatchFlightsResponse, DispatchEditPayload } from '@acars/shared';
 import { logger } from '../lib/logger.js';
+import { NotificationService } from '../services/notification.js';
 
 export function dispatchRouter(
   io?: SocketServer<ClientToServerEvents, ServerToClientEvents>,
@@ -21,6 +22,7 @@ export function dispatchRouter(
   const flightPlanService = new FlightPlanService();
   const messageService = new MessageService();
   const pirepService = new PirepService();
+  const notificationService = new NotificationService();
 
   // GET /api/dispatch/flights — active flights with saved flight plans
   // Admin: all flights; Pilot: only own flights
@@ -206,6 +208,56 @@ export function dispatchRouter(
           ? 409
           : 500;
       res.status(status).json({ error: err.message || 'Failed to complete flight' });
+    }
+  });
+
+  // POST /api/dispatch/flights/:bidId/release — release dispatch edits to pilot
+  router.post('/dispatch/flights/:bidId/release', authMiddleware, adminMiddleware, (req, res) => {
+    try {
+      const bidId = Number(req.params.bidId);
+      if (isNaN(bidId)) {
+        res.status(400).json({ error: 'Invalid bid ID' });
+        return;
+      }
+
+      const { changedFields } = req.body as { changedFields?: string[] };
+      if (!Array.isArray(changedFields) || changedFields.length === 0) {
+        res.status(400).json({ error: 'changedFields array is required' });
+        return;
+      }
+
+      // Look up who owns this bid (the pilot)
+      const bid = dispatchService.findBidOwner(bidId);
+      if (!bid) {
+        res.status(404).json({ error: 'Bid not found' });
+        return;
+      }
+
+      // Build a human-readable summary of changed fields
+      const fieldSummary = changedFields.join(', ');
+      const messageContent = `Dispatch update: ${fieldSummary} modified`;
+
+      // Create SYSTEM ACARS message in the flight's message thread
+      const message = messageService.createMessage(bidId, req.user!.userId, 'SYSTEM', messageContent);
+
+      // Send notification bell entry to the pilot
+      notificationService.send({
+        userId: bid.userId,
+        message: `Dispatcher updated your flight plan (${fieldSummary})`,
+        type: 'info',
+        link: '/dispatch',
+      });
+
+      // Broadcast via WebSocket
+      if (io) {
+        io.to(`bid:${bidId}`).emit('dispatch:released', { bidId, changedFields });
+        io.to(`bid:${bidId}`).emit('acars:message', message);
+      }
+
+      res.json({ ok: true });
+    } catch (err) {
+      logger.error('Dispatch', 'Release dispatch error', err);
+      res.status(500).json({ error: 'Failed to release dispatch' });
     }
   });
 
