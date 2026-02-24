@@ -29,7 +29,8 @@
       "output": "../release"
     },
     "files": [
-      "dist/**/*"
+      "dist/**/*",
+      "assets/**/*"
     ],
     "extraResources": [
       {

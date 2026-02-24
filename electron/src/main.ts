@@ -17,6 +17,7 @@ const BACKEND_READY_TIMEOUT = 15_000; // ms
 // ----- State -----
 
 let mainWindow: BrowserWindow | null = null;
+let splashWindow: BrowserWindow | null = null;
 let backendProcess: ChildProcess | null = null;
 let backendReady = false;
 let isQuitting = false;
@@ -108,6 +109,48 @@ function stopBackend(): void {
   }
 }
 
+// ----- Splash Screen -----
+
+function createSplash(): void {
+  const splashPath = path.join(__dirname, '..', 'assets', 'splash.html');
+
+  splashWindow = new BrowserWindow({
+    width: 400,
+    height: 300,
+    frame: false,
+    transparent: false,
+    resizable: false,
+    movable: false,
+    center: true,
+    alwaysOnTop: true,
+    skipTaskbar: true,
+    backgroundColor: '#0d1117',
+    show: false,
+    webPreferences: {
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: true,
+    },
+  });
+
+  splashWindow.loadFile(splashPath);
+
+  splashWindow.once('ready-to-show', () => {
+    splashWindow?.show();
+  });
+
+  splashWindow.on('closed', () => {
+    splashWindow = null;
+  });
+}
+
+function closeSplash(): void {
+  if (splashWindow && !splashWindow.isDestroyed()) {
+    splashWindow.close();
+    splashWindow = null;
+  }
+}
+
 // ----- Window Creation -----
 
 function createWindow(): void {
@@ -120,6 +163,7 @@ function createWindow(): void {
     minWidth: 1024,
     minHeight: 700,
     frame: false,
+    icon: path.join(__dirname, '..', 'assets', 'icon.ico'),
     autoHideMenuBar: true,
     backgroundColor: '#0d1117',
     show: false, // show after ready-to-show
@@ -148,8 +192,9 @@ function createWindow(): void {
     mainWindow?.webContents.send(IpcChannels.WINDOW_MAXIMIZED_CHANGE, false);
   });
 
-  // Show when ready (avoids white flash)
+  // Show when ready — close splash and reveal main window
   mainWindow.once('ready-to-show', () => {
+    closeSplash();
     mainWindow?.show();
     mainWindow?.focus();
   });
@@ -317,11 +362,15 @@ if (!gotLock) {
 
 app.on('before-quit', () => {
   isQuitting = true;
+  closeSplash();
 });
 
 app.whenReady().then(async () => {
   registerIpcHandlers();
   setupAutoUpdater();
+
+  // Show splash immediately so users see feedback during boot
+  createSplash();
 
   // Start backend server (skipped in dev — backend runs externally via tsx watch)
   if (SKIP_BACKEND_FORK) {
