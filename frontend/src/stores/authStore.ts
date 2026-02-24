@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { UserProfile, LoginResponse } from '@acars/shared';
 import { api, ApiError, getApiBase } from '../lib/api';
+import { toast } from './toastStore';
 
 // Module-level dedup: ensures hydrate() only runs once even if called by multiple AuthGuards
 let hydratePromise: Promise<void> | null = null;
@@ -63,7 +64,7 @@ export const useAuthStore = create<AuthState>()(
               'Authorization': `Bearer ${accessToken}`,
             },
             body: JSON.stringify({ refreshToken }),
-          }).catch(() => {});
+          }).catch(() => { toast.warning('Logout notification failed'); });
         }
         set({
           accessToken: null,

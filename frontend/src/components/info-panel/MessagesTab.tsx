@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { api } from '../../lib/api';
+import { toast } from '../../stores/toastStore';
 import { useSocketStore } from '../../stores/socketStore';
 import { useAuthStore } from '../../stores/authStore';
 import { useDispatchEdit } from '../../contexts/DispatchEditContext';
@@ -62,6 +63,7 @@ export function MessagesTab() {
         if (!cancelled) setMessages(data.messages);
       } catch (err) {
         console.error('[Messages] Fetch failed:', err);
+        toast.error('Failed to load messages');
       }
     })();
     return () => { cancelled = true; };
@@ -104,6 +106,7 @@ export function MessagesTab() {
       setInput('');
     } catch (err) {
       console.error('[Messages] Send failed:', err);
+      toast.error('Failed to send message');
     } finally {
       setSending(false);
     }

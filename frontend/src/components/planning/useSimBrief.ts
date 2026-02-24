@@ -3,6 +3,7 @@ import { useFlightPlanStore } from '../../stores/flightPlanStore';
 import { parseSimBriefResponse, ofpToFormFields, stepsToWaypoints } from './simbrief-parser';
 import { api, getApiBase } from '../../lib/api';
 import { useCargoStore } from '../../stores/cargoStore';
+import { toast } from '../../stores/toastStore';
 import type { CargoManifest } from '@acars/shared';
 
 const SIMBRIEF_LOADER_URL = 'https://www.simbrief.com/ofp/ofp.loader.api.php';
@@ -194,7 +195,7 @@ export function useSimBrief() {
       useRealWorldCompanies: cargoConfig.useRealWorldCompanies,
     })
       .then((manifest) => useCargoStore.getState().setManifest(manifest))
-      .catch((err) => console.error('[Cargo] Auto-generate failed:', err))
+      .catch((err) => { console.error('[Cargo] Auto-generate failed:', err); toast.error('Failed to generate cargo manifest'); })
       .finally(() => useCargoStore.getState().setGenerating(false));
   }, []);
 
@@ -250,7 +251,7 @@ export function useSimBrief() {
           ofpJson: ofp,
           flightPlanData: mergedForm,
           phase: 'planning',
-        }).catch((err) => console.error('[SimBrief] Auto-save failed:', err));
+        }).catch((err) => { console.error('[SimBrief] Auto-save failed:', err); toast.warning('Flight plan auto-save failed'); });
 
         // Auto-generate cargo manifest
         triggerCargoGeneration(ofp, mergedForm, bidId);
@@ -482,7 +483,7 @@ export function useSimBrief() {
               ofpJson: existingOfp,
               flightPlanData: mergedForm,
               phase: 'planning',
-            }).catch((err) => console.error('[SimBrief] Auto-save failed:', err));
+            }).catch((err) => { console.error('[SimBrief] Auto-save failed:', err); toast.warning('Flight plan auto-save failed'); });
 
             // Auto-generate cargo manifest
             triggerCargoGeneration(existingOfp, mergedForm, bidId);

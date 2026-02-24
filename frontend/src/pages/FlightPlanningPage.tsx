@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Route, CalendarDays, Loader2 } from 'lucide-react';
 import { api } from '../lib/api';
+import { toast } from '../stores/toastStore';
 import { useFlightPlanStore, emptyForm } from '../stores/flightPlanStore';
 import { useCargoStore } from '../stores/cargoStore';
 import { useSimBrief } from '../components/planning/useSimBrief';
@@ -67,6 +68,7 @@ export function FlightPlanningPage() {
     }).catch((err) => {
       if (controller.signal.aborted) return;
       console.error('[Planning] Failed to load reference data:', err);
+      toast.error('Failed to load reference data');
       setBidsLoaded(true);
     });
 
@@ -142,6 +144,7 @@ export function FlightPlanningPage() {
       }).catch((err) => {
         if (controller.signal.aborted) return;
         console.error('[Planning] Failed to load bid:', err);
+        toast.error('Failed to load flight plan');
         setError('Failed to load flight plan data');
         setLoading(false);
       });
@@ -184,6 +187,7 @@ export function FlightPlanningPage() {
       navigate('/dispatch');
     } catch (err) {
       console.error('[Planning] Start flight failed:', err);
+      toast.error('Failed to start flight');
     } finally {
       setSavingFlightPlan(false);
     }

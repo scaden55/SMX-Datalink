@@ -3,6 +3,7 @@ import type { VatsimDataSnapshot, VatsimUpdateEvent } from '@acars/shared';
 import { useVatsimStore } from '../stores/vatsimStore';
 import { useSocketStore } from '../stores/socketStore';
 import { getApiBase } from '../lib/api';
+import { toast } from '../stores/toastStore';
 
 /**
  * Hook that fetches VATSIM data via REST on mount, then subscribes
@@ -28,6 +29,7 @@ export function useVatsim(): void {
       })
       .catch(() => {
         // VATSIM data is optional — map works without it
+        toast.warning('VATSIM data unavailable');
       });
   }, [setSnapshot]);
 

@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useCallback, useEffect, useRef, type ReactNode } from 'react';
 import { api } from '../lib/api';
+import { toast } from '../stores/toastStore';
 import type { FlightPlanFormData, FlightPlanPhase, DispatchEditPayload } from '@acars/shared';
 
 interface DispatchEditContextValue {
@@ -84,6 +85,7 @@ export function DispatchEditProvider({ children, bidId, phase, isAdmin, flightPl
       setLastSavedAt(new Date());
     } catch (err) {
       console.error('[DispatchEdit] Auto-save failed:', err);
+      toast.error('Failed to save dispatch changes');
     } finally {
       setSaving(false);
     }
