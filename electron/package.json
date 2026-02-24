@@ -51,10 +51,6 @@
         "to": "backend/package.json"
       },
       {
-        "from": "../backend/.env",
-        "to": "backend/.env"
-      },
-      {
         "from": "../frontend/dist",
         "to": "frontend",
         "filter": [
