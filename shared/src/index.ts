@@ -59,6 +59,7 @@ export type {
   DispatchFlight,
   DispatchFlightsResponse,
   DispatchEditPayload,
+  DispatchReleasePayload,
 } from './types/dispatch.js';
 export type {
   LogbookStatus,

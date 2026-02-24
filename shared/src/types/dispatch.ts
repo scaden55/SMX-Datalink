@@ -32,3 +32,8 @@ export interface DispatchEditPayload {
   dispatcherRemarks?: string;
   autoRemarks?: string;
 }
+
+/** Payload sent when a dispatcher releases flight plan edits to the pilot */
+export interface DispatchReleasePayload {
+  changedFields: string[];
+}

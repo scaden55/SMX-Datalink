@@ -36,6 +36,7 @@ export interface ServerToClientEvents {
   'dispatch:vatsimStatus': (data: VatsimFlightStatus) => void;
   'track:point': (data: { bidId: number; point: TrackPoint }) => void;
   'flight:completed': (data: { bidId: number; logbookId: number }) => void;
+  'dispatch:released': (data: { bidId: number; changedFields: string[] }) => void;
 }
 
 export interface ClientToServerEvents {
