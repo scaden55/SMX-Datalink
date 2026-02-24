@@ -1,6 +1,7 @@
 import { readFileSync, existsSync } from 'fs';
 import { join } from 'path';
 import type { VatsimFacilityType, ParsedCallsign } from '@acars/shared';
+import { logger } from '../lib/logger.js';
 
 interface GeoJsonFeature {
   type: 'Feature';
@@ -111,12 +112,12 @@ export class VatsimBoundaryService {
             this.firIndex.set(prefix, firId);
           }
         }
-        console.log(`[VatsimBoundaries] Loaded ${this.firGeoJson!.features.length} FIR boundaries`);
+        logger.info('VatsimBoundaries', `Loaded ${this.firGeoJson!.features.length} FIR boundaries`);
       } catch (err) {
-        console.warn('[VatsimBoundaries] Failed to load FIR boundaries:', err);
+        logger.warn('VatsimBoundaries', 'Failed to load FIR boundaries', err);
       }
     } else {
-      console.log('[VatsimBoundaries] No FIR boundary file found (optional)');
+      logger.info('VatsimBoundaries', 'No FIR boundary file found (optional)');
     }
 
     const traconPath = join(dataDir, 'tracon-boundaries.geojson');
@@ -138,12 +139,12 @@ export class VatsimBoundaryService {
             this.traconIndex.set(prefixes, id);
           }
         }
-        console.log(`[VatsimBoundaries] Loaded ${this.traconGeoJson!.features.length} TRACON boundaries`);
+        logger.info('VatsimBoundaries', `Loaded ${this.traconGeoJson!.features.length} TRACON boundaries`);
       } catch (err) {
-        console.warn('[VatsimBoundaries] Failed to load TRACON boundaries:', err);
+        logger.warn('VatsimBoundaries', 'Failed to load TRACON boundaries', err);
       }
     } else {
-      console.log('[VatsimBoundaries] No TRACON boundary file found (optional)');
+      logger.info('VatsimBoundaries', 'No TRACON boundary file found (optional)');
     }
   }
 

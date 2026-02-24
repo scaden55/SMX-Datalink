@@ -1,4 +1,5 @@
 import type { SimBriefAircraftType } from '@acars/shared';
+import { logger } from '../lib/logger.js';
 
 const SIMBRIEF_AIRFRAMES_URL = 'https://www.simbrief.com/api/inputs.airframes.json';
 const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
@@ -44,7 +45,7 @@ export class SimBriefAircraftService {
   }
 
   private async fetchAndTransform(): Promise<SimBriefAircraftType[]> {
-    console.log('[SimBrief] Fetching airframes database...');
+    logger.info('SimBrief', 'Fetching airframes database...');
     const resp = await fetch(SIMBRIEF_AIRFRAMES_URL);
     if (!resp.ok) throw new Error(`SimBrief API returned ${resp.status}`);
 
@@ -100,7 +101,7 @@ export class SimBriefAircraftService {
     }
 
     this.cache = { aircraft: result, fetchedAt: Date.now() };
-    console.log(`[SimBrief] Cached ${result.length} aircraft types`);
+    logger.info('SimBrief', `Cached ${result.length} aircraft types`);
     return result;
   }
 

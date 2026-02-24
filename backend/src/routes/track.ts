@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { TrackService } from '../services/track.js';
 import { getDb } from '../db/index.js';
 import { authMiddleware } from '../middleware/auth.js';
+import { logger } from '../lib/logger.js';
 
 export function trackRouter(): Router {
   const router = Router();
@@ -31,7 +32,7 @@ export function trackRouter(): Router {
       const points = service.getTrack(bidId);
       return res.json({ bidId, points });
     } catch (err) {
-      console.error('[Track] Error fetching track:', err);
+      logger.error('Track', 'Error fetching track', err);
       return res.status(500).json({ error: 'Failed to fetch track' });
     }
   });

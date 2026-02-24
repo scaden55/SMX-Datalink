@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { authMiddleware, adminMiddleware } from '../middleware/auth.js';
 import { RegulatoryService } from '../services/regulatory.js';
+import { logger } from '../lib/logger.js';
 
 export function regulatoryRouter(): Router {
   const router = Router();
@@ -42,7 +43,7 @@ export function regulatoryRouter(): Router {
 
       res.json(assessment);
     } catch (err) {
-      console.error('[Regulatory] Assess error:', err);
+      logger.error('Regulatory', 'Assess error', err);
       res.status(500).json({ error: 'Failed to assess regulatory requirements' });
     }
   });
@@ -61,7 +62,7 @@ export function regulatoryRouter(): Router {
       const result = service.classifyFlight(origin, dest, charterType);
       res.json(result);
     } catch (err) {
-      console.error('[Regulatory] Classify error:', err);
+      logger.error('Regulatory', 'Classify error', err);
       res.status(500).json({ error: 'Failed to classify flight' });
     }
   });
@@ -72,7 +73,7 @@ export function regulatoryRouter(): Router {
       const opspecs = service.findAllOpSpecs();
       res.json({ opspecs });
     } catch (err) {
-      console.error('[Regulatory] List OpSpecs error:', err);
+      logger.error('Regulatory', 'List OpSpecs error', err);
       res.status(500).json({ error: 'Failed to list OpSpecs' });
     }
   });
@@ -100,7 +101,7 @@ export function regulatoryRouter(): Router {
 
       res.json(updated);
     } catch (err) {
-      console.error('[Regulatory] Update OpSpec error:', err);
+      logger.error('Regulatory', 'Update OpSpec error', err);
       res.status(500).json({ error: 'Failed to update OpSpec' });
     }
   });

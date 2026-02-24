@@ -4,6 +4,7 @@ import { UserService } from '../services/user.js';
 import { UserAdminService } from '../services/user-admin.js';
 import { authMiddleware } from '../middleware/auth.js';
 import type { LoginRequest, RegisterRequest, RefreshRequest } from '@acars/shared';
+import { logger } from '../lib/logger.js';
 
 export function authRouter(): Router {
   const router = Router();
@@ -65,7 +66,7 @@ export function authRouter(): Router {
         user: userService.toProfile(user),
       });
     } catch (err) {
-      console.error('[Auth] Register error:', err);
+      logger.error('Auth', 'Register error', err);
       res.status(500).json({ error: 'Registration failed' });
     }
   });
@@ -109,7 +110,7 @@ export function authRouter(): Router {
         user: userService.toProfile(user),
       });
     } catch (err) {
-      console.error('[Auth] Login error:', err);
+      logger.error('Auth', 'Login error', err);
       res.status(500).json({ error: 'Login failed' });
     }
   });
@@ -147,7 +148,7 @@ export function authRouter(): Router {
 
       res.json({ accessToken, refreshToken: newRefreshToken });
     } catch (err) {
-      console.error('[Auth] Refresh error:', err);
+      logger.error('Auth', 'Refresh error', err);
       res.status(500).json({ error: 'Token refresh failed' });
     }
   });
@@ -166,7 +167,7 @@ export function authRouter(): Router {
 
       res.json({ message: 'Logged out' });
     } catch (err) {
-      console.error('[Auth] Logout error:', err);
+      logger.error('Auth', 'Logout error', err);
       res.status(500).json({ error: 'Logout failed' });
     }
   });
@@ -182,7 +183,7 @@ export function authRouter(): Router {
 
       res.json(userService.toProfile(user));
     } catch (err) {
-      console.error('[Auth] Me error:', err);
+      logger.error('Auth', 'Me error', err);
       res.status(500).json({ error: 'Failed to get profile' });
     }
   });

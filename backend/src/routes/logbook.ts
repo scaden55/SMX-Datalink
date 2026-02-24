@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { LogbookService } from '../services/logbook.js';
 import { authMiddleware } from '../middleware/auth.js';
 import type { LogbookFilters, LogbookStatus } from '@acars/shared';
+import { logger } from '../lib/logger.js';
 
 export function logbookRouter(): Router {
   const router = Router();
@@ -33,7 +34,7 @@ export function logbookRouter(): Router {
       const { entries, total } = service.findAll(filters, page, pageSize);
       res.json({ entries, total, page, pageSize });
     } catch (err) {
-      console.error('[Logbook] List error:', err);
+      logger.error('Logbook', 'List error', err);
       res.status(500).json({ error: 'Failed to fetch logbook entries' });
     }
   });
@@ -63,7 +64,7 @@ export function logbookRouter(): Router {
 
       res.json(entry);
     } catch (err) {
-      console.error('[Logbook] Detail error:', err);
+      logger.error('Logbook', 'Detail error', err);
       res.status(500).json({ error: 'Failed to fetch logbook entry' });
     }
   });

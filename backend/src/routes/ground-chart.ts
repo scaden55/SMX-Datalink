@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { authMiddleware } from '../middleware/auth.js';
 import { AirportDetailService } from '../services/airport-detail.js';
 import osmtogeojson from 'osmtogeojson';
+import { logger } from '../lib/logger.js';
 
 const OVERPASS_URL = 'https://overpass-api.de/api/interpreter';
 const CACHE_TTL = 60 * 60 * 1000; // 60 minutes
@@ -146,7 +147,7 @@ export function groundChartRouter(): Router {
       try {
         osmData = await fetchOverpass(boundaryQuery(icao));
       } catch (err) {
-        console.error(`[GroundChart] Boundary query failed for ${icao}:`, err);
+        logger.error('GroundChart', `Boundary query failed for ${icao}`, err);
         osmData = null;
       }
 
@@ -157,7 +158,7 @@ export function groundChartRouter(): Router {
           try {
             osmData = await fetchOverpass(aroundQuery(airport.latitude, airport.longitude));
           } catch (err) {
-            console.error(`[GroundChart] Around query failed for ${icao}:`, err);
+            logger.error('GroundChart', `Around query failed for ${icao}`, err);
             // Return stale cache if available
             if (cached) {
               res.json(cached.data);
@@ -202,7 +203,7 @@ export function groundChartRouter(): Router {
 
       res.json(response);
     } catch (err) {
-      console.error('[GroundChart] Proxy error:', err);
+      logger.error('GroundChart', 'Proxy error', err);
 
       // Return stale cache on error
       const icao = String(req.params.icao).toUpperCase();

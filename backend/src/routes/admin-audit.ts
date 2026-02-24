@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { AuditService } from '../services/audit.js';
 import { authMiddleware, adminMiddleware } from '../middleware/auth.js';
 import type { AuditLogFilters } from '@acars/shared';
+import { logger } from '../lib/logger.js';
 
 export function adminAuditRouter(): Router {
   const router = Router();
@@ -23,7 +24,7 @@ export function adminAuditRouter(): Router {
       const result = auditService.findAll(filters, page, pageSize);
       res.json({ ...result, page, pageSize });
     } catch (err) {
-      console.error('[Admin] List audit log error:', err);
+      logger.error('Admin', 'List audit log error', err);
       res.status(500).json({ error: 'Failed to list audit log' });
     }
   });

@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { NotificationService } from '../services/notification.js';
 import { authMiddleware } from '../middleware/auth.js';
+import { logger } from '../lib/logger.js';
 
 export function notificationsRouter(): Router {
   const router = Router();
@@ -12,7 +13,7 @@ export function notificationsRouter(): Router {
       const result = notificationService.getForUser(req.user!.userId);
       res.json(result);
     } catch (err) {
-      console.error('[Notifications] Get error:', err);
+      logger.error('Notifications', 'Get error', err);
       res.status(500).json({ error: 'Failed to get notifications' });
     }
   });
@@ -23,7 +24,7 @@ export function notificationsRouter(): Router {
       notificationService.markRead(parseInt(req.params.id as string), req.user!.userId);
       res.json({ ok: true });
     } catch (err) {
-      console.error('[Notifications] Mark read error:', err);
+      logger.error('Notifications', 'Mark read error', err);
       res.status(500).json({ error: 'Failed to mark notification as read' });
     }
   });
@@ -34,7 +35,7 @@ export function notificationsRouter(): Router {
       notificationService.markAllRead(req.user!.userId);
       res.json({ ok: true });
     } catch (err) {
-      console.error('[Notifications] Mark all read error:', err);
+      logger.error('Notifications', 'Mark all read error', err);
       res.status(500).json({ error: 'Failed to mark notifications as read' });
     }
   });

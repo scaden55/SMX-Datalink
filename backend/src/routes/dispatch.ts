@@ -9,6 +9,7 @@ import { PirepService } from '../services/pirep.js';
 import type { TelemetryService } from '../services/telemetry.js';
 import type { FlightEventTracker } from '../services/flight-event-tracker.js';
 import type { DispatchFlightsResponse, DispatchEditPayload } from '@acars/shared';
+import { logger } from '../lib/logger.js';
 
 export function dispatchRouter(
   io?: SocketServer<ClientToServerEvents, ServerToClientEvents>,
@@ -33,7 +34,7 @@ export function dispatchRouter(
       const response: DispatchFlightsResponse = { flights };
       res.json(response);
     } catch (err) {
-      console.error('[Dispatch] Get flights error:', err);
+      logger.error('Dispatch', 'Get flights error', err);
       res.status(500).json({ error: 'Failed to get dispatch flights' });
     }
   });
@@ -66,7 +67,7 @@ export function dispatchRouter(
 
       res.json({ ok: true });
     } catch (err) {
-      console.error('[Dispatch] Patch flight error:', err);
+      logger.error('Dispatch', 'Patch flight error', err);
       res.status(500).json({ error: 'Failed to update flight plan' });
     }
   });
@@ -93,7 +94,7 @@ export function dispatchRouter(
       const messages = messageService.getMessages(bidId);
       res.json({ messages });
     } catch (err) {
-      console.error('[Dispatch] Get messages error:', err);
+      logger.error('Dispatch', 'Get messages error', err);
       res.status(500).json({ error: 'Failed to get messages' });
     }
   });
@@ -140,7 +141,7 @@ export function dispatchRouter(
 
       res.status(201).json(message);
     } catch (err) {
-      console.error('[Dispatch] Send message error:', err);
+      logger.error('Dispatch', 'Send message error', err);
       res.status(500).json({ error: 'Failed to send message' });
     }
   });
@@ -198,7 +199,7 @@ export function dispatchRouter(
 
       res.status(201).json(result);
     } catch (err: any) {
-      console.error('[Dispatch] Complete flight error:', err);
+      logger.error('Dispatch', 'Complete flight error', err);
       const status = err.message?.includes('not found') || err.message?.includes('Not your')
         ? 404
         : err.message?.includes('not active')

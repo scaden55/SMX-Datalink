@@ -10,6 +10,7 @@ import type {
 } from '@acars/shared';
 import { VatsimBoundaryService } from './vatsim-boundaries.js';
 import { getDb } from '../db/index.js';
+import { logger } from '../lib/logger.js';
 
 interface VatsimDataFeed {
   general: VatsimGeneral;
@@ -57,11 +58,11 @@ export class VatsimService {
   /** Start polling loop */
   start(): void {
     if (!this.config.enabled) {
-      console.log('[VatsimService] Disabled by config');
+      logger.info('VatsimService', 'Disabled by config');
       return;
     }
 
-    console.log(`[VatsimService] Starting poll every ${this.config.pollIntervalMs / 1000}s`);
+    logger.info('VatsimService', `Starting poll every ${this.config.pollIntervalMs / 1000}s`);
     // Fetch immediately, then on interval
     this.poll();
     this.pollTimer = setInterval(() => this.poll(), this.config.pollIntervalMs);
@@ -80,7 +81,7 @@ export class VatsimService {
       clearInterval(this.detectionTimer);
       this.detectionTimer = null;
     }
-    console.log('[VatsimService] Stopped');
+    logger.info('VatsimService', 'Stopped');
   }
 
   /** Get the latest cached snapshot */
@@ -129,7 +130,7 @@ export class VatsimService {
       ]);
 
       if (!dataRes.ok || !transRes.ok) {
-        console.warn(`[VatsimService] Poll failed: data=${dataRes.status} trans=${transRes.status}`);
+        logger.warn('VatsimService', `Poll failed: data=${dataRes.status} trans=${transRes.status}`);
         return;
       }
 
@@ -172,7 +173,7 @@ export class VatsimService {
         this.onUpdate(this.snapshot);
       }
     } catch (err) {
-      console.warn('[VatsimService] Poll error:', err);
+      logger.warn('VatsimService', 'Poll error', err);
     }
   }
 
@@ -230,7 +231,7 @@ export class VatsimService {
         }
       }
     } catch (err) {
-      console.warn('[VatsimService] Flight status check error:', err);
+      logger.warn('VatsimService', 'Flight status check error', err);
     }
   }
 }

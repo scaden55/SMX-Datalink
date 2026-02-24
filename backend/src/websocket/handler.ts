@@ -11,6 +11,7 @@ import { TrackService } from '../services/track.js';
 import { VatsimTrackService } from '../services/vatsim-track.js';
 import { getDb } from '../db/index.js';
 import { config } from '../config.js';
+import { logger } from '../lib/logger.js';
 
 type AcarsSocket = Socket<ClientToServerEvents, ServerToClientEvents> & {
   user?: AuthPayload;
@@ -81,7 +82,7 @@ export function setupWebSocket(
 
   function startBroadcast(): void {
     if (broadcastInterval) return;
-    console.log('[WebSocket] Starting telemetry broadcast');
+    logger.info('WebSocket', 'Starting telemetry broadcast');
     broadcastInterval = setInterval(() => {
       if (simConnect.connected) {
         const snapshot = telemetry.getSnapshot();
@@ -137,7 +138,7 @@ export function setupWebSocket(
     if (telemetrySubscribers.size > 0) return;
 
     if (broadcastInterval) {
-      console.log('[WebSocket] Stopping telemetry broadcast (no subscribers)');
+      logger.info('WebSocket', 'Stopping telemetry broadcast (no subscribers)');
       clearInterval(broadcastInterval);
       broadcastInterval = null;
     }
@@ -202,7 +203,7 @@ export function setupWebSocket(
 
   io.on('connection', (rawSocket) => {
     const socket = rawSocket as AcarsSocket;
-    console.log(`[WebSocket] Client connected: ${socket.id}`);
+    logger.info('WebSocket', `Client connected: ${socket.id}`);
 
     // Send current connection status immediately
     const status = simConnect.connected
@@ -238,7 +239,7 @@ export function setupWebSocket(
       }
 
       socket.join(`bid:${bidId}`);
-      console.log(`[WebSocket] ${socket.id} joined bid:${bidId}`);
+      logger.info('WebSocket', `${socket.id} joined bid:${bidId}`);
     });
 
     socket.on('dispatch:unsubscribe', (bidId: number) => {
@@ -272,7 +273,7 @@ export function setupWebSocket(
     });
 
     socket.on('disconnect', () => {
-      console.log(`[WebSocket] Client disconnected: ${socket.id}`);
+      logger.info('WebSocket', `Client disconnected: ${socket.id}`);
       telemetrySubscribers.delete(socket.id);
       vatsimSubscribers.delete(socket.id);
       stopBroadcast();

@@ -5,6 +5,7 @@ import { registerAllDefinitions, requestAllData, subscribeSystemEvents, SystemEv
 import { readPosition, readEngine, readFuel, readFlightState, readAutopilot, readRadio, readAircraftInfo } from './reader.js';
 import type { ConnectionStatus } from '@acars/shared';
 import type { ISimConnectManager } from './types.js';
+import { logger } from '../lib/logger.js';
 
 /**
  * SimConnect connection manager.
@@ -62,11 +63,11 @@ export class SimConnectManager extends EventEmitter implements ISimConnectManage
   private attemptConnection(): void {
     if (this._closing) return;
 
-    console.log('[SimConnect] Attempting connection...');
+    logger.info('SimConnect', 'Attempting connection...');
 
     open(config.simconnect.appName, Protocol.KittyHawk)
       .then(({ recvOpen, handle }) => {
-        console.log(`[SimConnect] Connected to ${recvOpen.applicationName} (v${recvOpen.applicationVersionMajor}.${recvOpen.applicationVersionMinor})`);
+        logger.info('SimConnect', `Connected to ${recvOpen.applicationName} (v${recvOpen.applicationVersionMajor}.${recvOpen.applicationVersionMinor})`);
 
         this.handle = handle;
         this._simInfo = recvOpen;
@@ -85,7 +86,7 @@ export class SimConnectManager extends EventEmitter implements ISimConnectManage
         this.setupLifecycleHandlers(handle);
       })
       .catch((err: Error) => {
-        console.log(`[SimConnect] Connection failed: ${err.message}`);
+        logger.info('SimConnect', `Connection failed: ${err.message}`);
         this.scheduleReconnect();
       });
   }
@@ -119,7 +120,7 @@ export class SimConnectManager extends EventEmitter implements ISimConnectManage
       } catch (err) {
         // Buffer read errors are non-fatal — skip this frame rather than crashing
         if (!this._loggedReadError) {
-          console.warn(`[SimConnect] Data read error (requestID=${recv.requestID}):`, (err as Error).message);
+          logger.warn('SimConnect', `Data read error (requestID=${recv.requestID}): ${(err as Error).message}`);
           this._loggedReadError = true;
         }
       }
@@ -147,7 +148,7 @@ export class SimConnectManager extends EventEmitter implements ISimConnectManage
     });
 
     handle.on('exception', (recv) => {
-      console.error(`[SimConnect] Exception: ${recv.exception} (sendId: ${recv.sendId}, index: ${recv.index})`);
+      logger.error('SimConnect', `Exception: ${recv.exception} (sendId: ${recv.sendId}, index: ${recv.index})`);
     });
   }
 
@@ -155,7 +156,7 @@ export class SimConnectManager extends EventEmitter implements ISimConnectManage
     let simQuitting = false;
 
     handle.on('quit', () => {
-      console.log('[SimConnect] Simulator is shutting down');
+      logger.info('SimConnect', 'Simulator is shutting down');
       simQuitting = true;
       this._connected = false;
       this.handle = null;
@@ -165,7 +166,7 @@ export class SimConnectManager extends EventEmitter implements ISimConnectManage
 
     handle.on('close', () => {
       if (!simQuitting && !this._closing) {
-        console.log('[SimConnect] Connection lost unexpectedly');
+        logger.warn('SimConnect', 'Connection lost unexpectedly');
         this._connected = false;
         this.handle = null;
         this.emit('disconnected');
@@ -176,7 +177,7 @@ export class SimConnectManager extends EventEmitter implements ISimConnectManage
 
   private scheduleReconnect(): void {
     if (this._closing || this.reconnectTimer) return;
-    console.log(`[SimConnect] Reconnecting in ${config.simconnect.reconnectInterval / 1000}s...`);
+    logger.info('SimConnect', `Reconnecting in ${config.simconnect.reconnectInterval / 1000}s...`);
     this.reconnectTimer = setTimeout(() => {
       this.reconnectTimer = null;
       this.attemptConnection();

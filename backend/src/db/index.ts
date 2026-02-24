@@ -3,6 +3,7 @@ import { readFileSync, readdirSync, mkdirSync, existsSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { config } from '../config.js';
+import { logger } from '../lib/logger.js';
 
 let db: Database.Database | null = null;
 
@@ -27,14 +28,14 @@ export function initializeDatabase(): void {
   db.pragma('foreign_keys = ON');
 
   runMigrations(db);
-  console.log(`[DB] SQLite database ready at ${config.dbPath}`);
+  logger.info('DB', `SQLite database ready at ${config.dbPath}`);
 }
 
 export function closeDatabase(): void {
   if (db) {
     db.close();
     db = null;
-    console.log('[DB] Database closed');
+    logger.info('DB', 'Database closed');
   }
 }
 
@@ -51,7 +52,7 @@ function runMigrations(database: Database.Database): void {
   // Find migration files
   const migrationsDir = join(__dirname, 'migrations');
   if (!existsSync(migrationsDir)) {
-    console.log('[DB] No migrations directory found — skipping');
+    logger.info('DB', 'No migrations directory found — skipping');
     return;
   }
 
@@ -73,6 +74,6 @@ function runMigrations(database: Database.Database): void {
     const sql = readFileSync(join(migrationsDir, file), 'utf-8');
     database.exec(sql);
     database.prepare('INSERT INTO schema_migrations (filename) VALUES (?)').run(file);
-    console.log(`[DB] Applied migration: ${file}`);
+    logger.info('DB', `Applied migration: ${file}`);
   }
 }

@@ -3,6 +3,7 @@ import { PirepAdminService } from '../services/pirep-admin.js';
 import { LogbookService } from '../services/logbook.js';
 import { authMiddleware, dispatcherMiddleware } from '../middleware/auth.js';
 import type { LogbookStatus } from '@acars/shared';
+import { logger } from '../lib/logger.js';
 
 export function adminPirepsRouter(): Router {
   const router = Router();
@@ -26,7 +27,7 @@ export function adminPirepsRouter(): Router {
       const pendingCount = pirepService.getPendingCount();
       res.json({ ...result, page, pageSize, pendingCount });
     } catch (err) {
-      console.error('[Admin] List PIREPs error:', err);
+      logger.error('Admin', 'List PIREPs error', err);
       res.status(500).json({ error: 'Failed to list PIREPs' });
     }
   });
@@ -38,7 +39,7 @@ export function adminPirepsRouter(): Router {
       if (!entry) { res.status(404).json({ error: 'PIREP not found' }); return; }
       res.json(entry);
     } catch (err) {
-      console.error('[Admin] Get PIREP error:', err);
+      logger.error('Admin', 'Get PIREP error', err);
       res.status(500).json({ error: 'Failed to get PIREP' });
     }
   });
@@ -55,7 +56,7 @@ export function adminPirepsRouter(): Router {
       if (!ok) { res.status(404).json({ error: 'PIREP not found' }); return; }
       res.json({ ok: true });
     } catch (err) {
-      console.error('[Admin] Review PIREP error:', err);
+      logger.error('Admin', 'Review PIREP error', err);
       res.status(500).json({ error: 'Failed to review PIREP' });
     }
   });
@@ -71,7 +72,7 @@ export function adminPirepsRouter(): Router {
       const count = pirepService.bulkReview(ids, req.user!.userId, status, notes);
       res.json({ ok: true, count });
     } catch (err) {
-      console.error('[Admin] Bulk review error:', err);
+      logger.error('Admin', 'Bulk review error', err);
       res.status(500).json({ error: 'Failed to bulk review PIREPs' });
     }
   });

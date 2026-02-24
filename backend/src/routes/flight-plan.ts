@@ -5,6 +5,7 @@ import { UserService } from '../services/user.js';
 import { FlightPlanService } from '../services/flight-plan.js';
 import { config } from '../config.js';
 import type { FlightPlanPhase } from '@acars/shared';
+import { logger } from '../lib/logger.js';
 
 const SIMBRIEF_FETCH_URL = 'https://www.simbrief.com/api/xml.fetcher.php';
 const AWC_BASE = 'https://aviationweather.gov/api/data';
@@ -20,7 +21,7 @@ export function flightPlanRouter(): Router {
       const username = userService.getSimbriefUsername(req.user!.userId);
       res.json({ simbriefUsername: username });
     } catch (err) {
-      console.error('[FlightPlan] Get SimBrief username error:', err);
+      logger.error('FlightPlan', 'Get SimBrief username error', err);
       res.status(500).json({ error: 'Failed to get SimBrief username' });
     }
   });
@@ -38,7 +39,7 @@ export function flightPlanRouter(): Router {
       userService.updateSimbriefUsername(req.user!.userId, trimmed);
       res.json({ simbriefUsername: trimmed });
     } catch (err) {
-      console.error('[FlightPlan] Save SimBrief username error:', err);
+      logger.error('FlightPlan', 'Save SimBrief username error', err);
       res.status(500).json({ error: 'Failed to save SimBrief username' });
     }
   });
@@ -72,7 +73,7 @@ export function flightPlanRouter(): Router {
 
       res.json({ apicode, timestamp, outputpage: outputpageCalc });
     } catch (err) {
-      console.error('[FlightPlan] SimBrief apicode error:', err);
+      logger.error('FlightPlan', 'SimBrief apicode error', err);
       res.status(500).json({ error: 'Failed to compute API code' });
     }
   });
@@ -105,7 +106,7 @@ export function flightPlanRouter(): Router {
       const json = await upstream.json();
       res.json(json);
     } catch (err) {
-      console.error('[FlightPlan] SimBrief proxy error:', err);
+      logger.error('FlightPlan', 'SimBrief proxy error', err);
       res.status(502).json({ error: 'Failed to fetch from SimBrief' });
     }
   });
@@ -119,7 +120,7 @@ export function flightPlanRouter(): Router {
       const json = await upstream.json();
       res.json(json);
     } catch (err) {
-      console.error('[Weather] METAR proxy error:', err);
+      logger.error('Weather', 'METAR proxy error', err);
       res.status(502).json({ error: 'Failed to fetch METAR' });
     }
   });
@@ -133,7 +134,7 @@ export function flightPlanRouter(): Router {
       const json = await upstream.json();
       res.json(json);
     } catch (err) {
-      console.error('[Weather] TAF proxy error:', err);
+      logger.error('Weather', 'TAF proxy error', err);
       res.status(502).json({ error: 'Failed to fetch TAF' });
     }
   });
@@ -147,7 +148,7 @@ export function flightPlanRouter(): Router {
       const json = await upstream.json();
       res.json(json);
     } catch (err) {
-      console.error('[Weather] NOTAM proxy error:', err);
+      logger.error('Weather', 'NOTAM proxy error', err);
       res.status(502).json({ error: 'Failed to fetch NOTAMs' });
     }
   });
@@ -173,7 +174,7 @@ export function flightPlanRouter(): Router {
         phase: plan.flight_plan_phase,
       });
     } catch (err) {
-      console.error('[FlightPlan] Get flight plan error:', err);
+      logger.error('FlightPlan', 'Get flight plan error', err);
       res.status(500).json({ error: 'Failed to get flight plan' });
     }
   });
@@ -212,7 +213,7 @@ export function flightPlanRouter(): Router {
 
       res.json({ success: true });
     } catch (err) {
-      console.error('[FlightPlan] Save flight plan error:', err);
+      logger.error('FlightPlan', 'Save flight plan error', err);
       res.status(500).json({ error: 'Failed to save flight plan' });
     }
   });

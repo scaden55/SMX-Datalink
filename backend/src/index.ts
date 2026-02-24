@@ -44,6 +44,7 @@ import { regulatoryRouter } from './routes/regulatory.js';
 import { cargoRouter } from './routes/cargo.js';
 import { TrackService } from './services/track.js';
 import { FlightEventTracker } from './services/flight-event-tracker.js';
+import { logger } from './lib/logger.js';
 
 // Initialize database before anything else
 initializeDatabase();
@@ -85,13 +86,13 @@ if (config.simconnectEnabled) {
   try {
     const { SimConnectManager } = await import('./simconnect/connection.js');
     simConnect = new SimConnectManager();
-    console.log('[Server] SimConnect enabled');
+    logger.info('Server', 'SimConnect enabled');
   } catch (err) {
-    console.warn('[Server] SimConnect module not available — running in server-only mode');
+    logger.warn('Server', 'SimConnect module not available — running in server-only mode');
     simConnect = new NullSimConnectManager();
   }
 } else {
-  console.log('[Server] SimConnect disabled (SIMCONNECT_ENABLED=false)');
+  logger.info('Server', 'SimConnect disabled (SIMCONNECT_ENABLED=false)');
   simConnect = new NullSimConnectManager();
 }
 
@@ -149,22 +150,22 @@ const cleanupInterval = setInterval(() => {
   try {
     authService.cleanupExpiredTokens();
   } catch (err) {
-    console.error('[Server] Token cleanup error:', err);
+    logger.error('Server', 'Token cleanup error', err);
   }
   try {
     const deleted = trackCleanupService.cleanup();
-    if (deleted > 0) console.log(`[Server] Track cleanup: removed ${deleted} rows older than 30 days`);
+    if (deleted > 0) logger.info('Server', `Track cleanup: removed ${deleted} rows older than 30 days`);
   } catch (err) {
-    console.error('[Server] Track cleanup error:', err);
+    logger.error('Server', 'Track cleanup error', err);
   }
 }, 60 * 60 * 1000);
 cleanupInterval.unref();
 
 // Start
 httpServer.listen(config.port, '0.0.0.0', () => {
-  console.log(`[Server] ACARS backend running on http://0.0.0.0:${config.port}`);
-  console.log(`[Server] REST API: http://localhost:${config.port}/api`);
-  console.log(`[Server] WebSocket: ws://localhost:${config.port}`);
+  logger.info('Server', `ACARS backend running on http://0.0.0.0:${config.port}`);
+  logger.info('Server', `REST API: http://localhost:${config.port}/api`);
+  logger.info('Server', `WebSocket: ws://localhost:${config.port}`);
 
   // Begin SimConnect connection loop (no-op if disabled)
   simConnect.connect();
@@ -175,7 +176,7 @@ httpServer.listen(config.port, '0.0.0.0', () => {
 
 // Graceful shutdown
 function shutdown(): void {
-  console.log('\n[Server] Shutting down...');
+  logger.info('Server', 'Shutting down...');
   clearInterval(cleanupInterval);
   vatsimService.stop();
   io.close();

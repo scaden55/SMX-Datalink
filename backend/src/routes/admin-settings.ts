@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { SettingsService } from '../services/settings.js';
 import { AuditService } from '../services/audit.js';
 import { authMiddleware, adminMiddleware } from '../middleware/auth.js';
+import { logger } from '../lib/logger.js';
 
 export function adminSettingsRouter(): Router {
   const router = Router();
@@ -14,7 +15,7 @@ export function adminSettingsRouter(): Router {
       const settings = settingsService.getAll();
       res.json({ settings });
     } catch (err) {
-      console.error('[Admin] Get settings error:', err);
+      logger.error('Admin', 'Get settings error', err);
       res.status(500).json({ error: 'Failed to get settings' });
     }
   });
@@ -31,7 +32,7 @@ export function adminSettingsRouter(): Router {
       auditService.log({ actorId: req.user!.userId, action: 'settings.update', targetType: 'settings', after: { settings } as Record<string, unknown> });
       res.json({ ok: true });
     } catch (err) {
-      console.error('[Admin] Update settings error:', err);
+      logger.error('Admin', 'Update settings error', err);
       res.status(500).json({ error: 'Failed to update settings' });
     }
   });

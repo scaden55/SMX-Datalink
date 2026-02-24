@@ -4,6 +4,7 @@ import { SimBriefAircraftService } from '../services/simbrief-aircraft.js';
 import { authMiddleware, adminMiddleware } from '../middleware/auth.js';
 import type { FleetFilters } from '../services/fleet.js';
 import type { FleetStatus, CreateFleetAircraftRequest, UpdateFleetAircraftRequest } from '@acars/shared';
+import { logger } from '../lib/logger.js';
 
 const VALID_STATUSES = new Set<FleetStatus>(['active', 'stored', 'retired', 'maintenance']);
 
@@ -26,7 +27,7 @@ export function fleetManageRouter(): Router {
       const fleet = service.findAll(filters);
       res.json({ fleet, total: fleet.length });
     } catch (err) {
-      console.error('[Fleet] List error:', err);
+      logger.error('Fleet', 'List error', err);
       res.status(500).json({ error: 'Failed to fetch fleet' });
     }
   });
@@ -37,7 +38,7 @@ export function fleetManageRouter(): Router {
       const types = service.findDistinctTypes();
       res.json(types);
     } catch (err) {
-      console.error('[Fleet] Types error:', err);
+      logger.error('Fleet', 'Types error', err);
       res.status(500).json({ error: 'Failed to fetch aircraft types' });
     }
   });
@@ -63,7 +64,7 @@ export function fleetManageRouter(): Router {
         res.status(409).json({ error: 'Registration already exists' });
         return;
       }
-      console.error('[Fleet] Create error:', err);
+      logger.error('Fleet', 'Create error', err);
       res.status(500).json({ error: 'Failed to create aircraft' });
     }
   });
@@ -90,7 +91,7 @@ export function fleetManageRouter(): Router {
         res.status(409).json({ error: 'Registration already exists' });
         return;
       }
-      console.error('[Fleet] Update error:', err);
+      logger.error('Fleet', 'Update error', err);
       res.status(500).json({ error: 'Failed to update aircraft' });
     }
   });
@@ -102,7 +103,7 @@ export function fleetManageRouter(): Router {
       const aircraft = await simbriefService.search(query);
       res.json({ aircraft, cachedAt: simbriefService.cachedAt ?? new Date().toISOString() });
     } catch (err) {
-      console.error('[Fleet] SimBrief search error:', err);
+      logger.error('Fleet', 'SimBrief search error', err);
       res.status(502).json({ error: 'Failed to fetch SimBrief aircraft data' });
     }
   });
@@ -116,7 +117,7 @@ export function fleetManageRouter(): Router {
       const stats = service.getUtilizationStats(aircraft.registration);
       res.json(stats);
     } catch (err) {
-      console.error('[Fleet] Stats error:', err);
+      logger.error('Fleet', 'Stats error', err);
       res.status(500).json({ error: 'Failed to get utilization stats' });
     }
   });
@@ -138,7 +139,7 @@ export function fleetManageRouter(): Router {
 
       res.status(204).send();
     } catch (err) {
-      console.error('[Fleet] Delete error:', err);
+      logger.error('Fleet', 'Delete error', err);
       res.status(500).json({ error: 'Failed to delete aircraft' });
     }
   });

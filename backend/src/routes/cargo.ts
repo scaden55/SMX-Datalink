@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { authMiddleware } from '../middleware/auth.js';
 import { CargoService } from '../services/cargo.js';
+import { logger } from '../lib/logger.js';
 
 export function cargoRouter(): Router {
   const router = Router();
@@ -29,7 +30,7 @@ export function cargoRouter(): Router {
 
       res.json(manifest);
     } catch (err) {
-      console.error('[Cargo] Generate error:', err);
+      logger.error('Cargo', 'Generate error', err);
       res.status(500).json({ error: 'Failed to generate cargo manifest' });
     }
   });
@@ -51,7 +52,7 @@ export function cargoRouter(): Router {
 
       res.json(manifest);
     } catch (err) {
-      console.error('[Cargo] Get error:', err);
+      logger.error('Cargo', 'Get error', err);
       res.status(500).json({ error: 'Failed to get cargo manifest' });
     }
   });
@@ -74,7 +75,7 @@ export function cargoRouter(): Router {
 
       res.json({ success: true });
     } catch (err) {
-      console.error('[Cargo] Delete error:', err);
+      logger.error('Cargo', 'Delete error', err);
       res.status(500).json({ error: 'Failed to delete cargo manifest' });
     }
   });

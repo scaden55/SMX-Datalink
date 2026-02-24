@@ -3,6 +3,7 @@ import { ScheduleService } from '../services/schedule.js';
 import { authMiddleware, optionalAuthMiddleware } from '../middleware/auth.js';
 import type { ScheduleFilters } from '../services/schedule.js';
 import type { CreateCharterRequest, CharterType } from '@acars/shared';
+import { logger } from '../lib/logger.js';
 
 export function scheduleRouter(): Router {
   const router = Router();
@@ -14,7 +15,7 @@ export function scheduleRouter(): Router {
       const airports = service.findAllAirports();
       res.json(airports);
     } catch (err) {
-      console.error('[Schedule] Airports error:', err);
+      logger.error('Schedule', 'Airports error', err);
       res.status(500).json({ error: 'Failed to fetch airports' });
     }
   });
@@ -25,7 +26,7 @@ export function scheduleRouter(): Router {
       const fleet = service.findAllFleet();
       res.json(fleet);
     } catch (err) {
-      console.error('[Schedule] Fleet error:', err);
+      logger.error('Schedule', 'Fleet error', err);
       res.status(500).json({ error: 'Failed to fetch fleet' });
     }
   });
@@ -36,7 +37,7 @@ export function scheduleRouter(): Router {
       const types = service.findDistinctAircraftTypes();
       res.json(types);
     } catch (err) {
-      console.error('[Schedule] Fleet types error:', err);
+      logger.error('Schedule', 'Fleet types error', err);
       res.status(500).json({ error: 'Failed to fetch aircraft types' });
     }
   });
@@ -47,7 +48,7 @@ export function scheduleRouter(): Router {
       const stats = service.getDashboardStats();
       res.json(stats);
     } catch (err) {
-      console.error('[Schedule] Stats error:', err);
+      logger.error('Schedule', 'Stats error', err);
       res.status(500).json({ error: 'Failed to fetch stats' });
     }
   });
@@ -67,7 +68,7 @@ export function scheduleRouter(): Router {
 
       res.json({ schedules, total: schedules.length });
     } catch (err) {
-      console.error('[Schedule] Schedules error:', err);
+      logger.error('Schedule', 'Schedules error', err);
       res.status(500).json({ error: 'Failed to fetch schedules' });
     }
   });
@@ -91,7 +92,7 @@ export function scheduleRouter(): Router {
 
       res.json(schedule);
     } catch (err) {
-      console.error('[Schedule] Schedule detail error:', err);
+      logger.error('Schedule', 'Schedule detail error', err);
       res.status(500).json({ error: 'Failed to fetch schedule' });
     }
   });
@@ -114,7 +115,7 @@ export function scheduleRouter(): Router {
 
       res.status(201).json({ bid });
     } catch (err) {
-      console.error('[Schedule] Place bid error:', err);
+      logger.error('Schedule', 'Place bid error', err);
       res.status(500).json({ error: 'Failed to place bid' });
     }
   });
@@ -136,7 +137,7 @@ export function scheduleRouter(): Router {
 
       res.status(204).send();
     } catch (err) {
-      console.error('[Schedule] Remove bid error:', err);
+      logger.error('Schedule', 'Remove bid error', err);
       res.status(500).json({ error: 'Failed to remove bid' });
     }
   });
@@ -147,7 +148,7 @@ export function scheduleRouter(): Router {
       const bids = service.findMyBids(req.user!.userId);
       res.json({ bids, total: bids.length });
     } catch (err) {
-      console.error('[Schedule] My bids error:', err);
+      logger.error('Schedule', 'My bids error', err);
       res.status(500).json({ error: 'Failed to fetch bids' });
     }
   });
@@ -158,7 +159,7 @@ export function scheduleRouter(): Router {
       const bids = service.findAllBids();
       res.json({ bids, total: bids.length });
     } catch (err) {
-      console.error('[Schedule] All bids error:', err);
+      logger.error('Schedule', 'All bids error', err);
       res.status(500).json({ error: 'Failed to fetch bids' });
     }
   });
@@ -195,7 +196,7 @@ export function scheduleRouter(): Router {
 
       res.status(201).json(result);
     } catch (err) {
-      console.error('[Schedule] Create charter error:', err);
+      logger.error('Schedule', 'Create charter error', err);
       res.status(500).json({ error: 'Failed to create charter' });
     }
   });

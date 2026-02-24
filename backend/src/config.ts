@@ -1,5 +1,6 @@
 import 'dotenv/config';
 import { randomBytes } from 'crypto';
+import { logger } from './lib/logger.js';
 
 const isDev = process.env.NODE_ENV !== 'production';
 
@@ -8,11 +9,11 @@ if (!isDev && !process.env.JWT_SECRET) {
 }
 
 if (!isDev && !process.env.CORS_ORIGIN) {
-  console.warn('[Config] CORS_ORIGIN not set — defaulting to http://localhost:5173');
+  logger.warn('Config', 'CORS_ORIGIN not set — defaulting to http://localhost:5173');
 }
 
 if (!isDev && !process.env.SIMBRIEF_API_KEY) {
-  console.warn('[Config] SIMBRIEF_API_KEY not set — SimBrief integration will not work');
+  logger.warn('Config', 'SIMBRIEF_API_KEY not set — SimBrief integration will not work');
 }
 
 // Generate a random dev secret on startup so it's never guessable

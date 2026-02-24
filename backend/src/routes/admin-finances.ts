@@ -3,6 +3,7 @@ import { FinanceService } from '../services/finance.js';
 import { AuditService } from '../services/audit.js';
 import { authMiddleware, adminMiddleware } from '../middleware/auth.js';
 import type { FinanceType } from '@acars/shared';
+import { logger } from '../lib/logger.js';
 
 export function adminFinancesRouter(): Router {
   const router = Router();
@@ -24,7 +25,7 @@ export function adminFinancesRouter(): Router {
       const result = financeService.findAll(filters, page, pageSize);
       res.json({ ...result, page, pageSize });
     } catch (err) {
-      console.error('[Admin] List finances error:', err);
+      logger.error('Admin', 'List finances error', err);
       res.status(500).json({ error: 'Failed to list finances' });
     }
   });
@@ -50,7 +51,7 @@ export function adminFinancesRouter(): Router {
       auditService.log({ actorId: req.user!.userId, action: 'finance.create', targetType: 'finance', targetId: id, after: req.body });
       res.status(201).json({ id });
     } catch (err) {
-      console.error('[Admin] Create finance error:', err);
+      logger.error('Admin', 'Create finance error', err);
       res.status(500).json({ error: 'Failed to create finance entry' });
     }
   });
@@ -63,7 +64,7 @@ export function adminFinancesRouter(): Router {
       auditService.log({ actorId: req.user!.userId, action: 'finance.delete', targetType: 'finance', targetId: parseInt(req.params.id as string) });
       res.status(204).end();
     } catch (err) {
-      console.error('[Admin] Delete finance error:', err);
+      logger.error('Admin', 'Delete finance error', err);
       res.status(500).json({ error: 'Failed to delete finance entry' });
     }
   });
@@ -77,7 +78,7 @@ export function adminFinancesRouter(): Router {
       );
       res.json(summary);
     } catch (err) {
-      console.error('[Admin] Finance summary error:', err);
+      logger.error('Admin', 'Finance summary error', err);
       res.status(500).json({ error: 'Failed to get finance summary' });
     }
   });
@@ -88,7 +89,7 @@ export function adminFinancesRouter(): Router {
       const balances = financeService.getAllBalances();
       res.json({ balances });
     } catch (err) {
-      console.error('[Admin] Finance balances error:', err);
+      logger.error('Admin', 'Finance balances error', err);
       res.status(500).json({ error: 'Failed to get balances' });
     }
   });

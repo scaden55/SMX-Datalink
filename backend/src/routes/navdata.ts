@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { NavdataService } from '../services/navdata.js';
+import { logger } from '../lib/logger.js';
 
 export function navdataRouter(): Router {
   const router = Router();
@@ -20,7 +21,7 @@ export function navdataRouter(): Router {
       res.set('Cache-Control', 'public, max-age=300');
       return res.json(results);
     } catch (err) {
-      console.error('[Navdata] Search error:', err);
+      logger.error('Navdata', 'Search error', err);
       return res.status(500).json({ error: 'Search failed' });
     }
   });
@@ -39,7 +40,7 @@ export function navdataRouter(): Router {
       res.set('Cache-Control', 'public, max-age=3600');
       return res.json(results);
     } catch (err) {
-      console.error('[Navdata] Route resolve error:', err);
+      logger.error('Navdata', 'Route resolve error', err);
       return res.status(500).json({ error: 'Route resolution failed' });
     }
   });
@@ -67,7 +68,7 @@ export function navdataRouter(): Router {
       res.set('Cache-Control', 'public, max-age=60');
       return res.json(results);
     } catch (err) {
-      console.error('[Navdata] Navaids viewport error:', err);
+      logger.error('Navdata', 'Navaids viewport error', err);
       return res.status(500).json({ error: 'Failed to fetch navaids' });
     }
   });

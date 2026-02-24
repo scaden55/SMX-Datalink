@@ -4,6 +4,7 @@ import { randomBytes, createHash } from 'crypto';
 import { getDb } from '../db/index.js';
 import { config } from '../config.js';
 import type { AuthPayload } from '@acars/shared';
+import { logger } from '../lib/logger.js';
 
 export class AuthService {
   async hashPassword(password: string): Promise<string> {
@@ -103,7 +104,7 @@ export class AuthService {
 function parseExpiry(expiry: string): number {
   const match = expiry.match(/^(\d+)([smhd])$/);
   if (!match) {
-    console.warn(`[Auth] Unrecognized expiry format "${expiry}" — defaulting to 7 days`);
+    logger.warn('Auth', `Unrecognized expiry format "${expiry}" — defaulting to 7 days`);
     return 7 * 24 * 60 * 60 * 1000;
   }
 

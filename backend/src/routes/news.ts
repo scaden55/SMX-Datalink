@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { NewsService } from '../services/news.js';
 import { authMiddleware, adminMiddleware } from '../middleware/auth.js';
 import type { CreateNewsRequest, UpdateNewsRequest } from '@acars/shared';
+import { logger } from '../lib/logger.js';
 
 export function newsRouter(): Router {
   const router = Router();
@@ -16,7 +17,7 @@ export function newsRouter(): Router {
       const result = service.findAll(page, pageSize);
       res.json(result);
     } catch (err) {
-      console.error('[News] List error:', err);
+      logger.error('News', 'List error', err);
       res.status(500).json({ error: 'Failed to fetch news' });
     }
   });
@@ -38,7 +39,7 @@ export function newsRouter(): Router {
 
       res.json(post);
     } catch (err) {
-      console.error('[News] Get error:', err);
+      logger.error('News', 'Get error', err);
       res.status(500).json({ error: 'Failed to fetch post' });
     }
   });
@@ -60,7 +61,7 @@ export function newsRouter(): Router {
       });
       res.status(201).json(post);
     } catch (err) {
-      console.error('[News] Create error:', err);
+      logger.error('News', 'Create error', err);
       res.status(500).json({ error: 'Failed to create post' });
     }
   });
@@ -83,7 +84,7 @@ export function newsRouter(): Router {
 
       res.json(post);
     } catch (err) {
-      console.error('[News] Update error:', err);
+      logger.error('News', 'Update error', err);
       res.status(500).json({ error: 'Failed to update post' });
     }
   });
@@ -105,7 +106,7 @@ export function newsRouter(): Router {
 
       res.status(204).send();
     } catch (err) {
-      console.error('[News] Delete error:', err);
+      logger.error('News', 'Delete error', err);
       res.status(500).json({ error: 'Failed to delete post' });
     }
   });

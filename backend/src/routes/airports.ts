@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { AirportDetailService } from '../services/airport-detail.js';
+import { logger } from '../lib/logger.js';
 
 export function airportDetailRouter(): Router {
   const router = Router();
@@ -12,7 +13,7 @@ export function airportDetailRouter(): Router {
       res.set('Cache-Control', 'public, max-age=3600');
       return res.json(airports);
     } catch (err) {
-      console.error('[AirportDetail] Map airports error:', err);
+      logger.error('AirportDetail', 'Map airports error', err);
       return res.status(500).json({ error: 'Failed to fetch map airports' });
     }
   });
@@ -28,7 +29,7 @@ export function airportDetailRouter(): Router {
       const results = service.searchAirports(q, limit);
       return res.json(results);
     } catch (err) {
-      console.error('[AirportDetail] Search error:', err);
+      logger.error('AirportDetail', 'Search error', err);
       return res.status(500).json({ error: 'Failed to search airports' });
     }
   });
@@ -50,7 +51,7 @@ export function airportDetailRouter(): Router {
 
       return res.json(detail);
     } catch (err) {
-      console.error('[AirportDetail] Error:', err);
+      logger.error('AirportDetail', 'Error', err);
       return res.status(500).json({ error: 'Failed to fetch airport detail' });
     }
   });

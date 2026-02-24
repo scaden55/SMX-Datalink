@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { LeaderboardService } from '../services/leaderboard.js';
 import { authMiddleware } from '../middleware/auth.js';
+import { logger } from '../lib/logger.js';
 
 const MONTH_REGEX = /^\d{4}-(0[1-9]|1[0-2])$/;
 
@@ -21,7 +22,7 @@ export function leaderboardRouter(): Router {
       const result = service.getLeaderboard(month || undefined);
       res.json(result);
     } catch (err) {
-      console.error('[Leaderboard] Error:', err);
+      logger.error('Leaderboard', 'Error', err);
       res.status(500).json({ error: 'Failed to fetch leaderboard' });
     }
   });

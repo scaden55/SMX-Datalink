@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { ScheduleAdminService } from '../services/schedule-admin.js';
 import { authMiddleware, dispatcherMiddleware } from '../middleware/auth.js';
+import { logger } from '../lib/logger.js';
 
 export function adminSchedulesRouter(): Router {
   const router = Router();
@@ -17,7 +18,7 @@ export function adminSchedulesRouter(): Router {
       });
       res.json(result);
     } catch (err) {
-      console.error('[Admin] Autofill error:', err);
+      logger.error('Admin', 'Autofill error', err);
       res.status(500).json({ error: 'Autofill lookup failed' });
     }
   });
@@ -38,7 +39,7 @@ export function adminSchedulesRouter(): Router {
       const result = scheduleService.findAll(filters, page, pageSize);
       res.json({ ...result, page, pageSize });
     } catch (err) {
-      console.error('[Admin] List schedules error:', err);
+      logger.error('Admin', 'List schedules error', err);
       res.status(500).json({ error: 'Failed to list schedules' });
     }
   });
@@ -54,7 +55,7 @@ export function adminSchedulesRouter(): Router {
       const schedule = scheduleService.create(req.body, req.user!.userId);
       res.status(201).json(schedule);
     } catch (err) {
-      console.error('[Admin] Create schedule error:', err);
+      logger.error('Admin', 'Create schedule error', err);
       res.status(500).json({ error: 'Failed to create schedule' });
     }
   });
@@ -66,7 +67,7 @@ export function adminSchedulesRouter(): Router {
       if (!updated) { res.status(404).json({ error: 'Schedule not found' }); return; }
       res.json(updated);
     } catch (err) {
-      console.error('[Admin] Update schedule error:', err);
+      logger.error('Admin', 'Update schedule error', err);
       res.status(500).json({ error: 'Failed to update schedule' });
     }
   });
@@ -78,7 +79,7 @@ export function adminSchedulesRouter(): Router {
       if (!deleted) { res.status(404).json({ error: 'Schedule not found' }); return; }
       res.status(204).end();
     } catch (err) {
-      console.error('[Admin] Delete schedule error:', err);
+      logger.error('Admin', 'Delete schedule error', err);
       res.status(500).json({ error: 'Failed to delete schedule' });
     }
   });
@@ -90,7 +91,7 @@ export function adminSchedulesRouter(): Router {
       if (!updated) { res.status(404).json({ error: 'Schedule not found' }); return; }
       res.json(updated);
     } catch (err) {
-      console.error('[Admin] Toggle schedule error:', err);
+      logger.error('Admin', 'Toggle schedule error', err);
       res.status(500).json({ error: 'Failed to toggle schedule' });
     }
   });
@@ -104,7 +105,7 @@ export function adminSchedulesRouter(): Router {
       if (!cloned) { res.status(404).json({ error: 'Schedule not found' }); return; }
       res.status(201).json(cloned);
     } catch (err) {
-      console.error('[Admin] Clone schedule error:', err);
+      logger.error('Admin', 'Clone schedule error', err);
       res.status(500).json({ error: 'Failed to clone schedule' });
     }
   });

@@ -1,6 +1,7 @@
 import { EventEmitter } from 'events';
 import type { ConnectionStatus } from '@acars/shared';
 import type { ISimConnectManager } from './types.js';
+import { logger } from '../lib/logger.js';
 
 /**
  * No-op SimConnect manager for Linux/server deployments.
@@ -22,7 +23,7 @@ export class NullSimConnectManager extends EventEmitter implements ISimConnectMa
   }
 
   async connect(): Promise<void> {
-    console.log('[SimConnect] Disabled — running in server-only mode');
+    logger.info('SimConnect', 'Disabled — running in server-only mode');
   }
 
   disconnect(): void {

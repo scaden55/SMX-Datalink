@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { ReportsService } from '../services/reports.js';
 import { authMiddleware } from '../middleware/auth.js';
+import { logger } from '../lib/logger.js';
 
 const MONTH_REGEX = /^\d{4}-(0[1-9]|1[0-2])$/;
 
@@ -21,7 +22,7 @@ export function reportsRouter(): Router {
       const report = service.getReport(month || undefined);
       res.json(report);
     } catch (err) {
-      console.error('[Reports] Error:', err);
+      logger.error('Reports', 'Error', err);
       res.status(500).json({ error: 'Failed to generate report' });
     }
   });

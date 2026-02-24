@@ -5,6 +5,7 @@ import { UserAdminService } from '../services/user-admin.js';
 import { AuditService } from '../services/audit.js';
 import { authMiddleware, adminMiddleware } from '../middleware/auth.js';
 import type { AdminUserFilters, UserRole, UserStatus } from '@acars/shared';
+import { logger } from '../lib/logger.js';
 
 export function adminUsersRouter(): Router {
   const router = Router();
@@ -27,7 +28,7 @@ export function adminUsersRouter(): Router {
       const result = userAdminService.findAll(filters, page, pageSize);
       res.json({ ...result, page, pageSize });
     } catch (err) {
-      console.error('[Admin] List users error:', err);
+      logger.error('Admin', 'List users error', err);
       res.status(500).json({ error: 'Failed to list users' });
     }
   });
@@ -39,7 +40,7 @@ export function adminUsersRouter(): Router {
       if (!user) { res.status(404).json({ error: 'User not found' }); return; }
       res.json(user);
     } catch (err) {
-      console.error('[Admin] Get user error:', err);
+      logger.error('Admin', 'Get user error', err);
       res.status(500).json({ error: 'Failed to get user' });
     }
   });
@@ -68,7 +69,7 @@ export function adminUsersRouter(): Router {
       auditService.log({ actorId: req.user!.userId, action: 'user.create', targetType: 'user', targetId: user.id, after: profile as unknown as Record<string, unknown> });
       res.status(201).json(profile);
     } catch (err) {
-      console.error('[Admin] Create user error:', err);
+      logger.error('Admin', 'Create user error', err);
       res.status(500).json({ error: 'Failed to create user' });
     }
   });
@@ -97,7 +98,7 @@ export function adminUsersRouter(): Router {
       if (!updated) { res.status(404).json({ error: 'User not found' }); return; }
       res.json(updated);
     } catch (err) {
-      console.error('[Admin] Update user error:', err);
+      logger.error('Admin', 'Update user error', err);
       res.status(500).json({ error: 'Failed to update user' });
     }
   });
@@ -109,7 +110,7 @@ export function adminUsersRouter(): Router {
       if (!updated) { res.status(404).json({ error: 'User not found' }); return; }
       res.json(updated);
     } catch (err) {
-      console.error('[Admin] Suspend user error:', err);
+      logger.error('Admin', 'Suspend user error', err);
       res.status(500).json({ error: 'Failed to suspend user' });
     }
   });
@@ -121,7 +122,7 @@ export function adminUsersRouter(): Router {
       if (!updated) { res.status(404).json({ error: 'User not found' }); return; }
       res.json(updated);
     } catch (err) {
-      console.error('[Admin] Reactivate user error:', err);
+      logger.error('Admin', 'Reactivate user error', err);
       res.status(500).json({ error: 'Failed to reactivate user' });
     }
   });
@@ -133,7 +134,7 @@ export function adminUsersRouter(): Router {
       if (!deleted) { res.status(404).json({ error: 'User not found' }); return; }
       res.json({ success: true });
     } catch (err) {
-      console.error('[Admin] Delete user error:', err);
+      logger.error('Admin', 'Delete user error', err);
       res.status(500).json({ error: 'Failed to delete user' });
     }
   });
@@ -145,7 +146,7 @@ export function adminUsersRouter(): Router {
       if (!result) { res.status(404).json({ error: 'User not found' }); return; }
       res.json(result);
     } catch (err) {
-      console.error('[Admin] Impersonate error:', err);
+      logger.error('Admin', 'Impersonate error', err);
       res.status(500).json({ error: 'Failed to impersonate user' });
     }
   });
