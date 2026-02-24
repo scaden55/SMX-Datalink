@@ -147,7 +147,7 @@ export class PirepAdminService {
         action: `pirep.${status}`,
         targetType: 'pirep',
         targetId: pirepId,
-        after: { status, notes } as any,
+        after: { status, notes } as Record<string, unknown>,
       });
     });
 

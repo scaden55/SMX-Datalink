@@ -8,6 +8,13 @@ import type {
   PilotBreakdown,
   DailyVolume,
 } from '@acars/shared';
+import type {
+  ReportSummaryQueryRow,
+  ReportFinancialFlightRow,
+  ReportTopRouteQueryRow,
+  ReportByPilotQueryRow,
+  ReportVolumeQueryRow,
+} from '../types/db-rows.js';
 
 // ── Financial Rate Constants ────────────────────────────────────
 
@@ -151,7 +158,7 @@ export class ReportsService {
       FROM logbook l
       ${where}
     `;
-    const row = getDb().prepare(sql).get(...params) as any;
+    const row = getDb().prepare(sql).get(...params) as ReportSummaryQueryRow;
     return {
       totalFlights: row.total_flights,
       totalHoursMin: row.total_hours_min,
@@ -186,7 +193,7 @@ export class ReportsService {
       ${completedWhere}
     `;
 
-    const rows = getDb().prepare(sql).all(...params) as any[];
+    const rows = getDb().prepare(sql).all(...params) as ReportFinancialFlightRow[];
 
     // Accumulate per-aircraft-type and aggregate totals in a single pass
     const totals = emptyAccumulator();
@@ -265,7 +272,7 @@ export class ReportsService {
       ORDER BY flights DESC
       LIMIT 10
     `;
-    return (getDb().prepare(sql).all(...params) as any[]).map(r => ({
+    return (getDb().prepare(sql).all(...params) as ReportTopRouteQueryRow[]).map(r => ({
       depIcao: r.dep_icao,
       arrIcao: r.arr_icao,
       depName: r.dep_name,
@@ -290,7 +297,7 @@ export class ReportsService {
       GROUP BY l.user_id
       ORDER BY flights DESC
     `;
-    return (getDb().prepare(sql).all(...params) as any[]).map(r => ({
+    return (getDb().prepare(sql).all(...params) as ReportByPilotQueryRow[]).map(r => ({
       callsign: r.callsign ?? 'Unknown',
       pilotName: r.pilot_name ?? 'Unknown',
       flights: r.flights,
@@ -315,7 +322,7 @@ export class ReportsService {
       GROUP BY date
       ORDER BY date ASC
     `;
-    return (getDb().prepare(sql).all(...params) as any[]).map(r => ({
+    return (getDb().prepare(sql).all(...params) as ReportVolumeQueryRow[]).map(r => ({
       date: r.date,
       flights: r.flights,
     }));

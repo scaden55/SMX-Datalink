@@ -5,6 +5,7 @@ import type {
   CreateFleetAircraftRequest,
   UpdateFleetAircraftRequest,
 } from '@acars/shared';
+import type { FleetUtilizationQueryRow } from '../types/db-rows.js';
 
 // ── Raw DB row type ─────────────────────────────────────────────
 
@@ -222,7 +223,7 @@ export class FleetService {
         AVG(landing_rate_fpm) AS avg_landing_rate
       FROM logbook
       WHERE aircraft_registration = ? AND status IN ('approved')
-    `).get(registration) as any;
+    `).get(registration) as FleetUtilizationQueryRow;
 
     return {
       totalFlights: row.total_flights,

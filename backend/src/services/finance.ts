@@ -1,5 +1,6 @@
 import { getDb } from '../db/index.js';
 import type { FinanceEntry, FinanceType, FinanceFilters, PilotBalance, FinanceSummary } from '@acars/shared';
+import type { FinanceBalanceQueryRow, FinanceSummaryQueryRow } from '../types/db-rows.js';
 
 interface FinanceRow {
   id: number;
@@ -94,7 +95,7 @@ export class FinanceService {
       WHERE u.status = 'active'
       GROUP BY u.id
       ORDER BY u.callsign
-    `).all() as any[];
+    `).all() as FinanceBalanceQueryRow[];
 
     return rows.map(r => ({
       pilotId: r.pilot_id,
@@ -124,7 +125,7 @@ export class FinanceService {
         COALESCE(SUM(CASE WHEN type = 'expense' THEN amount ELSE 0 END), 0) AS total_expenses,
         COALESCE(SUM(CASE WHEN type = 'income' THEN amount ELSE 0 END), 0) AS total_income
       FROM finances ${where}
-    `).get(...params) as any;
+    `).get(...params) as FinanceSummaryQueryRow;
 
     const totalPay = row.total_pay;
     const totalBonuses = row.total_bonuses;

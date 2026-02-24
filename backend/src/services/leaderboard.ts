@@ -1,5 +1,6 @@
 import { getDb } from '../db/index.js';
 import type { LeaderboardEntry, LeaderboardResponse } from '@acars/shared';
+import type { LeaderboardQueryRow } from '../types/db-rows.js';
 
 export class LeaderboardService {
 
@@ -23,7 +24,7 @@ export class LeaderboardService {
       LIMIT 10
     `;
 
-    const rows = getDb().prepare(sql).all(...params) as any[];
+    const rows = getDb().prepare(sql).all(...params) as LeaderboardQueryRow[];
     const entries: LeaderboardEntry[] = rows.map((r, i) => ({
       rank: i + 1,
       callsign: r.callsign ?? 'Unknown',

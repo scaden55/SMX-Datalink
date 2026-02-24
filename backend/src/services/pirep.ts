@@ -227,7 +227,7 @@ export class PirepService {
           landingRate: flightEvents.landingRateFpm,
           score,
           status,
-        } as any,
+        } as Record<string, unknown>,
       });
 
       return logbookId;

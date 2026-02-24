@@ -1,6 +1,7 @@
 import { getDb } from '../db/index.js';
 import { AuditService } from './audit.js';
 import type { CreateScheduleRequest, UpdateScheduleRequest } from '@acars/shared';
+import type { ScheduledFlightRow } from '../types/db-rows.js';
 
 // ── Airport lookup types ─────────────────────────────────────────
 
@@ -146,7 +147,7 @@ export class ScheduleAdminService {
     );
 
     const id = result.lastInsertRowid as number;
-    auditService.log({ actorId, action: 'schedule.create', targetType: 'schedule', targetId: id, after: data as any });
+    auditService.log({ actorId, action: 'schedule.create', targetType: 'schedule', targetId: id, after: data as unknown as Record<string, unknown> });
     return this.findById(id);
   }
 
@@ -321,7 +322,7 @@ export class ScheduleAdminService {
   }
 
   clone(id: number, newFlightNumber: string, actorId: number): any | null {
-    const existing = getDb().prepare('SELECT * FROM scheduled_flights WHERE id = ?').get(id) as any;
+    const existing = getDb().prepare('SELECT * FROM scheduled_flights WHERE id = ?').get(id) as ScheduledFlightRow | undefined;
     if (!existing) return null;
 
     const result = getDb().prepare(`

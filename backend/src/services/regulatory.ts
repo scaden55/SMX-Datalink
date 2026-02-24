@@ -11,6 +11,7 @@ import type {
   ComplianceItem,
   RegulatoryAssessment,
 } from '@acars/shared';
+import type { FleetStatusQueryRow, OpSpecRow } from '../types/db-rows.js';
 
 // ─────────────────────────────────────────────────────────────
 // ICAO prefix helpers — used for 14 CFR 110.2 classification
@@ -61,7 +62,7 @@ function haversineNm(lat1: number, lon1: number, lat2: number, lon2: number): nu
 // DB row → OpSpec DTO mapper
 // ─────────────────────────────────────────────────────────────
 
-function toOpSpec(row: any): OpSpec {
+function toOpSpec(row: OpSpecRow): OpSpec {
   return {
     id: row.id,
     code: row.code,
@@ -233,7 +234,7 @@ export class RegulatoryService {
     }
 
     const db = getDb();
-    const row = db.prepare('SELECT id, registration, status FROM fleet WHERE id = ?').get(aircraftId) as any;
+    const row = db.prepare('SELECT id, registration, status FROM fleet WHERE id = ?').get(aircraftId) as FleetStatusQueryRow | undefined;
 
     if (!row) {
       return {
@@ -266,7 +267,7 @@ export class RegulatoryService {
     rvsmApplicable: boolean,
   ): OpSpec[] {
     const db = getDb();
-    const rows = db.prepare('SELECT * FROM opspecs WHERE is_active = 1 ORDER BY code').all() as any[];
+    const rows = db.prepare('SELECT * FROM opspecs WHERE is_active = 1 ORDER BY code').all() as OpSpecRow[];
     const all = rows.map(toOpSpec);
 
     return all.filter((op) => {
@@ -534,18 +535,18 @@ export class RegulatoryService {
 
   findAllOpSpecs(): OpSpec[] {
     const db = getDb();
-    const rows = db.prepare('SELECT * FROM opspecs ORDER BY code').all() as any[];
+    const rows = db.prepare('SELECT * FROM opspecs ORDER BY code').all() as OpSpecRow[];
     return rows.map(toOpSpec);
   }
 
   updateOpSpec(id: number, data: { isActive?: boolean; enforcement?: string; description?: string }): OpSpec | null {
     const db = getDb();
 
-    const existing = db.prepare('SELECT * FROM opspecs WHERE id = ?').get(id) as any;
+    const existing = db.prepare('SELECT * FROM opspecs WHERE id = ?').get(id) as OpSpecRow | undefined;
     if (!existing) return null;
 
     const sets: string[] = [];
-    const values: any[] = [];
+    const values: unknown[] = [];
 
     if (data.isActive !== undefined) {
       sets.push('is_active = ?');
@@ -565,7 +566,7 @@ export class RegulatoryService {
     values.push(id);
     db.prepare(`UPDATE opspecs SET ${sets.join(', ')} WHERE id = ?`).run(...values);
 
-    const updated = db.prepare('SELECT * FROM opspecs WHERE id = ?').get(id) as any;
+    const updated = db.prepare('SELECT * FROM opspecs WHERE id = ?').get(id) as OpSpecRow;
     return toOpSpec(updated);
   }
 }
