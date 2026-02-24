@@ -16,44 +16,9 @@ function fmt(val: number | string | undefined | null): string {
   return Math.round(n).toLocaleString();
 }
 
-interface FuelFieldProps {
-  label: string;
-  value: string;
-  sub?: string;
-  warn?: boolean;
-  editable?: boolean;
-  fieldKey?: string;
-  onFieldChange?: (key: string, val: string) => void;
-}
-
-function FuelField({ label, value, sub, warn, editable, fieldKey, onFieldChange }: FuelFieldProps) {
-  const boxStyle = { color: warn ? '#f59e0b' : '#dde1e8' };
-  const boxCls = "bg-acars-input border border-acars-border text-[11px] font-mono rounded-md px-1.5 py-0.5 w-full truncate outline-none focus:border-blue-400";
-
-  return (
-    <div className="flex flex-col min-w-0 flex-1">
-      <span className="text-[9px] font-medium uppercase tracking-[0.06em] text-[#5e646e]">{label}</span>
-      {editable && fieldKey && onFieldChange ? (
-        <input
-          type="text"
-          value={value}
-          onChange={(e) => onFieldChange(fieldKey, e.target.value)}
-          className={boxCls}
-          style={boxStyle}
-        />
-      ) : (
-        <div className={boxCls} style={boxStyle}>
-          {value}
-        </div>
-      )}
-      {sub && <span className="text-[9px] font-sans text-[#454a52]">{sub}</span>}
-    </div>
-  );
-}
-
 export function FuelSection({ totalWeight, fuelPct, ofpFuel }: FuelSectionProps) {
   const progress = useFlightPlanStore((s) => s.progress);
-  const { canEditFuel, editableFields, onFieldChange } = useDispatchEdit();
+  const { editableFields } = useDispatchEdit();
 
   const summaryParts: string[] = [];
   if (ofpFuel) {
@@ -64,6 +29,8 @@ export function FuelSection({ totalWeight, fuelPct, ofpFuel }: FuelSectionProps)
     summaryParts.push(`Live: ${fmt(totalWeight)} lbs`);
   }
 
+  const boxCls = "bg-acars-input border border-acars-border text-[11px] font-mono rounded-md px-1.5 py-0.5 w-full truncate";
+
   return (
     <CollapsibleSection
       title="Fuel"
@@ -72,44 +39,37 @@ export function FuelSection({ totalWeight, fuelPct, ofpFuel }: FuelSectionProps)
       status={ofpFuel ? 'green' : 'grey'}
       defaultOpen
     >
-      <div className="flex items-start gap-2">
-        <FuelField label="Planned" value={fmt(editableFields.fuelTotal ?? ofpFuel?.totalLbs)} sub="lbs" />
-        <FuelField
-          label="Live Fuel"
-          value={totalWeight !== null ? Math.round(totalWeight).toLocaleString() : '---'}
-          sub={fuelPct !== null ? `${Math.round(fuelPct)}%` : undefined}
-          warn={fuelPct !== null && fuelPct < 15}
-        />
-        <FuelField label="Burn" value={fmt(editableFields.fuelBurn ?? ofpFuel?.burnLbs)} sub="lbs" />
-        <FuelField
-          label="Taxi"
-          value={String(editableFields.fuelTaxi ?? ofpFuel?.taxiLbs ?? '---')}
-          sub="lbs"
-          editable={canEditFuel}
-          fieldKey="fuelTaxi"
-          onFieldChange={onFieldChange}
-        />
-        <FuelField
-          label="Reserve"
-          value={String(editableFields.fuelReserve ?? ofpFuel?.reserveLbs ?? '---')}
-          sub="lbs"
-          editable={canEditFuel}
-          fieldKey="fuelReserve"
-          onFieldChange={onFieldChange}
-        />
-        <FuelField
-          label="Cont."
-          value={String(editableFields.fuelContingency ?? ofpFuel?.contingencyLbs ?? '---')}
-          sub="lbs"
-          editable={canEditFuel}
-          fieldKey="fuelContingency"
-          onFieldChange={onFieldChange}
-        />
-        <FuelField
-          label="REMF"
-          value={progress?.fuelAtDestination ? Math.round(progress.fuelAtDestination).toLocaleString() : '---'}
-          sub="lbs"
-        />
+      <div className="flex items-start gap-1.5">
+        <div className="flex flex-col min-w-0 flex-1">
+          <span className="text-[9px] font-medium uppercase tracking-[0.06em] text-[#5e646e]">Planned</span>
+          <div className={boxCls} style={{ color: '#dde1e8' }}>
+            {fmt(editableFields.fuelTotal ?? ofpFuel?.totalLbs)} lbs
+          </div>
+        </div>
+        <div className="flex flex-col min-w-0 flex-1">
+          <span className="text-[9px] font-medium uppercase tracking-[0.06em] text-[#5e646e]">Burn</span>
+          <div className={boxCls} style={{ color: '#dde1e8' }}>
+            {fmt(editableFields.fuelBurn ?? ofpFuel?.burnLbs)} lbs
+          </div>
+        </div>
+        <div className="flex flex-col min-w-0 flex-1">
+          <span className="text-[9px] font-medium uppercase tracking-[0.06em] text-[#5e646e]">Live Fuel</span>
+          <div
+            className={boxCls}
+            style={{ color: fuelPct !== null && fuelPct < 15 ? '#f59e0b' : '#dde1e8' }}
+          >
+            {totalWeight !== null ? `${fmt(totalWeight)} lbs` : '---'}
+          </div>
+          {fuelPct !== null && (
+            <span className="text-[9px] font-sans text-[#454a52]">{Math.round(fuelPct)}%</span>
+          )}
+        </div>
+        <div className="flex flex-col min-w-0 flex-1">
+          <span className="text-[9px] font-medium uppercase tracking-[0.06em] text-[#5e646e]">At Dest</span>
+          <div className={boxCls} style={{ color: '#dde1e8' }}>
+            {progress?.fuelAtDestination ? `${fmt(progress.fuelAtDestination)} lbs` : '---'}
+          </div>
+        </div>
       </div>
     </CollapsibleSection>
   );

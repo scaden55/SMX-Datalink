@@ -65,8 +65,12 @@ export function FlightPlanPanel({ ofp, formData, ruleChips }: FlightPlanPanelPro
         formData={formData}
       />
 
-      {/* Item 6: Weights row */}
-      <WeightsSection ofpWeights={ofp?.weights ?? null} />
+      {/* Item 6: Weights + Fuel row */}
+      <WeightsSection
+        ofpWeights={ofp?.weights ?? null}
+        ofpFuel={ofp?.fuel ?? null}
+        liveFuelLbs={fuel?.totalQuantityWeight ?? null}
+      />
 
       {/* Item 7: Bottom collapsible sections with checkmarks */}
       <div className="space-y-0">
