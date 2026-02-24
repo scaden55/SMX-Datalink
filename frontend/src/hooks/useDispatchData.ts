@@ -28,6 +28,11 @@ async function fetchFaaEvents(): Promise<FaaAirportEvent[]> {
   }
 }
 
+/**
+ * Dispatch-specific weather data hook with its own cache (separate from useWeather).
+ * Both hooks share fetchMetar/fetchTaf from weather-api.ts but cache independently
+ * because Dispatch and Planning pages have different lifecycles and data shapes.
+ */
 export function useDispatchData(origin?: string, destination?: string): DispatchData {
   const [metars, setMetars] = useState<Record<string, MetarData>>({});
   const [tafs, setTafs] = useState<Record<string, TafData>>({});
