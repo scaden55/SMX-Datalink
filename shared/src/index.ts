@@ -157,6 +157,18 @@ export type {
   OpSpecListResponse,
   UpdateOpSpecRequest,
 } from './types/regulatory.js';
+export type {
+  CargoMode,
+  CargoCategoryCode,
+  CargoConfig,
+  ULD,
+  SectionWeight,
+  NotocItem,
+  CargoLoad,
+  CargoManifest,
+  CargoManifestSummary,
+  GenerateCargoRequest,
+} from './types/cargo.js';
 
 // Utilities
 export { altitudeToColor } from './utils/altitudeColor.js';
