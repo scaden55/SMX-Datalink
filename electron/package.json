@@ -72,6 +72,11 @@
       "icon": "assets/icon.ico",
       "signAndEditExecutable": false
     },
+    "publish": {
+      "provider": "github",
+      "owner": "scaden55",
+      "repo": "SMX-Datalink"
+    },
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,

@@ -323,11 +323,9 @@ function registerIpcHandlers(): void {
     }
   });
 
-  // Auto-updater
+  // Auto-updater (manual re-check from renderer)
   ipcMain.on(IpcChannels.UPDATE_CHECK, () => {
-    if (!IS_DEV) {
-      autoUpdater.checkForUpdatesAndNotify();
-    }
+    if (!IS_DEV) autoUpdater.checkForUpdatesAndNotify();
   });
 
   ipcMain.on(IpcChannels.UPDATE_INSTALL, () => {
@@ -338,11 +336,18 @@ function registerIpcHandlers(): void {
 // ----- Auto-Updater Events -----
 
 function setupAutoUpdater(): void {
+  if (IS_DEV) return; // No auto-updates in development
+
   autoUpdater.autoDownload = true;
   autoUpdater.autoInstallOnAppQuit = true;
 
   autoUpdater.on('update-available', (info) => {
+    console.log('[AutoUpdater] Update available:', info.version);
     mainWindow?.webContents.send(IpcChannels.UPDATE_AVAILABLE, info);
+  });
+
+  autoUpdater.on('update-not-available', () => {
+    console.log('[AutoUpdater] Already up to date.');
   });
 
   autoUpdater.on('download-progress', (progress) => {
@@ -350,12 +355,20 @@ function setupAutoUpdater(): void {
   });
 
   autoUpdater.on('update-downloaded', (info) => {
+    console.log('[AutoUpdater] Update downloaded:', info.version);
     mainWindow?.webContents.send(IpcChannels.UPDATE_DOWNLOADED, info);
   });
 
   autoUpdater.on('error', (err) => {
+    console.error('[AutoUpdater] Error:', err.message);
     mainWindow?.webContents.send(IpcChannels.UPDATE_ERROR, err.message);
   });
+
+  // Check for updates automatically after a short delay (let the window load first)
+  setTimeout(() => {
+    console.log('[AutoUpdater] Checking for updates...');
+    autoUpdater.checkForUpdatesAndNotify();
+  }, 5_000);
 }
 
 // ----- App Lifecycle -----
