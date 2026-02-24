@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import type { VatsimDataSnapshot, VatsimUpdateEvent } from '@acars/shared';
 import { useVatsimStore } from '../stores/vatsimStore';
-import { useSocketStore } from '../stores/socketStore';
+import { useSocketSubscription } from './useSocketSubscription';
 import { getApiBase } from '../lib/api';
 import { toast } from '../stores/toastStore';
 
@@ -11,7 +11,6 @@ import { toast } from '../stores/toastStore';
  */
 export function useVatsim(): void {
   const setSnapshot = useVatsimStore((s) => s.setSnapshot);
-  const socket = useSocketStore((s) => s.socket);
   const fetchedRef = useRef(false);
 
   // Initial REST fetch
@@ -34,35 +33,27 @@ export function useVatsim(): void {
   }, [setSnapshot]);
 
   // WebSocket subscription
-  useEffect(() => {
-    if (!socket) return;
-
-    const handleUpdate = (data: VatsimUpdateEvent) => {
-      // Reconstruct a full snapshot from the update event
-      const current = useVatsimStore.getState().snapshot;
-      const snapshot: VatsimDataSnapshot = {
-        general: current?.general ?? {
-          version: 3,
-          reload: 1,
-          update: '',
-          update_timestamp: '',
-          connected_clients: 0,
-          unique_users: 0,
-        },
-        pilots: data.pilots,
-        controllers: data.controllers,
-        atis: data.atis,
-        updatedAt: data.updatedAt,
-      };
-      setSnapshot(snapshot);
+  const handleUpdate = (data: VatsimUpdateEvent) => {
+    const current = useVatsimStore.getState().snapshot;
+    const snapshot: VatsimDataSnapshot = {
+      general: current?.general ?? {
+        version: 3,
+        reload: 1,
+        update: '',
+        update_timestamp: '',
+        connected_clients: 0,
+        unique_users: 0,
+      },
+      pilots: data.pilots,
+      controllers: data.controllers,
+      atis: data.atis,
+      updatedAt: data.updatedAt,
     };
+    setSnapshot(snapshot);
+  };
 
-    socket.emit('vatsim:subscribe');
-    socket.on('vatsim:update', handleUpdate);
-
-    return () => {
-      socket.emit('vatsim:unsubscribe');
-      socket.off('vatsim:update', handleUpdate);
-    };
-  }, [socket, setSnapshot]);
+  useSocketSubscription<VatsimUpdateEvent>('vatsim:update', handleUpdate, {
+    subscribeEvent: 'vatsim:subscribe',
+    unsubscribeEvent: 'vatsim:unsubscribe',
+  });
 }

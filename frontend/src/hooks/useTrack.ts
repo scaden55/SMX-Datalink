@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import type { TrackPoint } from '@acars/shared';
-import { useSocketStore } from '../stores/socketStore';
 import { useTrackStore } from '../stores/trackStore';
+import { useSocketSubscription } from './useSocketSubscription';
 
 /**
  * Hook that subscribes to WebSocket `track:point` events and
@@ -11,7 +11,6 @@ import { useTrackStore } from '../stores/trackStore';
  * Also handles fetching/clearing the track when selectedBidId changes.
  */
 export function useTrack(selectedBidId: number | null): void {
-  const socket = useSocketStore((s) => s.socket);
   const fetchTrack = useTrackStore((s) => s.fetchTrack);
   const appendPoint = useTrackStore((s) => s.appendPoint);
   const clearTrack = useTrackStore((s) => s.clearTrack);
@@ -26,20 +25,13 @@ export function useTrack(selectedBidId: number | null): void {
   }, [selectedBidId, fetchTrack, clearTrack]);
 
   // Subscribe to dispatch room for real-time track points
-  useEffect(() => {
-    if (!socket || selectedBidId == null) return;
+  const handleTrackPoint = (data: { bidId: number; point: TrackPoint }) => {
+    appendPoint(data.bidId, data.point);
+  };
 
-    socket.emit('dispatch:subscribe', selectedBidId);
-
-    const handleTrackPoint = (data: { bidId: number; point: TrackPoint }) => {
-      appendPoint(data.bidId, data.point);
-    };
-
-    socket.on('track:point', handleTrackPoint);
-
-    return () => {
-      socket.emit('dispatch:unsubscribe', selectedBidId);
-      socket.off('track:point', handleTrackPoint);
-    };
-  }, [socket, selectedBidId, appendPoint]);
+  useSocketSubscription<{ bidId: number; point: TrackPoint }>('track:point', handleTrackPoint, {
+    subscribeEvent: selectedBidId != null ? 'dispatch:subscribe' : undefined,
+    unsubscribeEvent: selectedBidId != null ? 'dispatch:unsubscribe' : undefined,
+    subscribeArg: selectedBidId != null ? selectedBidId : undefined,
+  });
 }
