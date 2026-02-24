@@ -1,15 +1,16 @@
 import { useAuthStore } from '../stores/authStore';
 import type { RefreshResponse } from '@acars/shared';
 
-// Electron: connect to local backend started by Electron main process
+// Electron: connect to backend started by Electron main process
 // Dev browser: relative paths work via Vite proxy
-const LOCAL_BACKEND = 'http://localhost:3001';
+// Production: VITE_API_BASE environment variable
+const FALLBACK_BACKEND = 'http://localhost:3001';
 
 let apiBase = '';
 
 const apiBaseReady: Promise<void> = (async () => {
   if (window.electronAPI) {
-    apiBase = LOCAL_BACKEND;
+    apiBase = import.meta.env.VITE_API_BASE || FALLBACK_BACKEND;
   }
   // Browser dev mode: apiBase stays '' (Vite proxy handles /api)
 })();
