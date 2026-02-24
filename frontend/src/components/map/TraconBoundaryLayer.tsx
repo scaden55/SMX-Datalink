@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo, useCallback, useRef } from 'react';
+import { useEffect, useState, useMemo, useCallback, useRef, memo } from 'react';
 import { GeoJSON, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import type { PathOptions, Layer } from 'leaflet';
@@ -46,7 +46,7 @@ function getCentroid(geometry: any): [number, number] | null {
  * Only shows boundaries that have an active APP/DEP controller.
  * Amber/orange color scheme to distinguish from cyan FIR boundaries.
  */
-export function TraconBoundaryLayer({ controllers, visible, hoveredAirspaceId, onHoverAirspace, onSelectAirspace }: Props) {
+export const TraconBoundaryLayer = memo(function TraconBoundaryLayer({ controllers, visible, hoveredAirspaceId, onHoverAirspace, onSelectAirspace }: Props) {
   const map = useMap();
   const [geoJson, setGeoJson] = useState<GeoJsonCollection | null>(null);
   const geoJsonRef = useRef<L.GeoJSON | null>(null);
@@ -229,4 +229,4 @@ export function TraconBoundaryLayer({ controllers, visible, hoveredAirspaceId, o
       style={style}
     />
   );
-}
+});

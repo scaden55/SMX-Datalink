@@ -1,4 +1,4 @@
-import { useMemo, useState, useCallback, useEffect, useRef } from 'react';
+import { useMemo, useState, useCallback, useEffect, useRef, memo } from 'react';
 import { Marker, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import { api } from '../../lib/api';
@@ -106,7 +106,7 @@ function addToLookup(
 
 // ── Component ───────────────────────────────────────────────
 
-export function AirportLabels({ controllers, atis, visible, onSelectAirport }: Props) {
+export const AirportLabels = memo(function AirportLabels({ controllers, atis, visible, onSelectAirport }: Props) {
   const [airports, setAirports] = useState<MapAirport[]>([]);
   const [bounds, setBounds] = useState<L.LatLngBounds | null>(null);
   const [zoom, setZoom] = useState(4);
@@ -225,4 +225,4 @@ export function AirportLabels({ controllers, atis, visible, onSelectAirport }: P
       ))}
     </>
   );
-}
+});

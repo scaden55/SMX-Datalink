@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback, memo } from 'react';
 import { ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
 
 export interface ColumnDef<T> {
@@ -25,7 +25,7 @@ interface AdminTableProps<T> {
   emptyMessage?: string;
 }
 
-export function AdminTable<T>({
+function AdminTableInner<T>({
   columns,
   data,
   total,
@@ -45,34 +45,34 @@ export function AdminTable<T>({
 
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
-  const handleSort = (key: string) => {
+  const handleSort = useCallback((key: string) => {
     if (sortKey === key) {
       setSortDir(d => (d === 'asc' ? 'desc' : 'asc'));
     } else {
       setSortKey(key);
       setSortDir('asc');
     }
-  };
+  }, [sortKey]);
 
   const allSelected = selectable && data.length > 0 && getRowId && selectedIds
     && data.every(row => selectedIds.has(getRowId(row)));
 
-  const toggleAll = () => {
+  const toggleAll = useCallback(() => {
     if (!getRowId || !onSelectChange) return;
     if (allSelected) {
       onSelectChange(new Set());
     } else {
       onSelectChange(new Set(data.map(r => getRowId(r))));
     }
-  };
+  }, [getRowId, onSelectChange, allSelected, data]);
 
-  const toggleRow = (id: number) => {
+  const toggleRow = useCallback((id: number) => {
     if (!onSelectChange || !selectedIds) return;
     const next = new Set(selectedIds);
     if (next.has(id)) next.delete(id);
     else next.add(id);
     onSelectChange(next);
-  };
+  }, [onSelectChange, selectedIds]);
 
   return (
     <div className="panel overflow-hidden">
@@ -201,3 +201,5 @@ export function AdminTable<T>({
     </div>
   );
 }
+
+export const AdminTable = memo(AdminTableInner) as typeof AdminTableInner;

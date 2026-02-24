@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo, useCallback, useRef } from 'react';
+import { useEffect, useState, useMemo, useCallback, useRef, memo } from 'react';
 import { GeoJSON, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import type { PathOptions, Layer } from 'leaflet';
@@ -29,7 +29,7 @@ interface GeoJsonCollection {
  * Online FIRs get a cyan highlight + a clickable badge at label_lat/label_lon.
  * Offline FIRs get a thin gray border.
  */
-export function FirBoundaryLayer({ controllers, visible, hoveredAirspaceId, onHoverAirspace, onSelectAirspace }: Props) {
+export const FirBoundaryLayer = memo(function FirBoundaryLayer({ controllers, visible, hoveredAirspaceId, onHoverAirspace, onSelectAirspace }: Props) {
   const map = useMap();
   const [geoJson, setGeoJson] = useState<GeoJsonCollection | null>(null);
   const geoJsonRef = useRef<L.GeoJSON | null>(null);
@@ -192,4 +192,4 @@ export function FirBoundaryLayer({ controllers, visible, hoveredAirspaceId, onHo
       style={style}
     />
   );
-}
+});
