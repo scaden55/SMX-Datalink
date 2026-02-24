@@ -4,11 +4,12 @@ import { CalendarDays, Plane, Route, Radio, ArrowRight } from 'lucide-react';
 import { AppShell } from '../components/layout/AppShell';
 import { useAuthStore } from '../stores/authStore';
 import { useFlightPlanStore } from '../stores/flightPlanStore';
+import { useCargoStore } from '../stores/cargoStore';
 import { useSocketStore } from '../stores/socketStore';
 import { DispatchEditProvider } from '../contexts/DispatchEditContext';
 import { api } from '../lib/api';
 import { stepsToWaypoints } from '../components/planning/simbrief-parser';
-import type { DispatchFlight, DispatchFlightsResponse, Airport, VatsimFlightStatus, RegulatoryAssessment } from '@acars/shared';
+import type { DispatchFlight, DispatchFlightsResponse, Airport, VatsimFlightStatus, RegulatoryAssessment, CargoManifest } from '@acars/shared';
 
 export function DispatchPage() {
   const navigate = useNavigate();
@@ -120,6 +121,7 @@ export function DispatchPage() {
       setFlightPlan(null);
       setProgress(null);
       setOfp(null);
+      useCargoStore.getState().clearCargo();
       return;
     }
 
@@ -164,6 +166,11 @@ export function DispatchPage() {
       fuelAtDestination: null,
       topOfDescent: null,
     });
+
+    // Load cargo manifest if available
+    api.get<CargoManifest>(`/api/cargo/${bid.id}`)
+      .then((manifest) => useCargoStore.getState().setManifest(manifest))
+      .catch(() => useCargoStore.getState().setManifest(null));
   }, [selectedFlight, setFlightPlan, setProgress, setOfp]);
 
   // Clean up dispatch state on unmount so it doesn't contaminate the planning page store
@@ -173,6 +180,7 @@ export function DispatchPage() {
       setProgress(null);
       setOfp(null);
       setActiveBidId(null);
+      useCargoStore.getState().clearCargo();
     };
   }, [setFlightPlan, setProgress, setOfp, setActiveBidId]);
 

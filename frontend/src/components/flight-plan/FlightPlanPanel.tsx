@@ -9,6 +9,7 @@ import { FuelSection } from './FuelSection';
 import { RouteSection } from './RouteSection';
 import { MELSection } from './MELSection';
 import { TerrainSection } from './TerrainSection';
+import { CargoSummaryRow } from '../cargo/CargoSummaryRow';
 import { RemarksSection } from './RemarksSection';
 import type { SimBriefOFP, FlightPlanFormData } from '@acars/shared';
 
@@ -46,6 +47,9 @@ export function FlightPlanPanel({ ofp, formData, ruleChips }: FlightPlanPanelPro
       {/* Item 3: Scenario + Flight Rules chips */}
       <ScenarioBar formData={formData} ruleChips={ruleChips} />
 
+      {/* Route — positioned above nav procedures */}
+      <RouteSection />
+
       {/* Item 4: Runway / SID / STAR / Dest Alt */}
       <NavProcedureRow formData={formData} />
 
@@ -68,19 +72,20 @@ export function FlightPlanPanel({ ofp, formData, ruleChips }: FlightPlanPanelPro
           complete={!!aircraft}
         />
         <MELSection melRestrictions={formData?.melRestrictions ?? ''} />
-        <RouteSection />
         <FuelSection
           totalWeight={fuel?.totalQuantityWeight ?? null}
           fuelPct={fuel?.fuelPercentage ?? null}
           ofpFuel={ofp?.fuel ?? null}
         />
         <TerrainSection ofp={ofp} />
+        <CargoSummaryRow />
       </div>
 
       <RemarksSection
         dispatcherRemarks={formData?.dispatcherRemarks ?? ''}
         autoRemarks={formData?.autoRemarks ?? ''}
       />
+
     </div>
   );
 }

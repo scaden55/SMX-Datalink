@@ -37,6 +37,11 @@ export interface LogbookEntry {
   vatsimConnected: boolean;
   vatsimCallsign: string | null;
   vatsimCid: number | null;
+  // Cargo manifest linkage
+  cargoManifestId?: number;
+  cargoWeightKg?: number;
+  cargoUldCount?: number;
+  cargoNotocRequired?: boolean;
   // Joined fields (from list queries)
   pilotCallsign?: string;
   pilotName?: string;
