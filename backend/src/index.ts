@@ -41,7 +41,10 @@ import { airportDetailRouter } from './routes/airports.js';
 import { trackRouter } from './routes/track.js';
 import { navdataRouter } from './routes/navdata.js';
 import { regulatoryRouter } from './routes/regulatory.js';
+import { groundChartRouter } from './routes/ground-chart.js';
+import { cargoRouter } from './routes/cargo.js';
 import { TrackService } from './services/track.js';
+import { VatsimTrackService } from './services/vatsim-track.js';
 import { FlightEventTracker } from './services/flight-event-tracker.js';
 
 // Initialize database before anything else
@@ -129,6 +132,8 @@ app.use('/api', airportDetailRouter());
 app.use('/api', trackRouter());
 app.use('/api', navdataRouter());
 app.use('/api', regulatoryRouter());
+app.use('/api', groundChartRouter());
+app.use('/api', cargoRouter());
 
 // VATSIM service
 const vatsimService = new VatsimService(config.vatsim);
@@ -143,6 +148,7 @@ app.use('/api', dispatchRouter(io, telemetry, flightEventTracker));
 // Periodic cleanup of expired refresh tokens (every hour)
 const authService = new AuthService();
 const trackCleanupService = new TrackService();
+const vatsimTrackCleanup = new VatsimTrackService();
 const cleanupInterval = setInterval(() => {
   try {
     authService.cleanupExpiredTokens();
@@ -154,6 +160,12 @@ const cleanupInterval = setInterval(() => {
     if (deleted > 0) console.log(`[Server] Track cleanup: removed ${deleted} rows older than 30 days`);
   } catch (err) {
     console.error('[Server] Track cleanup error:', err);
+  }
+  try {
+    const deleted = vatsimTrackCleanup.cleanup();
+    if (deleted > 0) console.log(`[Server] VATSIM track cleanup: removed ${deleted} rows older than 24h`);
+  } catch (err) {
+    console.error('[Server] VATSIM track cleanup error:', err);
   }
 }, 60 * 60 * 1000);
 cleanupInterval.unref();
