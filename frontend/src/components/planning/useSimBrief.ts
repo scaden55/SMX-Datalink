@@ -182,16 +182,12 @@ export function useSimBrief() {
 
     if (payloadWeight <= 0 || !aircraftIcao || !bidId) return;
 
-    // Convert payload to KG if needed
-    const payloadKg = mergedForm.units === 'KGS'
-      ? payloadWeight
-      : payloadWeight * 0.453592;
-
+    // Send raw payload weight with original unit — backend handles conversion
     useCargoStore.getState().setGenerating(true);
     api.post<CargoManifest>('/api/cargo/generate', {
       flightId: bidId,
       aircraftIcao,
-      payloadKg,
+      payloadKg: payloadWeight,
       payloadUnit: mergedForm.units || 'LBS',
       cargoMode: cargoConfig.cargoMode,
       primaryCategory: cargoConfig.cargoMode === 'single' ? cargoConfig.primaryCategory : undefined,

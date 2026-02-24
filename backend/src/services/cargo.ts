@@ -1,5 +1,5 @@
 import { getDb } from '../db/index.js';
-import { generateCargoLoad } from './cargo/index.js';
+import { generateCargoLoad, getAircraftConfig } from './cargo/index.js';
 import type { CargoLoad, CargoManifest, GenerateCargoRequest } from '@acars/shared';
 
 export class CargoService {
@@ -84,25 +84,34 @@ export class CargoService {
   }
 
   private rowToManifest(row: Record<string, unknown>): CargoManifest {
+    const icao = row.aircraft_icao as string;
+    const config = getAircraftConfig(icao);
+    const ulds = JSON.parse(row.ulds_json as string);
+
+    // Reconstruct specialCargo from ULD flags
+    const specialCargo = ulds.filter(
+      (u: any) => u.temp_controlled || u.hazmat || u.notoc_required || u.lithium_battery,
+    );
+
     return {
       id: row.id as number,
       flightId: row.flight_id as number,
       userId: row.user_id as number,
       manifestNumber: row.manifest_number as string,
-      aircraftIcao: row.aircraft_icao as string,
-      aircraftName: '',
-      ulds: JSON.parse(row.ulds_json as string),
+      aircraftIcao: icao,
+      aircraftName: config?.name ?? '',
+      ulds,
       sectionWeights: JSON.parse(row.section_weights_json as string),
       totalWeightKg: row.total_weight_kg as number,
       totalWeightDisplay: row.total_weight_kg as number,
-      totalWeightUnit: 'KG',
+      totalWeightUnit: 'KGS',
       cgPosition: row.cg_position as number,
-      cgRange: { forward: 0, aft: 0 },
-      cgTarget: 0,
+      cgRange: config ? config.cgRange : { forward: 14, aft: 44 },
+      cgTarget: config?.cgTarget ?? 28,
       payloadUtilization: row.payload_utilization as number,
-      aircraftMaxPayloadKg: 0,
+      aircraftMaxPayloadKg: config?.maxPayload ?? 0,
       remarks: row.remarks_json ? JSON.parse(row.remarks_json as string) : [],
-      specialCargo: [],
+      specialCargo,
       notocRequired: row.notoc_required === 1,
       notocItems: row.notoc_items_json ? JSON.parse(row.notoc_items_json as string) : [],
       cargoMode: row.cargo_mode as CargoManifest['cargoMode'],
