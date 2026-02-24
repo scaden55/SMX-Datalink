@@ -1,12 +1,14 @@
 import { useCallback, useRef, useEffect } from 'react';
 import { useFlightPlanStore } from '../../stores/flightPlanStore';
 import { parseSimBriefResponse, ofpToFormFields, stepsToWaypoints } from './simbrief-parser';
-import { api } from '../../lib/api';
+import { api, getApiBase } from '../../lib/api';
+import { useCargoStore } from '../../stores/cargoStore';
+import type { CargoManifest } from '@acars/shared';
 
 const SIMBRIEF_LOADER_URL = 'https://www.simbrief.com/ofp/ofp.loader.api.php';
 
-/** Two hours in milliseconds */
-const OFP_FRESHNESS_MS = 2 * 60 * 60 * 1000;
+/** Two hours in seconds (for comparing Unix timestamps) */
+const OFP_FRESHNESS_S = 2 * 60 * 60;
 
 /**
  * Build query string for the SimBrief API v1 loader popup.
@@ -115,16 +117,26 @@ function buildLoaderParams(
 }
 
 /**
- * Check whether a SimBrief OFP's scheduled departure is still fresh (< 2 hours old).
+ * Check whether a SimBrief OFP was generated recently (< 2 hours ago).
+ * Uses `params.time_generated` (the generation Unix timestamp) instead of
+ * `schedDep` — departure time can be far in the past/future and isn't a
+ * reliable freshness indicator.
  */
-function isOfpFresh(ofp: { times?: { schedDep?: string } }): boolean {
-  const schedDep = ofp?.times?.schedDep;
-  if (!schedDep) return false;
+function isOfpFreshByGenTime(json: any): boolean {
+  const genTime = Number(json?.params?.time_generated);
+  if (!genTime || isNaN(genTime)) return false;
+  return (Date.now() / 1000) - genTime < OFP_FRESHNESS_S;
+}
 
-  const depMs = Number(schedDep) > 1e9 ? Number(schedDep) * 1000 : Date.parse(schedDep);
-  if (isNaN(depMs)) return false;
-
-  return Date.now() - depMs < OFP_FRESHNESS_MS;
+/**
+ * JSON round-trip: normalizes data to plain JSON types.
+ * Mirrors the save→reload path (JSON.stringify → SQLite → JSON.parse) which
+ * strips any edge-case non-serializable values from the SimBrief response.
+ * Prevents React error #310 in Electron where the raw API response may contain
+ * nested objects that parseSimBriefResponse doesn't fully flatten to primitives.
+ */
+function jsonNormalize<T>(value: T): T {
+  return JSON.parse(JSON.stringify(value));
 }
 
 export function useSimBrief() {
@@ -162,6 +174,34 @@ export function useSimBrief() {
     return () => cancelPolling();
   }, [cancelPolling]);
 
+  /** Fire-and-forget cargo manifest generation after OFP is applied. */
+  const triggerCargoGeneration = useCallback((ofp: any, mergedForm: any, bidId: number) => {
+    const cargoConfig = useCargoStore.getState().config;
+    const payloadWeight = ofp.weights?.payload || 0;
+    const aircraftIcao = ofp.aircraftType || mergedForm.aircraftType || '';
+
+    if (payloadWeight <= 0 || !aircraftIcao || !bidId) return;
+
+    // Convert payload to KG if needed
+    const payloadKg = mergedForm.units === 'KGS'
+      ? payloadWeight
+      : payloadWeight * 0.453592;
+
+    useCargoStore.getState().setGenerating(true);
+    api.post<CargoManifest>('/api/cargo/generate', {
+      flightId: bidId,
+      aircraftIcao,
+      payloadKg,
+      payloadUnit: mergedForm.units || 'LBS',
+      cargoMode: cargoConfig.cargoMode,
+      primaryCategory: cargoConfig.cargoMode === 'single' ? cargoConfig.primaryCategory : undefined,
+      useRealWorldCompanies: cargoConfig.useRealWorldCompanies,
+    })
+      .then((manifest) => useCargoStore.getState().setManifest(manifest))
+      .catch((err) => console.error('[Cargo] Auto-generate failed:', err))
+      .finally(() => useCargoStore.getState().setGenerating(false));
+  }, []);
+
   /**
    * Fetch the latest OFP via backend proxy (avoids CORS).
    */
@@ -174,7 +214,7 @@ export function useSimBrief() {
         throw new Error(json.fetch.result ?? 'SimBrief fetch error');
       }
 
-      const ofp = parseSimBriefResponse(json);
+      const ofp = jsonNormalize(parseSimBriefResponse(json));
 
       // Validate OFP route matches the active bid
       const currentForm = useFlightPlanStore.getState().form;
@@ -215,6 +255,9 @@ export function useSimBrief() {
           flightPlanData: mergedForm,
           phase: 'planning',
         }).catch((err) => console.error('[SimBrief] Auto-save failed:', err));
+
+        // Auto-generate cargo manifest
+        triggerCargoGeneration(ofp, mergedForm, bidId);
       }
     } catch (err) {
       console.error('[SimBrief] Fetch failed:', err);
@@ -222,7 +265,7 @@ export function useSimBrief() {
     } finally {
       setSimbriefLoading(false);
     }
-  }, [activeBidId, setSimbriefLoading, setOfp, setSteps, setPlanningWaypoints, setForm]);
+  }, [activeBidId, setSimbriefLoading, setOfp, setSteps, setPlanningWaypoints, setForm, triggerCargoGeneration]);
 
   /**
    * Generate OFP via SimBrief API v1 popup flow.
@@ -252,8 +295,10 @@ export function useSimBrief() {
     setSimbriefLoading(true);
 
     try {
-      // Callback URL — same origin so Vite proxy / production both work
-      const callbackUrl = window.location.origin + '/api/simbrief/callback';
+      // Callback URL: in Electron the origin is file:// which SimBrief can't
+      // redirect to, so use the backend base URL directly instead.
+      const base = window.electronAPI ? getApiBase() : window.location.origin;
+      const callbackUrl = base + '/api/simbrief/callback';
 
       // Get API code from backend
       const { apicode, timestamp, outputpage } = await api.post<{
@@ -289,13 +334,14 @@ export function useSimBrief() {
         if (window.electronAPI?.isElectron) {
           console.log('[SimBrief] Opened in system browser — polling for OFP completion');
 
-          // Track the OFP state before generation to detect a new one
-          let preGenerateSchedDep: string | null = null;
+          // Track the OFP generation timestamp before generation to detect a new one.
+          // Using `params.time_generated` (Unix timestamp of OFP creation) instead of
+          // `schedDep` because departure time can repeat across regenerations.
+          let preGenerateTimestamp: string | null = null;
           try {
             const preCheck = await api.get<any>('/api/simbrief/ofp');
-            if (preCheck.fetch?.status !== 'Error') {
-              const existing = parseSimBriefResponse(preCheck);
-              preGenerateSchedDep = existing?.times?.schedDep ?? null;
+            if (!preCheck.fetch?.status?.startsWith?.('Error')) {
+              preGenerateTimestamp = preCheck.params?.time_generated ?? null;
             }
           } catch {
             // No existing OFP — fine, any OFP we find will be new
@@ -303,7 +349,10 @@ export function useSimBrief() {
 
           // Poll every 4 seconds for a fresh OFP
           let pollErrorCount = 0;
+          let pollBusy = false; // guard against overlapping async callbacks
           pollRef.current = setInterval(async () => {
+            if (pollBusy) return;
+            pollBusy = true;
             try {
               const json = await api.get<any>('/api/simbrief/ofp');
 
@@ -317,18 +366,21 @@ export function useSimBrief() {
                 return;
               }
 
-              const candidate = parseSimBriefResponse(json);
+              // Only accept a recently-generated OFP (< 2 hours old)
+              if (!isOfpFreshByGenTime(json)) return;
 
-              // Only accept a fresh OFP (< 2 hours old)
-              if (!isOfpFresh(candidate)) return;
-
-              // If we had a pre-existing OFP, only accept if schedDep changed
-              // (meaning SimBrief generated a new one, not the old cached one)
-              if (preGenerateSchedDep && candidate.times?.schedDep === preGenerateSchedDep) return;
+              // If we had a pre-existing OFP, only accept if generation timestamp
+              // changed (meaning SimBrief produced a new OFP, not the cached one)
+              const genTimestamp = json.params?.time_generated;
+              if (preGenerateTimestamp && genTimestamp === preGenerateTimestamp) return;
 
               // Fresh OFP available — stop polling and apply it
               cancelPolling();
-              await fetchOFP();
+              try {
+                await fetchOFP();
+              } catch (fetchErr) {
+                console.error('[SimBrief] Failed to apply OFP after polling:', fetchErr);
+              }
             } catch (pollErr: any) {
               pollErrorCount++;
               // Detect permanent failures — stop polling instead of spinning forever
@@ -339,6 +391,8 @@ export function useSimBrief() {
                 console.error('[SimBrief] Permanent fetch error:', pollErr?.message);
               }
               // Transient errors (network, 502, 504) — keep polling
+            } finally {
+              pollBusy = false;
             }
           }, 4000);
 
@@ -399,7 +453,7 @@ export function useSimBrief() {
       const json = await api.get<any>('/api/simbrief/ofp');
 
       if (json.fetch?.status !== 'Error') {
-        const existingOfp = parseSimBriefResponse(json);
+        const existingOfp = jsonNormalize(parseSimBriefResponse(json));
 
         // Check route matches current bid
         const currentForm = useFlightPlanStore.getState().form;
@@ -407,7 +461,7 @@ export function useSimBrief() {
           (!currentForm.origin || !existingOfp.origin || currentForm.origin === existingOfp.origin) &&
           (!currentForm.destination || !existingOfp.destination || currentForm.destination === existingOfp.destination);
 
-        if (routeMatches && isOfpFresh(existingOfp)) {
+        if (routeMatches && isOfpFreshByGenTime(json)) {
           // OFP is fresh and route matches — use it directly
           const formFields = ofpToFormFields(existingOfp);
           const waypoints = stepsToWaypoints(existingOfp.steps);
@@ -433,6 +487,9 @@ export function useSimBrief() {
               flightPlanData: mergedForm,
               phase: 'planning',
             }).catch((err) => console.error('[SimBrief] Auto-save failed:', err));
+
+            // Auto-generate cargo manifest
+            triggerCargoGeneration(existingOfp, mergedForm, bidId);
           }
 
           setSimbriefLoading(false);
@@ -447,7 +504,7 @@ export function useSimBrief() {
 
     // No fresh OFP found — generate a new one (this sets its own loading state)
     await generateOFP();
-  }, [generateOFP, setSimbriefLoading, setOfp, setSteps, setPlanningWaypoints, setForm]);
+  }, [generateOFP, setSimbriefLoading, setOfp, setSteps, setPlanningWaypoints, setForm, triggerCargoGeneration]);
 
   return { fetchOFP, generateOFP, generateOrFetchOFP, simbriefLoading };
 }
