@@ -12,7 +12,8 @@ export type InfoTab =
   | 'messages'
   | 'tracks'
   | 'advisories'
-  | 'flight-log';
+  | 'flight-log'
+  | 'cargo';
 
 interface UIState {
   // Existing dispatch view state

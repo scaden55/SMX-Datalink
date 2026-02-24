@@ -6,6 +6,7 @@ import { PlanningAirportInfoTab } from './PlanningAirportInfoTab';
 import { PlanningOFPTab } from './PlanningOFPTab';
 import { PlanningWeightBalanceTab } from './PlanningWeightBalanceTab';
 import { PlanningFlightLogTab } from './PlanningFlightLogTab';
+import { PlanningCargoTab } from '../cargo/PlanningCargoTab';
 import type { PlanningInfoTab } from '@acars/shared';
 
 const TABS: { id: PlanningInfoTab; label: string }[] = [
@@ -15,6 +16,7 @@ const TABS: { id: PlanningInfoTab; label: string }[] = [
   { id: 'ofp', label: 'OFP' },
   { id: 'weight-balance', label: 'W&B' },
   { id: 'flight-log', label: 'Log' },
+  { id: 'cargo', label: 'Cargo' },
 ];
 
 interface AirportButtonProps {
@@ -92,6 +94,7 @@ export function PlanningInfoPanel() {
         {planningTab === 'ofp' && <PlanningOFPTab />}
         {planningTab === 'weight-balance' && <PlanningWeightBalanceTab />}
         {planningTab === 'flight-log' && <PlanningFlightLogTab />}
+        {planningTab === 'cargo' && <PlanningCargoTab />}
       </div>
     </div>
   );

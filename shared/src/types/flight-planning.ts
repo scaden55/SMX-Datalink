@@ -65,6 +65,11 @@ export interface SimBriefOFP {
   times: SimBriefTimes;
   alternates: SimBriefAlternate[];
   rawText: string;
+  pilotName: string;
+  /** Planned departure runway from SimBrief (e.g. "04L") */
+  depRunway: string;
+  /** Planned arrival runway from SimBrief (e.g. "22R") */
+  arrRunway: string;
 }
 
 // ─── Weather Types ───────────────────────────────────────────
@@ -127,6 +132,12 @@ export interface FlightPlanFormData {
   payload: string;
   paxCount: string;
   cargoLbs: string;
+  depRunway: string;
+  arrRunway: string;
+  sid: string;
+  star: string;
+  aobFL: string;
+  pic: string;
   melRestrictions: string;
   dispatcherRemarks: string;
   autoRemarks: string;
@@ -145,7 +156,7 @@ export interface FlightPlanFormData {
 
 export type FlightPlanPhase = 'planning' | 'active' | 'completed';
 
-export type PlanningInfoTab = 'weather' | 'notam' | 'airport-info' | 'ofp' | 'weight-balance' | 'flight-log';
+export type PlanningInfoTab = 'weather' | 'notam' | 'airport-info' | 'ofp' | 'weight-balance' | 'flight-log' | 'cargo';
 
 // ─── Weather Cache ───────────────────────────────────────────
 

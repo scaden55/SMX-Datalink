@@ -11,6 +11,7 @@ import { MessagesTab } from './MessagesTab';
 import { TracksTab } from './TracksTab';
 import { AdvisoriesTab } from './AdvisoriesTab';
 import { FlightLogTab } from './FlightLogTab';
+import { CargoTab } from '../cargo/CargoTab';
 import { FlightMap } from '../map/FlightMap';
 
 const TABS: { id: InfoTab; label: string }[] = [
@@ -23,6 +24,7 @@ const TABS: { id: InfoTab; label: string }[] = [
   { id: 'tracks', label: 'Tracks' },
   { id: 'advisories', label: 'Advisories' },
   { id: 'flight-log', label: 'Flight Log' },
+  { id: 'cargo', label: 'Cargo' },
 ];
 
 export function InfoPanel() {
@@ -54,6 +56,8 @@ export function InfoPanel() {
         return <AdvisoriesTab />;
       case 'flight-log':
         return <FlightLogTab />;
+      case 'cargo':
+        return <CargoTab />;
     }
   }
 
