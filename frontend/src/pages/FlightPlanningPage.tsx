@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Route, CalendarDays, Loader2 } from 'lucide-react';
 import { api } from '../lib/api';
 import { useFlightPlanStore, emptyForm } from '../stores/flightPlanStore';
+import { useCargoStore } from '../stores/cargoStore';
 import { useSimBrief } from '../components/planning/useSimBrief';
 import { useWeather } from '../components/planning/useWeather';
 import { useRoutePreview } from '../hooks/useRoutePreview';
@@ -45,7 +46,7 @@ export function FlightPlanningPage() {
     fleet,
   } = useFlightPlanStore();
 
-  const { generateOrFetchOFP } = useSimBrief();
+  const { generateOFP, fetchOFP, generateOrFetchOFP } = useSimBrief();
   useWeather();
   useRoutePreview();
 
@@ -91,6 +92,7 @@ export function FlightPlanningPage() {
     }
 
     resetForm();
+    useCargoStore.getState().clearCargo();
     setActiveBidId(numBidId);
     setLoading(true);
     setError('');
@@ -149,11 +151,20 @@ export function FlightPlanningPage() {
   const handleGenerate = useCallback(async () => {
     setSimbriefError('');
     try {
-      await generateOrFetchOFP();
+      await generateOFP();
     } catch (err: any) {
       setSimbriefError(err?.message ?? 'Failed to generate OFP');
     }
-  }, [generateOrFetchOFP]);
+  }, [generateOFP]);
+
+  const handleFetch = useCallback(async () => {
+    setSimbriefError('');
+    try {
+      await fetchOFP();
+    } catch (err: any) {
+      setSimbriefError(err?.message ?? 'Failed to fetch OFP');
+    }
+  }, [fetchOFP]);
 
   const handleStartFlight = useCallback(async () => {
     if (!activeBidId) return;
@@ -176,7 +187,7 @@ export function FlightPlanningPage() {
   if (!bidId && bidsLoaded && !activeBidId && bids.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-full text-center gap-4 bg-acars-bg">
-        <img src="/logos/chevron-light.png" alt="SMA" className="h-12 w-auto opacity-10" />
+        <img src="./logos/chevron-light.png" alt="SMA" className="h-12 w-auto opacity-10" />
         <div className="flex items-center justify-center w-14 h-14 rounded-md bg-blue-500/10 border border-blue-400/20">
           <Route className="w-7 h-7 text-blue-400" />
         </div>
@@ -198,7 +209,7 @@ export function FlightPlanningPage() {
   if (!bidId && bidsLoaded && !activeBidId && bids.length > 0) {
     return (
       <div className="flex flex-col items-center justify-center h-full text-center gap-4 bg-acars-bg">
-        <img src="/logos/chevron-light.png" alt="SMA" className="h-12 w-auto opacity-10" />
+        <img src="./logos/chevron-light.png" alt="SMA" className="h-12 w-auto opacity-10" />
         <div className="flex items-center justify-center w-14 h-14 rounded-md bg-blue-500/10 border border-blue-400/20">
           <Route className="w-7 h-7 text-blue-400" />
         </div>
@@ -256,6 +267,7 @@ export function FlightPlanningPage() {
       {/* Left: Form */}
       <PlanningLeftPanel
         onGenerate={handleGenerate}
+        onFetch={handleFetch}
         onStartFlight={handleStartFlight}
       />
 

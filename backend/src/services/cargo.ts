@@ -23,10 +23,10 @@ export class CargoService {
     const stmt = db.prepare(`
       INSERT INTO cargo_manifests
         (flight_id, user_id, manifest_number, aircraft_icao, payload_kg,
-         cargo_mode, primary_category, total_weight_kg, cg_position,
+         payload_unit, cargo_mode, primary_category, total_weight_kg, cg_position,
          payload_utilization, ulds_json, section_weights_json, remarks_json,
          notoc_required, notoc_items_json)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
     const result = stmt.run(
@@ -35,6 +35,7 @@ export class CargoService {
       load.manifestNumber,
       req.aircraftIcao,
       req.payloadKg,
+      req.payloadUnit ?? 'KGS',
       req.cargoMode,
       req.primaryCategory ?? null,
       load.totalWeightKg,
@@ -87,6 +88,13 @@ export class CargoService {
     const icao = row.aircraft_icao as string;
     const config = getAircraftConfig(icao);
     const ulds = JSON.parse(row.ulds_json as string);
+    const totalWeightKg = row.total_weight_kg as number;
+    const payloadUnit = (row.payload_unit as string) || 'KGS';
+
+    // Reconstruct display weight from stored unit
+    const totalWeightDisplay = payloadUnit === 'LBS'
+      ? Math.round(totalWeightKg * 2.20462)
+      : totalWeightKg;
 
     // Reconstruct specialCargo from ULD flags
     const specialCargo = ulds.filter(
@@ -102,9 +110,9 @@ export class CargoService {
       aircraftName: config?.name ?? '',
       ulds,
       sectionWeights: JSON.parse(row.section_weights_json as string),
-      totalWeightKg: row.total_weight_kg as number,
-      totalWeightDisplay: row.total_weight_kg as number,
-      totalWeightUnit: 'KGS',
+      totalWeightKg,
+      totalWeightDisplay,
+      totalWeightUnit: payloadUnit === 'LBS' ? 'LBS' : 'KGS',
       cgPosition: row.cg_position as number,
       cgRange: config ? config.cgRange : { forward: 14, aft: 44 },
       cgTarget: config?.cgTarget ?? 28,
