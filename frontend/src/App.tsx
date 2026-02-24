@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react';
 import { HashRouter, Routes, Route } from 'react-router-dom';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { TitleBar } from './components/navigation/TitleBar';
@@ -6,10 +7,6 @@ import { AuthGuard } from './components/auth/AuthGuard';
 import { Toaster } from './components/ui/Toaster';
 import { LoginPage } from './pages/LoginPage';
 import { RegisterPage } from './pages/RegisterPage';
-import { DashboardPage } from './pages/DashboardPage';
-import { LiveMapPage } from './pages/LiveMapPage';
-import { SchedulePage } from './pages/SchedulePage';
-import { FlightPlanningPage } from './pages/FlightPlanningPage';
 import { DispatchPage } from './pages/DispatchPage';
 import { FleetPage } from './pages/FleetPage';
 import { LogbookPage } from './pages/LogbookPage';
@@ -24,6 +21,22 @@ import { AdminReportsPage } from './pages/admin/AdminReportsPage';
 import { AdminSettingsPage } from './pages/admin/AdminSettingsPage';
 import { AdminAuditPage } from './pages/admin/AdminAuditPage';
 
+// Lazy-load pages that import Leaflet/react-leaflet to split the map chunk
+const DashboardPage = lazy(() =>
+  import('./pages/DashboardPage').then((m) => ({ default: m.DashboardPage }))
+);
+const LiveMapPage = lazy(() =>
+  import('./pages/LiveMapPage').then((m) => ({ default: m.LiveMapPage }))
+);
+const SchedulePage = lazy(() =>
+  import('./pages/SchedulePage').then((m) => ({ default: m.SchedulePage }))
+);
+const FlightPlanningPage = lazy(() =>
+  import('./pages/FlightPlanningPage').then((m) => ({ default: m.FlightPlanningPage }))
+);
+
+const PageFallback = () => <div className="flex-1 h-full bg-acars-bg" />;
+
 export function App() {
   return (
     <ErrorBoundary>
@@ -36,10 +49,10 @@ export function App() {
             <Route path="/register" element={<RegisterPage />} />
             <Route element={<AuthGuard />}>
               <Route element={<MainShell />}>
-                <Route path="/" element={<DashboardPage />} />
-                <Route path="/map" element={<LiveMapPage />} />
-                <Route path="/schedule" element={<SchedulePage />} />
-                <Route path="/planning/:bidId?" element={<FlightPlanningPage />} />
+                <Route path="/" element={<Suspense fallback={<PageFallback />}><DashboardPage /></Suspense>} />
+                <Route path="/map" element={<Suspense fallback={<PageFallback />}><LiveMapPage /></Suspense>} />
+                <Route path="/schedule" element={<Suspense fallback={<PageFallback />}><SchedulePage /></Suspense>} />
+                <Route path="/planning/:bidId?" element={<Suspense fallback={<PageFallback />}><FlightPlanningPage /></Suspense>} />
                 <Route path="/dispatch" element={<DispatchPage />} />
                 <Route path="/fleet" element={<FleetPage />} />
                 <Route path="/logbook" element={<LogbookPage />} />
