@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { UserProfile, LoginResponse } from '@acars/shared';
-import { api, ApiError } from '../lib/api';
+import { api, ApiError, getApiBase } from '../lib/api';
 
 // Module-level dedup: ensures hydrate() only runs once even if called by multiple AuthGuards
 let hydratePromise: Promise<void> | null = null;
@@ -56,7 +56,7 @@ export const useAuthStore = create<AuthState>()(
         const { accessToken, refreshToken } = get();
         // Fire-and-forget server-side logout
         if (accessToken && refreshToken) {
-          fetch('/api/auth/logout', {
+          fetch(`${getApiBase()}/api/auth/logout`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',

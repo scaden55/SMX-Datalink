@@ -224,7 +224,7 @@ function NetworkMapPreview({ airports }: { airports: Airport[] }) {
     <div className="panel flex flex-col h-[320px]">
       <div className="flex items-center justify-between px-4 py-3 border-b border-acars-border">
         <div className="flex items-center gap-2.5">
-          <img src="/logos/chevron-light.png" alt="SMA" className="h-5 w-auto opacity-60" />
+          <img src="./logos/chevron-light.png" alt="SMA" className="h-5 w-auto opacity-60" />
           <h3 className="text-sm font-semibold text-acars-text">Network Map</h3>
         </div>
         <button

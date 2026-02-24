@@ -84,6 +84,14 @@ export interface MapAirport {
   longitude_deg: number;
 }
 
+export interface AirportSearchResult {
+  ident: string;
+  name: string;
+  iata_code: string | null;
+  municipality: string | null;
+  iso_country: string | null;
+}
+
 // ── Service ──────────────────────────────────────────────────
 
 export class AirportDetailService {
@@ -174,5 +182,22 @@ export class AirportDetailService {
     }
 
     return null;
+  }
+
+  /** Search airports by ICAO prefix, IATA code, or name (case-insensitive). */
+  searchAirports(query: string, limit = 10): AirportSearchResult[] {
+    const db = getDb();
+    const upperQuery = query.toUpperCase();
+    const namePattern = `%${upperQuery}%`;
+    return db.prepare(
+      `SELECT ident, name, iata_code, municipality, iso_country
+       FROM oa_airports
+       WHERE (ident LIKE ? OR iata_code LIKE ? OR UPPER(name) LIKE ?)
+         AND type IN ('large_airport', 'medium_airport', 'small_airport')
+       ORDER BY
+         CASE WHEN ident = ? THEN 0 WHEN ident LIKE ? THEN 1 ELSE 2 END,
+         CASE type WHEN 'large_airport' THEN 0 WHEN 'medium_airport' THEN 1 ELSE 2 END
+       LIMIT ?`,
+    ).all(upperQuery + '%', upperQuery + '%', namePattern, upperQuery, upperQuery + '%', limit) as AirportSearchResult[];
   }
 }

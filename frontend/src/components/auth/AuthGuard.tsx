@@ -30,7 +30,7 @@ export function AuthGuard({ minRole }: AuthGuardProps) {
     return (
       <div className="flex items-center justify-center h-screen bg-acars-bg">
         <div className="flex flex-col items-center gap-3">
-          <img src="/logos/chevron-light.png" alt="Loading" className="h-12 w-auto animate-pulse" />
+          <img src="./logos/chevron-light.png" alt="Loading" className="h-12 w-auto animate-pulse" />
           <p className="text-xs text-acars-muted">Loading...</p>
         </div>
       </div>

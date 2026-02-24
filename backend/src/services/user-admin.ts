@@ -65,6 +65,7 @@ export class UserAdminService {
     firstName?: string;
     lastName?: string;
     email?: string;
+    callsign?: string;
     role?: UserRole;
     rank?: string;
     status?: UserStatus;
@@ -95,6 +96,7 @@ export class UserAdminService {
     if (data.firstName !== undefined) { sets.push('first_name = ?'); params.push(data.firstName); }
     if (data.lastName !== undefined) { sets.push('last_name = ?'); params.push(data.lastName); }
     if (data.email !== undefined) { sets.push('email = ?'); params.push(data.email); }
+    if (data.callsign !== undefined) { sets.push('callsign = ?'); params.push(data.callsign); }
     if (data.role !== undefined) { sets.push('role = ?'); params.push(data.role); }
     if (data.rank !== undefined) { sets.push('rank = ?'); params.push(data.rank); }
     if (data.status !== undefined) {
@@ -128,8 +130,27 @@ export class UserAdminService {
     return this.update(userId, { status: 'suspended' }, actorId);
   }
 
-  softDelete(userId: number, actorId: number): Promise<AdminUserProfile | undefined> {
-    return this.update(userId, { status: 'deleted' }, actorId);
+  hardDelete(userId: number, actorId: number): boolean {
+    const db = getDb();
+    const existing = db.prepare('SELECT * FROM users WHERE id = ?').get(userId) as UserRow | undefined;
+    if (!existing) return false;
+
+    const before = this.toAdminProfile(existing);
+    auditService.log({ actorId, action: 'user.delete', targetType: 'user', targetId: userId, before: before as unknown as Record<string, unknown> });
+
+    const del = db.transaction(() => {
+      // Null out non-cascading FK references
+      db.prepare('UPDATE audit_log SET actor_id = NULL WHERE actor_id = ?').run(userId);
+      db.prepare('UPDATE va_settings SET updated_by = NULL WHERE updated_by = ?').run(userId);
+      db.prepare('UPDATE logbook SET reviewer_id = NULL WHERE reviewer_id = ?').run(userId);
+      db.prepare('UPDATE finances SET created_by = NULL WHERE created_by = ?').run(userId);
+      db.prepare('UPDATE scheduled_flights SET created_by = NULL WHERE created_by = ?').run(userId);
+      db.prepare('DELETE FROM acars_messages WHERE sender_id = ?').run(userId);
+      // CASCADE foreign keys handle refresh_tokens, active_bids, logbook, finances, notifications, news
+      db.prepare('DELETE FROM users WHERE id = ?').run(userId);
+    });
+    del();
+    return true;
   }
 
   reactivate(userId: number, actorId: number): Promise<AdminUserProfile | undefined> {

@@ -42,7 +42,7 @@ const iconCache = new Map<string, L.DivIcon>();
 
 function getIcon(icao: string, badges: BadgeInfo[]): L.DivIcon {
   const key = badges.length > 0
-    ? `${icao}-${badges.map((b) => b.letter).join('')}`
+    ? `${icao}-${badges.map((b) => b.letter + b.color).join('')}`
     : icao;
 
   let icon = iconCache.get(key);
@@ -52,33 +52,56 @@ function getIcon(icao: string, badges: BadgeInfo[]): L.DivIcon {
 
   const badgeHtml = badges.map(
     (b) =>
-      `<span style="background:${b.color};color:#fff;font:bold 7px sans-serif;padding:0 2px;border-radius:1px;line-height:10px;">${b.letter}</span>`,
+      `<span class="airport-facility-badge" style="background:${b.color};">${b.letter}</span>`,
   ).join('');
 
-  const dot = `<div style="width:5px;height:5px;border-radius:50%;background:${hasBadges ? '#58a6ff' : '#4a5568'};margin-bottom:1px;"></div>`;
+  const dot = `<div class="airport-label-dot" style="background:${hasBadges ? '#58a6ff' : '#4a5568'};"></div>`;
 
   const html = hasBadges
-    ? `<div style="display:flex;flex-direction:column;align-items:flex-start;pointer-events:auto;cursor:pointer;">
-        <div style="white-space:nowrap;display:flex;align-items:center;gap:2px;">
-          <span style="font:bold 10px Inter,system-ui,sans-serif;color:#e6e9ee;text-shadow:0 1px 3px rgba(0,0,0,0.8);font-feature-settings:'tnum';">${icao}</span>
+    ? `<div class="airport-label airport-label--active">
+        <div class="airport-label-row">
+          <span class="airport-label-icao airport-label-icao--active">${icao}</span>
           ${badgeHtml}
         </div>
         ${dot}
       </div>`
-    : `<div style="display:flex;flex-direction:column;align-items:flex-start;pointer-events:auto;cursor:pointer;">
-        <span style="font:10px Inter,system-ui,sans-serif;color:#6e7681;text-shadow:0 1px 3px rgba(0,0,0,0.8);font-feature-settings:'tnum';">${icao}</span>
+    : `<div class="airport-label">
+        <span class="airport-label-icao">${icao}</span>
         ${dot}
       </div>`;
 
   icon = L.divIcon({
     html,
-    className: '',
-    iconSize: [0, 0],
-    iconAnchor: [2, 18], // anchor at the dot (bottom of label + dot column)
+    className: 'airport-label-wrapper',
+    iconSize: undefined as any,
+    iconAnchor: [2, 22],
   });
 
   iconCache.set(key, icon);
   return icon;
+}
+
+// ── Prefix normalization ────────────────────────────────────
+
+/** Add a facility to the lookup under a prefix + its US K-prefix variant */
+function addToLookup(
+  lookup: Map<string, Set<VatsimFacilityType>>,
+  prefix: string,
+  facility: VatsimFacilityType,
+): void {
+  if (!lookup.has(prefix)) lookup.set(prefix, new Set());
+  lookup.get(prefix)!.add(facility);
+
+  // Cross-map US variants: BOS ↔ KBOS
+  if (prefix.length <= 3 && /^[A-Z]{2,3}$/.test(prefix)) {
+    const kPrefixed = 'K' + prefix;
+    if (!lookup.has(kPrefixed)) lookup.set(kPrefixed, new Set());
+    lookup.get(kPrefixed)!.add(facility);
+  } else if (prefix.length === 4 && prefix.startsWith('K')) {
+    const stripped = prefix.slice(1);
+    if (!lookup.has(stripped)) lookup.set(stripped, new Set());
+    lookup.get(stripped)!.add(facility);
+  }
 }
 
 // ── Component ───────────────────────────────────────────────
@@ -116,28 +139,22 @@ export function AirportLabels({ controllers, atis, visible, onSelectAirport }: P
     setTimeout(() => updateView(map), 0);
   }
 
-  // Build controller → ICAO lookup: Map<icao, Set<facilityType>>
+  // Build controller → ICAO lookup (with US prefix cross-mapping)
   const atcByIcao = useMemo(() => {
     const lookup = new Map<string, Set<VatsimFacilityType>>();
 
     for (const ctrl of controllers) {
-      const icao = ctrl.parsed.prefix;
-      if (!icao) continue;
-      // Only include facility types that have badges (2-5)
+      const prefix = ctrl.parsed.prefix;
+      if (!prefix) continue;
       if (!FACILITY_BADGES[ctrl.facility]) continue;
-
-      if (!lookup.has(icao)) lookup.set(icao, new Set());
-      lookup.get(icao)!.add(ctrl.facility);
+      addToLookup(lookup, prefix, ctrl.facility);
     }
 
-    // Add ATIS — callsign is like "KJFK_ATIS"
+    // Add ATIS — callsign is like "KJFK_ATIS" or "KJFK_D_ATIS"
     for (const a of atis) {
-      const icao = a.callsign.split('_')[0];
-      if (!icao) continue;
-      // Mark with facility type 0 as a sentinel for ATIS
-      if (!lookup.has(icao)) lookup.set(icao, new Set());
-      // Use 0 as ATIS indicator (we handle it specially below)
-      lookup.get(icao)!.add(0 as VatsimFacilityType);
+      const prefix = a.callsign.split('_')[0];
+      if (!prefix) continue;
+      addToLookup(lookup, prefix, 0 as VatsimFacilityType);
     }
 
     return lookup;

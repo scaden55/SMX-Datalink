@@ -29,6 +29,7 @@ export interface UpdateUserRequest {
   firstName?: string;
   lastName?: string;
   email?: string;
+  callsign?: string;
   role?: UserRole;
   rank?: string;
   status?: UserStatus;

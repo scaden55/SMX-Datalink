@@ -8,6 +8,7 @@ import type { FlightEventTracker } from '../services/flight-event-tracker.js';
 import { AuthService } from '../services/auth.js';
 import { MessageService } from '../services/messages.js';
 import { TrackService } from '../services/track.js';
+import { VatsimTrackService } from '../services/vatsim-track.js';
 import { getDb } from '../db/index.js';
 import { config } from '../config.js';
 
@@ -43,6 +44,7 @@ export function setupWebSocket(
   const telemetrySubscribers = new Set<string>();
   const vatsimSubscribers = new Set<string>();
   const trackService = new TrackService();
+  const vatsimTrackService = new VatsimTrackService();
 
   // Cache the active bid query for track recording
   const findActiveBid = () =>
@@ -56,6 +58,9 @@ export function setupWebSocket(
   // Wire up VATSIM broadcast callbacks
   if (vatsimService) {
     vatsimService.setOnUpdate((snapshot: VatsimDataSnapshot) => {
+      // Record ALL moving pilot positions (runs even without WebSocket subscribers)
+      try { vatsimTrackService.recordSnapshot(snapshot.pilots); } catch { /* non-critical */ }
+
       if (vatsimSubscribers.size > 0) {
         const event = {
           pilots: snapshot.pilots,

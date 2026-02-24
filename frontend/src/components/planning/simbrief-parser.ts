@@ -23,6 +23,7 @@ export function parseSimBriefResponse(json: any): SimBriefOFP {
   const navlog = json.navlog?.fix ?? [];
   const alts = json.alternate ? (Array.isArray(json.alternate) ? json.alternate : [json.alternate]) : [];
   const textSection = json.text ?? '';
+  const crew = json.crew ?? {};
 
   const fuel: SimBriefFuel = {
     plannedLbs: toNum(fuelData.plan_ramp),
@@ -48,7 +49,7 @@ export function parseSimBriefResponse(json: any): SimBriefOFP {
   };
 
   const rawSteps: SimBriefStep[] = navlog.map((fix: any) => ({
-    ident: fix.ident ?? '',
+    ident: toStr(fix.ident),
     lat: toNum(fix.pos_lat),
     lon: toNum(fix.pos_long),
     altitudeFt: toNum(fix.altitude_feet),
@@ -56,12 +57,12 @@ export function parseSimBriefResponse(json: any): SimBriefOFP {
     fuelRemainLbs: toNum(fix.fuel_plan_onboard),
     wind: fix.wind_dir && fix.wind_spd ? `${fix.wind_dir}/${fix.wind_spd}` : '',
     oat: toNum(fix.oat),
-    fixType: fix.type ?? undefined,
+    fixType: toStr(fix.type) || undefined,
   }));
 
   // Ensure origin airport is first step at field elevation so the vertical
   // profile starts on the ground instead of at the first enroute altitude.
-  const originIcao = origin.icao_code ?? '';
+  const originIcao = toStr(origin.icao_code);
   const originElev = toNum(origin.elevation);
   const originLat = toNum(origin.pos_lat);
   const originLon = toNum(origin.pos_long);
@@ -85,7 +86,7 @@ export function parseSimBriefResponse(json: any): SimBriefOFP {
   }
 
   // Ensure destination airport is last step at field elevation.
-  const destIcao = destination.icao_code ?? '';
+  const destIcao = toStr(destination.icao_code);
   const destElev = toNum(destination.elevation);
   const destLat = toNum(destination.pos_lat);
   const destLon = toNum(destination.pos_long);
@@ -127,45 +128,48 @@ export function parseSimBriefResponse(json: any): SimBriefOFP {
   const steps = rawSteps;
 
   const times: SimBriefTimes = {
-    schedDep: timesData.sched_out ?? '',
-    schedArr: timesData.sched_in ?? '',
+    schedDep: toStr(timesData.sched_out),
+    schedArr: toStr(timesData.sched_in),
     estEnroute: Math.round(toNum(timesData.est_time_enroute) / 60),
     estBlock: Math.round(toNum(timesData.est_block) / 60),
   };
 
   const alternates: SimBriefAlternate[] = alts.map((alt: any) => ({
-    icao: alt.icao_code ?? '',
-    name: alt.name ?? '',
+    icao: toStr(alt.icao_code),
+    name: toStr(alt.name),
     distanceNm: toNum(alt.distance),
     fuelLbs: toNum(alt.burn),
   }));
 
-  const route = general.route ?? '';
+  const route = toStr(general.route);
   const cruiseAltitude = toNum(general.initial_altitude);
 
   // Build raw text from the text fields
   let rawText = '';
   if (typeof textSection === 'string') {
     rawText = textSection;
-  } else if (textSection?.plan_html) {
+  } else if (typeof textSection?.plan_html === 'string') {
     rawText = textSection.plan_html.replace(/<[^>]+>/g, '');
   }
 
   return {
-    origin: origin.icao_code ?? '',
-    destination: destination.icao_code ?? '',
+    origin: toStr(origin.icao_code),
+    destination: toStr(destination.icao_code),
     route,
     cruiseAltitude,
     costIndex: toNum(general.costindex),
-    airline: general.icao_airline ?? '',
-    flightNumber: general.flight_number ?? '',
-    aircraftType: general.icao_aircraft ?? '',
+    airline: toStr(general.icao_airline),
+    flightNumber: toStr(general.flight_number),
+    aircraftType: toStr(general.icao_aircraft),
     fuel,
     weights,
     steps,
     times,
     alternates,
     rawText,
+    pilotName: toStr(crew.cpt) || toStr(general.pilot) || '',
+    depRunway: toStr(origin.plan_rwy),
+    arrRunway: toStr(destination.plan_rwy),
   };
 }
 
@@ -195,6 +199,9 @@ export function ofpToFormFields(ofp: SimBriefOFP): Partial<FlightPlanFormData> {
     payload: ofp.weights.payload ? String(ofp.weights.payload) : '',
     paxCount: ofp.weights.paxCount ? String(ofp.weights.paxCount) : '',
     cargoLbs: ofp.weights.cargoLbs ? String(ofp.weights.cargoLbs) : '',
+    pic: ofp.pilotName || '',
+    depRunway: ofp.depRunway || '',
+    arrRunway: ofp.arrRunway || '',
   };
 }
 
@@ -294,4 +301,12 @@ function toNum(val: any): number {
   if (val === null || val === undefined || val === '') return 0;
   const n = Number(val);
   return isNaN(n) ? 0 : n;
+}
+
+/** Safely coerce any SimBrief field to a string (objects → ''). */
+function toStr(val: any): string {
+  if (val === null || val === undefined) return '';
+  if (typeof val === 'string') return val;
+  if (typeof val === 'number' || typeof val === 'boolean') return String(val);
+  return ''; // objects, arrays → empty string
 }

@@ -35,6 +35,9 @@ export const IpcChannels = {
   SETTINGS_SET: 'settings:set',
   SETTINGS_GET_ALL: 'settings:get-all',
 
+  // SimBrief session
+  SIMBRIEF_CLEAR_SESSION: 'simbrief:clear-session',
+
   // Developer tools
   DEVTOOLS_TOGGLE: 'devtools:toggle',
 

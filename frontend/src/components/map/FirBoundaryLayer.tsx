@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo, useCallback, useRef } from 'react';
-import { GeoJSON } from 'react-leaflet';
+import { GeoJSON, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import type { PathOptions, Layer } from 'leaflet';
 import type { VatsimControllerWithPosition } from '@acars/shared';
@@ -25,12 +25,16 @@ interface GeoJsonCollection {
 }
 
 /**
- * Renders FIR boundary polygons on the map.
- * Online FIRs (with an active CTR controller) get a cyan highlight.
+ * Renders FIR boundary polygons on the map with interactive badge markers.
+ * Online FIRs get a cyan highlight + a clickable badge at label_lat/label_lon.
  * Offline FIRs get a thin gray border.
  */
 export function FirBoundaryLayer({ controllers, visible, hoveredAirspaceId, onHoverAirspace, onSelectAirspace }: Props) {
+  const map = useMap();
   const [geoJson, setGeoJson] = useState<GeoJsonCollection | null>(null);
+  const geoJsonRef = useRef<L.GeoJSON | null>(null);
+  const badgeGroupRef = useRef<L.LayerGroup | null>(null);
+  const badgeMarkersRef = useRef<Map<string, L.Marker>>(new Map());
 
   useEffect(() => {
     fetch(`${getApiBase()}/api/vatsim/boundaries/fir`)
@@ -52,20 +56,18 @@ export function FirBoundaryLayer({ controllers, visible, hoveredAirspaceId, onHo
     return ids;
   }, [controllers]);
 
-  // Build callsign + frequency map for tooltips
+  // Build callsign + frequency map for badge tooltips
   const firControllerInfo = useMemo(() => {
-    const map = new Map<string, { callsign: string; frequency: string }>();
+    const infoMap = new Map<string, { callsign: string; frequency: string }>();
     for (const ctrl of controllers) {
       if ((ctrl.facility === 6 || ctrl.facility === 1) && ctrl.boundaryId) {
-        map.set(ctrl.boundaryId, { callsign: ctrl.callsign, frequency: ctrl.frequency });
+        infoMap.set(ctrl.boundaryId, { callsign: ctrl.callsign, frequency: ctrl.frequency });
       }
     }
-    return map;
+    return infoMap;
   }, [controllers]);
 
-  const geoJsonRef = useRef<L.GeoJSON | null>(null);
-
-  // Update styles reactively when hoveredAirspaceId changes (avoids full GeoJSON remount)
+  // ── Polygon styles (reactive hover highlight) ──────────────
   useEffect(() => {
     if (!geoJsonRef.current) return;
     geoJsonRef.current.eachLayer((layer: any) => {
@@ -76,10 +78,11 @@ export function FirBoundaryLayer({ controllers, visible, hoveredAirspaceId, onHo
       const isHovered = hoveredAirspaceId === id;
       (layer as L.Path).setStyle({
         color: isOnline ? '#22d3ee' : '#2e3138',
-        weight: isOnline ? (isHovered ? 3 : 2) : 0.8,
-        opacity: isOnline ? (isHovered ? 1 : 0.8) : 0.4,
+        weight: isOnline ? (isHovered ? 1.5 : 1) : 0.5,
+        opacity: isOnline ? (isHovered ? 1 : 0.7) : 0.3,
         fillColor: isOnline ? '#22d3ee' : 'transparent',
-        fillOpacity: isOnline ? (isHovered ? 0.20 : 0.08) : 0,
+        fillOpacity: isOnline ? (isHovered ? 0.15 : 0.08) : 0,
+        interactive: false,
       });
     });
   }, [hoveredAirspaceId, onlineFirIds]);
@@ -91,46 +94,93 @@ export function FirBoundaryLayer({ controllers, visible, hoveredAirspaceId, onHo
       const isOnline = onlineFirIds.has(id);
       return {
         color: isOnline ? '#22d3ee' : '#2e3138',
-        weight: isOnline ? 2 : 0.8,
-        opacity: isOnline ? 0.8 : 0.4,
+        weight: isOnline ? 1 : 0.5,
+        opacity: isOnline ? 0.7 : 0.3,
         fillColor: isOnline ? '#22d3ee' : 'transparent',
         fillOpacity: isOnline ? 0.08 : 0,
+        interactive: false,
       };
     },
     [onlineFirIds],
   );
 
-  const onEachFeature = useCallback(
-    (feature: GeoJsonFeature, layer: Layer) => {
-      const id = feature.properties.id || feature.properties.icao || feature.properties.ICAO || '';
-      const name = feature.properties.name || feature.properties.NAME || id;
-      const info = firControllerInfo.get(id);
-      const isOnline = onlineFirIds.has(id);
+  // ── Badge markers for online FIRs ──────────────────────────
+  useEffect(() => {
+    // Remove previous badges
+    if (badgeGroupRef.current) {
+      map.removeLayer(badgeGroupRef.current);
+      badgeGroupRef.current = null;
+    }
+    badgeMarkersRef.current.clear();
 
-      if (isOnline) {
-        (layer as L.Path).getElement()?.classList.add('leaflet-interactive');
-        layer.on('mouseover', (e: L.LeafletMouseEvent) => {
-          onHoverAirspace(id, feature as GeoJSON.Feature, e);
-        });
-        layer.on('mouseout', () => {
-          onHoverAirspace(null, null, null);
-        });
-        layer.on('click', () => {
-          onSelectAirspace(id, feature as GeoJSON.Feature);
+    if (!visible || !geoJson) return;
+
+    const group = L.layerGroup();
+
+    for (const feature of geoJson.features) {
+      const id = feature.properties.id || feature.properties.icao || feature.properties.ICAO || '';
+      if (!onlineFirIds.has(id)) continue;
+
+      const labelLat = parseFloat(feature.properties.label_lat);
+      const labelLon = parseFloat(feature.properties.label_lon);
+      if (isNaN(labelLat) || isNaN(labelLon)) continue;
+
+      const info = firControllerInfo.get(id);
+
+      const icon = L.divIcon({
+        className: 'airspace-badge-wrapper',
+        html: `<div class="airspace-badge airspace-badge--fir">${id}</div>`,
+        iconSize: undefined as any,
+        iconAnchor: [0, 8],
+      });
+
+      const marker = L.marker([labelLat, labelLon], { icon, interactive: true, zIndexOffset: 500 });
+
+      marker.on('mouseover', (e: L.LeafletMouseEvent) => {
+        onHoverAirspace(id, feature as GeoJSON.Feature, e);
+      });
+      marker.on('mouseout', () => {
+        onHoverAirspace(null, null, null);
+      });
+      marker.on('click', () => {
+        onSelectAirspace(id, feature as GeoJSON.Feature);
+      });
+
+      if (info) {
+        marker.bindTooltip(`${info.callsign} — ${info.frequency}`, {
+          direction: 'top',
+          offset: [0, -4],
+          className: 'vatsim-boundary-tooltip',
         });
       }
 
-      const tooltip = info
-        ? `${name}\n${info.callsign} — ${info.frequency}`
-        : name;
-      layer.bindTooltip(tooltip, {
-        sticky: true,
-        className: 'vatsim-boundary-tooltip',
-        direction: 'top',
-      });
-    },
-    [firControllerInfo, onlineFirIds, onHoverAirspace, onSelectAirspace],
-  );
+      marker.addTo(group);
+      badgeMarkersRef.current.set(id, marker);
+    }
+
+    group.addTo(map);
+    badgeGroupRef.current = group;
+
+    return () => {
+      if (badgeGroupRef.current) {
+        map.removeLayer(badgeGroupRef.current);
+        badgeGroupRef.current = null;
+      }
+      badgeMarkersRef.current.clear();
+    };
+  }, [visible, geoJson, onlineFirIds, firControllerInfo, map, onHoverAirspace, onSelectAirspace]);
+
+  // ── Update badge hover class without recreating markers ────
+  useEffect(() => {
+    for (const [id, marker] of badgeMarkersRef.current) {
+      const el = marker.getElement();
+      if (!el) continue;
+      const badge = el.querySelector('.airspace-badge') as HTMLElement | null;
+      if (badge) {
+        badge.classList.toggle('airspace-badge--hover', id === hoveredAirspaceId);
+      }
+    }
+  }, [hoveredAirspaceId]);
 
   if (!visible || !geoJson) return null;
 
@@ -140,7 +190,6 @@ export function FirBoundaryLayer({ controllers, visible, hoveredAirspaceId, onHo
       ref={(r) => { geoJsonRef.current = r as L.GeoJSON | null; }}
       data={geoJson}
       style={style}
-      onEachFeature={onEachFeature}
     />
   );
 }

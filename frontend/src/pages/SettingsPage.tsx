@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Settings, Save, Loader2, Check, Monitor, Bell } from 'lucide-react';
+import { Settings, Save, Loader2, Check, Monitor, Bell, Trash2 } from 'lucide-react';
 import { api } from '../lib/api';
 
 export function SettingsPage() {
@@ -8,7 +8,11 @@ export function SettingsPage() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [loadError, setLoadError] = useState('');
+  const [clearingSession, setClearingSession] = useState(false);
+  const [sessionCleared, setSessionCleared] = useState(false);
   const savedTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const clearedTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const isElectron = !!window.electronAPI;
 
   useEffect(() => {
     let cancelled = false;
@@ -24,9 +28,12 @@ export function SettingsPage() {
     return () => { cancelled = true; };
   }, []);
 
-  // Clean up saved timer on unmount
+  // Clean up timers on unmount
   useEffect(() => {
-    return () => { clearTimeout(savedTimerRef.current); };
+    return () => {
+      clearTimeout(savedTimerRef.current);
+      clearTimeout(clearedTimerRef.current);
+    };
   }, []);
 
   const handleSave = async () => {
@@ -44,12 +51,28 @@ export function SettingsPage() {
     }
   };
 
+  const handleClearSession = async () => {
+    if (!window.electronAPI) return;
+    setClearingSession(true);
+    setSessionCleared(false);
+    try {
+      await window.electronAPI.clearSimbriefSession();
+      setSessionCleared(true);
+      clearTimeout(clearedTimerRef.current);
+      clearedTimerRef.current = setTimeout(() => setSessionCleared(false), 2000);
+    } catch (err) {
+      console.error('[Settings] Failed to clear SimBrief session:', err);
+    } finally {
+      setClearingSession(false);
+    }
+  };
+
   return (
     <div className="flex flex-col h-full overflow-auto">
       <div className="max-w-2xl mx-auto w-full p-6 space-y-6">
         {/* Header */}
         <div className="flex items-center gap-3">
-          <img src="/logos/chevron-light.png" alt="SMA" className="h-9 w-auto opacity-40" />
+          <img src="./logos/chevron-light.png" alt="SMA" className="h-9 w-auto opacity-40" />
           <div>
             <h1 className="text-lg font-semibold text-acars-text">Settings</h1>
             <p className="text-xs text-acars-muted">Configure your ACARS preferences</p>
@@ -98,6 +121,32 @@ export function SettingsPage() {
               <span className="text-sky-400">simbrief.com</span> under Account Settings.
               This is used to fetch your latest OFP on the Flight Planning page.
             </p>
+            {isElectron && (
+              <div className="mt-4 pt-3 border-t border-acars-border">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-[11px] text-acars-text font-medium">Navigraph Login Session</p>
+                    <p className="text-[10px] text-acars-muted">
+                      Your Navigraph login is saved so you only sign in once. Clear it to sign out.
+                    </p>
+                  </div>
+                  <button
+                    onClick={handleClearSession}
+                    disabled={clearingSession}
+                    className="btn-secondary btn-md flex-shrink-0"
+                  >
+                    {clearingSession ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : sessionCleared ? (
+                      <Check className="w-3.5 h-3.5" />
+                    ) : (
+                      <Trash2 className="w-3.5 h-3.5" />
+                    )}
+                    {sessionCleared ? 'Cleared' : 'Clear Session'}
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 

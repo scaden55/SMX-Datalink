@@ -1,7 +1,8 @@
 import { create } from 'zustand';
 import type { VatsimDataSnapshot } from '@acars/shared';
+import { api } from '../lib/api';
 
-// ── Track points for VATSIM pilot trails (ephemeral, not DB-persisted) ──
+// ── Track points for VATSIM pilot trails ────────────────────
 
 export interface VatsimTrailPoint {
   lat: number;
@@ -29,13 +30,20 @@ interface VatsimState {
   layers: VatsimLayers;
   /** Accumulated position history for each pilot, keyed by CID */
   pilotTracks: Map<number, VatsimTrailPoint[]>;
+  /** Server-persisted track for the currently selected pilot */
+  serverTrack: VatsimTrailPoint[] | null;
+  serverTrackCid: number | null;
   setSnapshot: (data: VatsimDataSnapshot) => void;
   toggleLayer: (layer: keyof VatsimLayers) => void;
+  fetchPilotTrack: (cid: number) => Promise<void>;
+  clearServerTrack: () => void;
 }
 
 export const useVatsimStore = create<VatsimState>((set) => ({
   snapshot: null,
   pilotTracks: new Map(),
+  serverTrack: null,
+  serverTrackCid: null,
   layers: {
     showFirBoundaries: true,
     showTraconBoundaries: true,
@@ -80,4 +88,18 @@ export const useVatsimStore = create<VatsimState>((set) => ({
     set((state) => ({
       layers: { ...state.layers, [layer]: !state.layers[layer] },
     })),
+
+  fetchPilotTrack: async (cid) => {
+    try {
+      const data = await api.get<{ cid: number; points: VatsimTrailPoint[] }>(
+        `/api/vatsim/pilots/${cid}/track`,
+      );
+      set({ serverTrack: data.points, serverTrackCid: cid });
+    } catch {
+      // Non-critical — fall back to client-only trail
+      set({ serverTrack: null, serverTrackCid: cid });
+    }
+  },
+
+  clearServerTrack: () => set({ serverTrack: null, serverTrackCid: null }),
 }));

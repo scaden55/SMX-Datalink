@@ -17,6 +17,22 @@ export function airportDetailRouter(): Router {
     }
   });
 
+  // GET /api/airports/search?q=<query>&limit=10
+  router.get('/airports/search', (req, res) => {
+    try {
+      const q = (req.query.q as string || '').trim();
+      if (q.length < 2) {
+        return res.json([]);
+      }
+      const limit = Math.min(parseInt(req.query.limit as string) || 10, 50);
+      const results = service.searchAirports(q, limit);
+      return res.json(results);
+    } catch (err) {
+      console.error('[AirportDetail] Search error:', err);
+      return res.status(500).json({ error: 'Failed to search airports' });
+    }
+  });
+
   // GET /api/airports/:icao — public, no auth required
   router.get('/airports/:icao', (req, res) => {
     try {

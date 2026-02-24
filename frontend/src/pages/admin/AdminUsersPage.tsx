@@ -85,6 +85,7 @@ interface UserFormData {
   password: string;
   firstName: string;
   lastName: string;
+  callsign: string;
   role: UserRole;
   rank: string;
 }
@@ -94,6 +95,7 @@ const EMPTY_FORM: UserFormData = {
   password: '',
   firstName: '',
   lastName: '',
+  callsign: '',
   role: 'pilot',
   rank: '',
 };
@@ -224,6 +226,20 @@ function UserFormModal({
               />
             </div>
           </div>
+
+          {/* Callsign (edit only) */}
+          {mode === 'edit' && (
+            <div>
+              <label className="block text-[10px] uppercase tracking-wider text-acars-muted mb-1.5">Callsign</label>
+              <input
+                type="text"
+                value={form.callsign}
+                onChange={(e) => update({ callsign: e.target.value.toUpperCase() })}
+                className={`${INPUT_CLS} font-mono`}
+                placeholder="SMA-001"
+              />
+            </div>
+          )}
 
           {/* Email */}
           <div>
@@ -450,6 +466,7 @@ export function AdminUsersPage() {
       password: '',
       firstName: user.firstName,
       lastName: user.lastName,
+      callsign: user.callsign,
       role: user.role,
       rank: user.rank ?? '',
     });
@@ -476,6 +493,7 @@ export function AdminUsersPage() {
         const body: UpdateUserRequest = {
           firstName: data.firstName.trim(),
           lastName: data.lastName.trim(),
+          callsign: data.callsign.trim() || undefined,
           role: data.role,
           rank: data.rank.trim() || undefined,
         };
@@ -546,7 +564,7 @@ export function AdminUsersPage() {
       case 'delete':
         return {
           title: 'Delete User',
-          message: `Permanently delete ${name} (${callsign})? This is a soft delete and the account can be restored by an administrator.`,
+          message: `Permanently delete ${name} (${callsign})? This will remove all their data including login credentials, logbook entries, and flight records. This action cannot be undone.`,
           variant: 'danger' as const,
           confirmLabel: 'Delete User',
         };
@@ -756,7 +774,6 @@ export function AdminUsersPage() {
           <option value="">All Statuses</option>
           <option value="active">Active</option>
           <option value="suspended">Suspended</option>
-          <option value="deleted">Deleted</option>
         </select>
       </div>
 

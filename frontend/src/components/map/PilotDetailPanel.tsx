@@ -4,6 +4,7 @@ import {
   ChevronDown, Clock, Compass, Copy, Check,
 } from 'lucide-react';
 import type { VatsimPilot } from '@acars/shared';
+import { getApiBase } from '../../lib/api';
 
 // ── Helpers ──────────────────────────────────────────────────
 
@@ -123,12 +124,12 @@ export function PilotDetailPanel({ pilot, onClose, onRouteResolved }: Props) {
     setArrCoords(null);
     if (!fp?.departure || !fp?.arrival) return;
 
-    fetch(`/api/airports/${encodeURIComponent(fp.departure)}`)
+    fetch(`${getApiBase()}/api/airports/${encodeURIComponent(fp.departure)}`)
       .then((r) => r.ok ? r.json() : null)
       .then((d) => { if (d) setDepCoords([d.latitude, d.longitude]); })
       .catch(() => {});
 
-    fetch(`/api/airports/${encodeURIComponent(fp.arrival)}`)
+    fetch(`${getApiBase()}/api/airports/${encodeURIComponent(fp.arrival)}`)
       .then((r) => r.ok ? r.json() : null)
       .then((d) => { if (d) setArrCoords([d.latitude, d.longitude]); })
       .catch(() => {});

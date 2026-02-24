@@ -1,5 +1,5 @@
-import { useState, useEffect, useMemo } from 'react';
-import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+import { useState, useEffect, useRef, useMemo, useCallback, Component, type ReactNode, type ErrorInfo } from 'react';
+import { AreaChart, Area, XAxis, YAxis, Tooltip } from 'recharts';
 import { useFlightPlanStore } from '../../stores/flightPlanStore';
 
 /** Resolve a CSS custom property from :root to its computed value. */
@@ -25,48 +25,57 @@ function findPhases(data: { altitude: number }[]) {
   return { tocIndex, todIndex };
 }
 
+/** Local error boundary so a chart crash doesn't take down the whole app. */
+class ChartErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
+  constructor(props: { children: ReactNode }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+  static getDerivedStateFromError(): { hasError: boolean } {
+    return { hasError: true };
+  }
+  componentDidCatch(error: Error, info: ErrorInfo) {
+    console.warn('[AltitudeProfile] Chart render error:', error.message, info.componentStack);
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="h-full flex items-center justify-center">
+          <span className="text-[11px] text-acars-muted font-sans">Chart unavailable</span>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+/** Hook: observe element size via ResizeObserver, returning [width, height]. */
+function useSize(ref: React.RefObject<HTMLElement | null>): [number, number] {
+  const [size, setSize] = useState<[number, number]>([0, 0]);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+
+    const ro = new ResizeObserver((entries) => {
+      const { width, height } = entries[0].contentRect;
+      setSize((prev) => (prev[0] === width && prev[1] === height ? prev : [width, height]));
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [ref]);
+
+  return size;
+}
+
 export function PlanningAltitudeProfile() {
   const { steps } = useFlightPlanStore();
   const hasSteps = steps.length >= 2;
+  const chartRef = useRef<HTMLDivElement>(null);
+  const [chartW, chartH] = useSize(chartRef);
 
-  const [canRender, setCanRender] = useState(false);
-  useEffect(() => {
-    if (!hasSteps) {
-      setCanRender(false);
-      return;
-    }
-    const id = requestAnimationFrame(() => setCanRender(true));
-    return () => cancelAnimationFrame(id);
-  }, [hasSteps]);
-
-  if (!hasSteps) {
-    return (
-      <div className="h-[130px] border-t flex items-center justify-center bg-acars-panel" style={{ borderColor: 'var(--border-panel)' }}>
-        <span className="text-[11px] text-acars-muted font-sans">Generate OFP to see altitude profile</span>
-      </div>
-    );
-  }
-
-  const baseData = steps.map((s) => ({
-    distance: Math.round(s.distanceFromOriginNm),
-    altitude: s.altitudeFt,
-    ident: s.ident,
-    fixType: s.fixType ?? 'wpt',
-  }));
-
-  const { tocIndex, todIndex } = findPhases(baseData);
-
-  const data = baseData.map((d) => ({
-    ...d,
-  }));
-
-  const maxLabels = 14;
-  const labelInterval = Math.max(1, Math.ceil(data.length / maxLabels));
-
-  const maxAlt = Math.max(...baseData.map((d) => d.altitude));
-  const yCeiling = maxAlt + 10000;
-
-  // Resolve CSS custom properties once for SVG/Recharts rendering
+  // Resolve CSS custom properties once for SVG/Recharts rendering.
+  // MUST be before any early return — React requires the same hooks every render.
   const clr = useMemo(() => ({
     cruise:      getCssVar('--purple'),
     bottom:      getCssVar('--purple-fill'),
@@ -79,35 +88,65 @@ export function PlanningAltitudeProfile() {
     bgApp:       getCssVar('--bg-app'),
   }), []);
 
-  return (
-    <div className="h-[130px] min-w-0 border-t bg-acars-panel overflow-hidden relative" style={{ borderColor: 'var(--border-panel)' }}>
-      {/* Waypoint ident labels along the top edge */}
-      {canRender && (
-        <div className="absolute top-0 left-[42px] right-[8px] h-[16px] flex items-center z-10 pointer-events-none overflow-hidden">
-          {data.map((d, i) => {
-            if (i % labelInterval !== 0) return null;
-            const pct = data.length > 1 ? (i / (data.length - 1)) * 100 : 0;
-            return (
-              <span
-                key={i}
-                className="absolute text-[10px] font-mono whitespace-nowrap"
-                style={{
-                  color: 'var(--text-label)',
-                  left: `${pct}%`,
-                  transform: 'translateX(-50%)',
-                }}
-              >
-                {d.ident}
-              </span>
-            );
-          })}
-        </div>
-      )}
+  if (!hasSteps) {
+    return (
+      <div className="flex-[2] min-h-[80px] border-t flex items-center justify-center bg-acars-panel" style={{ borderColor: 'var(--border-panel)' }}>
+        <span className="text-[11px] text-acars-muted font-sans">Generate OFP to see altitude profile</span>
+      </div>
+    );
+  }
 
-      {canRender && (
-        <div className="pt-[16px] h-full">
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={data} margin={{ top: 2, right: 8, bottom: 0, left: 0 }}>
+  const baseData = steps.map((s) => ({
+    distance: Math.round(s.distanceFromOriginNm),
+    altitude: s.altitudeFt,
+    ident: typeof s.ident === 'string' ? s.ident : String(s.ident ?? ''),
+    fixType: s.fixType ?? 'wpt',
+  }));
+
+  const data = baseData;
+
+  const maxLabels = 14;
+  const labelInterval = Math.max(1, Math.ceil(data.length / maxLabels));
+
+  const maxAlt = Math.max(...baseData.map((d) => d.altitude));
+  const yCeiling = maxAlt + 10000;
+
+  const canDraw = chartW > 0 && chartH > 0;
+
+  return (
+    <div className="flex-[2] min-h-[80px] min-w-0 border-t bg-acars-panel overflow-hidden relative" style={{ borderColor: 'var(--border-panel)' }}>
+      {/* Waypoint ident labels pinned to top */}
+      <div className="absolute top-0 left-[42px] right-[8px] h-[16px] z-10 pointer-events-none overflow-hidden">
+        {data.map((d, i) => {
+          if (i % labelInterval !== 0) return null;
+          const pct = data.length > 1 ? (i / (data.length - 1)) * 100 : 0;
+          return (
+            <span
+              key={i}
+              className="absolute text-[10px] font-mono whitespace-nowrap"
+              style={{
+                color: 'var(--text-label)',
+                left: `${pct}%`,
+                transform: 'translateX(-50%)',
+                top: 0,
+              }}
+            >
+              {d.ident}
+            </span>
+          );
+        })}
+      </div>
+
+      {/* Chart fills entire container via absolute positioning */}
+      <div ref={chartRef} className="absolute inset-0 pt-[16px]">
+        {canDraw && (
+          <ChartErrorBoundary>
+            <AreaChart
+              data={data}
+              width={chartW}
+              height={chartH - 16}
+              margin={{ top: 2, right: 8, bottom: 0, left: 0 }}
+            >
               <defs>
                 <linearGradient id="altGrad" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stopColor={clr.cruise} stopOpacity={0.4} />
@@ -159,11 +198,12 @@ export function PlanningAltitudeProfile() {
                 fill="url(#altGrad)"
                 dot={false}
                 activeDot={{ r: 4, fill: clr.bgApp, stroke: clr.cruise, strokeWidth: 2 }}
+                isAnimationActive={false}
               />
             </AreaChart>
-          </ResponsiveContainer>
-        </div>
-      )}
+          </ChartErrorBoundary>
+        )}
+      </div>
     </div>
   );
 }

@@ -1,6 +1,23 @@
 import { useAuthStore } from '../stores/authStore';
 import type { RefreshResponse } from '@acars/shared';
 
+// Electron: connect to local backend started by Electron main process
+// Dev browser: relative paths work via Vite proxy
+const LOCAL_BACKEND = 'http://localhost:3001';
+
+let apiBase = '';
+
+const apiBaseReady: Promise<void> = (async () => {
+  if (window.electronAPI) {
+    apiBase = LOCAL_BACKEND;
+  }
+  // Browser dev mode: apiBase stays '' (Vite proxy handles /api)
+})();
+
+export function getApiBase(): string {
+  return apiBase;
+}
+
 export class ApiError extends Error {
   constructor(
     public status: number,
@@ -22,7 +39,7 @@ async function attemptRefresh(): Promise<boolean> {
   }
 
   try {
-    const res = await fetch('/api/auth/refresh', {
+    const res = await fetch(`${apiBase}/api/auth/refresh`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ refreshToken }),
@@ -47,6 +64,8 @@ async function request<T>(
   url: string,
   body?: unknown,
 ): Promise<T> {
+  await apiBaseReady;
+  const fullUrl = `${apiBase}${url}`;
   const { accessToken } = useAuthStore.getState();
 
   const headers: Record<string, string> = {
@@ -56,7 +75,7 @@ async function request<T>(
     headers['Authorization'] = `Bearer ${accessToken}`;
   }
 
-  let res = await fetch(url, {
+  let res = await fetch(fullUrl, {
     method,
     headers,
     body: body !== undefined ? JSON.stringify(body) : undefined,
@@ -74,7 +93,7 @@ async function request<T>(
     if (refreshed) {
       const { accessToken: newToken } = useAuthStore.getState();
       headers['Authorization'] = `Bearer ${newToken}`;
-      res = await fetch(url, {
+      res = await fetch(fullUrl, {
         method,
         headers,
         body: body !== undefined ? JSON.stringify(body) : undefined,

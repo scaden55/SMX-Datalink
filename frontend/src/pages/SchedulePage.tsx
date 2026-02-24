@@ -767,7 +767,7 @@ export function SchedulePage() {
                 ) : schedules.length === 0 ? (
                   <tr>
                     <td colSpan={10} className="py-16 text-center">
-                      <img src="/logos/chevron-light.png" alt="SMA" className="h-10 w-auto opacity-10 mx-auto mb-3" />
+                      <img src="./logos/chevron-light.png" alt="SMA" className="h-10 w-auto opacity-10 mx-auto mb-3" />
                       <span className="text-xs text-acars-muted">No cargo routes match your filters</span>
                     </td>
                   </tr>

@@ -1,12 +1,19 @@
-import { Loader2, Zap, PlayCircle } from 'lucide-react';
+import { Loader2, Zap, PlayCircle, ChevronDown, RefreshCw } from 'lucide-react';
 import { useFlightPlanStore } from '../../stores/flightPlanStore';
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from '../ui/dropdown-menu';
 
 interface Props {
   onGenerate: () => void;
+  onFetch: () => void;
   onStartFlight: () => void;
 }
 
-export function PlanningGenerateBar({ onGenerate, onStartFlight }: Props) {
+export function PlanningGenerateBar({ onGenerate, onFetch, onStartFlight }: Props) {
   const { ofp, simbriefLoading, activeBidId } = useFlightPlanStore();
 
   const hasOFP = ofp !== null;
@@ -34,17 +41,56 @@ export function PlanningGenerateBar({ onGenerate, onStartFlight }: Props) {
         </div>
       )}
       <div className="flex gap-2">
-        <button
-          onClick={onGenerate}
-          disabled={simbriefLoading}
-          className="flex-1 btn-primary btn-md"
-          title="Generate or fetch OFP via SimBrief"
-        >
-          {simbriefLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Zap className="w-3.5 h-3.5" />}
-          {simbriefLoading
-            ? (window.electronAPI?.isElectron ? 'Waiting for SimBrief...' : 'Loading OFP...')
-            : 'Generate OFP'}
-        </button>
+        {hasOFP ? (
+          /* Split button: Fetch OFP (primary) + dropdown chevron for Generate New */
+          <div className="flex flex-1 min-w-0">
+            <button
+              onClick={onFetch}
+              disabled={simbriefLoading}
+              className="flex-1 btn-primary btn-md rounded-r-none"
+              title="Fetch latest OFP from SimBrief"
+            >
+              {simbriefLoading
+                ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                : <RefreshCw className="w-3.5 h-3.5" />}
+              {simbriefLoading
+                ? (window.electronAPI?.isElectron ? 'Waiting for SimBrief...' : 'Loading OFP...')
+                : 'Fetch OFP'}
+            </button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  disabled={simbriefLoading}
+                  className="btn-primary btn-md rounded-l-none border-l border-white/15 px-2"
+                  title="More OFP options"
+                >
+                  <ChevronDown className="w-3.5 h-3.5" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" side="top" sideOffset={6}>
+                <DropdownMenuItem onClick={onGenerate} className="gap-2">
+                  <Zap className="w-3.5 h-3.5" />
+                  Generate New OFP
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        ) : (
+          /* Simple button: Generate OFP */
+          <button
+            onClick={onGenerate}
+            disabled={simbriefLoading}
+            className="flex-1 btn-primary btn-md"
+            title="Generate OFP via SimBrief"
+          >
+            {simbriefLoading
+              ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              : <Zap className="w-3.5 h-3.5" />}
+            {simbriefLoading
+              ? (window.electronAPI?.isElectron ? 'Waiting for SimBrief...' : 'Loading OFP...')
+              : 'Generate OFP'}
+          </button>
+        )}
         {activeBidId && hasOFP && (
           <button
             onClick={onStartFlight}

@@ -1,32 +1,54 @@
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import * as d3 from 'd3';
 import { useTelemetry } from '../../hooks/useTelemetry';
 import { useFlightPlanStore } from '../../stores/flightPlanStore';
 
 const MARGIN = { top: 10, right: 40, bottom: 25, left: 50 };
-const HEIGHT = 120;
 
 const CLR_CLIMB = '#d2a8ff';
 const CLR_CRUISE = '#58a6ff';
 const CLR_DESCENT = '#3fb950';
 
+/** Observe element size via ResizeObserver, returning [width, height]. */
+function useSize(ref: React.RefObject<HTMLElement | null>): [number, number] {
+  const [size, setSize] = useState<[number, number]>([0, 0]);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+
+    const ro = new ResizeObserver((entries) => {
+      const { width, height } = entries[0].contentRect;
+      setSize((prev) => (prev[0] === width && prev[1] === height ? prev : [width, height]));
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [ref]);
+
+  return size;
+}
+
 export function VerticalProfile() {
   const svgRef = useRef<SVGSVGElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const [containerW, containerH] = useSize(containerRef);
   const { aircraft, connected, isStale } = useTelemetry();
   const flightPlan = useFlightPlanStore((s) => s.flightPlan);
 
   useEffect(() => {
-    if (!svgRef.current || !containerRef.current) return;
+    if (!svgRef.current || containerW <= 0 || containerH <= 0) return;
 
-    const width = containerRef.current.clientWidth;
+    const width = containerW;
+    const height = containerH;
     const svg = d3.select(svgRef.current);
     svg.selectAll('*').remove();
 
-    svg.attr('width', width).attr('height', HEIGHT);
+    svg.attr('width', width).attr('height', height);
 
     const innerW = width - MARGIN.left - MARGIN.right;
-    const innerH = HEIGHT - MARGIN.top - MARGIN.bottom;
+    const innerH = height - MARGIN.top - MARGIN.bottom;
+
+    if (innerW <= 0 || innerH <= 0) return;
 
     const g = svg
       .append('g')
@@ -188,7 +210,7 @@ export function VerticalProfile() {
     // Y-axis (FL labels)
     const yAxis = d3
       .axisLeft(yScale)
-      .ticks(4)
+      .ticks(Math.max(2, Math.floor(innerH / 30)))
       .tickFormat((d) => `FL${(+d / 100).toFixed(0)}`);
 
     g.append('g')
@@ -231,14 +253,14 @@ export function VerticalProfile() {
         .attr('fill', 'white')
         .attr('filter', 'url(#aircraft-shadow)');
     }
-  }, [flightPlan, aircraft, connected, isStale]);
+  }, [flightPlan, aircraft, connected, isStale, containerW, containerH]);
 
   return (
     <div
       ref={containerRef}
-      className="bg-acars-panel border-t border-acars-border"
+      className="h-full w-full bg-acars-panel border-t border-acars-border"
     >
-      <svg ref={svgRef} className="w-full" />
+      <svg ref={svgRef} className="block" />
     </div>
   );
 }

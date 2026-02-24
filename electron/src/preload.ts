@@ -32,6 +32,7 @@ const INVOKE_CHANNELS = new Set<string>([
   IpcChannels.SETTINGS_GET_ALL,
   IpcChannels.FILE_OPEN_DIALOG,
   IpcChannels.FILE_SAVE_DIALOG,
+  IpcChannels.SIMBRIEF_CLEAR_SESSION,
 ]);
 
 // Channels the renderer is allowed to listen to FROM main
@@ -69,6 +70,9 @@ const electronAPI = {
     ipcRenderer.invoke(IpcChannels.FILE_OPEN_DIALOG, options),
   saveFileDialog: (options?: Electron.SaveDialogOptions) =>
     ipcRenderer.invoke(IpcChannels.FILE_SAVE_DIALOG, options),
+
+  // --- SimBrief Session ---
+  clearSimbriefSession: () => ipcRenderer.invoke(IpcChannels.SIMBRIEF_CLEAR_SESSION) as Promise<boolean>,
 
   // --- Developer Tools ---
   toggleDevTools: () => ipcRenderer.send(IpcChannels.DEVTOOLS_TOGGLE),

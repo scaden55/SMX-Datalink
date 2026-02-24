@@ -34,7 +34,7 @@ export class UserService {
   }
 
   emailExists(email: string): boolean {
-    const row = getDb().prepare('SELECT 1 FROM users WHERE email = ?').get(email);
+    const row = getDb().prepare("SELECT 1 FROM users WHERE email = ? AND status != 'deleted'").get(email);
     return row !== undefined;
   }
 

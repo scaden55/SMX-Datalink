@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { MapContainer, TileLayer, Polyline, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import {
@@ -438,6 +438,10 @@ export function LiveMapPage() {
   const vatsimSnapshot = useVatsimStore((s) => s.snapshot);
   const vatsimLayers = useVatsimStore((s) => s.layers);
   const pilotTracks = useVatsimStore((s) => s.pilotTracks);
+  const serverTrack = useVatsimStore((s) => s.serverTrack);
+  const serverTrackCid = useVatsimStore((s) => s.serverTrackCid);
+  const fetchPilotTrack = useVatsimStore((s) => s.fetchPilotTrack);
+  const clearServerTrack = useVatsimStore((s) => s.clearServerTrack);
   const bidTrack = useTrackStore((s) => s.selectedBidTrack);
   const ofpSteps = useTrackStore((s) => s.ofpSteps);
 
@@ -447,6 +451,51 @@ export function LiveMapPage() {
   useEffect(() => {
     if (!vatsimLayers.showPilots) setSelectedPilot(null);
   }, [vatsimLayers.showPilots]);
+
+  // Fetch server-persisted track when a VATSIM pilot is selected
+  useEffect(() => {
+    if (selectedPilot) {
+      fetchPilotTrack(selectedPilot.cid);
+    } else {
+      clearServerTrack();
+    }
+  }, [selectedPilot?.cid, fetchPilotTrack, clearServerTrack]);
+
+  // Merge server track (base) with client-accumulated trail (real-time tail)
+  const mergedPilotTrack = useMemo(() => {
+    if (!selectedPilot) return [];
+
+    const clientTrack = pilotTracks.get(selectedPilot.cid) ?? [];
+
+    // No server data yet — use client-only trail
+    if (!serverTrack || serverTrack.length === 0 || serverTrackCid !== selectedPilot.cid) {
+      return clientTrack;
+    }
+
+    // Server track is the base; append only client points that are newer
+    // (i.e. positions not already in the server track)
+    const lastServer = serverTrack[serverTrack.length - 1];
+    const newClientPoints = clientTrack.filter(
+      (pt) => pt.lat !== lastServer.lat || pt.lon !== lastServer.lon,
+    );
+
+    // Only append trailing client points (those accumulated after server's last point)
+    // Find first client point that matches the server's last point, take everything after
+    const matchIdx = clientTrack.findIndex(
+      (pt) => pt.lat === lastServer.lat && pt.lon === lastServer.lon,
+    );
+
+    if (matchIdx >= 0 && matchIdx < clientTrack.length - 1) {
+      return [...serverTrack, ...clientTrack.slice(matchIdx + 1)];
+    }
+
+    // No overlap found — if client has points that differ, append them all
+    if (newClientPoints.length > 0 && newClientPoints.length < clientTrack.length) {
+      return [...serverTrack, ...newClientPoints];
+    }
+
+    return serverTrack;
+  }, [selectedPilot?.cid, serverTrack, serverTrackCid, pilotTracks]);
 
   // Fetch airports + bids on mount, refetch bids every 60s
   const fetchData = useCallback(async () => {
@@ -590,9 +639,9 @@ export function LiveMapPage() {
         {/* Navaid markers (VOR/NDB/DME) */}
         {vatsimLayers.showNavaids && <NavaidMarkers />}
 
-        {/* Selected VATSIM pilot: altitude-gradient trail (already flown) */}
+        {/* Selected VATSIM pilot: altitude-gradient trail (server + client merged) */}
         {selectedPilot && (
-          <PilotTrailLine track={pilotTracks.get(selectedPilot.cid) ?? []} />
+          <PilotTrailLine track={mergedPilotTrack} />
         )}
 
         {/* Selected VATSIM pilot: planned route through waypoints (remaining) */}

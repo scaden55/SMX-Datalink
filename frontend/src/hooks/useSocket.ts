@@ -4,6 +4,7 @@ import type { ServerToClientEvents, ClientToServerEvents } from '@acars/shared';
 import { useTelemetryStore } from '../stores/telemetryStore';
 import { useAuthStore } from '../stores/authStore';
 import { useSocketStore } from '../stores/socketStore';
+import { getApiBase } from '../lib/api';
 
 type AcarsSocket = Socket<ServerToClientEvents, ClientToServerEvents>;
 
@@ -27,7 +28,8 @@ export function useSocket(): AcarsSocket | null {
   useEffect(() => {
     if (!tokenRef.current) return;
 
-    const socket: AcarsSocket = io({
+    const base = getApiBase();
+    const socket: AcarsSocket = io(base || undefined, {
       transports: ['websocket'],
       reconnection: true,
       reconnectionDelay: 2000,

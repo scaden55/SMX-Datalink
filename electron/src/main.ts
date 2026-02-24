@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, dialog, shell, Menu } from 'electron';
+import { app, BrowserWindow, ipcMain, dialog, shell, Menu, session } from 'electron';
 import { autoUpdater } from 'electron-updater';
 import * as path from 'path';
 import { fork, ChildProcess } from 'child_process';
@@ -154,8 +154,30 @@ function createWindow(): void {
     mainWindow?.focus();
   });
 
-  // Open external links in system browser
+  // Handle window.open() calls from the renderer
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+    // SimBrief OFP generation — open as small child window that auto-closes
+    if (url.includes('simbrief.com') || url.includes('navigraph.com')) {
+      return {
+        action: 'allow',
+        overrideBrowserWindowOptions: {
+          width: 600,
+          height: 400,
+          autoHideMenuBar: true,
+          backgroundColor: '#1a1a2e',
+          webPreferences: {
+            contextIsolation: true,
+            nodeIntegration: false,
+            sandbox: true,
+            // Persistent partition: cookies survive across popup closes and app restarts.
+            // Chromium encrypts cookie values at rest via DPAPI (Windows) / Keychain (macOS).
+            partition: 'persist:simbrief',
+          },
+        },
+      };
+    }
+
+    // All other external links — open in system browser
     if (url.startsWith('http')) {
       shell.openExternal(url);
     }
@@ -225,6 +247,13 @@ function registerIpcHandlers(): void {
   ipcMain.handle(IpcChannels.FILE_SAVE_DIALOG, async (_event, options) => {
     if (!mainWindow) return { canceled: true, filePath: '' };
     return dialog.showSaveDialog(mainWindow, options);
+  });
+
+  // Clear SimBrief / Navigraph session (cookies, cache, storage)
+  ipcMain.handle(IpcChannels.SIMBRIEF_CLEAR_SESSION, async () => {
+    const ses = session.fromPartition('persist:simbrief');
+    await ses.clearStorageData();
+    return true;
   });
 
   // Developer tools toggle

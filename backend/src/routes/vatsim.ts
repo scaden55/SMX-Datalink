@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import type { VatsimService } from '../services/vatsim.js';
+import { VatsimTrackService } from '../services/vatsim-track.js';
 
 /**
  * VATSIM REST endpoints — all public (no auth required).
@@ -7,6 +8,7 @@ import type { VatsimService } from '../services/vatsim.js';
  */
 export function vatsimRouter(vatsimService: VatsimService): Router {
   const router = Router();
+  const vatsimTrackService = new VatsimTrackService();
 
   // GET /api/vatsim/data — full snapshot
   router.get('/vatsim/data', (_req, res) => {
@@ -76,6 +78,18 @@ export function vatsimRouter(vatsimService: VatsimService): Router {
       return;
     }
     res.json(geo);
+  });
+
+  // GET /api/vatsim/pilots/:cid/track — full flight track for a pilot's latest session
+  router.get('/vatsim/pilots/:cid/track', (req, res) => {
+    const cid = parseInt(req.params.cid, 10);
+    if (isNaN(cid)) {
+      res.status(400).json({ error: 'Invalid CID' });
+      return;
+    }
+
+    const points = vatsimTrackService.getTrackByCid(cid);
+    res.json({ cid, points });
   });
 
   return router;

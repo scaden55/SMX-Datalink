@@ -4,6 +4,7 @@ import {
   Plane, Clock, Cloud, Wind,
 } from 'lucide-react';
 import type { VatsimControllerWithPosition, VatsimPilot, VatsimFacilityType, VatsimAtis } from '@acars/shared';
+import { getApiBase } from '../../lib/api';
 import { fetchMetar } from '../../lib/weather-api';
 
 // ── Types ────────────────────────────────────────────────────
@@ -136,7 +137,7 @@ export function AirportDetailPanel({ icao, controllers, pilots, atis, onClose }:
     setTab('traffic');
     setCollapsed({});
 
-    fetch(`/api/airports/${encodeURIComponent(icao)}`)
+    fetch(`${getApiBase()}/api/airports/${encodeURIComponent(icao)}`)
       .then((res) => {
         if (!res.ok) throw new Error(res.status === 404 ? 'Airport not found' : 'Failed to fetch');
         return res.json();

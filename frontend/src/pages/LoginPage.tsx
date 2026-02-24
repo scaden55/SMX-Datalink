@@ -37,7 +37,7 @@ export function LoginPage() {
       <div className="panel max-w-sm w-full p-8 shadow-2xl shadow-blue-400/5 relative">
         {/* Logo */}
         <div className="flex flex-col items-center gap-3 mb-8">
-          <img src="/logos/smx-login-logo.png" alt="Special Missions Air" className="h-20 w-auto" />
+          <img src="./logos/smx-login-logo.png" alt="Special Missions Air" className="h-20 w-auto" />
           <p className="text-xs text-acars-muted uppercase tracking-wider">Flight Operations</p>
         </div>
 

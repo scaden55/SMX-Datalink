@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import type { VatsimDataSnapshot, VatsimUpdateEvent } from '@acars/shared';
 import { useVatsimStore } from '../stores/vatsimStore';
 import { useSocketStore } from '../stores/socketStore';
+import { getApiBase } from '../lib/api';
 
 /**
  * Hook that fetches VATSIM data via REST on mount, then subscribes
@@ -17,7 +18,7 @@ export function useVatsim(): void {
     if (fetchedRef.current) return;
     fetchedRef.current = true;
 
-    fetch('/api/vatsim/data')
+    fetch(`${getApiBase()}/api/vatsim/data`)
       .then((res) => {
         if (!res.ok) return null;
         return res.json();

@@ -126,12 +126,12 @@ export function adminUsersRouter(): Router {
     }
   });
 
-  // DELETE /api/admin/users/:id — soft delete
-  router.delete('/admin/users/:id', authMiddleware, adminMiddleware, async (req, res) => {
+  // DELETE /api/admin/users/:id — hard delete (removes all user data)
+  router.delete('/admin/users/:id', authMiddleware, adminMiddleware, (req, res) => {
     try {
-      const updated = await userAdminService.softDelete(parseInt(req.params.id as string), req.user!.userId);
-      if (!updated) { res.status(404).json({ error: 'User not found' }); return; }
-      res.json(updated);
+      const deleted = userAdminService.hardDelete(parseInt(req.params.id as string), req.user!.userId);
+      if (!deleted) { res.status(404).json({ error: 'User not found' }); return; }
+      res.json({ success: true });
     } catch (err) {
       console.error('[Admin] Delete user error:', err);
       res.status(500).json({ error: 'Failed to delete user' });
