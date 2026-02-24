@@ -3,19 +3,31 @@ import { useNavigate } from 'react-router-dom';
 import { useDispatchEdit } from '../../contexts/DispatchEditContext';
 import { useTelemetry } from '../../hooks/useTelemetry';
 import { useFlightPlanStore } from '../../stores/flightPlanStore';
+import { useCargoStore } from '../../stores/cargoStore';
 import { api } from '../../lib/api';
 import type { LogbookEntry } from '@acars/shared';
 
+/** Diamond caution icon — filled amber when active, muted when clear */
+function DiamondIcon({ active }: { active: boolean }) {
+  return (
+    <svg className={`w-3 h-3 shrink-0 ${active ? 'text-amber-400' : 'text-emerald-500'}`} viewBox="0 0 16 16" fill="currentColor">
+      <path d="M8 1l7 7-7 7-7-7z" />
+    </svg>
+  );
+}
+
 /**
  * Action bar between ScenarioBar and RouteSection.
- * Shows "Release Dispatch" for admins and "End Flight" for pilots.
+ * Left: status indicators (Suitability, MEL, NOTOC).
+ * Right: action buttons (Release Dispatch for admin, End Flight for pilot).
  */
 export function DispatchActionBar() {
   const navigate = useNavigate();
   const { flight } = useTelemetry();
   const activeBidId = useFlightPlanStore((s) => s.activeBidId);
   const clearActiveBid = useFlightPlanStore((s) => s.clearActiveBid);
-  const { canEdit, hasUnreleasedChanges, releasing, releaseDispatch } = useDispatchEdit();
+  const { canEdit, hasUnreleasedChanges, releasing, releaseDispatch, editableFields } = useDispatchEdit();
+  const manifest = useCargoStore((s) => s.manifest);
 
   const [showDialog, setShowDialog] = useState(false);
   const [remarks, setRemarks] = useState('');
@@ -45,44 +57,65 @@ export function DispatchActionBar() {
     }
   };
 
-  // Only render if there's something to show
-  if (!canEdit && !canEndFlight) return null;
+  // Status indicators
+  const melText = (editableFields.melRestrictions ?? '').trim();
+  const hasMel = melText.length > 0;
+  const hasNotoc = manifest?.notocRequired && manifest.notocItems.length > 0;
 
   return (
     <>
-      <div className="border-b border-acars-border px-3 h-8 flex items-center gap-2">
-        {canEdit && (
-          <button
-            onClick={releaseDispatch}
-            disabled={!hasUnreleasedChanges || releasing}
-            className={`flex items-center gap-1.5 px-3 py-1 text-[10px] font-semibold rounded border transition-colors ${
-              hasUnreleasedChanges && !releasing
-                ? 'bg-blue-500/10 text-blue-400 border-blue-500/30 hover:bg-blue-500/20 hover:text-blue-300'
-                : 'bg-acars-input text-acars-muted border-acars-border cursor-not-allowed opacity-50'
-            }`}
-          >
-            {releasing ? (
-              <div className="w-3 h-3 border-2 border-blue-400/30 border-t-blue-400 rounded-full animate-spin" />
-            ) : (
+      <div className="border-b border-acars-border px-3 h-8 flex items-center gap-4">
+        {/* Left: status indicators */}
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1.5">
+            <DiamondIcon active={hasMel} />
+            <span className={`text-[11px] font-sans ${hasMel ? 'text-amber-400' : 'text-acars-muted'}`}>
+              MEL & Restrictions
+            </span>
+          </div>
+          {hasNotoc && (
+            <div className="flex items-center gap-1.5">
+              <DiamondIcon active />
+              <span className="text-[11px] font-sans text-amber-400">NOTOC</span>
+            </div>
+          )}
+        </div>
+
+        {/* Right: action buttons */}
+        <div className="flex items-center gap-2 ml-auto">
+          {canEdit && (
+            <button
+              onClick={releaseDispatch}
+              disabled={!hasUnreleasedChanges || releasing}
+              className={`flex items-center gap-1.5 px-3 py-0.5 text-[10px] font-semibold rounded border transition-colors ${
+                hasUnreleasedChanges && !releasing
+                  ? 'bg-blue-500/10 text-blue-400 border-blue-500/30 hover:bg-blue-500/20 hover:text-blue-300'
+                  : 'bg-acars-input text-acars-muted border-acars-border cursor-not-allowed opacity-50'
+              }`}
+            >
+              {releasing ? (
+                <div className="w-3 h-3 border-2 border-blue-400/30 border-t-blue-400 rounded-full animate-spin" />
+              ) : (
+                <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M22 2L11 13" />
+                  <path d="M22 2L15 22L11 13L2 9L22 2Z" />
+                </svg>
+              )}
+              {releasing ? 'Releasing...' : 'Release/File'}
+            </button>
+          )}
+          {canEndFlight && (
+            <button
+              onClick={() => setShowDialog(true)}
+              className="flex items-center gap-1.5 px-3 py-0.5 text-[10px] font-semibold rounded border transition-colors bg-red-500/10 text-red-400 border-red-500/30 hover:bg-red-500/20 hover:text-red-300"
+            >
               <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M22 2L11 13" />
-                <path d="M22 2L15 22L11 13L2 9L22 2Z" />
+                <rect x="3" y="3" width="18" height="18" rx="2" />
               </svg>
-            )}
-            {releasing ? 'Releasing...' : 'Release Dispatch'}
-          </button>
-        )}
-        {canEndFlight && (
-          <button
-            onClick={() => setShowDialog(true)}
-            className="flex items-center gap-1.5 px-3 py-1 text-[10px] font-semibold rounded border transition-colors bg-red-500/10 text-red-400 border-red-500/30 hover:bg-red-500/20 hover:text-red-300"
-          >
-            <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <rect x="3" y="3" width="18" height="18" rx="2" />
-            </svg>
-            End Flight
-          </button>
-        )}
+              End Flight
+            </button>
+          )}
+        </div>
       </div>
 
       {/* End Flight Confirmation Dialog */}
