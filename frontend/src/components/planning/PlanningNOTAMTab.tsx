@@ -1,5 +1,5 @@
 import { useFlightPlanStore } from '../../stores/flightPlanStore';
-import { AlertCircle } from 'lucide-react';
+import { WarningCircle } from '@phosphor-icons/react';
 
 export function PlanningNOTAMTab() {
   const { form, weatherCache } = useFlightPlanStore();
@@ -9,7 +9,7 @@ export function PlanningNOTAMTab() {
   if (icaos.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-full text-center gap-2 p-4">
-        <AlertCircle className="w-6 h-6 text-acars-muted/20" />
+        <WarningCircle className="w-6 h-6 text-acars-muted/20" />
         <p className="text-[11px] text-acars-muted font-sans">Enter origin/destination to fetch NOTAMs</p>
       </div>
     );

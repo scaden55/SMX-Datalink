@@ -59,14 +59,14 @@ export class UserService {
       let callsign = params.callsign;
       if (!callsign) {
         const row = db.prepare(
-          "SELECT callsign FROM users WHERE callsign LIKE 'SMA-%' ORDER BY id DESC LIMIT 1"
+          "SELECT callsign FROM users WHERE callsign LIKE 'SMX-%' ORDER BY id DESC LIMIT 1"
         ).get() as { callsign: string } | undefined;
 
         if (!row) {
-          callsign = 'SMA-001';
+          callsign = 'SMX-001';
         } else {
           const num = parseInt(row.callsign.split('-')[1], 10);
-          callsign = `SMA-${String(num + 1).padStart(3, '0')}`;
+          callsign = `SMX-${String(num + 1).padStart(3, '0')}`;
         }
       }
 

@@ -1,8 +1,11 @@
-import { Package } from 'lucide-react';
+import { useState } from 'react';
+import { Package } from '@phosphor-icons/react';
 import { useCargoStore } from '../../stores/cargoStore';
 
 export function CargoSummaryRow() {
   const manifest = useCargoStore((s) => s.manifest);
+  const [open, setOpen] = useState(false);
+
   if (!manifest) return null;
 
   const uldCount = manifest.ulds.length;
@@ -11,38 +14,50 @@ export function CargoSummaryRow() {
 
   return (
     <div className="border-b border-acars-border">
-      <div className="flex items-center h-8 px-3">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="flex items-center h-8 px-3 w-full text-left hover:bg-acars-input/40 transition-colors duration-100"
+      >
         {/* Green checkmark */}
-        <svg className="w-3 h-3 text-[#22c55e] shrink-0 mr-2" viewBox="0 0 16 16" fill="none">
+        <svg className="w-3 h-3 text-emerald-500 shrink-0 mr-2" viewBox="0 0 16 16" fill="none">
           <circle cx="8" cy="8" r="7" stroke="currentColor" strokeWidth="1.5" />
           <path d="M5 8l2 2 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
         <Package className="w-3 h-3 text-blue-400 mr-1.5" />
-        <span className="text-[11px] font-sans text-[#949aa2]">Cargo</span>
-        <span className="ml-auto text-[11px] font-mono text-[#cdd1d8]">
+        <span className="text-[11px] font-semibold text-acars-muted">Cargo</span>
+        <span className="ml-auto text-[11px] font-mono text-acars-text">
           {uldCount} ULDs
         </span>
-      </div>
-      <div className="px-3 pb-2 space-y-1">
-        <div className="flex justify-between text-[10px]">
-          <span className="text-acars-muted font-sans">Manifest</span>
-          <span className="font-mono text-acars-text">{manifest.manifestNumber}</span>
-        </div>
-        <div className="flex justify-between text-[10px]">
-          <span className="text-acars-muted font-sans">Total</span>
-          <span className="font-mono text-acars-text">{displayWeight} {unit} ({manifest.payloadUtilization}%)</span>
-        </div>
-        {manifest.notocRequired && (
+        <svg
+          className={`w-3 h-3 text-acars-muted/60 shrink-0 ml-2 transition-transform ${open ? 'rotate-90' : ''}`}
+          fill="none" viewBox="0 0 24 24" stroke="currentColor"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+        </svg>
+      </button>
+      {open && (
+        <div className="px-3 pb-2 space-y-1">
           <div className="flex justify-between text-[10px]">
-            <span className="text-amber-400 font-sans">NOTOC</span>
-            <span className="font-mono text-amber-400">{manifest.notocItems.length} DG items</span>
+            <span className="text-acars-muted font-sans">Manifest</span>
+            <span className="font-mono text-acars-text">{manifest.manifestNumber}</span>
           </div>
-        )}
-        <div className="flex justify-between text-[10px]">
-          <span className="text-acars-muted font-sans">CG</span>
-          <span className="font-mono text-acars-text">{manifest.cgPosition}% MAC</span>
+          <div className="flex justify-between text-[10px]">
+            <span className="text-acars-muted font-sans">Total</span>
+            <span className="font-mono text-acars-text">{displayWeight} {unit} ({manifest.payloadUtilization}%)</span>
+          </div>
+          {manifest.notocRequired && (
+            <div className="flex justify-between text-[10px]">
+              <span className="text-amber-400 font-sans">NOTOC</span>
+              <span className="font-mono text-amber-400">{manifest.notocItems.length} DG items</span>
+            </div>
+          )}
+          <div className="flex justify-between text-[10px]">
+            <span className="text-acars-muted font-sans">CG</span>
+            <span className="font-mono text-acars-text">{manifest.cgPosition}% MAC</span>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

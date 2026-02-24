@@ -184,15 +184,15 @@ export function NavProcedureRow({ formData }: NavProcedureRowProps) {
   const hasDepAtis = depActiveSet.size > 0;
   const hasArrAtis = arrActiveSet.size > 0;
 
-  const selectCls = "bg-acars-input border border-acars-border text-[11px] font-mono text-[#cdd1d8] rounded-md px-1.5 py-0.5 outline-none focus:border-blue-400 truncate w-full";
+  const selectCls = "bg-acars-input border border-acars-border text-[11px] font-mono text-acars-text rounded-md px-1.5 py-0.5 outline-none focus:border-blue-400 truncate w-full";
   const inputCls = selectCls;
 
   return (
-    <div className="border-b border-acars-border px-3 py-1.5">
+    <div className="px-3 py-1.5">
       <div className="flex items-end gap-1.5">
         {/* Departure Runway */}
         <div className="flex flex-col min-w-0 flex-1">
-          <span className="text-[9px] font-sans text-[#656b75] mb-0.5">
+          <span className="text-[9px] font-sans text-acars-muted/70 mb-0.5">
             Runway {hasDepAtis && <span className="text-emerald-400" title="ATIS active">●</span>}
           </span>
           <select
@@ -212,7 +212,7 @@ export function NavProcedureRow({ formData }: NavProcedureRowProps) {
 
         {/* SID */}
         <div className="flex flex-col min-w-0 flex-1">
-          <span className="text-[9px] font-sans text-[#656b75] mb-0.5">SID</span>
+          <span className="text-[9px] font-sans text-acars-muted/70 mb-0.5">SID</span>
           <input
             type="text"
             value={sid}
@@ -225,7 +225,7 @@ export function NavProcedureRow({ formData }: NavProcedureRowProps) {
 
         {/* STAR */}
         <div className="flex flex-col min-w-0 flex-1">
-          <span className="text-[9px] font-sans text-[#656b75] mb-0.5">STAR</span>
+          <span className="text-[9px] font-sans text-acars-muted/70 mb-0.5">STAR</span>
           <input
             type="text"
             value={star}
@@ -238,7 +238,7 @@ export function NavProcedureRow({ formData }: NavProcedureRowProps) {
 
         {/* Arrival Runway */}
         <div className="flex flex-col min-w-0 flex-1">
-          <span className="text-[9px] font-sans text-[#656b75] mb-0.5">
+          <span className="text-[9px] font-sans text-acars-muted/70 mb-0.5">
             Runway {hasArrAtis && <span className="text-emerald-400" title="ATIS active">●</span>}
           </span>
           <select
@@ -258,7 +258,7 @@ export function NavProcedureRow({ formData }: NavProcedureRowProps) {
 
         {/* Dest Alt 1 */}
         <div className="flex flex-col min-w-0 flex-1">
-          <span className="text-[9px] font-sans text-[#656b75] mb-0.5">Dest Alt 1</span>
+          <span className="text-[9px] font-sans text-acars-muted/70 mb-0.5">Dest Alt 1</span>
           <AirportSearchDropdown
             value={alt1}
             onChange={(v) => onFieldChange('alternate1', v)}
@@ -268,7 +268,7 @@ export function NavProcedureRow({ formData }: NavProcedureRowProps) {
 
         {/* Dest Alt 2 */}
         <div className="flex flex-col min-w-0 flex-1">
-          <span className="text-[9px] font-sans text-[#656b75] mb-0.5">Dest Alt 2</span>
+          <span className="text-[9px] font-sans text-acars-muted/70 mb-0.5">Dest Alt 2</span>
           <AirportSearchDropdown
             value={alt2}
             onChange={(v) => onFieldChange('alternate2', v)}

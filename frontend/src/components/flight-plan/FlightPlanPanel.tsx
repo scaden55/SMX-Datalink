@@ -5,12 +5,10 @@ import { ScenarioBar } from './ScenarioBar';
 import { NavProcedureRow } from './NavProcedureRow';
 import { AircraftSection } from './AircraftSection';
 import { WeightsSection } from './WeightsSection';
-import { RouteSection } from './RouteSection';
-import { MELSection } from './MELSection';
-import { TerrainSection } from './TerrainSection';
 import { CargoSummaryRow } from '../cargo/CargoSummaryRow';
 import { DispatchActionBar } from './DispatchActionBar';
 import { RemarksSection } from './RemarksSection';
+import { FlightDetailSections } from './FlightDetailSections';
 import type { SimBriefOFP, FlightPlanFormData } from '@acars/shared';
 
 interface FlightPlanPanelProps {
@@ -50,9 +48,6 @@ export function FlightPlanPanel({ ofp, formData, ruleChips }: FlightPlanPanelPro
       {/* Dispatch actions: Release Dispatch (admin) / End Flight (pilot) */}
       <DispatchActionBar />
 
-      {/* Route — positioned above nav procedures */}
-      <RouteSection />
-
       {/* Item 4: Runway / SID / STAR / Dest Alt */}
       <NavProcedureRow formData={formData} />
 
@@ -70,44 +65,17 @@ export function FlightPlanPanel({ ofp, formData, ruleChips }: FlightPlanPanelPro
         ofpFuel={ofp?.fuel ?? null}
       />
 
-      {/* Item 7: Bottom collapsible sections with checkmarks */}
-      <div className="space-y-0">
-        <AircraftDetailRow
-          label="Aircraft"
-          summary={`${aircraft?.atcId ?? '---'} | ${aircraft?.atcType ?? '---'}`}
-          complete={!!aircraft}
-        />
-        <MELSection melRestrictions={formData?.melRestrictions ?? ''} />
-        <TerrainSection ofp={ofp} />
-        <CargoSummaryRow />
-      </div>
+      {/* Cargo */}
+      <CargoSummaryRow />
 
       <RemarksSection
         dispatcherRemarks={formData?.dispatcherRemarks ?? ''}
         autoRemarks={formData?.autoRemarks ?? ''}
       />
 
-    </div>
-  );
-}
+      {/* In-depth collapsible detail sections */}
+      <FlightDetailSections ofp={ofp} formData={formData} />
 
-/** Lightweight summary row for the bottom section list */
-function AircraftDetailRow({ label, summary, complete }: { label: string; summary: string; complete: boolean }) {
-  return (
-    <div className="border-b border-acars-border flex items-center h-8 px-3">
-      {complete ? (
-        <svg className="w-3 h-3 text-[#22c55e] shrink-0 mr-2" viewBox="0 0 16 16" fill="none">
-          <circle cx="8" cy="8" r="7" stroke="currentColor" strokeWidth="1.5" />
-          <path d="M5 8l2 2 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-      ) : (
-        <span className="w-2 h-2 rounded-full bg-[#333840] shrink-0 mr-2" />
-      )}
-      <span className="text-[11px] font-sans text-[#949aa2]">{label}</span>
-      <span className="ml-auto text-[11px] font-mono text-[#cdd1d8] truncate max-w-[200px]">{summary}</span>
-      <svg className="w-3 h-3 text-acars-muted/60 shrink-0 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-      </svg>
     </div>
   );
 }

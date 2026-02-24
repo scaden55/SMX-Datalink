@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { AreaChart, Area, ResponsiveContainer, YAxis } from 'recharts';
-import { Plane, Clock, Route, ArrowUpDown, TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { AirplaneTilt, Clock, Path, ArrowsDownUp, TrendUp, TrendDown, Minus } from '@phosphor-icons/react';
 import { altitudeToColor } from '@acars/shared';
 import type { TrackPoint } from '@acars/shared';
 
@@ -85,7 +85,7 @@ export function TrackInfoCard({ points, flightNumber, depIcao, arrIcao }: Props)
   }
 
   const altColor = altitudeToColor(stats.currentAlt);
-  const VsIcon = stats.currentVs > 200 ? TrendingUp : stats.currentVs < -200 ? TrendingDown : Minus;
+  const VsIcon = stats.currentVs > 200 ? TrendUp : stats.currentVs < -200 ? TrendDown : Minus;
   const vsColor = stats.currentVs > 200 ? 'text-green-400' : stats.currentVs < -200 ? 'text-orange-400' : 'text-acars-muted';
 
   return (
@@ -93,7 +93,7 @@ export function TrackInfoCard({ points, flightNumber, depIcao, arrIcao }: Props)
       {/* Header */}
       <div className="flex items-center justify-between px-3 py-1.5 border-b border-acars-border">
         <div className="flex items-center gap-2">
-          <Plane className="w-3.5 h-3.5 text-sky-400" />
+          <AirplaneTilt className="w-3.5 h-3.5 text-sky-400" />
           <span className="text-xs font-bold text-acars-text font-mono tracking-wide">{flightNumber}</span>
           <span className="text-[10px] text-acars-muted font-mono">{depIcao} → {arrIcao}</span>
         </div>
@@ -133,11 +133,11 @@ export function TrackInfoCard({ points, flightNumber, depIcao, arrIcao }: Props)
           <span className="text-acars-text font-mono">{formatDuration(stats.duration)}</span>
         </div>
         <div className="flex items-center gap-1 text-acars-muted">
-          <Route className="w-3 h-3" />
+          <Path className="w-3 h-3" />
           <span className="text-acars-text font-mono">{Math.round(stats.totalNm)} nm</span>
         </div>
         <div className="flex items-center gap-1 text-acars-muted">
-          <ArrowUpDown className="w-3 h-3" />
+          <ArrowsDownUp className="w-3 h-3" />
           <span className="text-acars-text font-mono">{stats.maxAlt.toLocaleString()} ft max</span>
         </div>
         <div className="flex items-center gap-1 text-acars-muted">

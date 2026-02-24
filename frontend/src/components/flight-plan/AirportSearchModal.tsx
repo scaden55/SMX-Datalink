@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Loader2 } from 'lucide-react';
+import { SpinnerGap } from '@phosphor-icons/react';
 import { api } from '../../lib/api';
 
 interface AirportSearchResult {
@@ -108,7 +108,7 @@ export function AirportSearchDropdown({ value, onChange, disabled, placeholder =
           maxLength={4}
           className={inputCls}
         />
-        {loading && <Loader2 className="w-3 h-3 text-acars-muted animate-spin shrink-0" />}
+        {loading && <SpinnerGap className="w-3 h-3 text-acars-muted animate-spin shrink-0" />}
       </div>
 
       {open && results.length > 0 && (

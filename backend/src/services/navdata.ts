@@ -138,12 +138,17 @@ export class NavdataService {
     const results: RouteFixResult[] = [];
 
     const lookupFix = (ident: string, nearLat?: number, nearLon?: number): RouteFixResult | null => {
-      // Check airports first (4-letter ICAO)
+      // Check airports first (4-letter ICAO) — try legacy hubs then global oa_airports
       if (ident.length === 4) {
         const apt = db.prepare(
           `SELECT icao, lat, lon FROM airports WHERE icao = ?`
         ).get(ident) as { icao: string; lat: number; lon: number } | undefined;
         if (apt) return { ident: apt.icao, lat: apt.lat, lon: apt.lon, type: 'airport' };
+
+        const oaApt = db.prepare(
+          `SELECT ident, latitude_deg AS lat, longitude_deg AS lon FROM oa_airports WHERE ident = ? AND latitude_deg IS NOT NULL`
+        ).get(ident) as { ident: string; lat: number; lon: number } | undefined;
+        if (oaApt) return { ident: oaApt.ident, lat: oaApt.lat, lon: oaApt.lon, type: 'airport' };
       }
 
       // Check navaids (VOR/NDB preferred over fixes for route resolution)

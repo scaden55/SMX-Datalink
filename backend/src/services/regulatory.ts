@@ -405,7 +405,7 @@ export class RegulatoryService {
     const now = new Date().toISOString();
     const lines: string[] = [
       '═══════════════════════════════════════════════',
-      '  SMA VIRTUAL — DISPATCH RELEASE (14 CFR 121.687)',
+      '  SMX VIRTUAL — DISPATCH RELEASE (14 CFR 121.687)',
       '═══════════════════════════════════════════════',
       '',
       `Date/Time:       ${now}`,

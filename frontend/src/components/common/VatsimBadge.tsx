@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Radio } from 'lucide-react';
+import { Broadcast } from '@phosphor-icons/react';
 
 interface Props {
   connected: boolean;
@@ -24,7 +24,7 @@ export function VatsimBadge({ connected, callsign, mode = 'compact' }: Props) {
         onMouseEnter={() => setShowTooltip(true)}
         onMouseLeave={() => setShowTooltip(false)}
       >
-        <Radio className="w-2.5 h-2.5" />
+        <Broadcast className="w-2.5 h-2.5" />
         VATSIM
         {showTooltip && callsign && (
           <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 px-2 py-1 rounded bg-acars-input border border-acars-border text-[10px] text-acars-text font-mono whitespace-nowrap z-50 shadow-lg">
@@ -42,7 +42,7 @@ export function VatsimBadge({ connected, callsign, mode = 'compact' }: Props) {
       onMouseEnter={() => setShowTooltip(true)}
       onMouseLeave={() => setShowTooltip(false)}
     >
-      <Radio className="w-3.5 h-3.5 text-emerald-400" />
+      <Broadcast className="w-3.5 h-3.5 text-emerald-400" />
       <span className="text-xs font-semibold text-emerald-400 uppercase tracking-wide">VATSIM</span>
       {callsign && (
         <span className="text-[10px] text-emerald-400/70 font-mono ml-1">{callsign}</span>

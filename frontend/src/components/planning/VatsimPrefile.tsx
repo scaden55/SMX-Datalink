@@ -1,17 +1,17 @@
 import { useState, useMemo } from 'react';
 import {
-  ExternalLink,
+  ArrowSquareOut,
   Copy,
   Check,
-  Radio,
-  Plane,
-  Navigation,
-  Route,
+  Broadcast,
+  AirplaneTilt,
+  NavigationArrow,
+  Path,
   Clock,
-  Fuel,
+  GasPump,
   ArrowRight,
   X,
-} from 'lucide-react';
+} from '@phosphor-icons/react';
 import type { FlightPlanFormData, SimBriefOFP } from '@acars/shared';
 import type { FleetAircraft } from '@acars/shared';
 
@@ -35,7 +35,7 @@ function CopyButton({ text, label }: { text: string; label: string }) {
   return (
     <button
       onClick={handleCopy}
-      className="flex items-center gap-1 px-1 py-0.5 rounded-md text-[10px] text-acars-muted hover:text-acars-text hover:bg-acars-input transition-colors"
+      className="flex items-center gap-1 px-1 py-0.5 rounded-md text-[10px] text-acars-muted hover:text-acars-text hover:bg-acars-input transition-colors duration-100"
       title={`Copy ${label}`}
     >
       {copied ? <Check className="w-2.5 h-2.5 text-emerald-400" /> : <Copy className="w-2.5 h-2.5" />}
@@ -121,19 +121,19 @@ export function VatsimPrefile({ form, ofp, aircraft, onClose }: Props) {
       {/* Header */}
       <div className="flex items-center justify-between px-3 py-2 border-b border-acars-border bg-acars-bg">
         <div className="flex items-center gap-2">
-          <Radio className="w-3.5 h-3.5 text-emerald-400" />
+          <Broadcast className="w-3.5 h-3.5 text-emerald-400" />
           <span className="text-[12px] font-semibold text-acars-text font-sans">VATSIM Flight Plan</span>
         </div>
         <button
           onClick={onClose}
-          className="text-acars-muted hover:text-acars-text p-1 transition-colors"
+          className="text-acars-muted hover:text-acars-text p-1 transition-colors duration-100"
         >
           <X className="w-3.5 h-3.5" />
         </button>
       </div>
 
       <div className="flex-1 overflow-y-auto p-3 space-y-3">
-        {/* Route summary */}
+        {/* Path summary */}
         <div className="flex items-center justify-center gap-4 py-2">
           <div className="text-center">
             <div className="text-base font-bold font-mono text-acars-mono">{fields.departure}</div>
@@ -148,14 +148,14 @@ export function VatsimPrefile({ form, ofp, aircraft, onClose }: Props) {
 
         {/* Field-by-field breakdown */}
         <div className="space-y-1">
-          <FieldRow icon={<Plane className="w-3 h-3" />} label="Callsign" value={fields.callsign} />
-          <FieldRow icon={<Navigation className="w-3 h-3" />} label="Equipment" value={fields.equipment} />
-          <FieldRow icon={<Route className="w-3 h-3" />} label="Route" value={fields.route || '(direct)'} />
+          <FieldRow icon={<AirplaneTilt className="w-3 h-3" />} label="Callsign" value={fields.callsign} />
+          <FieldRow icon={<NavigationArrow className="w-3 h-3" />} label="Equipment" value={fields.equipment} />
+          <FieldRow icon={<Path className="w-3 h-3" />} label="Path" value={fields.route || '(direct)'} />
           <FieldRow icon={<ArrowRight className="w-3 h-3" />} label="Cruise" value={`${fields.cruiseSpeed} ${fields.cruiseAlt}`} />
           <FieldRow icon={<Clock className="w-3 h-3" />} label="Enroute" value={fields.enrouteTime} />
-          <FieldRow icon={<Fuel className="w-3 h-3" />} label="Fuel Endurance" value={fields.fuelEndurance} />
+          <FieldRow icon={<GasPump className="w-3 h-3" />} label="Fuel Endurance" value={fields.fuelEndurance} />
           {fields.alternate && (
-            <FieldRow icon={<Plane className="w-3 h-3" />} label="Alternate" value={`${fields.alternate}${fields.alternate2 ? ` / ${fields.alternate2}` : ''}`} />
+            <FieldRow icon={<AirplaneTilt className="w-3 h-3" />} label="Alternate" value={`${fields.alternate}${fields.alternate2 ? ` / ${fields.alternate2}` : ''}`} />
           )}
         </div>
 
@@ -174,14 +174,14 @@ export function VatsimPrefile({ form, ofp, aircraft, onClose }: Props) {
       <div className="px-3 py-2 border-t border-acars-border space-y-1.5">
         <button
           onClick={handleOpenMyVatsim}
-          className="w-full flex items-center justify-center gap-2 py-1.5 rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-400/20 text-[11px] font-semibold font-sans hover:bg-emerald-500/20 transition-colors"
+          className="w-full flex items-center justify-center gap-2 py-1.5 rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-400/20 text-[11px] font-semibold font-sans hover:bg-emerald-500/20 transition-colors duration-150"
         >
-          <ExternalLink className="w-3 h-3" />
+          <ArrowSquareOut className="w-3 h-3" />
           Open myVATSIM Prefile
         </button>
         <button
           onClick={handleCopyFull}
-          className="w-full flex items-center justify-center gap-2 py-1.5 rounded-md bg-acars-panel border border-acars-border text-[11px] font-medium font-sans text-acars-text hover:bg-acars-input transition-colors"
+          className="w-full flex items-center justify-center gap-2 py-1.5 rounded-md bg-acars-panel border border-acars-border text-[11px] font-medium font-sans text-acars-text hover:bg-acars-input transition-colors duration-150"
         >
           {fullCopied ? (
             <>

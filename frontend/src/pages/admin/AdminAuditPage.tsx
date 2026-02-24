@@ -1,14 +1,14 @@
 import { useState, useEffect, useCallback, Fragment } from 'react';
 import {
-  ScrollText,
-  ChevronLeft,
-  ChevronRight,
-  ChevronDown,
-  ChevronRight as ChevronExpand,
-  Loader2,
-  Filter,
+  Scroll,
+  CaretLeft,
+  CaretRight,
+  CaretDown,
+  CaretRight as CaretUpDown,
+  SpinnerGap,
+  Funnel,
   Calendar,
-} from 'lucide-react';
+} from '@phosphor-icons/react';
 import { api } from '../../lib/api';
 import { AdminPageHeader } from '../../components/admin/AdminPageHeader';
 import type { AuditLogEntry, AuditLogListResponse } from '@acars/shared';
@@ -158,7 +158,7 @@ export function AdminAuditPage() {
       {/* ── Header ─────────────────────────────────────────────── */}
       <div className="flex-none px-6 pt-6 pb-4">
         <AdminPageHeader
-          icon={ScrollText}
+          icon={Scroll}
           title="Audit Log"
           subtitle="Track all administrative actions"
         />
@@ -169,7 +169,7 @@ export function AdminAuditPage() {
         <div className="flex flex-wrap items-center gap-2">
           {/* Action filter */}
           <div className="relative">
-            <Filter className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-acars-muted pointer-events-none" />
+            <Funnel className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-acars-muted pointer-events-none" />
             <select
               value={actionFilter}
               onChange={e => { setActionFilter(e.target.value); setPage(1); }}
@@ -183,7 +183,7 @@ export function AdminAuditPage() {
 
           {/* Target type filter */}
           <div className="relative">
-            <Filter className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-acars-muted pointer-events-none" />
+            <Funnel className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-acars-muted pointer-events-none" />
             <select
               value={targetTypeFilter}
               onChange={e => { setTargetTypeFilter(e.target.value); setPage(1); }}
@@ -243,7 +243,7 @@ export function AdminAuditPage() {
       <div className="flex-1 overflow-auto px-6">
         {loading ? (
           <div className="flex items-center justify-center h-64">
-            <Loader2 className="w-6 h-6 text-blue-400 animate-spin" />
+            <SpinnerGap className="w-6 h-6 text-blue-400 animate-spin" />
           </div>
         ) : error ? (
           <div className="flex items-center justify-center h-64 text-sm text-red-400">
@@ -251,7 +251,7 @@ export function AdminAuditPage() {
           </div>
         ) : entries.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-64 gap-3">
-            <ScrollText className="w-10 h-10 text-acars-muted/30" />
+            <Scroll className="w-10 h-10 text-acars-muted/30" />
             <p className="text-sm text-acars-muted">No audit log entries found</p>
           </div>
         ) : (
@@ -297,8 +297,8 @@ export function AdminAuditPage() {
                         <td className="px-3 py-2.5 text-center">
                           {hasDetails && (
                             isExpanded
-                              ? <ChevronDown className="w-3.5 h-3.5 text-acars-muted inline-block" />
-                              : <ChevronExpand className="w-3.5 h-3.5 text-acars-muted inline-block" />
+                              ? <CaretDown className="w-3.5 h-3.5 text-acars-muted inline-block" />
+                              : <CaretUpDown className="w-3.5 h-3.5 text-acars-muted inline-block" />
                           )}
                         </td>
                         <td className="px-3 py-2.5">
@@ -371,7 +371,7 @@ export function AdminAuditPage() {
               disabled={page <= 1}
               className="h-7 w-7 rounded border border-acars-border bg-acars-panel text-acars-muted hover:text-acars-text disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center transition-colors"
             >
-              <ChevronLeft className="w-3.5 h-3.5" />
+              <CaretLeft className="w-3.5 h-3.5" />
             </button>
             <span className="text-xs text-acars-text px-2 font-mono">
               {page} / {totalPages}
@@ -381,7 +381,7 @@ export function AdminAuditPage() {
               disabled={page >= totalPages}
               className="h-7 w-7 rounded border border-acars-border bg-acars-panel text-acars-muted hover:text-acars-text disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center transition-colors"
             >
-              <ChevronRight className="w-3.5 h-3.5" />
+              <CaretRight className="w-3.5 h-3.5" />
             </button>
           </div>
         </div>

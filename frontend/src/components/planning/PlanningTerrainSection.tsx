@@ -1,4 +1,4 @@
-import { Mountain } from 'lucide-react';
+import { Mountains } from '@phosphor-icons/react';
 import { CollapsibleSection } from '../common/CollapsibleSection';
 import { useFlightPlanStore } from '../../stores/flightPlanStore';
 
@@ -7,7 +7,7 @@ export function PlanningTerrainSection() {
 
   if (steps.length === 0) {
     return (
-      <CollapsibleSection title="Terrain" icon={<Mountain className="w-3.5 h-3.5" />} defaultOpen>
+      <CollapsibleSection title="Terrain" icon={<Mountains className="w-3.5 h-3.5" />} defaultOpen>
         <p className="text-[11px] text-acars-muted font-sans">Generate OFP to see terrain data</p>
       </CollapsibleSection>
     );
@@ -20,7 +20,7 @@ export function PlanningTerrainSection() {
     <CollapsibleSection
       title="Terrain"
       summary={`Max FL${Math.round(maxAlt / 100)}`}
-      icon={<Mountain className="w-3.5 h-3.5" />}
+      icon={<Mountains className="w-3.5 h-3.5" />}
       status="green"
       defaultOpen
     >

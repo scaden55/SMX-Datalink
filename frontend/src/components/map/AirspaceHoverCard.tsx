@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { Radio, Plane, Clock } from 'lucide-react';
+import { Broadcast, AirplaneTilt, Clock } from '@phosphor-icons/react';
 import type { VatsimControllerWithPosition, VatsimPilot } from '@acars/shared';
 import { pilotsInAirspace } from '../../lib/geo-utils';
 
@@ -47,7 +47,7 @@ export function AirspaceHoverCard({ airspaceId, airspaceType, feature, controlle
     >
       <div className="bg-acars-panel border border-acars-border rounded-md shadow-lg p-3 w-56">
         <div className="flex items-center gap-2 mb-2">
-          <Radio className="w-3.5 h-3.5 shrink-0" style={{ color: accentColor }} />
+          <Broadcast className="w-3.5 h-3.5 shrink-0" style={{ color: accentColor }} />
           <div className="min-w-0">
             <div className="text-xs font-bold text-acars-text truncate">{name}</div>
             <div className="text-[9px] text-acars-muted uppercase tracking-wider">
@@ -74,7 +74,7 @@ export function AirspaceHoverCard({ airspaceId, airspaceType, feature, controlle
         )}
 
         <div className="border-t border-acars-border pt-2 flex items-center gap-1.5">
-          <Plane className="w-3 h-3 text-acars-muted" />
+          <AirplaneTilt className="w-3 h-3 text-acars-muted" />
           <span className="text-[11px] text-acars-text font-mono font-bold">{pilotCount}</span>
           <span className="text-[10px] text-acars-muted">aircraft in airspace</span>
         </div>

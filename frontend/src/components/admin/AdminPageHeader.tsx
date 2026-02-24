@@ -1,4 +1,4 @@
-import type { LucideIcon } from 'lucide-react';
+import type { Icon } from '@phosphor-icons/react';
 
 interface StatCard {
   label: string;
@@ -7,7 +7,7 @@ interface StatCard {
 }
 
 interface AdminPageHeaderProps {
-  icon: LucideIcon;
+  icon: Icon;
   title: string;
   subtitle?: string;
   stats?: StatCard[];

@@ -1,4 +1,5 @@
 import { getDb } from '../db/index.js';
+import { haversineNm } from '../lib/geo.js';
 import { AuditService } from './audit.js';
 import type { CreateScheduleRequest, UpdateScheduleRequest } from '@acars/shared';
 import type { ScheduledFlightRow } from '../types/db-rows.js';
@@ -45,18 +46,6 @@ export interface AutofillResult {
   cruiseSpeed?: number;
 }
 
-// ── Haversine (nautical miles) ───────────────────────────────────
-
-function haversineNm(lat1: number, lon1: number, lat2: number, lon2: number): number {
-  const R = 3440.065;
-  const toRad = (d: number) => d * Math.PI / 180;
-  const dLat = toRad(lat2 - lat1);
-  const dLon = toRad(lon2 - lon1);
-  const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return Math.round(R * c);
-}
-
 interface ScheduleRow {
   id: number;
   flight_number: string;
@@ -79,7 +68,7 @@ const auditService = new AuditService();
 
 export class ScheduleAdminService {
 
-  findAll(filters?: { depIcao?: string; arrIcao?: string; aircraftType?: string; search?: string; isActive?: boolean }, page = 1, pageSize = 50): { schedules: any[]; total: number } {
+  findAll(filters?: { depIcao?: string; arrIcao?: string; aircraftType?: string; search?: string; isActive?: boolean; charterType?: string }, page = 1, pageSize = 50): { schedules: any[]; total: number } {
     const conditions: string[] = [];
     const params: unknown[] = [];
 
@@ -87,6 +76,14 @@ export class ScheduleAdminService {
     if (filters?.arrIcao) { conditions.push('sf.arr_icao = ?'); params.push(filters.arrIcao); }
     if (filters?.aircraftType) { conditions.push('sf.aircraft_type = ?'); params.push(filters.aircraftType); }
     if (filters?.isActive !== undefined) { conditions.push('sf.is_active = ?'); params.push(filters.isActive ? 1 : 0); }
+    if (filters?.charterType) {
+      if (filters.charterType === 'regular') {
+        conditions.push('sf.charter_type IS NULL');
+      } else {
+        conditions.push('sf.charter_type = ?');
+        params.push(filters.charterType);
+      }
+    }
     if (filters?.search) {
       conditions.push('(sf.flight_number LIKE ? OR sf.dep_icao LIKE ? OR sf.arr_icao LIKE ?)');
       const term = `%${filters.search}%`;

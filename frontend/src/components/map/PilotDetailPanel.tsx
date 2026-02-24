@@ -1,14 +1,25 @@
 import { useState, useEffect } from 'react';
 import {
-  X, Plane, Navigation, Gauge, ArrowUpDown, Radio, Route, FileText,
-  ChevronDown, Clock, Compass, Copy, Check,
-} from 'lucide-react';
+  X,
+  AirplaneTilt,
+  NavigationArrow,
+  Gauge,
+  ArrowsDownUp,
+  Broadcast,
+  Path,
+  FileText,
+  CaretDown,
+  Clock,
+  Compass,
+  Copy,
+  Check,
+} from '@phosphor-icons/react';
 import type { VatsimPilot } from '@acars/shared';
 import { getApiBase } from '../../lib/api';
 
 // ── Helpers ──────────────────────────────────────────────────
 
-/** Status derived from telemetry — mirrors VATSIM Radar approach */
+/** Status derived from telemetry — mirrors VATSIM Scan approach */
 function deriveStatus(pilot: VatsimPilot): { label: string; color: string; bgColor: string; dotColor: string } {
   const gs = pilot.groundspeed;
   const alt = pilot.altitude;
@@ -20,7 +31,7 @@ function deriveStatus(pilot: VatsimPilot): { label: string; color: string; bgCol
   if (alt >= 25000 && gs >= 200)
     return { label: 'Cruising', color: 'text-[#79c0ff]', bgColor: 'bg-[#79c0ff]/10', dotColor: '#79c0ff' };
   if (alt >= 10000)
-    return { label: 'En Route', color: 'text-[#58a6ff]', bgColor: 'bg-[#58a6ff]/10', dotColor: '#58a6ff' };
+    return { label: 'En Path', color: 'text-[#58a6ff]', bgColor: 'bg-[#58a6ff]/10', dotColor: '#58a6ff' };
   return { label: 'Arriving', color: 'text-[#f0883e]', bgColor: 'bg-[#f0883e]/10', dotColor: '#f0883e' };
 }
 
@@ -198,7 +209,7 @@ export function PilotDetailPanel({ pilot, onClose, onRouteResolved }: Props) {
       </div>
 
       <div className="flex-1 overflow-y-auto">
-        {/* ── Route Progress ── */}
+        {/* ── Path Progress ── */}
         {fp && (
           <div className="px-4 py-3 border-b border-acars-border">
             {/* Airport pair */}
@@ -219,7 +230,7 @@ export function PilotDetailPanel({ pilot, onClose, onRouteResolved }: Props) {
                     }}
                   />
                 )}
-                {/* Plane icon on the track */}
+                {/* AirplaneTilt icon on the track */}
                 <div
                   className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 transition-all duration-1000"
                   style={{ left: `${Math.min(progress ?? 50, 97)}%` }}
@@ -228,7 +239,7 @@ export function PilotDetailPanel({ pilot, onClose, onRouteResolved }: Props) {
                     className="w-5 h-5 rounded-full flex items-center justify-center"
                     style={{ background: status.dotColor, boxShadow: `0 0 8px ${status.dotColor}60` }}
                   >
-                    <Plane className="w-3 h-3 text-acars-bg" style={{ transform: 'rotate(45deg)' }} />
+                    <AirplaneTilt className="w-3 h-3 text-acars-bg" style={{ transform: 'rotate(45deg)' }} />
                   </div>
                 </div>
               </div>
@@ -264,7 +275,7 @@ export function PilotDetailPanel({ pilot, onClose, onRouteResolved }: Props) {
               label="Altitude"
               value={pilot.altitude.toLocaleString()}
               unit="ft"
-              icon={ArrowUpDown}
+              icon={ArrowsDownUp}
             />
             <DataCard
               label="Heading"
@@ -278,7 +289,7 @@ export function PilotDetailPanel({ pilot, onClose, onRouteResolved }: Props) {
         {/* ── Position Details (collapsible) ── */}
         <CollapsibleSection
           title="Position"
-          icon={Navigation}
+          icon={NavigationArrow}
           collapsed={collapsed.position}
           onToggle={() => toggle('position')}
         >
@@ -317,11 +328,11 @@ export function PilotDetailPanel({ pilot, onClose, onRouteResolved }: Props) {
           </div>
         )}
 
-        {/* ── Route String (collapsible) ── */}
+        {/* ── Path String (collapsible) ── */}
         {fp?.route && (
           <CollapsibleSection
-            title="Route"
-            icon={Route}
+            title="Path"
+            icon={Path}
             collapsed={collapsed.route}
             onToggle={() => toggle('route')}
             action={
@@ -430,7 +441,7 @@ function CollapsibleSection({
         <span className="text-[10px] font-semibold text-acars-muted tracking-wider uppercase">{title}</span>
         <div className="flex-1" />
         {action}
-        <ChevronDown
+        <CaretDown
           className={`w-3 h-3 text-acars-muted transition-transform duration-200 ${collapsed ? '-rotate-90' : ''}`}
         />
       </div>

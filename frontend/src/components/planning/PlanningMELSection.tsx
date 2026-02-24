@@ -1,4 +1,4 @@
-import { AlertTriangle } from 'lucide-react';
+import { Warning } from '@phosphor-icons/react';
 import { CollapsibleSection } from '../common/CollapsibleSection';
 import { useFlightPlanStore } from '../../stores/flightPlanStore';
 
@@ -8,7 +8,7 @@ export function PlanningMELSection() {
   return (
     <CollapsibleSection
       title="MEL & Restrictions"
-      icon={<AlertTriangle className="w-3.5 h-3.5" />}
+      icon={<Warning className="w-3.5 h-3.5" />}
       status={form.melRestrictions ? 'amber' : 'grey'}
       defaultOpen
     >

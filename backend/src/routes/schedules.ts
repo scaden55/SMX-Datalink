@@ -42,6 +42,22 @@ export function scheduleRouter(): Router {
     }
   });
 
+  // GET /api/fleet/for-bid — active fleet with location match info
+  router.get('/fleet/for-bid', authMiddleware, (req, res) => {
+    try {
+      const depIcao = req.query.dep_icao as string;
+      if (!depIcao) {
+        res.status(400).json({ error: 'dep_icao query parameter is required' });
+        return;
+      }
+      const fleet = service.findFleetForBid(depIcao);
+      res.json({ fleet });
+    } catch (err) {
+      logger.error('Schedule', 'Fleet for bid error', err);
+      res.status(500).json({ error: 'Failed to fetch fleet' });
+    }
+  });
+
   // GET /api/stats — public
   router.get('/stats', (_req, res) => {
     try {
@@ -61,6 +77,7 @@ export function scheduleRouter(): Router {
         arrIcao: req.query.arr_icao as string | undefined,
         aircraftType: req.query.aircraft_type as string | undefined,
         search: req.query.search as string | undefined,
+        charterType: req.query.charter_type as string | undefined,
       };
 
       const userId = req.user?.userId;
@@ -97,23 +114,27 @@ export function scheduleRouter(): Router {
     }
   });
 
-  // POST /api/bids — auth required
+  // POST /api/bids — auth required (aircraft selection at bid time)
   router.post('/bids', authMiddleware, (req, res) => {
     try {
-      const { scheduleId } = req.body as { scheduleId?: number };
+      const { scheduleId, aircraftId } = req.body as { scheduleId?: number; aircraftId?: number };
 
       if (!scheduleId || typeof scheduleId !== 'number') {
         res.status(400).json({ error: 'scheduleId (number) is required' });
         return;
       }
-
-      const bid = service.placeBid(req.user!.userId, scheduleId);
-      if (!bid) {
-        res.status(409).json({ error: 'Bid already exists or schedule not found' });
+      if (!aircraftId || typeof aircraftId !== 'number') {
+        res.status(400).json({ error: 'aircraftId (number) is required' });
         return;
       }
 
-      res.status(201).json({ bid });
+      const result = service.placeBid(req.user!.userId, scheduleId, aircraftId);
+      if ('error' in result) {
+        res.status(409).json({ error: result.error });
+        return;
+      }
+
+      res.status(201).json({ bid: result.bid, warnings: result.warnings });
     } catch (err) {
       logger.error('Schedule', 'Place bid error', err);
       res.status(500).json({ error: 'Failed to place bid' });
@@ -164,7 +185,7 @@ export function scheduleRouter(): Router {
     }
   });
 
-  // POST /api/charters — auth required (create charter + auto-bid)
+  // POST /api/charters — auth required (create charter, no auto-bid)
   const VALID_CHARTER_TYPES = new Set<CharterType>(['reposition', 'cargo', 'passenger']);
 
   router.post('/charters', authMiddleware, (req, res) => {
@@ -175,8 +196,8 @@ export function scheduleRouter(): Router {
         res.status(400).json({ error: 'charterType must be reposition, cargo, or passenger' });
         return;
       }
-      if (!body.depIcao || !body.arrIcao || !body.aircraftType || !body.depTime) {
-        res.status(400).json({ error: 'depIcao, arrIcao, aircraftType, and depTime are required' });
+      if (!body.depIcao || !body.arrIcao || !body.depTime) {
+        res.status(400).json({ error: 'depIcao, arrIcao, and depTime are required' });
         return;
       }
       if (body.depIcao === body.arrIcao) {
@@ -190,7 +211,7 @@ export function scheduleRouter(): Router {
 
       const result = service.createCharter(req.user!.userId, body as CreateCharterRequest);
       if (!result) {
-        res.status(400).json({ error: 'Invalid airports or aircraft type' });
+        res.status(400).json({ error: 'Invalid airports' });
         return;
       }
 

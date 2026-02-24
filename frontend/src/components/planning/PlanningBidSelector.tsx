@@ -1,4 +1,4 @@
-import { ChevronDown, Plane } from 'lucide-react';
+import { CaretDown, AirplaneTilt } from '@phosphor-icons/react';
 import { useFlightPlanStore } from '../../stores/flightPlanStore';
 import type { BidWithDetails } from '@acars/shared';
 
@@ -30,8 +30,8 @@ export function PlanningBidSelector({ bids, onSelect }: Props) {
             </option>
           ))}
         </select>
-        <Plane className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-blue-400 pointer-events-none" />
-        <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-acars-muted pointer-events-none" />
+        <AirplaneTilt className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-blue-400 pointer-events-none" />
+        <CaretDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-acars-muted pointer-events-none" />
       </div>
       {active && (
         <div className="flex gap-3 mt-1.5 text-[10px] text-acars-muted">

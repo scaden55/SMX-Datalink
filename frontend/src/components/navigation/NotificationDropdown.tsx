@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bell, CheckCheck } from 'lucide-react';
+import { Bell, Checks } from '@phosphor-icons/react';
 import { useNotificationStore } from '../../stores/notificationStore';
 
 export function NotificationDropdown() {
@@ -67,7 +67,7 @@ export function NotificationDropdown() {
                 onClick={() => markAllRead()}
                 className="flex items-center gap-1 text-[10px] text-blue-400 hover:text-blue-400/80 transition-colors"
               >
-                <CheckCheck className="w-3 h-3" />
+                <Checks className="w-3 h-3" />
                 Mark all read
               </button>
             )}

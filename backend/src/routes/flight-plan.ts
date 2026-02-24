@@ -3,6 +3,7 @@ import { createHash } from 'crypto';
 import { authMiddleware } from '../middleware/auth.js';
 import { UserService } from '../services/user.js';
 import { FlightPlanService } from '../services/flight-plan.js';
+import { getDb } from '../db/index.js';
 import { config } from '../config.js';
 import type { FlightPlanPhase } from '@acars/shared';
 import { logger } from '../lib/logger.js';
@@ -198,6 +199,29 @@ export function flightPlanRouter(): Router {
       if (phase !== undefined && !validPhases.has(phase)) {
         res.status(400).json({ error: `Invalid phase: must be one of ${[...validPhases].join(', ')}` });
         return;
+      }
+
+      // Gate: aircraft must be at departure airport to start flight
+      if (phase === 'active') {
+        const row = getDb().prepare(`
+          SELECT
+            f.registration,
+            COALESCE(f.location_icao, f.base_icao) AS effective_location,
+            sf.dep_icao
+          FROM active_bids ab
+          JOIN fleet f ON f.id = ab.aircraft_id
+          JOIN scheduled_flights sf ON sf.id = ab.schedule_id
+          WHERE ab.id = ? AND ab.user_id = ?
+        `).get(bidId, req.user!.userId) as {
+          registration: string; effective_location: string | null; dep_icao: string;
+        } | undefined;
+
+        if (row && row.effective_location && row.effective_location !== row.dep_icao) {
+          res.status(409).json({
+            error: `Cannot start flight: ${row.registration} is at ${row.effective_location}, not ${row.dep_icao}`,
+          });
+          return;
+        }
       }
 
       const updated = fpService.saveFlightPlan(bidId, req.user!.userId, {

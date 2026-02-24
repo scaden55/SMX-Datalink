@@ -1,4 +1,4 @@
-import { Settings2 } from 'lucide-react';
+import { GearSix } from '@phosphor-icons/react';
 import { CollapsibleSection } from '../common/CollapsibleSection';
 import { useFlightPlanStore } from '../../stores/flightPlanStore';
 
@@ -11,7 +11,7 @@ export function PlanningOptionsSection() {
     <CollapsibleSection
       title="Options"
       summary={summary}
-      icon={<Settings2 className="w-3.5 h-3.5" />}
+      icon={<GearSix className="w-3.5 h-3.5" />}
       status={form.cruiseFL ? 'green' : 'grey'}
       defaultOpen
     >

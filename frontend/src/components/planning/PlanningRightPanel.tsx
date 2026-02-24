@@ -1,4 +1,4 @@
-import { Plane, ArrowRight, Clock, Radio } from 'lucide-react';
+import { AirplaneTilt, ArrowRight, Clock, Broadcast } from '@phosphor-icons/react';
 import { useFlightPlanStore } from '../../stores/flightPlanStore';
 import type { BidWithDetails } from '@acars/shared';
 
@@ -28,7 +28,7 @@ export function PlanningRightPanel({ bids, onSelectBid, onFileVatsim }: Props) {
       <div className="flex-1 overflow-auto">
         {bids.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center px-4">
-            <img src="./logos/chevron-light.png" alt="SMA" className="h-7 w-auto opacity-10 mb-2" />
+            <img src="./logos/chevron-light.png" alt="SMX" className="h-7 w-auto opacity-10 mb-2" />
             <p className="text-[11px] text-acars-muted font-sans">No active bids</p>
             <p className="text-[10px] text-acars-muted/50 font-sans mt-0.5">Place a bid from the cargo schedule</p>
           </div>
@@ -40,7 +40,7 @@ export function PlanningRightPanel({ bids, onSelectBid, onFileVatsim }: Props) {
                 <button
                   key={bid.id}
                   onClick={() => onSelectBid(bid.id)}
-                  className={`w-full text-left rounded-md border p-2 transition-all ${
+                  className={`w-full text-left rounded-md border p-2 transition-all duration-150 ${
                     isActive
                       ? 'border-blue-400/40 bg-blue-500/5'
                       : 'border-acars-border bg-acars-input hover:border-acars-muted/40'
@@ -77,10 +77,10 @@ export function PlanningRightPanel({ bids, onSelectBid, onFileVatsim }: Props) {
         <button
           onClick={onFileVatsim}
           disabled={!ofp}
-          className="flex items-center gap-1.5 px-3 py-1 rounded-md text-[11px] font-semibold font-sans bg-emerald-500/10 text-emerald-400 border border-emerald-400/20 hover:bg-emerald-500/20 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+          className="flex items-center gap-1.5 px-3 py-1 rounded-md text-[11px] font-semibold font-sans bg-emerald-500/10 text-emerald-400 border border-emerald-400/20 hover:bg-emerald-500/20 transition-colors duration-150 disabled:opacity-30 disabled:cursor-not-allowed"
           title={ofp ? 'Pre-file your flight plan on VATSIM' : 'Generate an OFP first'}
         >
-          <Radio className="w-3.5 h-3.5" />
+          <Broadcast className="w-3.5 h-3.5" />
           File on VATSIM
         </button>
       </div>

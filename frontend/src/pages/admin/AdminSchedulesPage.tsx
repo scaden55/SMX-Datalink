@@ -1,20 +1,22 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
-  CalendarDays,
-  Search,
-  RotateCcw,
-  Loader2,
+  CalendarDots,
+  MagnifyingGlass,
+  ArrowCounterClockwise,
+  SpinnerGap,
   Plus,
   X,
-  Pencil,
-  Trash2,
+  PencilSimple,
+  Trash,
   Copy,
   ToggleLeft,
   ToggleRight,
-  ChevronLeft,
-  ChevronRight,
-  Plane,
-} from 'lucide-react';
+  CaretLeft,
+  CaretRight,
+  AirplaneTilt,
+  Lightning,
+  ArrowsClockwise,
+} from '@phosphor-icons/react';
 import { api } from '../../lib/api';
 import { AdminPageHeader } from '../../components/admin/AdminPageHeader';
 import { ConfirmDialog } from '../../components/admin/ConfirmDialog';
@@ -57,6 +59,13 @@ interface ScheduleFormData {
   flightTimeMin: number | '';
   daysOfWeek: string;
   charterType?: string;
+}
+
+interface CharterGenerationStatus {
+  month: string;
+  generatedAt: string | null;
+  charterCount: number;
+  eventCount: number;
 }
 
 const EMPTY_FORM: ScheduleFormData = {
@@ -332,12 +341,12 @@ function ScheduleFormModal({
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-acars-border">
+        <div className="flex items-center justify-between px-5 py-3.5 border-b border-acars-border">
           <div className="flex items-center gap-2.5">
-            <div className="flex items-center justify-center w-9 h-9 rounded-md bg-blue-500/10 border border-blue-400/20">
-              <CalendarDays className="w-4.5 h-4.5 text-blue-400" />
+            <div className="flex items-center justify-center w-8 h-8 rounded-md bg-blue-500/10 border border-blue-400/20">
+              <CalendarDots className="w-4 h-4 text-blue-400" />
             </div>
-            <h2 className="text-sm font-semibold text-acars-text">{title}</h2>
+            <h2 className="text-[13px] font-semibold text-acars-text">{title}</h2>
           </div>
           <button
             onClick={onClose}
@@ -512,9 +521,9 @@ function ScheduleFormModal({
             className="inline-flex items-center gap-2 px-4 py-2 rounded-md text-xs font-semibold text-white bg-blue-500 hover:bg-blue-500/80 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
             {submitting ? (
-              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              <SpinnerGap className="w-3.5 h-3.5 animate-spin" />
             ) : (
-              <CalendarDays className="w-3.5 h-3.5" />
+              <CalendarDots className="w-3.5 h-3.5" />
             )}
             {title.includes('Edit') ? 'Save Changes' : 'Create Schedule'}
           </button>
@@ -545,13 +554,13 @@ function CloneModal({ schedule, onClone, onClose, submitting, error }: CloneModa
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-acars-border">
+        <div className="flex items-center justify-between px-5 py-3.5 border-b border-acars-border">
           <div className="flex items-center gap-2.5">
-            <div className="flex items-center justify-center w-9 h-9 rounded-md bg-amber-500/10 border border-amber-400/20">
-              <Copy className="w-4.5 h-4.5 text-amber-400" />
+            <div className="flex items-center justify-center w-8 h-8 rounded-md bg-amber-500/10 border border-amber-400/20">
+              <Copy className="w-4 h-4 text-amber-400" />
             </div>
             <div>
-              <h2 className="text-sm font-semibold text-acars-text">Clone Schedule</h2>
+              <h2 className="text-[13px] font-semibold text-acars-text">Clone Schedule</h2>
               <p className="text-[10px] text-acars-muted">
                 Cloning {schedule.flightNumber} ({schedule.depIcao} → {schedule.arrIcao})
               </p>
@@ -598,7 +607,7 @@ function CloneModal({ schedule, onClone, onClose, submitting, error }: CloneModa
             onClick={() => onClone(flightNumber.trim())}
             className="inline-flex items-center gap-2 px-4 py-2 rounded-md text-xs font-semibold text-white bg-amber-500 hover:bg-amber-500/80 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
-            {submitting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Copy className="w-3.5 h-3.5" />}
+            {submitting ? <SpinnerGap className="w-3.5 h-3.5 animate-spin" /> : <Copy className="w-3.5 h-3.5" />}
             Clone
           </button>
         </div>
@@ -620,10 +629,16 @@ export function AdminSchedulesPage() {
   const [searchInput, setSearchInput] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState('');
+  const [charterTypeFilter, setCharterTypeFilter] = useState('');
   const [activeFilter, setActiveFilter] = useState<'all' | 'active' | 'inactive'>('all');
   const [page, setPage] = useState(1);
   const [pageSize] = useState(50);
   const searchTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+
+  // Charter generation
+  const [genStatus, setGenStatus] = useState<CharterGenerationStatus | null>(null);
+  const [generating, setGenerating] = useState(false);
+  const [refreshingEvents, setRefreshingEvents] = useState(false);
 
   // Modals
   const [createOpen, setCreateOpen] = useState(false);
@@ -636,12 +651,16 @@ export function AdminSchedulesPage() {
   const [modalError, setModalError] = useState('');
   const [deleteLoading, setDeleteLoading] = useState(false);
 
-  // ── Load aircraft types on mount ──────────────────────────────
+  // ── Load aircraft types + charter status on mount ───────────────
   useEffect(() => {
     api
       .get<string[]>('/api/fleet/manage/types')
       .then(setAircraftTypes)
       .catch(err => console.error('[Schedules] Failed to load types:', err));
+    api
+      .get<CharterGenerationStatus>('/api/admin/charters/status')
+      .then(setGenStatus)
+      .catch(err => console.error('[Schedules] Failed to load charter status:', err));
   }, []);
 
   // ── Fetch schedules ───────────────────────────────────────────
@@ -650,6 +669,7 @@ export function AdminSchedulesPage() {
     try {
       const params = new URLSearchParams();
       if (typeFilter) params.set('aircraftType', typeFilter);
+      if (charterTypeFilter) params.set('charterType', charterTypeFilter);
       if (activeFilter === 'active') params.set('isActive', 'true');
       if (activeFilter === 'inactive') params.set('isActive', 'false');
       if (searchTerm) params.set('search', searchTerm);
@@ -665,7 +685,7 @@ export function AdminSchedulesPage() {
     } finally {
       setLoading(false);
     }
-  }, [typeFilter, activeFilter, searchTerm, page, pageSize]);
+  }, [typeFilter, charterTypeFilter, activeFilter, searchTerm, page, pageSize]);
 
   useEffect(() => {
     fetchSchedules();
@@ -684,13 +704,14 @@ export function AdminSchedulesPage() {
   // ── Reset filters ─────────────────────────────────────────────
   const resetFilters = () => {
     setTypeFilter('');
+    setCharterTypeFilter('');
     setActiveFilter('all');
     setSearchInput('');
     setSearchTerm('');
     setPage(1);
   };
 
-  const hasFilters = typeFilter || activeFilter !== 'all' || searchTerm;
+  const hasFilters = typeFilter || charterTypeFilter || activeFilter !== 'all' || searchTerm;
 
   // ── Stats ─────────────────────────────────────────────────────
   const stats = useMemo(() => {
@@ -804,6 +825,39 @@ export function AdminSchedulesPage() {
     }
   };
 
+  // ── Charter generation actions ───────────────────────────────
+  const handleGenerate = async () => {
+    setGenerating(true);
+    try {
+      await api.post('/api/admin/charters/generate');
+      const status = await api.get<CharterGenerationStatus>('/api/admin/charters/status');
+      setGenStatus(status);
+      // Auto-filter to generated charters so the user sees the results
+      setCharterTypeFilter('generated');
+      setPage(1);
+    } catch (err) {
+      console.error('[Schedules] Generate charters error:', err);
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  const handleRefreshEvents = async () => {
+    setRefreshingEvents(true);
+    try {
+      await api.post('/api/admin/events/refresh');
+      const status = await api.get<CharterGenerationStatus>('/api/admin/charters/status');
+      setGenStatus(status);
+      // Auto-filter to event flights so the user sees the results
+      setCharterTypeFilter('event');
+      setPage(1);
+    } catch (err) {
+      console.error('[Schedules] Refresh events error:', err);
+    } finally {
+      setRefreshingEvents(false);
+    }
+  };
+
   // ── Close modals (reset error) ────────────────────────────────
   const closeCreate = () => {
     setCreateOpen(false);
@@ -829,7 +883,7 @@ export function AdminSchedulesPage() {
     <div className="h-full flex flex-col overflow-hidden p-6 gap-5">
       {/* Page Header */}
       <AdminPageHeader
-        icon={CalendarDays}
+        icon={CalendarDots}
         title="Schedule Management"
         subtitle="Manage scheduled flight routes"
         stats={[
@@ -842,17 +896,69 @@ export function AdminSchedulesPage() {
             onClick={() => setCreateOpen(true)}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[11px] font-semibold text-emerald-400 bg-emerald-500/10 border border-emerald-400/20 hover:bg-emerald-500/20 transition-colors"
           >
-            <Plus className="w-3.5 h-3.5" /> Add Route
+            <Plus className="w-3.5 h-3.5" /> Add Path
           </button>
         }
       />
+
+      {/* Charter Generation Panel */}
+      <div className="panel">
+        <div className="flex items-center justify-between px-4 py-3">
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <div className="flex items-center justify-center w-7 h-7 rounded-md bg-emerald-500/10 border border-emerald-400/20">
+                <Lightning className="w-3.5 h-3.5 text-emerald-400" />
+              </div>
+              <span className="text-xs font-semibold text-acars-text">Charter Generation</span>
+            </div>
+            <div className="flex items-center gap-4 text-[11px]">
+              <div className="flex items-center gap-1.5">
+                <span className="text-acars-muted">Month:</span>
+                <span className="font-mono text-acars-text">{genStatus?.month ?? '—'}</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="text-acars-muted">Generated:</span>
+                <span className="font-mono text-emerald-400">{genStatus?.charterCount ?? 0}</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="text-acars-muted">Event:</span>
+                <span className="font-mono text-purple-400">{genStatus?.eventCount ?? 0}</span>
+              </div>
+              {genStatus?.generatedAt && (
+                <div className="flex items-center gap-1.5">
+                  <span className="text-acars-muted">Last run:</span>
+                  <span className="font-mono text-acars-muted/80">{new Date(genStatus.generatedAt).toLocaleDateString()}</span>
+                </div>
+              )}
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleGenerate}
+              disabled={generating}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[11px] font-semibold text-emerald-400 bg-emerald-500/10 border border-emerald-400/20 hover:bg-emerald-500/20 transition-colors disabled:opacity-40"
+            >
+              {generating ? <SpinnerGap className="w-3 h-3 animate-spin" /> : <Lightning className="w-3 h-3" />}
+              Generate Now
+            </button>
+            <button
+              onClick={handleRefreshEvents}
+              disabled={refreshingEvents}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[11px] font-semibold text-purple-400 bg-purple-500/10 border border-purple-400/20 hover:bg-purple-500/20 transition-colors disabled:opacity-40"
+            >
+              {refreshingEvents ? <SpinnerGap className="w-3 h-3 animate-spin" /> : <ArrowsClockwise className="w-3 h-3" />}
+              Refresh VATSIM Events
+            </button>
+          </div>
+        </div>
+      </div>
 
       {/* Filters Bar */}
       <div className="panel">
         <div className="flex items-center gap-3 px-4 py-3">
           {/* Search */}
           <div className="relative flex-1 max-w-[280px]">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-acars-muted pointer-events-none" />
+            <MagnifyingGlass className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-acars-muted pointer-events-none" />
             <input
               type="text"
               value={searchInput}
@@ -871,12 +977,30 @@ export function AdminSchedulesPage() {
             }}
             className="select-field h-8 min-w-[140px]"
           >
-            <option value="">All Types</option>
+            <option value="">All Aircraft</option>
             {aircraftTypes.map(t => (
               <option key={t} value={t}>
                 {t}
               </option>
             ))}
+          </select>
+
+          {/* Charter Type */}
+          <select
+            value={charterTypeFilter}
+            onChange={e => {
+              setCharterTypeFilter(e.target.value);
+              setPage(1);
+            }}
+            className="select-field h-8 min-w-[140px]"
+          >
+            <option value="">All Categories</option>
+            <option value="regular">Regular Schedules</option>
+            <option value="generated">Monthly Charters</option>
+            <option value="event">Event Flights</option>
+            <option value="cargo">Cargo Charters</option>
+            <option value="reposition">Reposition</option>
+            <option value="passenger">Passenger Charters</option>
           </select>
 
           {/* Active/Inactive/All Toggle */}
@@ -905,7 +1029,7 @@ export function AdminSchedulesPage() {
               onClick={resetFilters}
               className="btn-secondary btn-sm flex items-center gap-1.5 h-8"
             >
-              <RotateCcw className="w-3 h-3" /> Reset
+              <ArrowCounterClockwise className="w-3 h-3" /> Reset
             </button>
           )}
 
@@ -915,7 +1039,7 @@ export function AdminSchedulesPage() {
             className="h-8 w-8 rounded-md border border-acars-border bg-acars-bg text-acars-muted hover:text-acars-text flex items-center justify-center transition-colors ml-auto"
             title="Refresh"
           >
-            <RotateCcw className="w-3.5 h-3.5" />
+            <ArrowCounterClockwise className="w-3.5 h-3.5" />
           </button>
         </div>
       </div>
@@ -942,14 +1066,14 @@ export function AdminSchedulesPage() {
               {loading && schedules.length === 0 ? (
                 <tr>
                   <td colSpan={10} className="py-16 text-center">
-                    <Loader2 className="w-5 h-5 text-blue-400 animate-spin mx-auto mb-2" />
+                    <SpinnerGap className="w-5 h-5 text-blue-400 animate-spin mx-auto mb-2" />
                     <span className="text-xs text-acars-muted">Loading schedules...</span>
                   </td>
                 </tr>
               ) : schedules.length === 0 ? (
                 <tr>
                   <td colSpan={10} className="py-16 text-center">
-                    <Plane className="w-8 h-8 text-acars-muted/20 mx-auto mb-3" />
+                    <AirplaneTilt className="w-8 h-8 text-acars-muted/20 mx-auto mb-3" />
                     <span className="text-xs text-acars-muted">No schedules match your filters</span>
                   </td>
                 </tr>
@@ -967,8 +1091,14 @@ export function AdminSchedulesPage() {
                         {s.flightNumber}
                       </span>
                       {s.charterType && (
-                        <span className="ml-1.5 text-[9px] uppercase font-bold tracking-wide text-amber-400 bg-amber-500/10 border border-amber-400/20 px-1.5 py-0.5 rounded">
-                          {s.charterType}
+                        <span className={`ml-1.5 text-[9px] uppercase font-bold tracking-wide px-1.5 py-0.5 rounded border ${
+                          s.charterType === 'generated' ? 'text-emerald-400 bg-emerald-500/10 border-emerald-400/20' :
+                          s.charterType === 'event' ? 'text-purple-400 bg-purple-500/10 border-purple-400/20' :
+                          'text-amber-400 bg-amber-500/10 border-amber-400/20'
+                        }`}>
+                          {s.charterType === 'generated' ? 'GEN' :
+                           s.charterType === 'event' ? 'EVENT' :
+                           s.charterType}
                         </span>
                       )}
                     </td>
@@ -1050,7 +1180,7 @@ export function AdminSchedulesPage() {
                           className="p-1.5 rounded-md text-acars-muted hover:text-blue-400 hover:bg-blue-500/10 transition-colors"
                           title="Edit"
                         >
-                          <Pencil className="w-3.5 h-3.5" />
+                          <PencilSimple className="w-3.5 h-3.5" />
                         </button>
                         <button
                           onClick={() => handleToggle(s)}
@@ -1082,7 +1212,7 @@ export function AdminSchedulesPage() {
                           className="p-1.5 rounded-md text-acars-muted hover:text-red-400 hover:bg-red-500/10 transition-colors"
                           title="Delete"
                         >
-                          <Trash2 className="w-3.5 h-3.5" />
+                          <Trash className="w-3.5 h-3.5" />
                         </button>
                       </div>
                     </td>
@@ -1106,7 +1236,7 @@ export function AdminSchedulesPage() {
                 disabled={page <= 1}
                 className="h-7 w-7 rounded border border-acars-border bg-acars-panel text-acars-muted hover:text-acars-text disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center transition-colors"
               >
-                <ChevronLeft className="w-3.5 h-3.5" />
+                <CaretLeft className="w-3.5 h-3.5" />
               </button>
               <span className="text-xs text-acars-text px-2 font-mono">
                 {page} / {totalPages}
@@ -1116,7 +1246,7 @@ export function AdminSchedulesPage() {
                 disabled={page >= totalPages}
                 className="h-7 w-7 rounded border border-acars-border bg-acars-panel text-acars-muted hover:text-acars-text disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center transition-colors"
               >
-                <ChevronRight className="w-3.5 h-3.5" />
+                <CaretRight className="w-3.5 h-3.5" />
               </button>
             </div>
           </div>

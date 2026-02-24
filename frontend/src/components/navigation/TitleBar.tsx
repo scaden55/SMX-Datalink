@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Minus, Square, X, Copy } from 'lucide-react';
+import { Minus, Square, X, Copy } from '@phosphor-icons/react';
 
 const isElectron = !!window.electronAPI;
 
@@ -26,9 +26,9 @@ export function TitleBar() {
     >
       {/* Left: branding */}
       <div className="flex items-center gap-2 pl-3">
-        <img src="./logos/chevron-light.png" alt="SMA" className="h-4 w-auto opacity-80" />
+        <img src="./logos/chevron-light.png" alt="SMX" className="h-4 w-auto opacity-80" />
         <span className="text-[11px] font-semibold tracking-wide text-acars-muted/80 uppercase">
-          SMA ACARS
+          SMX ACARS
         </span>
       </div>
 

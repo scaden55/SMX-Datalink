@@ -10,8 +10,8 @@
     scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
   }
   *::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
+    width: 5px;
+    height: 5px;
   }
   *::-webkit-scrollbar-track {
     background: var(--scrollbar-track);
@@ -19,6 +19,9 @@
   *::-webkit-scrollbar-thumb {
     background: var(--scrollbar-thumb);
     border-radius: 3px;
+  }
+  *::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.18);
   }
 
   /* Form elements use IBM Plex Mono for clear numeric/data input */
@@ -29,8 +32,17 @@
     font-feature-settings: "tnum";
   }
 
+  /* Smooth transitions on all interactive elements */
+  a, button, [role="button"] {
+    transition-property: color, background-color, border-color, box-shadow, opacity, transform;
+    transition-duration: 150ms;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
   body {
     @apply bg-[hsl(var(--background))] text-[hsl(var(--foreground))];
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 }
 
@@ -55,8 +67,9 @@
     @apply rounded-md relative overflow-hidden;
     background: var(--bg-panel);
     border: 1px solid var(--border-panel);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03),
-                0 2px 8px rgba(0, 0, 0, 0.2);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04),
+                0 1px 2px rgba(0, 0, 0, 0.12),
+                0 4px 12px rgba(0, 0, 0, 0.16);
   }
   .panel::after {
     content: '';
@@ -79,14 +92,15 @@
   .btn-primary {
     @apply inline-flex items-center justify-center gap-1.5 rounded-md text-[11px] font-semibold
            text-white
-           hover:brightness-110 active:brightness-95
-           disabled:opacity-40 disabled:cursor-not-allowed
+           hover:brightness-110 active:brightness-95 active:scale-[0.98]
+           disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:transform-none
            transition-all focus-ring;
     background: linear-gradient(135deg, #4d9cf6 0%, #3478e0 100%);
-    box-shadow: 0 2px 8px rgba(77, 156, 246, 0.30);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2), 0 2px 8px rgba(77, 156, 246, 0.25);
   }
-  .btn-primary:hover {
-    box-shadow: 0 4px 16px rgba(77, 156, 246, 0.45);
+  .btn-primary:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2), 0 4px 16px rgba(77, 156, 246, 0.40);
   }
   .btn-primary.btn-sm { @apply px-3 py-1.5 text-[10px]; }
   .btn-primary.btn-md { @apply px-4 py-2; }
@@ -94,7 +108,7 @@
   .btn-secondary {
     @apply inline-flex items-center justify-center gap-1.5 rounded-md text-[11px] font-semibold
            bg-blue-500/10 text-blue-400 border border-blue-400/20
-           hover:bg-blue-500/20 active:bg-blue-500/25
+           hover:bg-blue-500/20 hover:border-blue-400/40 active:bg-blue-500/25 active:scale-[0.98]
            disabled:opacity-40 disabled:cursor-not-allowed
            transition-all focus-ring;
   }
@@ -104,14 +118,15 @@
   .btn-danger {
     @apply inline-flex items-center justify-center gap-1.5 rounded-md text-[11px] font-semibold
            text-white
-           hover:brightness-110 active:brightness-95
-           disabled:opacity-40 disabled:cursor-not-allowed
+           hover:brightness-110 active:brightness-95 active:scale-[0.98]
+           disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:transform-none
            transition-all focus-ring;
     background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-    box-shadow: 0 2px 8px rgba(239, 68, 68, 0.30);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2), 0 2px 8px rgba(239, 68, 68, 0.25);
   }
-  .btn-danger:hover {
-    box-shadow: 0 4px 16px rgba(239, 68, 68, 0.45);
+  .btn-danger:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2), 0 4px 16px rgba(239, 68, 68, 0.40);
   }
   .btn-danger.btn-sm { @apply px-3 py-1.5 text-[10px]; }
   .btn-danger.btn-md { @apply px-4 py-2; }
@@ -119,14 +134,15 @@
   .btn-green {
     @apply inline-flex items-center justify-center gap-1.5 rounded-md text-[11px] font-semibold
            text-white
-           hover:brightness-110 active:brightness-95
-           disabled:opacity-40 disabled:cursor-not-allowed
+           hover:brightness-110 active:brightness-95 active:scale-[0.98]
+           disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:transform-none
            transition-all focus-ring;
     background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
-    box-shadow: 0 2px 8px rgba(34, 197, 94, 0.30);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2), 0 2px 8px rgba(34, 197, 94, 0.25);
   }
-  .btn-green:hover {
-    box-shadow: 0 4px 16px rgba(34, 197, 94, 0.45);
+  .btn-green:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2), 0 4px 16px rgba(34, 197, 94, 0.40);
   }
   .btn-green.btn-sm { @apply px-3 py-1.5 text-[10px]; }
   .btn-green.btn-md { @apply px-4 py-2; }
@@ -138,8 +154,11 @@
            placeholder:text-acars-muted/40
            focus:outline-none focus:border-blue-400
            disabled:opacity-50 disabled:cursor-not-allowed
-           transition-colors;
+           transition-all duration-150;
     color: var(--text-primary);
+  }
+  .input-field:focus {
+    box-shadow: 0 0 0 2px rgba(77, 156, 246, 0.15);
   }
 
   .select-field {
@@ -191,12 +210,16 @@
   /* ── Table ──────────────────────────────────────────────────── */
   .table-header-cell {
     @apply text-[10px] uppercase tracking-[0.08em] text-acars-muted font-medium px-4 py-2.5;
+    letter-spacing: 0.08em;
   }
   .table-row {
-    @apply border-b border-acars-border transition-colors;
+    @apply border-b border-acars-border transition-colors duration-100;
   }
   .table-row:hover {
     background: var(--bg-hover);
+  }
+  .table-row:last-child {
+    @apply border-b-0;
   }
   .table-row-alt:nth-child(even) {
     @apply bg-acars-bg/30;
@@ -209,16 +232,16 @@
 
   /* ── Empty State ────────────────────────────────────────────── */
   .empty-state {
-    @apply flex flex-col items-center justify-center text-center py-12 px-6;
+    @apply flex flex-col items-center justify-center text-center py-16 px-6;
   }
   .empty-state-icon {
-    @apply w-10 h-10 text-acars-muted/30 mb-3;
+    @apply w-10 h-10 text-acars-muted/20 mb-4;
   }
   .empty-state-title {
-    @apply text-sm font-semibold text-acars-text mb-1;
+    @apply text-sm font-semibold text-acars-text/80 mb-1;
   }
   .empty-state-desc {
-    @apply text-[11px] text-acars-muted leading-relaxed max-w-sm;
+    @apply text-[11px] text-acars-muted/70 leading-relaxed max-w-sm;
   }
 
   /* ── Page Header ────────────────────────────────────────────── */
@@ -273,6 +296,23 @@
   }
   .tab-inactive:hover {
     color: var(--text-secondary);
+  }
+
+  .tab-scroll {
+    scrollbar-width: none;
+  }
+  .tab-scroll::-webkit-scrollbar {
+    height: 2px;
+  }
+  .tab-scroll::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .tab-scroll::-webkit-scrollbar-thumb {
+    background: transparent;
+    border-radius: 1px;
+  }
+  .tab-scroll:hover::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.12);
   }
 
   /* ── ACARS Message Block ──────────────────────────────────── */

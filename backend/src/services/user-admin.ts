@@ -146,6 +146,7 @@ export class UserAdminService {
       db.prepare('UPDATE finances SET created_by = NULL WHERE created_by = ?').run(userId);
       db.prepare('UPDATE scheduled_flights SET created_by = NULL WHERE created_by = ?').run(userId);
       db.prepare('DELETE FROM acars_messages WHERE sender_id = ?').run(userId);
+      db.prepare('DELETE FROM cargo_manifests WHERE user_id = ?').run(userId);
       // CASCADE foreign keys handle refresh_tokens, active_bids, logbook, finances, notifications, news
       db.prepare('DELETE FROM users WHERE id = ?').run(userId);
     });

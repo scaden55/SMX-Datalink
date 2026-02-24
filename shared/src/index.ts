@@ -54,6 +54,10 @@ export type {
   DashboardStats,
   CreateCharterRequest,
   CreateCharterResponse,
+  CharterGenerationStatus,
+  VatsimEventInfo,
+  FleetForBidItem,
+  FleetForBidResponse,
 } from './types/schedule.js';
 export type {
   DispatchFlight,

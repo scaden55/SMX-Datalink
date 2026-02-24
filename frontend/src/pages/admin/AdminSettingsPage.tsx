@@ -1,17 +1,17 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import {
-  Settings,
-  Save,
-  Loader2,
+  Gear,
+  FloppyDisk,
+  SpinnerGap,
   Check,
-  AlertTriangle,
-  Building2,
-  ClipboardCheck,
-  DollarSign,
+  Warning,
+  Buildings,
+  ClipboardText,
+  CurrencyDollar,
   Ticket,
-  Code2,
-} from 'lucide-react';
-import type { LucideIcon } from 'lucide-react';
+  Code,
+} from '@phosphor-icons/react';
+import type { Icon } from '@phosphor-icons/react';
 import { api } from '../../lib/api';
 import { AdminPageHeader } from '../../components/admin/AdminPageHeader';
 import { useUIStore } from '../../stores/uiStore';
@@ -49,7 +49,7 @@ interface SectionDef {
   id: string;
   title: string;
   description: string;
-  icon: LucideIcon;
+  icon: Icon;
   iconColor: string;
   fields: SettingDef[];
 }
@@ -59,18 +59,18 @@ const SECTIONS: SectionDef[] = [
     id: 'identity',
     title: 'VA Identity',
     description: 'Core virtual airline branding and identification.',
-    icon: Building2,
+    icon: Buildings,
     iconColor: 'text-blue-400',
     fields: [
-      { key: 'va.name', label: 'VA Name', type: 'text', placeholder: 'SMA Virtual' },
-      { key: 'va.icao', label: 'ICAO Code', type: 'text', placeholder: 'SMA' },
+      { key: 'va.name', label: 'VA Name', type: 'text', placeholder: 'SMX Virtual' },
+      { key: 'va.icao', label: 'ICAO Code', type: 'text', placeholder: 'SMX' },
     ],
   },
   {
     id: 'pirep',
-    title: 'PIREP Settings',
+    title: 'PIREP Gear',
     description: 'Configure how pilot reports are processed and scored.',
-    icon: ClipboardCheck,
+    icon: ClipboardText,
     iconColor: 'text-emerald-400',
     fields: [
       { key: 'pirep.auto_approve', label: 'Auto-Approve PIREPs', type: 'boolean' },
@@ -81,7 +81,7 @@ const SECTIONS: SectionDef[] = [
     id: 'finance',
     title: 'Financial Rates',
     description: 'Set pay rates and cargo/passenger revenue multipliers.',
-    icon: DollarSign,
+    icon: CurrencyDollar,
     iconColor: 'text-amber-400',
     fields: [
       { key: 'finance.pay_per_hour', label: 'Pay per Flight Hour', type: 'number', placeholder: '50.00', prefix: '$', step: '0.01' },
@@ -91,7 +91,7 @@ const SECTIONS: SectionDef[] = [
   },
   {
     id: 'bid',
-    title: 'Bid Settings',
+    title: 'Bid Gear',
     description: 'Control how many active bids a pilot may hold.',
     icon: Ticket,
     iconColor: 'text-blue-400',
@@ -103,7 +103,7 @@ const SECTIONS: SectionDef[] = [
     id: 'developer',
     title: 'Developer Tools',
     description: 'Enable diagnostic tools and debug overlay for admin users.',
-    icon: Code2,
+    icon: Code,
     iconColor: 'text-blue-400',
     fields: [
       { key: 'dev.enabled', label: 'Enable Developer Mode', type: 'boolean' },
@@ -165,7 +165,7 @@ function ToastNotification({ toast, onDismiss }: { toast: Toast; onDismiss: () =
       {toast.type === 'success' ? (
         <Check className="w-4 h-4 shrink-0" />
       ) : (
-        <AlertTriangle className="w-4 h-4 shrink-0" />
+        <Warning className="w-4 h-4 shrink-0" />
       )}
       {toast.message}
     </div>
@@ -250,12 +250,12 @@ function SectionCard({
   return (
     <div className="panel rounded-md border border-acars-border overflow-hidden">
       {/* Section header */}
-      <div className="flex items-center gap-3 px-5 py-4 border-b border-acars-border bg-acars-bg/40">
-        <div className={`flex items-center justify-center w-8 h-8 rounded-md bg-acars-hover ${section.iconColor}`}>
-          <Icon className="w-4 h-4" />
+      <div className="flex items-center gap-3 px-5 py-3 border-b border-acars-border bg-acars-bg/40">
+        <div className={`flex items-center justify-center w-7 h-7 rounded-md bg-acars-hover ${section.iconColor}`}>
+          <Icon className="w-3.5 h-3.5" />
         </div>
         <div className="flex-1 min-w-0">
-          <h3 className="text-sm font-semibold text-acars-text">{section.title}</h3>
+          <h3 className="text-[13px] font-semibold text-acars-text">{section.title}</h3>
           <p className="text-[11px] text-acars-muted mt-0.5">{section.description}</p>
         </div>
       </div>
@@ -318,7 +318,7 @@ function SectionCard({
         >
           {saveState.saving ? (
             <>
-              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              <SpinnerGap className="w-3.5 h-3.5 animate-spin" />
               Saving...
             </>
           ) : saveState.saved ? (
@@ -328,7 +328,7 @@ function SectionCard({
             </>
           ) : (
             <>
-              <Save className="w-3.5 h-3.5" />
+              <FloppyDisk className="w-3.5 h-3.5" />
               Save
             </>
           )}
@@ -484,9 +484,9 @@ export function AdminSettingsPage() {
   if (loading) {
     return (
       <div className="p-6">
-        <AdminPageHeader icon={Settings} title="VA Settings" subtitle="Configure virtual airline parameters" />
+        <AdminPageHeader icon={Gear} title="VA Settings" subtitle="Configure virtual airline parameters" />
         <div className="flex flex-col items-center justify-center mt-20 gap-3">
-          <Loader2 className="w-6 h-6 text-acars-muted animate-spin" />
+          <SpinnerGap className="w-6 h-6 text-acars-muted animate-spin" />
           <p className="text-xs text-acars-muted">Loading settings...</p>
         </div>
       </div>
@@ -497,7 +497,7 @@ export function AdminSettingsPage() {
 
   return (
     <div className="p-6 space-y-6">
-      <AdminPageHeader icon={Settings} title="VA Settings" subtitle="Configure virtual airline parameters" />
+      <AdminPageHeader icon={Gear} title="VA Settings" subtitle="Configure virtual airline parameters" />
 
       {toast && <ToastNotification toast={toast} onDismiss={dismissToast} />}
 

@@ -9,8 +9,8 @@ interface SettingRow {
 }
 
 const DEFAULTS: Record<string, string> = {
-  'va.name': 'SMA Virtual',
-  'va.icao': 'SMA',
+  'va.name': 'SMX Virtual',
+  'va.icao': 'SMX',
   'pirep.auto_approve': 'false',
   'pirep.min_score': '0',
   'finance.pay_per_hour': '50',

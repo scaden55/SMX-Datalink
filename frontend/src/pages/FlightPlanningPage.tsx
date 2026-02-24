@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Route, CalendarDays, Loader2 } from 'lucide-react';
+import { Path, CalendarDots, SpinnerGap, Warning } from '@phosphor-icons/react';
 import { api } from '../lib/api';
 import { toast } from '../stores/toastStore';
 import { useFlightPlanStore, emptyForm } from '../stores/flightPlanStore';
@@ -75,6 +75,46 @@ export function FlightPlanningPage() {
     return () => controller.abort();
   }, [setAirports, setFleet]);
 
+  // Fetch any route airports missing from the store (e.g. non-hub airports only in oa_airports).
+  // Keeps a ref of attempted ICAOs to avoid re-fetching 404s (prevents infinite loops).
+  // Depends on `airports` so it re-runs after the bulk hub-airports load completes.
+  const fetchedAirportsRef = useRef(new Set<string>());
+  useEffect(() => {
+    const icaos = [form.origin, form.destination, form.alternate1, form.alternate2].filter(Boolean);
+    if (icaos.length === 0 || airports.length === 0) return;
+
+    const missing = icaos.filter(icao => !airports.some(a => a.icao === icao) && !fetchedAirportsRef.current.has(icao));
+    if (missing.length === 0) return;
+
+    missing.forEach(icao => fetchedAirportsRef.current.add(icao));
+
+    Promise.all(
+      missing.map(icao =>
+        api.get<{ icao: string; name: string; latitude: number; longitude: number; elevation_ft: number | null; country: string | null; municipality: string | null; region: string | null }>(
+          `/api/airports/${icao}`
+        ).then(detail => ({
+          id: 0,
+          icao: detail.icao,
+          name: detail.name,
+          city: detail.municipality ?? '',
+          state: detail.region ?? '',
+          country: detail.country ?? '',
+          lat: detail.latitude,
+          lon: detail.longitude,
+          elevation: detail.elevation_ft ?? 0,
+          timezone: '',
+        } as Airport)).catch(() => null)
+      )
+    ).then(results => {
+      const fetched = results.filter((a): a is Airport => a !== null);
+      if (fetched.length > 0) {
+        const latest = useFlightPlanStore.getState().airports;
+        const merged = [...latest, ...fetched.filter(f => !latest.some(c => c.icao === f.icao))];
+        setAirports(merged);
+      }
+    });
+  }, [form.origin, form.destination, form.alternate1, form.alternate2, airports, setAirports]);
+
   // Auto-redirect: if no bidId in URL but activeBidId in store, restore it
   useEffect(() => {
     if (bidId || !bidsLoaded || redirectedRef.current) return;
@@ -135,7 +175,7 @@ export function FlightPlanningPage() {
             origin: bid.depIcao,
             destination: bid.arrIcao,
             flightNumber: bid.flightNumber,
-            aircraftType: bid.aircraftType,
+            aircraftType: bid.aircraftType ?? '',
             etd: bid.depTime,
           });
         }
@@ -185,9 +225,9 @@ export function FlightPlanningPage() {
         phase: 'active',
       });
       navigate('/dispatch');
-    } catch (err) {
+    } catch (err: any) {
       console.error('[Planning] Start flight failed:', err);
-      toast.error('Failed to start flight');
+      toast.error(err?.message || 'Failed to start flight');
     } finally {
       setSavingFlightPlan(false);
     }
@@ -197,19 +237,19 @@ export function FlightPlanningPage() {
   if (!bidId && bidsLoaded && !activeBidId && bids.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-full text-center gap-4 bg-acars-bg">
-        <img src="./logos/chevron-light.png" alt="SMA" className="h-12 w-auto opacity-10" />
-        <div className="flex items-center justify-center w-14 h-14 rounded-md bg-blue-500/10 border border-blue-400/20">
-          <Route className="w-7 h-7 text-blue-400" />
+        <img src="./logos/chevron-light.png" alt="SMX" className="h-12 w-auto opacity-10" />
+        <div className="flex items-center justify-center w-12 h-12 rounded-md bg-blue-500/10 border border-blue-400/20">
+          <Path className="w-5 h-5 text-blue-400" />
         </div>
         <div>
-          <h2 className="text-sm font-semibold text-acars-text font-sans">No Active Bids</h2>
+          <h2 className="text-[13px] font-semibold text-acars-text font-sans">No Active Bids</h2>
           <p className="text-[11px] text-acars-muted font-sans mt-1">Browse the schedule and place a bid to start planning a cargo run</p>
         </div>
         <button
           onClick={() => navigate('/schedule')}
           className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md text-[10px] font-semibold font-sans text-amber-400 bg-amber-500/10 border border-amber-400/20 hover:bg-amber-500/20 transition-colors"
         >
-          <CalendarDays className="w-3.5 h-3.5" /> Browse Schedule
+          <CalendarDots className="w-3.5 h-3.5" /> Browse Schedule
         </button>
       </div>
     );
@@ -219,12 +259,12 @@ export function FlightPlanningPage() {
   if (!bidId && bidsLoaded && !activeBidId && bids.length > 0) {
     return (
       <div className="flex flex-col items-center justify-center h-full text-center gap-4 bg-acars-bg">
-        <img src="./logos/chevron-light.png" alt="SMA" className="h-12 w-auto opacity-10" />
-        <div className="flex items-center justify-center w-14 h-14 rounded-md bg-blue-500/10 border border-blue-400/20">
-          <Route className="w-7 h-7 text-blue-400" />
+        <img src="./logos/chevron-light.png" alt="SMX" className="h-12 w-auto opacity-10" />
+        <div className="flex items-center justify-center w-12 h-12 rounded-md bg-blue-500/10 border border-blue-400/20">
+          <Path className="w-5 h-5 text-blue-400" />
         </div>
         <div>
-          <h2 className="text-sm font-semibold text-acars-text font-sans">Select a Bid to Plan</h2>
+          <h2 className="text-[13px] font-semibold text-acars-text font-sans">Select a Bid to Plan</h2>
           <p className="text-[11px] text-acars-muted font-sans mt-1">Choose one of your active bids</p>
         </div>
         <div className="w-72">
@@ -252,7 +292,7 @@ export function FlightPlanningPage() {
   if (loading || !bidsLoaded) {
     return (
       <div className="flex items-center justify-center h-full bg-acars-bg">
-        <Loader2 className="w-5 h-5 text-blue-400 animate-spin" />
+        <SpinnerGap className="w-5 h-5 text-blue-400 animate-spin" />
       </div>
     );
   }
@@ -272,6 +312,12 @@ export function FlightPlanningPage() {
     );
   }
 
+  // Aircraft location mismatch detection
+  const currentBid = bids.find(b => b.id === activeBidId);
+  const bidAircraft = currentBid?.aircraftId ? fleet.find(f => f.id === currentBid.aircraftId) : null;
+  const effectiveLocation = bidAircraft?.locationIcao ?? bidAircraft?.baseIcao;
+  const aircraftNotAtDeparture = ofp && bidAircraft && effectiveLocation && effectiveLocation !== currentBid?.depIcao;
+
   return (
     <div className="flex h-full overflow-hidden bg-acars-bg planning-tnum">
       {/* Left: Form */}
@@ -286,6 +332,17 @@ export function FlightPlanningPage() {
         {simbriefError && (
           <div className="px-3 py-1.5 bg-red-500/10 border-b border-red-400/20 text-[11px] text-red-400 font-sans">
             {simbriefError}
+          </div>
+        )}
+        {aircraftNotAtDeparture && (
+          <div className="flex items-center gap-2 px-3 py-2 bg-amber-500/10 border-b border-amber-400/20 text-[11px] text-amber-400 font-sans shrink-0">
+            <Warning className="w-4 h-4 shrink-0" weight="fill" />
+            <span>
+              <span className="font-semibold">{bidAircraft.registration}</span> is currently at{' '}
+              <span className="font-mono font-semibold">{effectiveLocation}</span>, not departure airport{' '}
+              <span className="font-mono font-semibold">{currentBid!.depIcao}</span>.
+              Aircraft must be repositioned before starting this flight.
+            </span>
           </div>
         )}
         <div className="flex-[5] min-h-0">

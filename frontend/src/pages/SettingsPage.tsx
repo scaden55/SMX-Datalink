@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Settings, Save, Loader2, Check, Monitor, Bell, Trash2 } from 'lucide-react';
+import { Gear, FloppyDisk, SpinnerGap, Check, Monitor, Bell, Trash } from '@phosphor-icons/react';
 import { api } from '../lib/api';
 
 export function SettingsPage() {
@@ -22,7 +22,7 @@ export function SettingsPage() {
       })
       .catch((err) => {
         if (!cancelled) setLoadError('Failed to load settings');
-        console.error('[Settings] Failed to load SimBrief username:', err);
+        console.error('[Gear] Failed to load SimBrief username:', err);
       })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
@@ -45,7 +45,7 @@ export function SettingsPage() {
       clearTimeout(savedTimerRef.current);
       savedTimerRef.current = setTimeout(() => setSaved(false), 2000);
     } catch (err) {
-      console.error('[Settings] Failed to save SimBrief username:', err);
+      console.error('[Gear] Failed to save SimBrief username:', err);
     } finally {
       setSaving(false);
     }
@@ -61,7 +61,7 @@ export function SettingsPage() {
       clearTimeout(clearedTimerRef.current);
       clearedTimerRef.current = setTimeout(() => setSessionCleared(false), 2000);
     } catch (err) {
-      console.error('[Settings] Failed to clear SimBrief session:', err);
+      console.error('[Gear] Failed to clear SimBrief session:', err);
     } finally {
       setClearingSession(false);
     }
@@ -72,9 +72,9 @@ export function SettingsPage() {
       <div className="max-w-2xl mx-auto w-full p-6 space-y-6">
         {/* Header */}
         <div className="flex items-center gap-3">
-          <img src="./logos/chevron-light.png" alt="SMA" className="h-9 w-auto opacity-40" />
+          <img src="./logos/chevron-light.png" alt="SMX" className="h-9 w-auto opacity-40" />
           <div>
-            <h1 className="text-lg font-semibold text-acars-text">Settings</h1>
+            <h1 className="text-lg font-semibold text-acars-text">Gear</h1>
             <p className="text-xs text-acars-muted">Configure your ACARS preferences</p>
           </div>
         </div>
@@ -83,7 +83,7 @@ export function SettingsPage() {
         <div className="panel">
           <div className="px-4 py-3 border-b border-acars-border">
             <div className="flex items-center gap-2">
-              <Settings className="w-4 h-4 text-acars-muted" />
+              <Gear className="w-4 h-4 text-acars-muted" />
               <h2 className="text-sm font-semibold text-acars-text">SimBrief Integration</h2>
             </div>
             <p className="text-[11px] text-acars-muted mt-0.5">Connect your SimBrief account to auto-populate flight plans</p>
@@ -107,18 +107,18 @@ export function SettingsPage() {
                 className="btn-secondary btn-md"
               >
                 {saving ? (
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  <SpinnerGap className="w-3.5 h-3.5 animate-spin" />
                 ) : saved ? (
                   <Check className="w-3.5 h-3.5" />
                 ) : (
-                  <Save className="w-3.5 h-3.5" />
+                  <FloppyDisk className="w-3.5 h-3.5" />
                 )}
                 {saved ? 'Saved' : 'Save'}
               </button>
             </div>
             <p className="text-[10px] text-acars-muted mt-2">
               Find your username at{' '}
-              <span className="text-sky-400">simbrief.com</span> under Account Settings.
+              <span className="text-sky-400">simbrief.com</span> under Account Gear.
               This is used to fetch your latest OFP on the Flight Planning page.
             </p>
             {isElectron && (
@@ -136,11 +136,11 @@ export function SettingsPage() {
                     className="btn-secondary btn-md flex-shrink-0"
                   >
                     {clearingSession ? (
-                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      <SpinnerGap className="w-3.5 h-3.5 animate-spin" />
                     ) : sessionCleared ? (
                       <Check className="w-3.5 h-3.5" />
                     ) : (
-                      <Trash2 className="w-3.5 h-3.5" />
+                      <Trash className="w-3.5 h-3.5" />
                     )}
                     {sessionCleared ? 'Cleared' : 'Clear Session'}
                   </button>
@@ -154,12 +154,12 @@ export function SettingsPage() {
         <div className="panel">
           <div className="px-4 py-3 border-b border-acars-border">
             <div className="flex items-center gap-2">
-              <Settings className="w-4 h-4 text-acars-muted" />
+              <Gear className="w-4 h-4 text-acars-muted" />
               <h2 className="text-sm font-semibold text-acars-text">General</h2>
             </div>
           </div>
           <div className="px-4 py-8 text-center">
-            <Settings className="w-6 h-6 text-acars-muted/20 mx-auto mb-2" />
+            <Gear className="w-6 h-6 text-acars-muted/20 mx-auto mb-2" />
             <p className="text-xs text-acars-muted/50">General settings coming soon</p>
           </div>
         </div>

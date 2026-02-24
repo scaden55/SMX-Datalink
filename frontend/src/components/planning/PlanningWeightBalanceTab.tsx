@@ -1,5 +1,5 @@
 import { useFlightPlanStore } from '../../stores/flightPlanStore';
-import { Scale } from 'lucide-react';
+import { Scales } from '@phosphor-icons/react';
 
 function WeightRow({ label, value, max }: { label: string; value: number; max?: number }) {
   const over = max !== undefined && value > max;
@@ -29,7 +29,7 @@ export function PlanningWeightBalanceTab() {
   if (!ofp) {
     return (
       <div className="flex flex-col items-center justify-center h-full text-center gap-2 p-4">
-        <Scale className="w-6 h-6 text-acars-muted/20" />
+        <Scales className="w-6 h-6 text-acars-muted/20" />
         <p className="text-[11px] text-acars-muted font-sans">Generate OFP to see weight & balance</p>
       </div>
     );
@@ -54,7 +54,7 @@ export function PlanningWeightBalanceTab() {
       </div>
 
       <div>
-        <span className="planning-label mb-1">Fuel</span>
+        <span className="planning-label mb-1">GasPump</span>
         <div className="rounded-md border border-acars-border bg-acars-input">
           <div className="px-3">
             <WeightRow label="Enroute Burn" value={fuel.burnLbs} />

@@ -1,4 +1,4 @@
-import { MessageSquare } from 'lucide-react';
+import { ChatText } from '@phosphor-icons/react';
 import { CollapsibleSection } from '../common/CollapsibleSection';
 import { useFlightPlanStore } from '../../stores/flightPlanStore';
 
@@ -8,7 +8,7 @@ export function PlanningRemarksSection() {
   return (
     <CollapsibleSection
       title="Remarks"
-      icon={<MessageSquare className="w-3.5 h-3.5" />}
+      icon={<ChatText className="w-3.5 h-3.5" />}
       status={form.dispatcherRemarks ? 'green' : 'grey'}
       defaultOpen
     >
@@ -24,7 +24,7 @@ export function PlanningRemarksSection() {
           />
         </div>
         <div>
-          <label className="planning-label mb-1">Auto / Fuel</label>
+          <label className="planning-label mb-1">Auto / GasPump</label>
           <textarea
             value={form.autoRemarks}
             onChange={(e) => setFormField('autoRemarks', e.target.value)}

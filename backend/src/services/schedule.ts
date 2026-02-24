@@ -1,7 +1,10 @@
 import { getDb } from '../db/index.js';
+import { haversineNm } from '../lib/geo.js';
+import { randomFlightNumber, minRunwayForCategory } from './charter-generator.js';
 import type {
   Airport,
   FleetAircraft,
+  FleetForBidItem,
   FleetStatus,
   ScheduleListItem,
   BidWithDetails,
@@ -66,7 +69,7 @@ interface ScheduleRow {
   flight_number: string;
   dep_icao: string;
   arr_icao: string;
-  aircraft_type: string;
+  aircraft_type: string | null;
   dep_time: string;
   arr_time: string;
   distance_nm: number;
@@ -74,29 +77,40 @@ interface ScheduleRow {
   days_of_week: string;
   is_active: number;
   charter_type: string | null;
+  event_tag: string | null;
+  expires_at: string | null;
   dep_name: string;
   arr_name: string;
+  dep_lat: number | null;
+  dep_lon: number | null;
+  arr_lat: number | null;
+  arr_lon: number | null;
   bid_count: number;
   has_bid: number;
+  event_name: string | null;
 }
 
 interface BidRow {
   id: number;
   user_id: number;
   schedule_id: number;
+  aircraft_id: number | null;
   created_at: string;
   flight_number: string;
   dep_icao: string;
   arr_icao: string;
   dep_name: string;
   arr_name: string;
-  aircraft_type: string;
+  aircraft_type: string | null;
   dep_time: string;
   arr_time: string;
   distance_nm: number;
   flight_time_min: number;
   days_of_week: string;
   charter_type: string | null;
+  event_tag: string | null;
+  aircraft_registration: string | null;
+  aircraft_name: string | null;
 }
 
 interface AllBidRow extends BidRow {
@@ -112,6 +126,7 @@ export interface ScheduleFilters {
   arrIcao?: string;
   aircraftType?: string;
   search?: string;
+  charterType?: string;
 }
 
 // ── Service ──────────────────────────────────────────────────────
@@ -143,6 +158,19 @@ export class ScheduleService {
     return rows.map(r => r.icao_type);
   }
 
+  findFleetForBid(depIcao: string): FleetForBidItem[] {
+    const rows = getDb()
+      .prepare("SELECT * FROM fleet WHERE status = 'active' ORDER BY icao_type, registration")
+      .all() as FleetRow[];
+
+    return rows.map(row => {
+      const aircraft = this.toFleetAircraft(row);
+      const effectiveLocation = row.location_icao ?? row.base_icao;
+      const atDeparture = effectiveLocation === depIcao;
+      return { ...aircraft, atDeparture };
+    });
+  }
+
   // ── Stats ─────────────────────────────────────────────────────
 
   getDashboardStats(): DashboardStats {
@@ -171,6 +199,9 @@ export class ScheduleService {
     const conditions: string[] = ['sf.is_active = 1'];
     const params: unknown[] = [];
 
+    // Exclude expired generated/event charters
+    conditions.push("(sf.expires_at IS NULL OR sf.expires_at > datetime('now'))");
+
     if (filters.depIcao) {
       conditions.push('sf.dep_icao = ?');
       params.push(filters.depIcao);
@@ -183,10 +214,18 @@ export class ScheduleService {
       conditions.push('sf.aircraft_type = ?');
       params.push(filters.aircraftType);
     }
+    if (filters.charterType) {
+      if (filters.charterType === 'custom') {
+        conditions.push("(sf.charter_type IN ('reposition','cargo','passenger'))");
+      } else {
+        conditions.push('sf.charter_type = ?');
+        params.push(filters.charterType);
+      }
+    }
     if (filters.search) {
-      conditions.push('(sf.flight_number LIKE ? OR dep.icao LIKE ? OR arr.icao LIKE ? OR dep.city LIKE ? OR arr.city LIKE ?)');
+      conditions.push('(sf.flight_number LIKE ? OR sf.dep_icao LIKE ? OR sf.arr_icao LIKE ? OR dep.city LIKE ? OR arr.city LIKE ? OR oa_dep.municipality LIKE ? OR oa_arr.municipality LIKE ?)');
       const term = `%${filters.search}%`;
-      params.push(term, term, term, term, term);
+      params.push(term, term, term, term, term, term, term);
     }
 
     const userIdParam = userId ?? 0;
@@ -196,13 +235,19 @@ export class ScheduleService {
         sf.*,
         COALESCE(dep.name, oa_dep.name) AS dep_name,
         COALESCE(arr.name, oa_arr.name) AS arr_name,
+        COALESCE(dep.lat, oa_dep.latitude_deg) AS dep_lat,
+        COALESCE(dep.lon, oa_dep.longitude_deg) AS dep_lon,
+        COALESCE(arr.lat, oa_arr.latitude_deg) AS arr_lat,
+        COALESCE(arr.lon, oa_arr.longitude_deg) AS arr_lon,
         (SELECT COUNT(*) FROM active_bids ab WHERE ab.schedule_id = sf.id) AS bid_count,
-        (SELECT COUNT(*) FROM active_bids ab WHERE ab.schedule_id = sf.id AND ab.user_id = ?) AS has_bid
+        (SELECT COUNT(*) FROM active_bids ab WHERE ab.schedule_id = sf.id AND ab.user_id = ?) AS has_bid,
+        ve.name AS event_name
       FROM scheduled_flights sf
       LEFT JOIN airports dep ON dep.icao = sf.dep_icao
       LEFT JOIN airports arr ON arr.icao = sf.arr_icao
       LEFT JOIN oa_airports oa_dep ON oa_dep.ident = sf.dep_icao
       LEFT JOIN oa_airports oa_arr ON oa_arr.ident = sf.arr_icao
+      LEFT JOIN vatsim_events ve ON ve.id = sf.vatsim_event_id
       WHERE ${conditions.join(' AND ')}
       ORDER BY sf.flight_number
     `;
@@ -222,13 +267,19 @@ export class ScheduleService {
         sf.*,
         COALESCE(dep.name, oa_dep.name) AS dep_name,
         COALESCE(arr.name, oa_arr.name) AS arr_name,
+        COALESCE(dep.lat, oa_dep.latitude_deg) AS dep_lat,
+        COALESCE(dep.lon, oa_dep.longitude_deg) AS dep_lon,
+        COALESCE(arr.lat, oa_arr.latitude_deg) AS arr_lat,
+        COALESCE(arr.lon, oa_arr.longitude_deg) AS arr_lon,
         (SELECT COUNT(*) FROM active_bids ab WHERE ab.schedule_id = sf.id) AS bid_count,
-        (SELECT COUNT(*) FROM active_bids ab WHERE ab.schedule_id = sf.id AND ab.user_id = ?) AS has_bid
+        (SELECT COUNT(*) FROM active_bids ab WHERE ab.schedule_id = sf.id AND ab.user_id = ?) AS has_bid,
+        ve.name AS event_name
       FROM scheduled_flights sf
       LEFT JOIN airports dep ON dep.icao = sf.dep_icao
       LEFT JOIN airports arr ON arr.icao = sf.arr_icao
       LEFT JOIN oa_airports oa_dep ON oa_dep.ident = sf.dep_icao
       LEFT JOIN oa_airports oa_arr ON oa_arr.ident = sf.arr_icao
+      LEFT JOIN vatsim_events ve ON ve.id = sf.vatsim_event_id
       WHERE sf.id = ?
     `).get(userIdParam, id) as ScheduleRow | undefined;
 
@@ -237,22 +288,74 @@ export class ScheduleService {
 
   // ── Bids ─────────────────────────────────────────────────────
 
-  placeBid(userId: number, scheduleId: number): BidWithDetails | null {
-    const schedule = getDb()
-      .prepare('SELECT id FROM scheduled_flights WHERE id = ? AND is_active = 1')
-      .get(scheduleId);
-    if (!schedule) return null;
+  placeBid(userId: number, scheduleId: number, aircraftId: number): { bid: BidWithDetails; warnings: string[] } | { error: string } {
+    const db = getDb();
 
+    // 1. Validate schedule exists
+    const schedule = db.prepare(`
+      SELECT sf.id, sf.dep_icao, sf.arr_icao, sf.distance_nm, sf.charter_type
+      FROM scheduled_flights sf WHERE sf.id = ? AND sf.is_active = 1
+    `).get(scheduleId) as { id: number; dep_icao: string; arr_icao: string; distance_nm: number; charter_type: string | null } | undefined;
+    if (!schedule) return { error: 'Schedule not found or inactive' };
+
+    // 2. Validate aircraft exists and is active
+    const aircraft = db.prepare(`
+      SELECT id, icao_type, registration, name, range_nm, is_cargo, cat,
+             COALESCE(location_icao, base_icao) AS effective_location
+      FROM fleet WHERE id = ? AND status = 'active'
+    `).get(aircraftId) as {
+      id: number; icao_type: string; registration: string; name: string;
+      range_nm: number; is_cargo: number; cat: string | null; effective_location: string | null;
+    } | undefined;
+    if (!aircraft) return { error: 'Aircraft is not active' };
+
+    // 3. Soft warnings (location mismatch is a warning, not a block — enforced at flight start)
+    const warnings: string[] = [];
+
+    if (aircraft.effective_location && aircraft.effective_location !== schedule.dep_icao) {
+      warnings.push(`Aircraft ${aircraft.registration} is at ${aircraft.effective_location}, not ${schedule.dep_icao} — must be repositioned before starting flight`);
+    }
+
+    // Range warning: aircraft range * 0.9 < route distance
+    if (aircraft.range_nm > 0 && aircraft.range_nm * 0.9 < schedule.distance_nm) {
+      warnings.push(`Range warning: ${aircraft.registration} range (${aircraft.range_nm} nm) may be insufficient for ${schedule.distance_nm} nm route`);
+    }
+
+    // Runway warning: check destination longest runway vs aircraft category
+    const minRwy = minRunwayForCategory(aircraft.cat);
+    const longestRunway = db.prepare(`
+      SELECT MAX(rw.length_ft) as max_len
+      FROM oa_runways rw
+      WHERE rw.airport_ident = ? AND rw.closed = 0
+    `).get(schedule.arr_icao) as { max_len: number | null } | undefined;
+
+    if (longestRunway?.max_len != null && longestRunway.max_len < minRwy) {
+      warnings.push(`Runway warning: ${schedule.arr_icao} longest runway (${longestRunway.max_len} ft) may be short for ${aircraft.icao_type} (needs ${minRwy} ft)`);
+    }
+
+    // Type mismatch: cargo aircraft on pax charter, or pax aircraft on cargo charter (skip for reposition)
+    if (schedule.charter_type && schedule.charter_type !== 'reposition') {
+      const isCargo = aircraft.is_cargo === 1;
+      if (schedule.charter_type === 'cargo' && !isCargo) {
+        warnings.push(`Type mismatch: ${aircraft.registration} is a passenger aircraft on a cargo charter`);
+      }
+      if (schedule.charter_type === 'passenger' && isCargo) {
+        warnings.push(`Type mismatch: ${aircraft.registration} is a cargo aircraft on a passenger charter`);
+      }
+    }
+
+    // 5. Insert bid
     try {
-      getDb().prepare(`
-        INSERT INTO active_bids (user_id, schedule_id) VALUES (?, ?)
-      `).run(userId, scheduleId);
+      db.prepare('INSERT INTO active_bids (user_id, schedule_id, aircraft_id) VALUES (?, ?, ?)').run(userId, scheduleId, aircraftId);
     } catch (err: any) {
-      if (err.code === 'SQLITE_CONSTRAINT_UNIQUE') return null;
+      if (err.code === 'SQLITE_CONSTRAINT_UNIQUE') return { error: 'Bid already exists for this schedule' };
       throw err;
     }
 
-    return this.findBidByUserAndSchedule(userId, scheduleId);
+    const bid = this.findBidByUserAndSchedule(userId, scheduleId);
+    if (!bid) return { error: 'Failed to retrieve bid after insertion' };
+
+    return { bid, warnings };
   }
 
   removeBid(bidId: number, userId: number): boolean {
@@ -268,8 +371,10 @@ export class ScheduleService {
     const result = db.prepare('DELETE FROM active_bids WHERE id = ? AND user_id = ?').run(bidId, userId);
     if (result.changes === 0) return false;
 
-    // Charter flights are one-off — delete the schedule when the bid is removed
-    if (bid.charter_type) {
+    // User-created charters are one-off — delete the schedule when the bid is removed.
+    // Generated and event charters persist for other pilots to bid on.
+    const userCreatedTypes = ['reposition', 'cargo', 'passenger'];
+    if (bid.charter_type && userCreatedTypes.includes(bid.charter_type)) {
       db.prepare('DELETE FROM scheduled_flights WHERE id = ?').run(bid.schedule_id);
     }
 
@@ -279,18 +384,21 @@ export class ScheduleService {
   findMyBids(userId: number): BidWithDetails[] {
     const rows = getDb().prepare(`
       SELECT
-        ab.id, ab.user_id, ab.schedule_id, ab.created_at,
+        ab.id, ab.user_id, ab.schedule_id, ab.aircraft_id, ab.created_at,
         sf.flight_number, sf.dep_icao, sf.arr_icao, sf.aircraft_type,
         sf.dep_time, sf.arr_time, sf.distance_nm, sf.flight_time_min, sf.days_of_week,
-        sf.charter_type,
+        sf.charter_type, sf.event_tag,
         COALESCE(dep.name, oa_dep.name) AS dep_name,
-        COALESCE(arr.name, oa_arr.name) AS arr_name
+        COALESCE(arr.name, oa_arr.name) AS arr_name,
+        f.registration AS aircraft_registration,
+        f.name AS aircraft_name
       FROM active_bids ab
       JOIN scheduled_flights sf ON sf.id = ab.schedule_id
       LEFT JOIN airports dep ON dep.icao = sf.dep_icao
       LEFT JOIN airports arr ON arr.icao = sf.arr_icao
       LEFT JOIN oa_airports oa_dep ON oa_dep.ident = sf.dep_icao
       LEFT JOIN oa_airports oa_arr ON oa_arr.ident = sf.arr_icao
+      LEFT JOIN fleet f ON f.id = ab.aircraft_id
       WHERE ab.user_id = ?
       ORDER BY sf.flight_number
     `).all(userId) as BidRow[];
@@ -301,12 +409,14 @@ export class ScheduleService {
   findAllBids(): ActiveBidEntry[] {
     const rows = getDb().prepare(`
       SELECT
-        ab.id, ab.user_id, ab.schedule_id, ab.created_at,
+        ab.id, ab.user_id, ab.schedule_id, ab.aircraft_id, ab.created_at,
         sf.flight_number, sf.dep_icao, sf.arr_icao, sf.aircraft_type,
         sf.dep_time, sf.arr_time, sf.distance_nm, sf.flight_time_min, sf.days_of_week,
-        sf.charter_type,
+        sf.charter_type, sf.event_tag,
         COALESCE(dep.name, oa_dep.name) AS dep_name,
         COALESCE(arr.name, oa_arr.name) AS arr_name,
+        f.registration AS aircraft_registration,
+        f.name AS aircraft_name,
         u.callsign AS pilot_callsign,
         u.first_name AS pilot_first_name,
         u.last_name AS pilot_last_name
@@ -316,6 +426,7 @@ export class ScheduleService {
       LEFT JOIN airports arr ON arr.icao = sf.arr_icao
       LEFT JOIN oa_airports oa_dep ON oa_dep.ident = sf.dep_icao
       LEFT JOIN oa_airports oa_arr ON oa_arr.ident = sf.arr_icao
+      LEFT JOIN fleet f ON f.id = ab.aircraft_id
       JOIN users u ON u.id = ab.user_id
       ORDER BY ab.created_at DESC
     `).all() as AllBidRow[];
@@ -328,19 +439,23 @@ export class ScheduleService {
   createCharter(userId: number, req: CreateCharterRequest): CreateCharterResponse | null {
     const db = getDb();
 
-    // Validate airports exist
-    const depAirport = db.prepare('SELECT * FROM airports WHERE icao = ?').get(req.depIcao) as AirportRow | undefined;
-    const arrAirport = db.prepare('SELECT * FROM airports WHERE icao = ?').get(req.arrIcao) as AirportRow | undefined;
-    if (!depAirport || !arrAirport) return null;
+    // Validate airports exist (check both legacy hubs and global oa_airports)
+    const lookupCoords = (icao: string): { lat: number; lon: number } | null => {
+      const legacy = db.prepare('SELECT lat, lon FROM airports WHERE icao = ?').get(icao) as { lat: number; lon: number } | undefined;
+      if (legacy) return legacy;
+      const oa = db.prepare('SELECT latitude_deg AS lat, longitude_deg AS lon FROM oa_airports WHERE ident = ? AND latitude_deg IS NOT NULL').get(icao) as { lat: number; lon: number } | undefined;
+      return oa ?? null;
+    };
+
+    const depCoords = lookupCoords(req.depIcao);
+    const arrCoords = lookupCoords(req.arrIcao);
+    if (!depCoords || !arrCoords) return null;
     if (req.depIcao === req.arrIcao) return null;
 
-    // Get cruise speed for flight time estimation
-    const fleetRow = db.prepare('SELECT cruise_speed FROM fleet WHERE icao_type = ? AND is_active = 1 LIMIT 1').get(req.aircraftType) as { cruise_speed: number } | undefined;
-    if (!fleetRow) return null;
-
-    // Calculate distance and flight time
-    const distanceNm = haversineNm(depAirport.lat, depAirport.lon, arrAirport.lat, arrAirport.lon);
-    const flightTimeMin = Math.round((distanceNm / fleetRow.cruise_speed) * 60);
+    // Default 450 kts cruise for charters without a specific aircraft
+    const defaultCruiseKts = 450;
+    const distanceNm = haversineNm(depCoords.lat, depCoords.lon, arrCoords.lat, arrCoords.lon);
+    const flightTimeMin = Math.round((distanceNm / defaultCruiseKts) * 60);
 
     // Calculate arrival time from departure + duration
     const [depH, depM] = req.depTime.split(':').map(Number);
@@ -350,39 +465,27 @@ export class ScheduleService {
     const arrM = arrTotalMin % 60;
     const arrTime = `${String(arrH).padStart(2, '0')}:${String(arrM).padStart(2, '0')}`;
 
-    // Insert schedule + bid in a transaction (charter number generated inside for atomicity)
+    // Insert schedule (no auto-bid — pilot bids separately with aircraft selection)
     const insertSchedule = db.prepare(`
       INSERT INTO scheduled_flights (flight_number, dep_icao, arr_icao, aircraft_type, dep_time, arr_time, distance_nm, flight_time_min, days_of_week, is_active, charter_type, created_by)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, '1234567', 1, ?, ?)
+      VALUES (?, ?, ?, NULL, ?, ?, ?, ?, '1234567', 1, ?, ?)
     `);
-    const insertBid = db.prepare('INSERT INTO active_bids (user_id, schedule_id) VALUES (?, ?)');
 
     const txn = db.transaction(() => {
-      // Generate charter flight number inside transaction to prevent race conditions
-      // Use CAST to numeric sort so SMC10 sorts after SMC9
-      const lastCharter = db.prepare(
-        "SELECT flight_number FROM scheduled_flights WHERE flight_number LIKE 'SMC%' ORDER BY CAST(SUBSTR(flight_number, 4) AS INTEGER) DESC LIMIT 1"
-      ).get() as { flight_number: string } | undefined;
-      const nextNum = lastCharter ? parseInt(lastCharter.flight_number.slice(3), 10) + 1 : 1;
-      const flightNumber = `SMC${String(nextNum).padStart(3, '0')}`;
-
+      const flightNumber = randomFlightNumber(db);
       const result = insertSchedule.run(
-        flightNumber, req.depIcao, req.arrIcao, req.aircraftType,
+        flightNumber, req.depIcao, req.arrIcao,
         req.depTime, arrTime, distanceNm, flightTimeMin,
         req.charterType, userId
       );
-      const scheduleId = result.lastInsertRowid as number;
-      insertBid.run(userId, scheduleId);
-      return scheduleId;
+      return result.lastInsertRowid as number;
     });
 
     const scheduleId = txn();
-
     const schedule = this.findScheduleById(scheduleId, userId);
-    const bid = this.findBidByUserAndSchedule(userId, scheduleId);
-    if (!schedule || !bid) return null;
+    if (!schedule) return null;
 
-    return { schedule, bid };
+    return { schedule };
   }
 
   // ── Private helpers ──────────────────────────────────────────
@@ -390,18 +493,21 @@ export class ScheduleService {
   private findBidByUserAndSchedule(userId: number, scheduleId: number): BidWithDetails | null {
     const row = getDb().prepare(`
       SELECT
-        ab.id, ab.user_id, ab.schedule_id, ab.created_at,
+        ab.id, ab.user_id, ab.schedule_id, ab.aircraft_id, ab.created_at,
         sf.flight_number, sf.dep_icao, sf.arr_icao, sf.aircraft_type,
         sf.dep_time, sf.arr_time, sf.distance_nm, sf.flight_time_min, sf.days_of_week,
-        sf.charter_type,
+        sf.charter_type, sf.event_tag,
         COALESCE(dep.name, oa_dep.name) AS dep_name,
-        COALESCE(arr.name, oa_arr.name) AS arr_name
+        COALESCE(arr.name, oa_arr.name) AS arr_name,
+        f.registration AS aircraft_registration,
+        f.name AS aircraft_name
       FROM active_bids ab
       JOIN scheduled_flights sf ON sf.id = ab.schedule_id
       LEFT JOIN airports dep ON dep.icao = sf.dep_icao
       LEFT JOIN airports arr ON arr.icao = sf.arr_icao
       LEFT JOIN oa_airports oa_dep ON oa_dep.ident = sf.dep_icao
       LEFT JOIN oa_airports oa_arr ON oa_arr.ident = sf.arr_icao
+      LEFT JOIN fleet f ON f.id = ab.aircraft_id
       WHERE ab.user_id = ? AND ab.schedule_id = ?
     `).get(userId, scheduleId) as BidRow | undefined;
 
@@ -467,7 +573,7 @@ export class ScheduleService {
       flightNumber: row.flight_number,
       depIcao: row.dep_icao,
       arrIcao: row.arr_icao,
-      aircraftType: row.aircraft_type,
+      aircraftType: row.aircraft_type ?? null,
       depTime: row.dep_time,
       arrTime: row.arr_time,
       distanceNm: row.distance_nm,
@@ -475,10 +581,17 @@ export class ScheduleService {
       daysOfWeek: row.days_of_week,
       isActive: row.is_active === 1,
       charterType: row.charter_type as CharterType | null,
+      eventTag: row.event_tag,
+      expiresAt: row.expires_at,
+      depLat: row.dep_lat,
+      depLon: row.dep_lon,
+      arrLat: row.arr_lat,
+      arrLon: row.arr_lon,
       depName: row.dep_name,
       arrName: row.arr_name,
       bidCount: row.bid_count,
       hasBid: row.has_bid > 0,
+      eventName: row.event_name ?? null,
     };
   }
 
@@ -487,19 +600,23 @@ export class ScheduleService {
       id: row.id,
       userId: row.user_id,
       scheduleId: row.schedule_id,
+      aircraftId: row.aircraft_id,
       createdAt: row.created_at,
       flightNumber: row.flight_number,
       depIcao: row.dep_icao,
       arrIcao: row.arr_icao,
       depName: row.dep_name,
       arrName: row.arr_name,
-      aircraftType: row.aircraft_type,
+      aircraftType: row.aircraft_type ?? null,
       depTime: row.dep_time,
       arrTime: row.arr_time,
       distanceNm: row.distance_nm,
       flightTimeMin: row.flight_time_min,
       daysOfWeek: row.days_of_week,
       charterType: row.charter_type as CharterType | null,
+      eventTag: row.event_tag,
+      aircraftRegistration: row.aircraft_registration ?? null,
+      aircraftName: row.aircraft_name ?? null,
     };
   }
 
@@ -508,33 +625,26 @@ export class ScheduleService {
       id: row.id,
       userId: row.user_id,
       scheduleId: row.schedule_id,
+      aircraftId: row.aircraft_id,
       createdAt: row.created_at,
       flightNumber: row.flight_number,
       depIcao: row.dep_icao,
       arrIcao: row.arr_icao,
       depName: row.dep_name,
       arrName: row.arr_name,
-      aircraftType: row.aircraft_type,
+      aircraftType: row.aircraft_type ?? null,
       depTime: row.dep_time,
       arrTime: row.arr_time,
       distanceNm: row.distance_nm,
       flightTimeMin: row.flight_time_min,
       daysOfWeek: row.days_of_week,
       charterType: row.charter_type as CharterType | null,
+      eventTag: row.event_tag,
+      aircraftRegistration: row.aircraft_registration ?? null,
+      aircraftName: row.aircraft_name ?? null,
       pilotCallsign: row.pilot_callsign,
       pilotName: `${row.pilot_first_name} ${row.pilot_last_name}`,
     };
   }
 }
 
-// ── Haversine distance (nautical miles) ──────────────────────
-
-function haversineNm(lat1: number, lon1: number, lat2: number, lon2: number): number {
-  const R = 3440.065; // Earth radius in nautical miles
-  const toRad = (d: number) => d * Math.PI / 180;
-  const dLat = toRad(lat2 - lat1);
-  const dLon = toRad(lon2 - lon1);
-  const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return Math.round(R * c);
-}

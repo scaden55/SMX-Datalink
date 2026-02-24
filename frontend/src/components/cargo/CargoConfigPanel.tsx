@@ -1,4 +1,4 @@
-import { Package } from 'lucide-react';
+import { Package } from '@phosphor-icons/react';
 import { CollapsibleSection } from '../common/CollapsibleSection';
 import { useCargoStore } from '../../stores/cargoStore';
 import type { CargoCategoryCode } from '@acars/shared';

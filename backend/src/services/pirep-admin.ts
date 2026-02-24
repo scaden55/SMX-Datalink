@@ -83,14 +83,16 @@ export class PirepAdminService {
       SELECT l.*,
         u.callsign AS pilot_callsign,
         u.first_name || ' ' || u.last_name AS pilot_name,
-        d.name AS dep_name,
-        a.name AS arr_name,
+        COALESCE(d.name, oa_d.name) AS dep_name,
+        COALESCE(a.name, oa_a.name) AS arr_name,
         r.callsign AS reviewer_callsign,
         r.first_name || ' ' || r.last_name AS reviewer_name
       FROM logbook l
       LEFT JOIN users u ON u.id = l.user_id
       LEFT JOIN airports d ON d.icao = l.dep_icao
       LEFT JOIN airports a ON a.icao = l.arr_icao
+      LEFT JOIN oa_airports oa_d ON oa_d.ident = l.dep_icao
+      LEFT JOIN oa_airports oa_a ON oa_a.ident = l.arr_icao
       LEFT JOIN users r ON r.id = l.reviewer_id
       ${where}
       ORDER BY l.actual_dep DESC

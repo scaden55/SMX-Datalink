@@ -32,18 +32,21 @@ export function LoginPage() {
   };
 
   return (
-    <div className="relative flex items-center justify-center min-h-screen bg-acars-bg px-4">
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(88,166,255,0.04)_0%,transparent_70%)]" />
-      <div className="panel max-w-sm w-full p-8 shadow-2xl shadow-blue-400/5 relative">
+    <div className="relative flex items-center justify-center min-h-screen bg-acars-bg px-4 overflow-hidden">
+      {/* Background glow */}
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(77,156,246,0.06)_0%,transparent_60%)]" />
+      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[600px] h-[600px] rounded-full bg-blue-500/[0.02] blur-3xl" />
+
+      <div className="panel max-w-[380px] w-full p-8 relative" style={{ boxShadow: '0 4px 24px rgba(0, 0, 0, 0.4), 0 0 80px rgba(77, 156, 246, 0.06)' }}>
         {/* Logo */}
-        <div className="flex flex-col items-center gap-3 mb-8">
+        <div className="flex flex-col items-center gap-2.5 mb-8">
           <img src="./logos/smx-login-logo.png" alt="Special Missions Air" className="h-20 w-auto" />
-          <p className="text-xs text-acars-muted uppercase tracking-wider">Flight Operations</p>
+          <p className="text-[10px] text-acars-muted/60 uppercase tracking-[0.15em] font-medium">Flight Operations</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-5">
+        <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label htmlFor="email" className="block text-xs font-medium text-acars-muted mb-1.5">
+            <label htmlFor="email" className="block text-[10px] font-medium text-acars-muted/70 uppercase tracking-wider mb-1.5">
               Email
             </label>
             <input
@@ -52,13 +55,14 @@ export function LoginPage() {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="input-field"
+              className="input-field py-2"
               placeholder="pilot@smavirtual.com"
+              autoComplete="email"
             />
           </div>
 
           <div>
-            <label htmlFor="password" className="block text-xs font-medium text-acars-muted mb-1.5">
+            <label htmlFor="password" className="block text-[10px] font-medium text-acars-muted/70 uppercase tracking-wider mb-1.5">
               Password
             </label>
             <input
@@ -67,32 +71,40 @@ export function LoginPage() {
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="input-field"
+              className="input-field py-2"
               placeholder="Enter password"
+              autoComplete="current-password"
             />
           </div>
 
           {error && (
-            <p className="text-red-400 text-sm">{error}</p>
+            <div className="flex items-center gap-2 px-3 py-2 rounded-md bg-red-500/10 border border-red-400/20">
+              <span className="text-red-400 text-[11px]">{error}</span>
+            </div>
           )}
 
           <button
             type="submit"
             disabled={loading}
-            className="btn-primary btn-md w-full"
+            className="btn-primary btn-md w-full mt-1"
           >
-            {loading ? 'Signing in...' : 'Sign In'}
+            {loading ? (
+              <span className="flex items-center gap-2">
+                <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                Signing in...
+              </span>
+            ) : 'Sign In'}
           </button>
         </form>
 
-        <p className="text-center text-xs text-acars-muted mt-6">
+        <p className="text-center text-[11px] text-acars-muted/50 mt-6">
           Don't have an account?{' '}
-          <Link to="/register" className="text-blue-400 hover:underline">
+          <Link to="/register" className="text-blue-400/80 hover:text-blue-400 hover:underline transition-colors">
             Register
           </Link>
         </p>
       </div>
-      <p className="absolute bottom-4 left-0 right-0 text-center text-[10px] text-acars-muted/30">SMA ACARS v1.0</p>
+      <p className="absolute bottom-4 left-0 right-0 text-center text-[9px] text-acars-muted/20 tracking-wider">SMX ACARS v1.0</p>
     </div>
   );
 }

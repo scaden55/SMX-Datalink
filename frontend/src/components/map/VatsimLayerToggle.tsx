@@ -1,4 +1,4 @@
-import { Radio, Map, Radar, Plane, MapPin, Navigation } from 'lucide-react';
+import { Broadcast, MapTrifold, Scan, AirplaneTilt, MapPin, NavigationArrow } from '@phosphor-icons/react';
 import { useVatsimStore } from '../../stores/vatsimStore';
 
 /**
@@ -17,7 +17,7 @@ export function VatsimLayerToggle() {
     <div className="bg-acars-panel rounded-md border border-acars-border overflow-hidden mt-1 w-44">
       {/* Header */}
       <div className="flex items-center gap-1.5 px-2.5 py-1.5 border-b border-acars-border">
-        <Radio className="w-3 h-3 text-sky-400" />
+        <Broadcast className="w-3 h-3 text-sky-400" />
         <span className="text-[10px] font-bold text-acars-text tracking-wider uppercase">VATSIM</span>
         {snapshot && (
           <span className="ml-auto text-[9px] text-acars-muted">
@@ -29,14 +29,14 @@ export function VatsimLayerToggle() {
       {/* Toggle switches */}
       <div className="p-1.5 space-y-0.5">
         <ToggleRow
-          icon={<Map className="w-3 h-3" />}
+          icon={<MapTrifold className="w-3 h-3" />}
           label="FIR Boundaries"
           active={layers.showFirBoundaries}
           color="text-sky-400"
           onToggle={() => toggleLayer('showFirBoundaries')}
         />
         <ToggleRow
-          icon={<Radar className="w-3 h-3" />}
+          icon={<Scan className="w-3 h-3" />}
           label="TRACON Areas"
           active={layers.showTraconBoundaries}
           color="text-amber-400"
@@ -50,14 +50,14 @@ export function VatsimLayerToggle() {
           onToggle={() => toggleLayer('showAirportLabels')}
         />
         <ToggleRow
-          icon={<Navigation className="w-3 h-3" />}
+          icon={<NavigationArrow className="w-3 h-3" />}
           label="Navaids"
           active={layers.showNavaids}
           color="text-sky-400"
           onToggle={() => toggleLayer('showNavaids')}
         />
         <ToggleRow
-          icon={<Plane className="w-3 h-3" />}
+          icon={<AirplaneTilt className="w-3 h-3" />}
           label="Pilots"
           active={layers.showPilots}
           color="text-blue-400"

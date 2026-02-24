@@ -1,4 +1,4 @@
-import { AlertTriangle, Info, X } from 'lucide-react';
+import { Warning, Info, X } from '@phosphor-icons/react';
 
 interface ConfirmDialogProps {
   open: boolean;
@@ -13,13 +13,13 @@ interface ConfirmDialogProps {
 
 const VARIANT_STYLES = {
   danger: {
-    icon: AlertTriangle,
+    icon: Warning,
     iconColor: 'text-red-400',
     iconBg: 'bg-red-500/10',
     btn: 'bg-red-500 hover:bg-red-500/80',
   },
   warning: {
-    icon: AlertTriangle,
+    icon: Warning,
     iconColor: 'text-amber-400',
     iconBg: 'bg-amber-500/10',
     btn: 'bg-amber-500 hover:bg-amber-500/80 text-black',

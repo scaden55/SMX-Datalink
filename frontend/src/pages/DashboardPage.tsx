@@ -1,30 +1,30 @@
 import { useNavigate } from 'react-router-dom';
 import { useState, useEffect, useCallback } from 'react';
 import {
-  Plane,
+  AirplaneTilt,
   Users,
-  CalendarDays,
+  CalendarDots,
   Clock,
   ArrowRight,
-  Route,
+  Path,
   BookOpen,
-  Radio,
-  Maximize2,
-  Award,
+  Broadcast,
+  ArrowsOut,
+  Medal,
   MapPin,
-  Loader2,
+  SpinnerGap,
   Trophy,
   Megaphone,
-  ChevronLeft,
-  ChevronRight,
-  Pin,
+  CaretLeft,
+  CaretRight,
+  PushPin,
   Plus,
-  Pencil,
-  Trash2,
+  PencilSimple,
+  Trash,
   X,
-  Save,
-} from 'lucide-react';
-import { MapContainer, TileLayer, CircleMarker, Tooltip } from 'react-leaflet';
+  FloppyDisk,
+} from '@phosphor-icons/react';
+import { MapContainer, TileLayer } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import { api } from '../lib/api';
 import { useAuthStore } from '../stores/authStore';
@@ -32,7 +32,6 @@ import type {
   ActiveBidEntry,
   AllBidsResponse,
   DashboardStats,
-  Airport,
   LeaderboardEntry,
   LeaderboardResponse,
   LogbookEntry,
@@ -54,10 +53,10 @@ function formatDuration(min: number): string {
 // ─── Quick Actions (static nav links) ───────────────────────────
 
 const QUICK_ACTIONS = [
-  { label: 'Bid a Flight', icon: CalendarDays, to: '/schedule', iconBox: 'bg-blue-500/20 border-blue-500/30', iconColor: 'text-blue-400' },
-  { label: 'File Flight Plan', icon: Route, to: '/planning', iconBox: 'bg-violet-500/20 border-violet-500/30', iconColor: 'text-violet-400' },
+  { label: 'Bid a Flight', icon: CalendarDots, to: '/schedule', iconBox: 'bg-blue-500/20 border-blue-500/30', iconColor: 'text-blue-400' },
+  { label: 'File Flight Plan', icon: Path, to: '/planning', iconBox: 'bg-violet-500/20 border-violet-500/30', iconColor: 'text-violet-400' },
   { label: 'View Logbook', icon: BookOpen, to: '/logbook', iconBox: 'bg-amber-500/20 border-amber-500/30', iconColor: 'text-amber-400' },
-  { label: 'Open Dispatch', icon: Radio, to: '/dispatch', iconBox: 'bg-emerald-500/20 border-emerald-500/30', iconColor: 'text-emerald-400' },
+  { label: 'Open Dispatch', icon: Broadcast, to: '/dispatch', iconBox: 'bg-emerald-500/20 border-emerald-500/30', iconColor: 'text-emerald-400' },
 ] as const;
 
 // ─── Sub-Components ─────────────────────────────────────────────
@@ -65,20 +64,20 @@ const QUICK_ACTIONS = [
 interface StatCardProps {
   label: string;
   value: string | number;
-  icon: typeof Plane;
+  icon: typeof AirplaneTilt;
   iconBox: string;
   iconColor: string;
 }
 
 function StatCard({ label, value, icon: Icon, iconBox, iconColor }: StatCardProps) {
   return (
-    <div className="panel p-4 flex items-center gap-4">
-      <div className={`flex items-center justify-center w-11 h-11 rounded-xl border ${iconBox}`}>
-        <Icon className={`w-5 h-5 ${iconColor}`} />
+    <div className="panel px-3.5 py-2.5 flex items-center gap-3 group hover:border-acars-border/30 transition-colors">
+      <div className={`flex items-center justify-center w-8 h-8 rounded-lg border ${iconBox}`}>
+        <Icon className={`w-4 h-4 ${iconColor}`} />
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-[11px] uppercase tracking-wider text-acars-muted font-medium">{label}</p>
-        <span className="text-xl font-semibold text-acars-text tabular-nums">{value}</span>
+        <p className="text-[9px] uppercase tracking-[0.1em] text-acars-muted/60 font-medium mb-0.5">{label}</p>
+        <span className="text-[15px] font-semibold text-acars-text tabular-nums leading-none">{value}</span>
       </div>
     </div>
   );
@@ -111,24 +110,24 @@ function ActiveBidsTable({ bids }: { bids: ActiveBidEntry[] }) {
   const navigate = useNavigate();
 
   return (
-    <div className="panel flex flex-col h-full">
-      <div className="flex items-center justify-between px-4 py-3 border-b border-acars-border">
+    <div className="panel flex flex-col max-h-[360px]">
+      <div className="flex items-center justify-between px-4 py-2.5 border-b border-acars-border">
         <div className="flex items-center gap-2">
-          <h3 className="text-sm font-semibold text-acars-text">Active Bids</h3>
-          <span className="inline-flex items-center justify-center min-w-[20px] h-5 rounded-full bg-blue-500/20 border border-blue-400/30 text-[10px] font-semibold text-blue-400 tabular-nums px-1.5">
+          <h3 className="text-[13px] font-semibold text-acars-text">Active Bids</h3>
+          <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] rounded-full bg-blue-500/15 border border-blue-400/20 text-[9px] font-semibold text-blue-400 tabular-nums px-1">
             {bids.length}
           </span>
         </div>
         <button
           onClick={() => navigate('/schedule')}
-          className="flex items-center gap-1 text-[11px] font-medium text-blue-400 hover:text-acars-text transition-colors"
+          className="flex items-center gap-1 text-[10px] font-medium text-blue-400/70 hover:text-blue-400 transition-colors"
         >
           Bid a Flight <ArrowRight className="w-3 h-3" />
         </button>
       </div>
       {bids.length === 0 ? (
         <div className="empty-state">
-          <CalendarDays className="empty-state-icon" />
+          <CalendarDots className="empty-state-icon" />
           <p className="empty-state-title">No Active Cargo Runs</p>
           <p className="empty-state-desc">No pilots currently have active bids across the VA</p>
           <button
@@ -140,9 +139,9 @@ function ActiveBidsTable({ bids }: { bids: ActiveBidEntry[] }) {
         </div>
       ) : (
         <div className="flex-1 overflow-auto">
-          <table className="w-full text-xs">
+          <table className="w-full text-[11px]">
             <thead>
-              <tr className="text-[10px] uppercase tracking-wider text-acars-muted border-b border-acars-border">
+              <tr className="text-[9px] uppercase tracking-[0.08em] text-acars-muted/60 border-b border-acars-border">
                 <th className="text-left px-4 py-2 font-medium">Flight #</th>
                 <th className="text-left px-4 py-2 font-medium">Route</th>
                 <th className="text-left px-4 py-2 font-medium hidden xl:table-cell">Aircraft</th>
@@ -156,24 +155,24 @@ function ActiveBidsTable({ bids }: { bids: ActiveBidEntry[] }) {
               {bids.map((bid) => (
                 <tr
                   key={bid.id}
-                  className="hover:bg-acars-hover transition-colors"
+                  className="border-b border-acars-border/30 hover:bg-acars-hover/50 transition-colors duration-100"
                 >
-                  <td className="px-4 py-2.5 font-mono font-semibold text-acars-text">{bid.flightNumber}</td>
-                  <td className="px-4 py-2.5 text-acars-muted/80">
-                    <span className="font-mono">{bid.depIcao}</span>
-                    <ArrowRight className="w-3 h-3 text-blue-400/60 inline mx-1" />
-                    <span className="font-mono">{bid.arrIcao}</span>
+                  <td className="px-4 py-2 font-mono font-semibold text-acars-text">{bid.flightNumber}</td>
+                  <td className="px-4 py-2 text-acars-muted/70">
+                    <span className="font-mono text-acars-text/80">{bid.depIcao}</span>
+                    <ArrowRight className="w-3 h-3 text-blue-400/40 inline mx-1" />
+                    <span className="font-mono text-acars-text/80">{bid.arrIcao}</span>
                   </td>
-                  <td className="px-4 py-2.5 text-acars-muted/80 hidden xl:table-cell font-mono">{bid.aircraftType}</td>
-                  <td className="px-4 py-2.5 font-mono text-acars-muted/80 tabular-nums">{bid.depTime}Z</td>
-                  <td className="px-4 py-2.5 font-mono text-acars-muted/80 tabular-nums hidden lg:table-cell">{formatDuration(bid.flightTimeMin)}</td>
-                  <td className="px-4 py-2.5">
+                  <td className="px-4 py-2 text-acars-muted/60 hidden xl:table-cell font-mono">{bid.aircraftType}</td>
+                  <td className="px-4 py-2 font-mono text-acars-muted/60 tabular-nums">{bid.depTime}Z</td>
+                  <td className="px-4 py-2 font-mono text-acars-muted/60 tabular-nums hidden lg:table-cell">{formatDuration(bid.flightTimeMin)}</td>
+                  <td className="px-4 py-2">
                     <div className="flex items-center gap-1.5">
-                      <span className="text-acars-muted/80 text-[11px]">{bid.pilotCallsign}</span>
-                      <span className="text-acars-muted/60 hidden xl:inline">{bid.pilotName}</span>
+                      <span className="font-mono text-acars-text/70 text-[10px]">{bid.pilotCallsign}</span>
+                      <span className="text-acars-muted/40 hidden xl:inline text-[10px]">{bid.pilotName}</span>
                     </div>
                   </td>
-                  <td className="px-4 py-2.5">
+                  <td className="px-4 py-2">
                     <PhaseBadge phase="reserved" />
                   </td>
                 </tr>
@@ -190,54 +189,47 @@ function QuickActions() {
   const navigate = useNavigate();
 
   return (
-    <div className="panel flex flex-col h-full">
-      <div className="px-4 py-3 border-b border-acars-border">
-        <h3 className="text-sm font-semibold text-acars-text">Quick Actions</h3>
-      </div>
-      <div className="flex-1 grid grid-cols-2 gap-3 p-4">
-        {QUICK_ACTIONS.map((action) => {
-          const Icon = action.icon;
-          return (
-            <button
-              key={action.label}
-              onClick={() => navigate(action.to)}
-              className="flex flex-col items-center justify-center gap-2.5 rounded-md border border-acars-border bg-acars-bg hover:border-blue-400/50 hover:bg-acars-hover hover:-translate-y-0.5 hover:shadow-lg hover:shadow-black/20 transition-all duration-200 p-4"
-            >
-              <div className={`flex items-center justify-center w-10 h-10 rounded-xl border ${action.iconBox}`}>
-                <Icon className={`w-5 h-5 ${action.iconColor}`} />
-              </div>
-              <span className={`text-xs font-medium ${action.iconColor}`}>{action.label}</span>
-            </button>
-          );
-        })}
-      </div>
+    <div className="flex items-center gap-2">
+      {QUICK_ACTIONS.map((action) => {
+        const Icon = action.icon;
+        return (
+          <button
+            key={action.label}
+            onClick={() => navigate(action.to)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-acars-border bg-acars-panel hover:border-blue-400/30 hover:bg-acars-hover active:scale-[0.98] text-[11px] font-medium text-acars-muted hover:text-acars-text transition-all duration-150"
+          >
+            <Icon className={`w-3.5 h-3.5 ${action.iconColor}`} />
+            {action.label}
+          </button>
+        );
+      })}
     </div>
   );
 }
 
 // ─── Network Map ────────────────────────────────────────────────
 
-function NetworkMapPreview({ airports }: { airports: Airport[] }) {
+function NetworkMapPreview() {
   const navigate = useNavigate();
 
   return (
-    <div className="panel flex flex-col h-[320px]">
-      <div className="flex items-center justify-between px-4 py-3 border-b border-acars-border">
-        <div className="flex items-center gap-2.5">
-          <img src="./logos/chevron-light.png" alt="SMA" className="h-5 w-auto opacity-60" />
-          <h3 className="text-sm font-semibold text-acars-text">Network Map</h3>
+    <div className="panel flex flex-col h-[400px]">
+      <div className="flex items-center justify-between px-4 py-2.5 border-b border-acars-border">
+        <div className="flex items-center gap-2">
+          <img src="./logos/chevron-light.png" alt="SMX" className="h-4 w-auto opacity-60" />
+          <h3 className="text-[13px] font-semibold text-acars-text">Network Map</h3>
         </div>
         <button
           onClick={() => navigate('/map')}
-          className="flex items-center gap-1 text-[11px] font-medium text-blue-400 hover:text-acars-text transition-colors"
+          className="flex items-center gap-1 text-[10px] font-medium text-blue-400/70 hover:text-blue-400 transition-colors"
         >
-          Expand <Maximize2 className="w-3 h-3" />
+          Expand <ArrowsOut className="w-3 h-3" />
         </button>
       </div>
       <div className="flex-1 relative overflow-hidden shadow-[inset_0_2px_8px_rgba(0,0,0,0.3)]">
         <MapContainer
           center={[37.5, -96.0]}
-          zoom={3.5}
+          zoom={4.5}
           zoomSnap={0.5}
           className="h-full w-full"
           zoomControl={false}
@@ -252,30 +244,6 @@ function NetworkMapPreview({ airports }: { airports: Airport[] }) {
             url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
             maxZoom={19}
           />
-          {airports.map(apt => (
-            <CircleMarker
-              key={apt.icao}
-              center={[apt.lat, apt.lon]}
-              radius={5}
-              pathOptions={{
-                color: 'var(--cyan)',
-                fillColor: 'var(--cyan)',
-                fillOpacity: 0.7,
-                weight: 1,
-              }}
-            >
-              <Tooltip
-                direction="top"
-                offset={[0, -6]}
-                className="hub-tooltip"
-                permanent={false}
-              >
-                <span style={{ fontSize: '10px', fontFeatureSettings: '"tnum"' }}>
-                  {apt.icao} — {apt.city}
-                </span>
-              </Tooltip>
-            </CircleMarker>
-          ))}
         </MapContainer>
       </div>
     </div>
@@ -293,8 +261,8 @@ function MyInfoCard({ recentFlights }: { recentFlights: LogbookEntry[] }) {
 
   return (
     <div className="panel flex flex-col">
-      <div className="flex items-center justify-between px-4 py-3 border-b border-acars-border">
-        <h3 className="text-sm font-semibold text-acars-text">My Info</h3>
+      <div className="flex items-center justify-between px-4 py-2.5 border-b border-acars-border">
+        <h3 className="text-[13px] font-semibold text-acars-text">My Info</h3>
       </div>
       <div className="flex-1 overflow-auto px-4 py-4 space-y-4">
         {/* Profile header */}
@@ -315,7 +283,7 @@ function MyInfoCard({ recentFlights }: { recentFlights: LogbookEntry[] }) {
         {/* Role & Rank row */}
         <div className="flex items-center gap-2">
           <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-amber-400 bg-amber-500/15 border border-amber-400/30 px-2 py-0.5 rounded-full">
-            <Award className="w-3 h-3" /> {user.rank}
+            <Medal className="w-3 h-3" /> {user.rank}
           </span>
           <span className="inline-flex items-center text-[10px] font-semibold uppercase tracking-wide text-blue-400 bg-blue-500/15 border border-blue-400/30 px-2 py-0.5 rounded-full">
             {user.role === 'admin' ? 'Admin' : 'Pilot'}
@@ -406,26 +374,26 @@ function PilotLeaderboard() {
   const canGoNext = month < getCurrentMonth();
 
   return (
-    <div className="panel flex flex-col h-[380px]">
-      <div className="flex items-center justify-between px-4 py-3 border-b border-acars-border">
+    <div className="panel flex flex-col max-h-[360px]">
+      <div className="flex items-center justify-between px-4 py-2.5 border-b border-acars-border">
         <div className="flex items-center gap-2">
-          <Trophy className="w-4 h-4 text-yellow-500" />
-          <h3 className="text-sm font-semibold text-acars-text">Pilot Leaderboard</h3>
+          <Trophy className="w-3.5 h-3.5 text-yellow-500" />
+          <h3 className="text-[13px] font-semibold text-acars-text">Pilot Leaderboard</h3>
         </div>
         <div className="flex items-center gap-1">
           <button onClick={() => setMonth(m => shiftMonth(m, -1))} className="p-1 rounded hover:bg-acars-border text-acars-muted hover:text-acars-text transition-colors">
-            <ChevronLeft className="w-4 h-4" />
+            <CaretLeft className="w-4 h-4" />
           </button>
           <span className="text-xs text-acars-muted tabular-nums min-w-[120px] text-center">{formatMonth(month)}</span>
           <button onClick={() => canGoNext && setMonth(m => shiftMonth(m, 1))} disabled={!canGoNext} className="p-1 rounded hover:bg-acars-border text-acars-muted hover:text-acars-text transition-colors disabled:opacity-30 disabled:cursor-not-allowed">
-            <ChevronRight className="w-4 h-4" />
+            <CaretRight className="w-4 h-4" />
           </button>
         </div>
       </div>
 
       {loading ? (
         <div className="flex-1 flex items-center justify-center">
-          <Loader2 className="w-5 h-5 text-blue-400 animate-spin" />
+          <SpinnerGap className="w-5 h-5 text-blue-400 animate-spin" />
         </div>
       ) : entries.length === 0 ? (
         <div className="flex-1 flex flex-col items-center justify-center">
@@ -434,9 +402,9 @@ function PilotLeaderboard() {
         </div>
       ) : (
         <div className="flex-1 overflow-auto">
-          <table className="w-full text-xs">
+          <table className="w-full text-[11px]">
             <thead>
-              <tr className="text-[10px] uppercase tracking-wider text-acars-muted border-b border-acars-border">
+              <tr className="text-[9px] uppercase tracking-[0.08em] text-acars-muted/60 border-b border-acars-border">
                 <th className="text-center px-3 py-2 font-medium w-10">#</th>
                 <th className="text-left px-3 py-2 font-medium">Pilot</th>
                 <th className="text-right px-3 py-2 font-medium">Flights</th>
@@ -449,8 +417,8 @@ function PilotLeaderboard() {
               {entries.map((e, i) => (
                 <tr
                   key={e.callsign}
-                  className={`border-b border-acars-border hover:bg-acars-hover transition-colors ${
-                    i % 2 === 0 ? 'bg-acars-panel' : 'bg-acars-bg'
+                  className={`border-b border-acars-border/30 hover:bg-acars-hover/50 transition-colors duration-100 ${
+                    i % 2 === 0 ? '' : 'bg-acars-bg/30'
                   }`}
                 >
                   <td className={`text-center px-3 py-2.5 tabular-nums ${RANK_STYLES[e.rank] ?? 'text-acars-muted'}`}>
@@ -575,13 +543,13 @@ function NewsFeed() {
   }
 
   return (
-    <div className="panel flex flex-col h-[380px]">
-      <div className="flex items-center justify-between px-4 py-3 border-b border-acars-border">
+    <div className="panel flex flex-col h-[400px]">
+      <div className="flex items-center justify-between px-4 py-2.5 border-b border-acars-border">
         <div className="flex items-center gap-2">
-          <Megaphone className="w-4 h-4 text-blue-400" />
-          <h3 className="text-sm font-semibold text-acars-text">Announcements</h3>
+          <Megaphone className="w-3.5 h-3.5 text-blue-400" />
+          <h3 className="text-[13px] font-semibold text-acars-text">Announcements</h3>
           {posts.length > 0 && (
-            <span className="inline-flex items-center justify-center min-w-[20px] h-5 rounded-full bg-blue-500/20 border border-blue-400/30 text-[10px] font-semibold text-blue-400 tabular-nums px-1.5">
+            <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] rounded-full bg-blue-500/15 border border-blue-400/20 text-[9px] font-semibold text-blue-400 tabular-nums px-1">
               {posts.length}
             </span>
           )}
@@ -618,14 +586,14 @@ function NewsFeed() {
                 onChange={e => setFormPinned(e.target.checked)}
                 className="w-3.5 h-3.5 rounded border-amber-400/40 bg-acars-bg text-amber-400 focus:ring-amber-400/40 focus:ring-offset-0 accent-amber-500"
               />
-              <Pin className="w-3 h-3" /> Pin post
+              <PushPin className="w-3 h-3" /> Pin post
             </label>
             <div className="flex items-center gap-2">
               <button onClick={cancelEdit} className="btn-danger btn-sm flex items-center gap-1">
                 <X className="w-3 h-3" /> Cancel
               </button>
               <button onClick={handleSave} disabled={saving || !formTitle.trim() || !formBody.trim()} className="btn-green btn-sm flex items-center gap-1">
-                <Save className="w-3 h-3" /> {saving ? 'Saving...' : 'Save'}
+                <FloppyDisk className="w-3 h-3" /> {saving ? 'Saving...' : 'Save'}
               </button>
             </div>
           </div>
@@ -634,7 +602,7 @@ function NewsFeed() {
 
       {loading ? (
         <div className="flex-1 flex items-center justify-center">
-          <Loader2 className="w-5 h-5 text-blue-400 animate-spin" />
+          <SpinnerGap className="w-5 h-5 text-blue-400 animate-spin" />
         </div>
       ) : posts.length === 0 ? (
         <div className="flex-1 flex flex-col items-center justify-center">
@@ -648,13 +616,13 @@ function NewsFeed() {
             return (
               <div
                 key={post.id}
-                className="px-4 py-3 border-b border-acars-border hover:bg-acars-hover transition-colors group cursor-pointer"
+                className="px-4 py-3 border-b border-acars-border/30 hover:bg-acars-hover/50 transition-colors duration-100 group cursor-pointer"
                 onClick={() => setExpandedId(isExpanded ? null : post.id)}
               >
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-1.5 mb-0.5">
-                      {post.pinned && <Pin className="w-3 h-3 text-amber-400 shrink-0" />}
+                      {post.pinned && <PushPin className="w-3 h-3 text-amber-400 shrink-0" />}
                       <h4 className="text-xs font-semibold text-acars-text truncate">{post.title}</h4>
                     </div>
                     <p className={`text-[11px] text-acars-muted mb-1 ${isExpanded ? 'whitespace-pre-wrap' : 'line-clamp-2'}`}>{post.body}</p>
@@ -673,10 +641,10 @@ function NewsFeed() {
                   {isAdmin && editing === null && (
                     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" onClick={e => e.stopPropagation()}>
                       <button onClick={() => startEdit(post)} className="p-1 rounded hover:bg-acars-border text-acars-muted hover:text-acars-text transition-colors">
-                        <Pencil className="w-3 h-3" />
+                        <PencilSimple className="w-3 h-3" />
                       </button>
                       <button onClick={() => handleDelete(post.id)} className="p-1 rounded hover:bg-red-500/10 text-acars-muted hover:text-red-400 transition-colors">
-                        <Trash2 className="w-3 h-3" />
+                        <Trash className="w-3 h-3" />
                       </button>
                     </div>
                   )}
@@ -695,7 +663,6 @@ function NewsFeed() {
 export function DashboardPage() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [bids, setBids] = useState<ActiveBidEntry[]>([]);
-  const [airports, setAirports] = useState<Airport[]>([]);
   const [recentFlights, setRecentFlights] = useState<LogbookEntry[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -704,12 +671,10 @@ export function DashboardPage() {
     Promise.all([
       api.get<DashboardStats>('/api/stats'),
       api.get<AllBidsResponse>('/api/bids/all'),
-      api.get<Airport[]>('/api/airports'),
       api.get<LogbookListResponse>('/api/logbook?pageSize=5').catch(() => ({ entries: [] as LogbookEntry[], total: 0, page: 1, pageSize: 5 })),
-    ]).then(([statsData, bidsData, airportsData, logbookData]) => {
+    ]).then(([statsData, bidsData, logbookData]) => {
       setStats(statsData);
       setBids(bidsData.bids);
-      setAirports(airportsData);
       setRecentFlights(logbookData.entries);
     }).catch(err => {
       console.error('[Dashboard] Load error:', err);
@@ -721,38 +686,38 @@ export function DashboardPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full">
-        <Loader2 className="w-6 h-6 text-blue-400 animate-spin" />
+        <SpinnerGap className="w-6 h-6 text-blue-400 animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="p-5 space-y-5 overflow-auto h-full">
-      {/* Row 1: Stats Bar */}
-      <div className="grid grid-cols-4 gap-5">
-        <StatCard label="Active Flights" value={stats?.activeFlights ?? '—'} icon={Plane} iconBox="bg-emerald-500/20 border-emerald-500/30" iconColor="text-emerald-400" />
+    <div className="p-4 space-y-4 overflow-auto h-full">
+      {/* Row 1: KPI Stats */}
+      <div className="grid grid-cols-4 gap-4">
+        <StatCard label="Active Flights" value={stats?.activeFlights ?? '—'} icon={AirplaneTilt} iconBox="bg-emerald-500/20 border-emerald-500/30" iconColor="text-emerald-400" />
         <StatCard label="Pilots Online" value={stats?.pilotsOnline ?? '—'} icon={Users} iconBox="bg-blue-500/20 border-blue-500/30" iconColor="text-blue-400" />
-        <StatCard label="Flights this Month" value={stats?.flightsThisMonth ?? '—'} icon={CalendarDays} iconBox="bg-amber-500/20 border-amber-500/30" iconColor="text-amber-400" />
+        <StatCard label="Flights this Month" value={stats?.flightsThisMonth ?? '—'} icon={CalendarDots} iconBox="bg-amber-500/20 border-amber-500/30" iconColor="text-amber-400" />
         <StatCard label="Total Flight Hours" value={stats?.totalHours ?? '—'} icon={Clock} iconBox="bg-blue-400/20 border-blue-400/30" iconColor="text-blue-300" />
       </div>
 
-      {/* Row 2: Active Bids + Quick Actions */}
-      <div className="grid grid-cols-[1fr_340px] gap-5">
-        <ActiveBidsTable bids={bids} />
-        <QuickActions />
-      </div>
+      {/* Quick Actions strip */}
+      <QuickActions />
 
-      {/* Row 3: Network Map + My Info */}
-      <div className="grid grid-cols-[1fr_420px] gap-5">
-        <NetworkMapPreview airports={airports} />
+      {/* Row 2: Active Bids — primary operational view (full width) */}
+      <ActiveBidsTable bids={bids} />
+
+      {/* Row 3: Network Map (full width, hero) */}
+      <NetworkMapPreview />
+
+      {/* Row 4: Announcements + My Info */}
+      <div className="grid grid-cols-[1fr_440px] gap-4">
+        <NewsFeed />
         <MyInfoCard recentFlights={recentFlights} />
       </div>
 
-      {/* Row 4: Pilot Leaderboard + News */}
-      <div className="grid grid-cols-[1fr_380px] gap-5">
-        <PilotLeaderboard />
-        <NewsFeed />
-      </div>
+      {/* Row 5: Pilot Leaderboard (full width) */}
+      <PilotLeaderboard />
     </div>
   );
 }

@@ -1,5 +1,5 @@
 import { useToastStore, type Toast } from '../../stores/toastStore';
-import { X } from 'lucide-react';
+import { X } from '@phosphor-icons/react';
 
 const colorMap: Record<Toast['type'], { border: string; bg: string; text: string }> = {
   success: {

@@ -1,32 +1,32 @@
 import { Fragment, useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
-  Plane,
-  Search,
-  RotateCcw,
-  Loader2,
-  ChevronDown,
+  AirplaneTilt,
+  MagnifyingGlass,
+  ArrowCounterClockwise,
+  SpinnerGap,
+  CaretDown,
   Plus,
   X,
-  Save,
-  Trash2,
+  FloppyDisk,
+  Trash,
   MapPin,
   Gauge,
   Users,
   Package,
   Ruler,
-  AlertTriangle,
-  MessageSquare,
-  Weight,
-  Fuel,
-  CloudCog,
-  BarChart3,
+  Warning,
+  ChatText,
+  Scales,
+  GasPump,
+  Cloud,
+  ChartBar,
   FileText,
   Wrench,
-  Settings2,
-  ArrowUpDown,
+  GearSix,
+  ArrowsDownUp,
   Shield,
-  Radio,
-} from 'lucide-react';
+  Broadcast,
+} from '@phosphor-icons/react';
 import { api } from '../lib/api';
 import { useAuthStore } from '../stores/authStore';
 import type {
@@ -74,7 +74,7 @@ interface AddAircraftModalProps {
 
 function AddAircraftModal({ onClose, onCreated }: AddAircraftModalProps) {
   const [form, setForm] = useState<Partial<CreateFleetAircraftRequest>>({
-    airline: 'SMA',
+    airline: 'SMX',
     status: 'active',
   });
   const [submitting, setSubmitting] = useState(false);
@@ -158,14 +158,14 @@ function AddAircraftModal({ onClose, onCreated }: AddAircraftModalProps) {
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-acars-border">
+        <div className="flex items-center justify-between px-5 py-3.5 border-b border-acars-border">
           <div className="flex items-center gap-2.5">
-            <div className="flex items-center justify-center w-9 h-9 rounded-md bg-emerald-500/10 border border-emerald-400/20">
-              <Plus className="w-4.5 h-4.5 text-emerald-400" />
+            <div className="flex items-center justify-center w-8 h-8 rounded-md bg-emerald-500/10 border border-emerald-400/20">
+              <Plus className="w-4 h-4 text-emerald-400" />
             </div>
             <div>
-              <h2 className="text-sm font-semibold text-acars-text">Add Aircraft</h2>
-              <p className="text-[10px] text-acars-muted">Search SimBrief or enter details manually</p>
+              <h2 className="text-[13px] font-semibold text-acars-text">Add Aircraft</h2>
+              <p className="text-[10px] text-acars-muted">MagnifyingGlass SimBrief or enter details manually</p>
             </div>
           </div>
           <button onClick={onClose} className="p-1.5 rounded-md hover:bg-acars-bg text-acars-muted hover:text-acars-text transition-colors">
@@ -178,9 +178,9 @@ function AddAircraftModal({ onClose, onCreated }: AddAircraftModalProps) {
 
           {/* SimBrief Search */}
           <div>
-            <label className={LABEL_CLS}>Search SimBrief Aircraft Database</label>
+            <label className={LABEL_CLS}>MagnifyingGlass SimBrief Aircraft Database</label>
             <div className="relative">
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-acars-muted" />
+              <MagnifyingGlass className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-acars-muted" />
               <input
                 type="text"
                 value={sbQuery}
@@ -188,7 +188,7 @@ function AddAircraftModal({ onClose, onCreated }: AddAircraftModalProps) {
                 placeholder='Type to search (e.g. "737", "A320", "CRJ")'
                 className="w-full h-9 rounded-md border border-acars-border bg-acars-bg text-xs text-acars-text pl-8 pr-3 outline-none focus:border-sky-400 transition-colors placeholder:text-acars-muted/50"
               />
-              {sbLoading && <Loader2 className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-sky-400 animate-spin" />}
+              {sbLoading && <SpinnerGap className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-sky-400 animate-spin" />}
             </div>
             {sbResults.length > 0 && (
               <div className="mt-1.5 max-h-[180px] overflow-auto rounded-md border border-acars-border bg-acars-bg">
@@ -209,7 +209,7 @@ function AddAircraftModal({ onClose, onCreated }: AddAircraftModalProps) {
             )}
             {sbSelected && (
               <div className="mt-1.5 flex items-center gap-2 px-2.5 py-1.5 rounded-md bg-sky-500/10 border border-sky-400/20 text-[10px] text-sky-400">
-                <Plane className="w-3 h-3" />
+                <AirplaneTilt className="w-3 h-3" />
                 Auto-filled from SimBrief: <span className="font-mono font-bold">{sbSelected.aircraftIcao}</span> — {sbSelected.aircraftName}
               </div>
             )}
@@ -241,7 +241,7 @@ function AddAircraftModal({ onClose, onCreated }: AddAircraftModalProps) {
             </div>
             <div>
               <label className={LABEL_CLS}>Airline</label>
-              <input type="text" value={form.airline ?? ''} onChange={e => set('airline', e.target.value.toUpperCase())} placeholder="SMA" className={INPUT_CLS} />
+              <input type="text" value={form.airline ?? ''} onChange={e => set('airline', e.target.value.toUpperCase())} placeholder="SMX" className={INPUT_CLS} />
             </div>
           </div>
 
@@ -284,7 +284,7 @@ function AddAircraftModal({ onClose, onCreated }: AddAircraftModalProps) {
               <input type="number" value={form.mlwLbs ?? ''} onChange={e => set('mlwLbs', parseInt(e.target.value) || 0)} placeholder="144000" className={INPUT_CLS} />
             </div>
             <div>
-              <label className={LABEL_CLS}>Max Fuel (lbs)</label>
+              <label className={LABEL_CLS}>Max GasPump (lbs)</label>
               <input type="number" value={form.maxFuelLbs ?? ''} onChange={e => set('maxFuelLbs', parseInt(e.target.value) || 0)} placeholder="46000" className={INPUT_CLS} />
             </div>
           </div>
@@ -359,7 +359,7 @@ function AddAircraftModal({ onClose, onCreated }: AddAircraftModalProps) {
             onClick={handleSubmit}
             className="btn-green btn-md"
           >
-            {submitting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
+            {submitting ? <SpinnerGap className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
             Add Aircraft
           </button>
         </div>
@@ -406,12 +406,12 @@ function UtilizationStats({ aircraftId }: { aircraftId: number }) {
   return (
     <div className="rounded-md border border-acars-border bg-acars-panel/50 p-3">
       <div className="flex items-center gap-2 mb-3">
-        <BarChart3 className="w-3.5 h-3.5 text-sky-400" />
+        <ChartBar className="w-3.5 h-3.5 text-sky-400" />
         <span className="text-[10px] uppercase tracking-wider text-acars-muted font-medium">Utilization</span>
       </div>
       {loading ? (
         <div className="flex items-center gap-2 py-2">
-          <Loader2 className="w-3.5 h-3.5 text-acars-muted animate-spin" />
+          <SpinnerGap className="w-3.5 h-3.5 text-acars-muted animate-spin" />
           <span className="text-[11px] text-acars-muted">Loading stats...</span>
         </div>
       ) : !stats || stats.totalFlights === 0 ? (
@@ -529,7 +529,7 @@ function FleetDetailPanel({ aircraft, isAdmin, onSave, onDelete }: FleetDetailPa
         {/* Left: Aircraft Info */}
         <div className="rounded-md border border-acars-border bg-acars-panel/50 p-3">
           <div className="flex items-center gap-2 mb-3">
-            <Plane className="w-3.5 h-3.5 text-sky-400" />
+            <AirplaneTilt className="w-3.5 h-3.5 text-sky-400" />
             <span className="text-[10px] uppercase tracking-wider text-acars-muted font-medium">Aircraft Info</span>
           </div>
           <div className="space-y-0">
@@ -549,7 +549,7 @@ function FleetDetailPanel({ aircraft, isAdmin, onSave, onDelete }: FleetDetailPa
         {/* Right: Specifications */}
         <div className="rounded-md border border-acars-border bg-acars-panel/50 p-3">
           <div className="flex items-center gap-2 mb-3">
-            <Weight className="w-3.5 h-3.5 text-blue-400" />
+            <Scales className="w-3.5 h-3.5 text-blue-400" />
             <span className="text-[10px] uppercase tracking-wider text-acars-muted font-medium">Specifications</span>
           </div>
           <div className="space-y-0">
@@ -571,7 +571,7 @@ function FleetDetailPanel({ aircraft, isAdmin, onSave, onDelete }: FleetDetailPa
       {(a.equipCode || a.transponderCode || a.pbn || a.selcal || a.hexCode) && (
         <div className="rounded-md border border-acars-border bg-acars-panel/50 p-3">
           <div className="flex items-center gap-2 mb-3">
-            <Radio className="w-3.5 h-3.5 text-blue-400" />
+            <Broadcast className="w-3.5 h-3.5 text-blue-400" />
             <span className="text-[10px] uppercase tracking-wider text-acars-muted font-medium">Equipment Codes</span>
           </div>
           <div className="grid grid-cols-5 gap-3">
@@ -609,7 +609,7 @@ function FleetDetailPanel({ aircraft, isAdmin, onSave, onDelete }: FleetDetailPa
       {a.remarks && !isAdmin && (
         <div className="rounded-md border border-acars-border bg-acars-panel/50 p-3">
           <div className="flex items-center gap-1.5 text-[10px] text-acars-muted mb-1">
-            <MessageSquare className="w-3 h-3" /> Remarks
+            <ChatText className="w-3 h-3" /> Remarks
           </div>
           <p className="text-[11px] text-acars-muted/80">{a.remarks}</p>
         </div>
@@ -619,7 +619,7 @@ function FleetDetailPanel({ aircraft, isAdmin, onSave, onDelete }: FleetDetailPa
       {isAdmin && (
         <div className="rounded-md border border-acars-border bg-acars-panel/50 p-4">
           <div className="flex items-center gap-2 mb-3">
-            <Settings2 className="w-3.5 h-3.5 text-red-400" />
+            <GearSix className="w-3.5 h-3.5 text-red-400" />
             <span className="text-[10px] uppercase tracking-wider text-acars-muted font-medium">Admin Controls</span>
           </div>
 
@@ -664,7 +664,7 @@ function FleetDetailPanel({ aircraft, isAdmin, onSave, onDelete }: FleetDetailPa
                 <input type="number" value={editMlw} onChange={e => setEditMlw(e.target.value)} placeholder="144000" className={EDIT_INPUT} />
               </div>
               <div>
-                <label className="text-[10px] uppercase tracking-wider text-acars-muted font-medium mb-1 block">Max Fuel (lbs)</label>
+                <label className="text-[10px] uppercase tracking-wider text-acars-muted font-medium mb-1 block">Max GasPump (lbs)</label>
                 <input type="number" value={editMaxFuel} onChange={e => setEditMaxFuel(e.target.value)} placeholder="46000" className={EDIT_INPUT} />
               </div>
             </div>
@@ -732,7 +732,7 @@ function FleetDetailPanel({ aircraft, isAdmin, onSave, onDelete }: FleetDetailPa
                 onClick={handleSave}
                 className="btn-primary btn-sm"
               >
-                {saving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />}
+                {saving ? <SpinnerGap className="w-3 h-3 animate-spin" /> : <FloppyDisk className="w-3 h-3" />}
                 Save Changes
               </button>
               {!confirmDelete ? (
@@ -740,7 +740,7 @@ function FleetDetailPanel({ aircraft, isAdmin, onSave, onDelete }: FleetDetailPa
                   onClick={() => setConfirmDelete(true)}
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[11px] font-semibold text-red-400 bg-red-500/10 border border-red-400/20 hover:bg-red-500/20 transition-colors"
                 >
-                  <Trash2 className="w-3 h-3" /> Delete
+                  <Trash className="w-3 h-3" /> Delete
                 </button>
               ) : (
                 <div className="flex items-center gap-1.5">
@@ -749,7 +749,7 @@ function FleetDetailPanel({ aircraft, isAdmin, onSave, onDelete }: FleetDetailPa
                     onClick={handleDelete}
                     className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-md text-[10px] font-bold text-white bg-red-500 hover:bg-red-500/80 transition-colors disabled:opacity-50"
                   >
-                    {deleting ? <Loader2 className="w-3 h-3 animate-spin" /> : <AlertTriangle className="w-3 h-3" />}
+                    {deleting ? <SpinnerGap className="w-3 h-3 animate-spin" /> : <Warning className="w-3 h-3" />}
                     Confirm
                   </button>
                   <button
@@ -877,13 +877,13 @@ export function FleetPage() {
     <div className="flex flex-col h-full overflow-hidden">
       {/* Filter bar */}
       <div className="panel m-5 mb-0">
-        <div className="flex items-center justify-between px-4 py-3 border-b border-acars-border">
+        <div className="flex items-center justify-between px-4 py-2.5 border-b border-acars-border">
           <div className="flex items-center gap-2">
-            <div className="flex items-center justify-center w-8 h-8 rounded-md bg-sky-500/10 border border-sky-400/20">
-              <Plane className="w-4 h-4 text-sky-400" />
+            <div className="flex items-center justify-center w-7 h-7 rounded-md bg-sky-500/10 border border-sky-400/20">
+              <AirplaneTilt className="w-3.5 h-3.5 text-sky-400" />
             </div>
-            <h2 className="text-sm font-semibold text-acars-text">Fleet Management</h2>
-            <span className="text-[11px] text-acars-muted tabular-nums">
+            <h2 className="text-[13px] font-semibold text-acars-text">Fleet Management</h2>
+            <span className="text-[10px] text-acars-muted tabular-nums">
               {loading ? '' : `${fleet.length} aircraft`}
             </span>
             {!loading && (
@@ -893,7 +893,7 @@ export function FleetPage() {
                 {statusCounts.retired > 0 && <span className="text-[10px] text-red-400 tabular-nums">{statusCounts.retired} retired</span>}
               </div>
             )}
-            {loading && <Loader2 className="w-3.5 h-3.5 text-blue-400 animate-spin" />}
+            {loading && <SpinnerGap className="w-3.5 h-3.5 text-blue-400 animate-spin" />}
           </div>
           {isAdmin && (
             <button
@@ -929,9 +929,9 @@ export function FleetPage() {
             <option value="retired">Retired</option>
           </select>
 
-          {/* Search */}
+          {/* MagnifyingGlass */}
           <div className="relative flex-1 max-w-[240px]">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-acars-muted" />
+            <MagnifyingGlass className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-acars-muted" />
             <input
               type="text"
               value={searchInput}
@@ -947,7 +947,7 @@ export function FleetPage() {
               onClick={resetFilters}
               className="btn-secondary btn-sm flex items-center gap-1.5 h-8"
             >
-              <RotateCcw className="w-3 h-3" /> Reset
+              <ArrowCounterClockwise className="w-3 h-3" /> Reset
             </button>
           )}
         </div>
@@ -974,7 +974,7 @@ export function FleetPage() {
               {loading && fleet.length === 0 ? (
                 <tr>
                   <td colSpan={9} className="py-16 text-center">
-                    <Loader2 className="w-5 h-5 text-blue-400 animate-spin mx-auto mb-2" />
+                    <SpinnerGap className="w-5 h-5 text-blue-400 animate-spin mx-auto mb-2" />
                     <span className="text-xs text-acars-muted">Loading fleet...</span>
                   </td>
                 </tr>
@@ -982,7 +982,7 @@ export function FleetPage() {
                 <tr>
                   <td colSpan={9} className="py-16">
                     <div className="empty-state">
-                      <Plane className="empty-state-icon" />
+                      <AirplaneTilt className="empty-state-icon" />
                       <p className="empty-state-title">No Aircraft Found</p>
                       <p className="empty-state-desc">No aircraft match your current filters</p>
                     </div>
@@ -1001,7 +1001,7 @@ export function FleetPage() {
                       >
                         <td className="px-4 py-2.5">
                           <div className="flex items-center gap-2">
-                            <ChevronDown className={`w-3.5 h-3.5 text-acars-muted/50 transition-transform duration-200 shrink-0 ${isExpanded ? 'rotate-0' : '-rotate-90'}`} />
+                            <CaretDown className={`w-3.5 h-3.5 text-acars-muted/50 transition-transform duration-200 shrink-0 ${isExpanded ? 'rotate-0' : '-rotate-90'}`} />
                             <span className="font-mono font-semibold text-acars-text">{a.registration}</span>
                           </div>
                         </td>

@@ -4,7 +4,7 @@ import { api } from '../lib/api';
 
 // ── Track Store ─────────────────────────────────────────────
 // Holds the flight track and OFP waypoints for the currently
-// selected SMA bid. Track data is persisted server-side in
+// selected SMX bid. Track data is persisted server-side in
 // telemetry_track; this store caches it and appends real-time
 // WebSocket track:point events incrementally.
 

@@ -96,7 +96,7 @@ export class VatsimService {
 
   /**
    * Find a pilot on VATSIM matching a callsign, optionally filtered by dep/arr airports.
-   * Used for auto-detecting VATSIM connections for SMA flights.
+   * Used for auto-detecting VATSIM connections for SMX flights.
    */
   findPilotOnVatsim(callsign: string, depIcao?: string, arrIcao?: string): VatsimPilot | null {
     if (!this.snapshot) return null;

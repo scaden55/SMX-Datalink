@@ -261,12 +261,14 @@ export class ReportsService {
       SELECT
         l.dep_icao,
         l.arr_icao,
-        d.name AS dep_name,
-        a.name AS arr_name,
+        COALESCE(d.name, oa_d.name) AS dep_name,
+        COALESCE(a.name, oa_a.name) AS arr_name,
         COUNT(*) AS flights
       FROM logbook l
       LEFT JOIN airports d ON d.icao = l.dep_icao
       LEFT JOIN airports a ON a.icao = l.arr_icao
+      LEFT JOIN oa_airports oa_d ON oa_d.ident = l.dep_icao
+      LEFT JOIN oa_airports oa_a ON oa_a.ident = l.arr_icao
       ${where}
       GROUP BY l.dep_icao, l.arr_icao
       ORDER BY flights DESC

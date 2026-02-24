@@ -1,8 +1,8 @@
 {
   "name": "@acars/electron",
   "version": "1.0.0",
-  "description": "SMA ACARS Desktop Client",
-  "author": "SMA Virtual Airlines",
+  "description": "SMX ACARS Desktop Client",
+  "author": "SMX Virtual Airlines",
   "private": true,
   "main": "dist/main.js",
   "scripts": {
@@ -22,8 +22,8 @@
   },
   "build": {
     "appId": "com.sma.acars",
-    "productName": "SMA ACARS",
-    "copyright": "Copyright © 2026 SMA Virtual Airlines",
+    "productName": "SMX ACARS",
+    "copyright": "Copyright © 2026 SMX Virtual Airlines",
     "npmRebuild": false,
     "directories": {
       "output": "../release"

@@ -1,29 +1,29 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
-  BarChart3,
-  ChevronLeft,
-  ChevronRight,
-  ChevronDown,
-  Loader2,
-  Plane,
+  ChartBar,
+  CaretLeft,
+  CaretRight,
+  CaretDown,
+  SpinnerGap,
+  AirplaneTilt,
   Clock,
   Ruler,
-  Fuel,
+  GasPump,
   Users,
   Package,
   Target,
   ArrowDown,
   ArrowRight,
-  RotateCcw,
+  ArrowCounterClockwise,
   Calendar,
   Infinity,
-  DollarSign,
+  CurrencyDollar,
   Receipt,
-  TrendingUp,
+  TrendUp,
   Wrench,
   UserCheck,
-  CircleDot,
-} from 'lucide-react';
+  RadioButton,
+} from '@phosphor-icons/react';
 import {
   AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer,
 } from 'recharts';
@@ -113,7 +113,7 @@ function DarkTooltip({ active, payload, label }: any) {
 // ── Stat Card ───────────────────────────────────────────────────
 
 function StatCard({ icon: Icon, label, value, color }: {
-  icon: typeof Plane;
+  icon: typeof AirplaneTilt;
   label: string;
   value: string;
   color: string;
@@ -132,7 +132,7 @@ function StatCard({ icon: Icon, label, value, color }: {
 // ── Expense Line Item ───────────────────────────────────────────
 
 function ExpenseRow({ icon: Icon, label, amount, pct, color, description }: {
-  icon: typeof Fuel;
+  icon: typeof GasPump;
   label: string;
   amount: number;
   pct: number;
@@ -183,9 +183,9 @@ function AircraftFilter({ options, value, onChange }: {
         onClick={() => setOpen(v => !v)}
         className="h-7 px-2.5 rounded-md border border-acars-border bg-acars-bg text-xs font-medium text-acars-text hover:border-sky-400/40 transition-colors flex items-center gap-1.5"
       >
-        <Plane className="w-3 h-3 text-acars-muted" />
+        <AirplaneTilt className="w-3 h-3 text-acars-muted" />
         <span>{value === 'all' ? 'All Aircraft' : value}</span>
-        <ChevronDown className={`w-3 h-3 text-acars-muted transition-transform ${open ? 'rotate-180' : ''}`} />
+        <CaretDown className={`w-3 h-3 text-acars-muted transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
       {open && (
         <>
@@ -276,7 +276,7 @@ export function ReportsPage() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="flex items-center justify-center w-9 h-9 rounded-md bg-sky-500/10 border border-sky-400/20">
-              <BarChart3 className="w-5 h-5 text-sky-400" />
+              <ChartBar className="w-5 h-5 text-sky-400" />
             </div>
             <div>
               <h1 className="text-base font-semibold text-acars-text">Reports</h1>
@@ -292,7 +292,7 @@ export function ReportsPage() {
                 disabled={allTime}
                 className="h-full px-1.5 text-acars-muted hover:text-acars-text disabled:opacity-30 transition-colors"
               >
-                <ChevronLeft className="w-3.5 h-3.5" />
+                <CaretLeft className="w-3.5 h-3.5" />
               </button>
               <span className="text-xs text-acars-text font-medium px-1 min-w-[120px] text-center select-none">
                 {allTime ? 'All Time' : monthLabel(month)}
@@ -302,7 +302,7 @@ export function ReportsPage() {
                 disabled={allTime}
                 className="h-full px-1.5 text-acars-muted hover:text-acars-text disabled:opacity-30 transition-colors"
               >
-                <ChevronRight className="w-3.5 h-3.5" />
+                <CaretRight className="w-3.5 h-3.5" />
               </button>
             </div>
 
@@ -332,7 +332,7 @@ export function ReportsPage() {
               className="h-8 w-8 rounded-md border border-acars-border bg-acars-panel text-acars-muted hover:text-acars-text flex items-center justify-center transition-colors"
               title="Refresh"
             >
-              <RotateCcw className="w-3.5 h-3.5" />
+              <ArrowCounterClockwise className="w-3.5 h-3.5" />
             </button>
           </div>
         </div>
@@ -342,13 +342,13 @@ export function ReportsPage() {
       <div className="flex-1 overflow-auto">
         {loading ? (
           <div className="flex items-center justify-center h-64">
-            <Loader2 className="w-6 h-6 text-sky-400 animate-spin" />
+            <SpinnerGap className="w-6 h-6 text-sky-400 animate-spin" />
           </div>
         ) : error ? (
           <div className="flex items-center justify-center h-64 text-sm text-red-400">{error}</div>
         ) : !report || !s || s.totalFlights === 0 ? (
           <div className="empty-state h-64">
-            <BarChart3 className="empty-state-icon" />
+            <ChartBar className="empty-state-icon" />
             <p className="empty-state-title">No Flight Data</p>
             <p className="empty-state-desc">No flights recorded for this period</p>
           </div>
@@ -356,10 +356,10 @@ export function ReportsPage() {
           <div className="p-5 space-y-5">
             {/* ── Stats Row 1 ──────────────────────────────────── */}
             <div className="grid grid-cols-4 gap-3">
-              <StatCard icon={Plane}  label="Total Flights" value={formatNumber(s.totalFlights)} color={COLORS.cyan} />
+              <StatCard icon={AirplaneTilt}  label="Total Flights" value={formatNumber(s.totalFlights)} color={COLORS.cyan} />
               <StatCard icon={Clock}  label="Flight Hours"  value={formatDuration(s.totalHoursMin)} color={COLORS.green} />
               <StatCard icon={Ruler}  label="Distance"      value={`${formatNumber(s.totalDistanceNm)} nm`} color={COLORS.amber} />
-              <StatCard icon={Fuel}   label="Fuel Used"     value={`${formatNumber(s.totalFuelLbs)} lbs`} color={COLORS.red} />
+              <StatCard icon={GasPump}   label="Fuel Used"     value={`${formatNumber(s.totalFuelLbs)} lbs`} color={COLORS.red} />
             </div>
 
             {/* ── Stats Row 2 ──────────────────────────────────── */}
@@ -389,9 +389,9 @@ export function ReportsPage() {
 
                 {/* ── Financial Stats Row ───────────────────────── */}
                 <div className="grid grid-cols-3 gap-3">
-                  <StatCard icon={DollarSign} label="Revenue"     value={formatCurrency(activeFin.revenue.totalRevenue)} color={COLORS.green} />
+                  <StatCard icon={CurrencyDollar} label="Revenue"     value={formatCurrency(activeFin.revenue.totalRevenue)} color={COLORS.green} />
                   <StatCard icon={Receipt}    label="Expenses"    value={formatCurrency(activeFin.expenses.totalExpenses)} color={COLORS.amber} />
-                  <StatCard icon={TrendingUp} label="Net Profit"  value={formatCurrency(activeFin.netProfit)} color={activeFin.netProfit >= 0 ? COLORS.green : COLORS.red} />
+                  <StatCard icon={TrendUp} label="Net Profit"  value={formatCurrency(activeFin.netProfit)} color={activeFin.netProfit >= 0 ? COLORS.green : COLORS.red} />
                 </div>
 
                 {/* ── Financial Detail Row ──────────────────────── */}
@@ -406,7 +406,7 @@ export function ReportsPage() {
 
                     <div className="divide-y divide-acars-border">
                       <ExpenseRow
-                        icon={Fuel}
+                        icon={GasPump}
                         label="Fuel"
                         amount={activeFin.expenses.fuelCost}
                         pct={activeFin.expenses.totalExpenses > 0 ? (activeFin.expenses.fuelCost / activeFin.expenses.totalExpenses) * 100 : 0}
@@ -422,7 +422,7 @@ export function ReportsPage() {
                         description="per flight hour"
                       />
                       <ExpenseRow
-                        icon={CircleDot}
+                        icon={RadioButton}
                         label="Landing Fees"
                         amount={activeFin.expenses.landingFees}
                         pct={activeFin.expenses.totalExpenses > 0 ? (activeFin.expenses.landingFees / activeFin.expenses.totalExpenses) * 100 : 0}
@@ -528,7 +528,7 @@ export function ReportsPage() {
             {report.volume.length > 0 && (
               <div className="rounded-md border border-acars-border bg-acars-panel p-4">
                 <h3 className="text-xs font-semibold text-acars-text mb-4 uppercase tracking-wider flex items-center gap-2">
-                  <BarChart3 className="w-3.5 h-3.5 text-sky-400" />
+                  <ChartBar className="w-3.5 h-3.5 text-sky-400" />
                   {allTime ? 'Monthly Flight Volume' : 'Daily Flight Volume'}
                 </h3>
                 <ResponsiveContainer width="100%" height={180}>
@@ -568,7 +568,7 @@ export function ReportsPage() {
                     <thead>
                       <tr className="border-b border-acars-border">
                         <th className="text-left pb-2 text-[10px] uppercase tracking-wider text-acars-muted font-medium">#</th>
-                        <th className="text-left pb-2 text-[10px] uppercase tracking-wider text-acars-muted font-medium">Route</th>
+                        <th className="text-left pb-2 text-[10px] uppercase tracking-wider text-acars-muted font-medium">Path</th>
                         <th className="text-right pb-2 text-[10px] uppercase tracking-wider text-acars-muted font-medium">Flights</th>
                       </tr>
                     </thead>

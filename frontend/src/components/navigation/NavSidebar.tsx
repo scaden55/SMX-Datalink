@@ -1,60 +1,61 @@
 import { NavLink, useLocation } from 'react-router-dom';
 import {
-  LayoutDashboard,
-  Map,
-  CalendarDays,
-  Route,
-  Radio,
-  Plane,
+  type Icon,
+  SquaresFour,
+  MapTrifold,
+  CalendarDots,
+  Path,
+  Broadcast,
+  AirplaneTilt,
   BookOpen,
-  BarChart3,
-  Settings,
+  ChartBar,
+  Gear,
   Users,
-  ClipboardCheck,
-  DollarSign,
-  ScrollText,
-  PanelLeftClose,
-  PanelLeftOpen,
+  ClipboardText,
+  CurrencyDollar,
+  Scroll,
+  SidebarSimple,
+  Sidebar,
   Bell,
-  LogOut,
+  SignOut,
   Shield,
-  type LucideIcon,
-} from 'lucide-react';
+} from '@phosphor-icons/react';
 import { useUIStore } from '../../stores/uiStore';
 import { useTelemetry } from '../../hooks/useTelemetry';
 import { useAuthStore } from '../../stores/authStore';
+import { useFlightPlanStore } from '../../stores/flightPlanStore';
 import { useNotificationStore } from '../../stores/notificationStore';
 
 interface NavItem {
   to: string;
   label: string;
-  icon: LucideIcon;
+  icon: Icon;
 }
 
 const navItems: NavItem[] = [
-  { to: '/', label: 'Dashboard', icon: LayoutDashboard },
-  { to: '/map', label: 'Live Map', icon: Map },
-  { to: '/schedule', label: 'Schedule', icon: CalendarDays },
-  { to: '/planning', label: 'Flight Planning', icon: Route },
-  { to: '/dispatch', label: 'Dispatch', icon: Radio },
-  { to: '/fleet', label: 'Fleet', icon: Plane },
+  { to: '/', label: 'Dashboard', icon: SquaresFour },
+  { to: '/map', label: 'Live Map', icon: MapTrifold },
+  { to: '/schedule', label: 'Schedule', icon: CalendarDots },
+  { to: '/planning', label: 'Flight Planning', icon: Path },
+  { to: '/dispatch', label: 'Dispatch', icon: Broadcast },
+  { to: '/fleet', label: 'Fleet', icon: AirplaneTilt },
   { to: '/logbook', label: 'Logbook', icon: BookOpen },
-  { to: '/reports', label: 'Reports', icon: BarChart3 },
-  { to: '/settings', label: 'Settings', icon: Settings },
+  { to: '/reports', label: 'Reports', icon: ChartBar },
+  { to: '/settings', label: 'Settings', icon: Gear },
 ];
 
 // Dispatcher sees only Schedules + PIREPs; admin sees all
 const dispatcherAdminItems: NavItem[] = [
-  { to: '/admin/schedules', label: 'Schedules', icon: CalendarDays },
-  { to: '/admin/pireps', label: 'PIREPs', icon: ClipboardCheck },
+  { to: '/admin/schedules', label: 'Schedules', icon: CalendarDots },
+  { to: '/admin/pireps', label: 'PIREPs', icon: ClipboardText },
 ];
 
 const adminOnlyItems: NavItem[] = [
   { to: '/admin/users', label: 'Users', icon: Users },
-  { to: '/admin/finances', label: 'Finances', icon: DollarSign },
-  { to: '/admin/reports', label: 'Admin Reports', icon: BarChart3 },
-  { to: '/admin/settings', label: 'VA Settings', icon: Settings },
-  { to: '/admin/audit', label: 'Audit Log', icon: ScrollText },
+  { to: '/admin/finances', label: 'Finances', icon: CurrencyDollar },
+  { to: '/admin/reports', label: 'Admin Reports', icon: ChartBar },
+  { to: '/admin/settings', label: 'VA Settings', icon: Gear },
+  { to: '/admin/audit', label: 'Audit Log', icon: Scroll },
 ];
 
 function ConnectionDot({ collapsed }: { collapsed: boolean }) {
@@ -114,20 +115,20 @@ function NavItemLink({
       <NavLink
         to={item.to}
         title={collapsed ? item.label : undefined}
-        className={`group flex items-center rounded-md ${
-          collapsed ? 'justify-center p-2.5' : 'gap-3 px-3 py-2'
+        className={`group flex items-center rounded-md transition-all duration-100 ${
+          collapsed ? 'justify-center p-2' : 'gap-2.5 px-3 py-[7px]'
         } ${
           isActive
-            ? `${activeBg} ${activeText} ${collapsed ? '' : `border-l-[3px] ${activeBorder} pl-[9px]`}`
-            : `text-acars-muted ${hoverText} ${hoverBg} ${collapsed ? '' : 'border-l-[3px] border-transparent pl-[9px]'}`
+            ? `${activeBg} ${activeText} ${collapsed ? '' : `border-l-2 ${activeBorder} pl-[10px]`}`
+            : `text-acars-muted ${hoverText} ${hoverBg} ${collapsed ? '' : 'border-l-2 border-transparent pl-[10px]'}`
         }`}
       >
         <Icon
-          className={`w-[18px] h-[18px] shrink-0 ${
-            isActive ? activeText : `text-acars-muted ${hoverIcon}`
+          className={`w-[17px] h-[17px] shrink-0 ${
+            isActive ? activeText : `text-acars-muted/70 ${hoverIcon}`
           }`}
         />
-        {!collapsed && <span className="text-sm truncate">{item.label}</span>}
+        {!collapsed && <span className="text-[13px] truncate">{item.label}</span>}
       </NavLink>
     </li>
   );
@@ -140,6 +141,7 @@ export function NavSidebar() {
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
   const unreadCount = useNotificationStore((s) => s.unreadCount);
+  const activeBidId = useFlightPlanStore((s) => s.activeBidId);
 
   const initials = user ? `${user.firstName[0]}${user.lastName[0]}` : '??';
   const displayName = user ? `${user.firstName} ${user.lastName}` : 'Unknown';
@@ -152,14 +154,14 @@ export function NavSidebar() {
       }`}
     >
       {/* Header: Logo */}
-      <div className={`flex items-center h-12 border-b border-acars-border shrink-0 ${
-        collapsed ? 'justify-center px-2' : 'px-4 gap-3'
+      <div className={`flex items-center h-11 border-b border-acars-border shrink-0 ${
+        collapsed ? 'justify-center px-2' : 'px-4 gap-2.5'
       }`}>
-        <img src="./logos/chevron-light.png" alt="SMA" className="h-7 w-auto shrink-0" />
+        <img src="./logos/chevron-light.png" alt="SMX" className="h-6 w-auto shrink-0 opacity-90" />
         {!collapsed && (
           <div className="flex flex-col min-w-0">
-            <span className="text-sm font-semibold text-acars-text truncate">SMA ACARS</span>
-            <span className="text-[10px] text-acars-muted uppercase tracking-wider">Flight Ops</span>
+            <span className="text-[13px] font-semibold text-acars-text tracking-tight truncate">SMX ACARS</span>
+            <span className="text-[9px] text-acars-muted/60 uppercase tracking-[0.1em]">Flight Ops</span>
           </div>
         )}
       </div>
@@ -172,10 +174,15 @@ export function NavSidebar() {
               ? location.pathname === '/'
               : location.pathname.startsWith(item.to);
 
+            // Restore last-used bid in the Planning link
+            const resolvedItem = item.to === '/planning' && activeBidId
+              ? { ...item, to: `/planning/${activeBidId}` }
+              : item;
+
             return (
               <NavItemLink
                 key={item.to}
-                item={item}
+                item={resolvedItem}
                 isActive={isActive}
                 collapsed={collapsed}
               />
@@ -221,7 +228,7 @@ export function NavSidebar() {
       </nav>
 
       {/* Bottom section */}
-      <div className={`border-t border-acars-border py-3 space-y-2.5 shrink-0 ${
+      <div className={`border-t border-acars-border py-2.5 space-y-2 shrink-0 ${
         collapsed ? 'px-2' : 'px-3'
       }`}>
         <ConnectionDot collapsed={collapsed} />
@@ -231,67 +238,65 @@ export function NavSidebar() {
           <NavLink
             to="/settings"
             title={collapsed ? `${unreadCount} notifications` : undefined}
-            className={`flex items-center gap-2 text-acars-muted hover:text-acars-text transition-colors ${
+            className={`flex items-center gap-2 text-acars-muted hover:text-acars-text ${
               collapsed ? 'justify-center' : ''
             }`}
           >
             <div className="relative">
-              <Bell className="w-4 h-4" />
-              <span className="absolute -top-1 -right-1 flex items-center justify-center min-w-[12px] h-3 rounded-full bg-red-500 text-[7px] font-bold text-white px-0.5">
+              <Bell className="w-3.5 h-3.5" />
+              <span className="absolute -top-1.5 -right-1.5 flex items-center justify-center min-w-[14px] h-[14px] rounded-full bg-red-500 text-[8px] font-bold text-white px-0.5 shadow-sm shadow-red-500/30">
                 {unreadCount > 99 ? '99+' : unreadCount}
               </span>
             </div>
             {!collapsed && (
-              <span className="text-[11px]">{unreadCount} new</span>
+              <span className="text-[10px]">{unreadCount} new</span>
             )}
           </NavLink>
         )}
 
         {/* User Info */}
         <div className={`flex items-center ${collapsed ? 'justify-center' : 'gap-2.5'}`}>
-          <div className="flex items-center justify-center w-8 h-8 rounded-full bg-blue-500/20 text-blue-400 text-xs font-semibold shrink-0">
+          <div className="flex items-center justify-center w-7 h-7 rounded-full bg-blue-500/15 border border-blue-400/20 text-blue-400 text-[10px] font-semibold shrink-0">
             {initials}
           </div>
           {!collapsed && (
             <div className="flex flex-col min-w-0 flex-1">
-              <span className="text-xs text-acars-text truncate">{displayName}</span>
-              <span className="inline-flex items-center gap-1">
-                <span className="text-[10px] font-medium uppercase tracking-wide text-blue-400 bg-blue-500/10 px-1.5 py-0.5 rounded">{roleBadge}</span>
-              </span>
+              <span className="text-[12px] text-acars-text truncate leading-tight">{displayName}</span>
+              <span className="text-[9px] font-medium uppercase tracking-wider text-acars-muted/60">{roleBadge}</span>
             </div>
           )}
         </div>
 
         {/* Logout + Collapse toggle */}
-        <div className={`flex items-center ${collapsed ? 'flex-col gap-1' : 'justify-between'}`}>
+        <div className={`flex items-center ${collapsed ? 'flex-col gap-0.5' : 'justify-between'} pt-1`}>
           {!collapsed && (
             <button
               onClick={logout}
-              className="flex items-center gap-1.5 text-[11px] text-acars-muted hover:text-red-400 transition-colors"
+              className="flex items-center gap-1.5 text-[10px] text-acars-muted/60 hover:text-red-400"
               title="Sign out"
             >
-              <LogOut className="w-3.5 h-3.5" />
+              <SignOut className="w-3 h-3" />
               Sign Out
             </button>
           )}
           <button
             onClick={toggleNav}
-            className="flex items-center justify-center w-7 h-7 rounded-md text-acars-muted hover:text-acars-text hover:bg-acars-hover transition-colors"
+            className="flex items-center justify-center w-6 h-6 rounded text-acars-muted/50 hover:text-acars-text hover:bg-acars-hover"
             title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
           >
             {collapsed ? (
-              <PanelLeftOpen className="w-4 h-4" />
+              <Sidebar className="w-3.5 h-3.5" />
             ) : (
-              <PanelLeftClose className="w-4 h-4" />
+              <SidebarSimple className="w-3.5 h-3.5" />
             )}
           </button>
           {collapsed && (
             <button
               onClick={logout}
-              className="flex items-center justify-center w-7 h-7 rounded-md text-acars-muted hover:text-red-400 transition-colors"
+              className="flex items-center justify-center w-6 h-6 rounded text-acars-muted/50 hover:text-red-400"
               title="Sign out"
             >
-              <LogOut className="w-3.5 h-3.5" />
+              <SignOut className="w-3 h-3" />
             </button>
           )}
         </div>

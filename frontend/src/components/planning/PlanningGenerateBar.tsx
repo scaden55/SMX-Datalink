@@ -1,4 +1,4 @@
-import { Loader2, Zap, PlayCircle, ChevronDown, RefreshCw } from 'lucide-react';
+import { SpinnerGap, Lightning, PlayCircle, CaretDown, ArrowsClockwise } from '@phosphor-icons/react';
 import { useFlightPlanStore } from '../../stores/flightPlanStore';
 import {
   DropdownMenu,
@@ -51,8 +51,8 @@ export function PlanningGenerateBar({ onGenerate, onFetch, onStartFlight }: Prop
               title="Fetch latest OFP from SimBrief"
             >
               {simbriefLoading
-                ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                : <RefreshCw className="w-3.5 h-3.5" />}
+                ? <SpinnerGap className="w-3.5 h-3.5 animate-spin" />
+                : <ArrowsClockwise className="w-3.5 h-3.5" />}
               {simbriefLoading
                 ? (window.electronAPI?.isElectron ? 'Waiting for SimBrief...' : 'Loading OFP...')
                 : 'Fetch OFP'}
@@ -64,12 +64,12 @@ export function PlanningGenerateBar({ onGenerate, onFetch, onStartFlight }: Prop
                   className="btn-primary btn-md rounded-l-none border-l border-white/15 px-2"
                   title="More OFP options"
                 >
-                  <ChevronDown className="w-3.5 h-3.5" />
+                  <CaretDown className="w-3.5 h-3.5" />
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" side="top" sideOffset={6}>
                 <DropdownMenuItem onClick={onGenerate} className="gap-2">
-                  <Zap className="w-3.5 h-3.5" />
+                  <Lightning className="w-3.5 h-3.5" />
                   Generate New OFP
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -84,8 +84,8 @@ export function PlanningGenerateBar({ onGenerate, onFetch, onStartFlight }: Prop
             title="Generate OFP via SimBrief"
           >
             {simbriefLoading
-              ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
-              : <Zap className="w-3.5 h-3.5" />}
+              ? <SpinnerGap className="w-3.5 h-3.5 animate-spin" />
+              : <Lightning className="w-3.5 h-3.5" />}
             {simbriefLoading
               ? (window.electronAPI?.isElectron ? 'Waiting for SimBrief...' : 'Loading OFP...')
               : 'Generate OFP'}

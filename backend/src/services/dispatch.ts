@@ -5,19 +5,23 @@ interface DispatchBidRow {
   id: number;
   user_id: number;
   schedule_id: number;
+  aircraft_id: number | null;
   created_at: string;
   flight_number: string;
   dep_icao: string;
   arr_icao: string;
   dep_name: string;
   arr_name: string;
-  aircraft_type: string;
+  aircraft_type: string | null;
   dep_time: string;
   arr_time: string;
   distance_nm: number;
   flight_time_min: number;
   days_of_week: string;
   charter_type: string | null;
+  event_tag: string | null;
+  aircraft_registration: string | null;
+  aircraft_name: string | null;
   simbrief_ofp_json: string | null;
   flight_plan_data: string | null;
   flight_plan_phase: string;
@@ -50,15 +54,18 @@ export class DispatchService {
         ab.id, ab.user_id, ab.schedule_id, ab.created_at,
         sf.flight_number, sf.dep_icao, sf.arr_icao, sf.aircraft_type,
         sf.dep_time, sf.arr_time, sf.distance_nm, sf.flight_time_min, sf.days_of_week,
-        sf.charter_type,
+        sf.charter_type, sf.event_tag,
         COALESCE(dep.name, oa_dep.name, sf.dep_icao) AS dep_name,
         COALESCE(arr.name, oa_arr.name, sf.arr_icao) AS arr_name,
+        ab.aircraft_id,
         ab.simbrief_ofp_json,
         ab.flight_plan_data,
         ab.flight_plan_phase,
         ab.vatsim_connected,
         ab.vatsim_callsign,
         ab.vatsim_cid,
+        f.registration AS aircraft_registration,
+        f.name AS aircraft_name,
         u.callsign AS pilot_callsign,
         u.first_name AS pilot_first_name,
         u.last_name AS pilot_last_name
@@ -68,6 +75,7 @@ export class DispatchService {
       LEFT JOIN airports arr ON arr.icao = sf.arr_icao
       LEFT JOIN oa_airports oa_dep ON oa_dep.ident = sf.dep_icao
       LEFT JOIN oa_airports oa_arr ON oa_arr.ident = sf.arr_icao
+      LEFT JOIN fleet f ON f.id = ab.aircraft_id
       JOIN users u ON u.id = ab.user_id
       WHERE ${conditions.join(' AND ')}
       ORDER BY ab.created_at DESC
@@ -90,6 +98,7 @@ export class DispatchService {
         id: row.id,
         userId: row.user_id,
         scheduleId: row.schedule_id,
+        aircraftId: row.aircraft_id ?? null,
         createdAt: row.created_at,
         flightNumber: row.flight_number,
         depIcao: row.dep_icao,
@@ -103,6 +112,9 @@ export class DispatchService {
         flightTimeMin: row.flight_time_min,
         daysOfWeek: row.days_of_week,
         charterType: row.charter_type as CharterType | null,
+        eventTag: row.event_tag ?? null,
+        aircraftRegistration: row.aircraft_registration ?? null,
+        aircraftName: row.aircraft_name ?? null,
       },
       flightPlanData,
       ofpJson,

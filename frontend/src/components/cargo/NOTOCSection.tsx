@@ -1,5 +1,5 @@
 import type { CargoManifest } from '@acars/shared';
-import { AlertTriangle } from 'lucide-react';
+import { Warning } from '@phosphor-icons/react';
 
 interface Props {
   manifest: CargoManifest;
@@ -12,7 +12,7 @@ export function NOTOCSection({ manifest }: Props) {
     <div className="border border-amber-500/30 rounded-md overflow-hidden">
       {/* Amber header */}
       <div className="bg-amber-500/10 px-3 py-2 flex items-center gap-2">
-        <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />
+        <Warning className="w-3.5 h-3.5 text-amber-400" />
         <span className="text-[11px] font-semibold text-amber-400 font-sans">
           NOTOC — Dangerous Goods / Special Cargo
         </span>

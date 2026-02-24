@@ -32,7 +32,7 @@ function AirportButton({ label, icao, color, active, onClick }: AirportButtonPro
   return (
     <button
       onClick={onClick}
-      className={`flex items-center gap-1.5 px-2 py-1 rounded-md text-[11px] transition-colors ${
+      className={`flex items-center gap-1.5 px-2 py-1 rounded-md text-[11px] transition-colors duration-100 ${
         active
           ? 'bg-acars-input border border-acars-border text-acars-text'
           : 'text-acars-muted hover:text-acars-text hover:bg-acars-input/50'
@@ -53,7 +53,7 @@ export function PlanningInfoPanel() {
   };
 
   return (
-    <div className="flex flex-col border-t border-acars-border flex-1 min-h-0 bg-acars-panel">
+    <div className="flex flex-col border-t border-acars-border flex-[2] min-h-0 bg-acars-panel">
       <TabBar tabs={TABS} active={planningTab} onChange={setPlanningTab} />
       {planningTab === 'airport-info' && (
         <div className="flex items-center gap-1 px-3 py-1 border-b border-acars-border bg-acars-bg/30">

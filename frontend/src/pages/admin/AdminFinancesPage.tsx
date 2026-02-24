@@ -1,23 +1,23 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
-  DollarSign,
-  Search,
-  Loader2,
-  ChevronLeft,
-  ChevronRight,
+  CurrencyDollar,
+  MagnifyingGlass,
+  SpinnerGap,
+  CaretLeft,
+  CaretRight,
   Plus,
   X,
-  Trash2,
-  ArrowUpDown,
-  Filter,
+  Trash,
+  ArrowsDownUp,
+  Funnel,
   Calendar,
-  TrendingUp,
-  TrendingDown,
+  TrendUp,
+  TrendDown,
   Wallet,
   Receipt,
-  Award,
-  RotateCcw,
-} from 'lucide-react';
+  Medal,
+  ArrowCounterClockwise,
+} from '@phosphor-icons/react';
 import { api } from '../../lib/api';
 import { AdminPageHeader } from '../../components/admin/AdminPageHeader';
 import { ConfirmDialog } from '../../components/admin/ConfirmDialog';
@@ -171,13 +171,13 @@ function AddEntryModal({ onClose, onCreated }: AddEntryModalProps) {
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-acars-border">
+        <div className="flex items-center justify-between px-5 py-3.5 border-b border-acars-border">
           <div className="flex items-center gap-2.5">
-            <div className="flex items-center justify-center w-9 h-9 rounded-md bg-emerald-500/10 border border-emerald-400/20">
+            <div className="flex items-center justify-center w-8 h-8 rounded-md bg-emerald-500/10 border border-emerald-400/20">
               <Plus className="w-4 h-4 text-emerald-400" />
             </div>
             <div>
-              <h2 className="text-sm font-semibold text-acars-text">Add Finance Entry</h2>
+              <h2 className="text-[13px] font-semibold text-acars-text">Add Finance Entry</h2>
               <p className="text-[10px] text-acars-muted">Create a new ledger entry</p>
             </div>
           </div>
@@ -264,7 +264,7 @@ function AddEntryModal({ onClose, onCreated }: AddEntryModalProps) {
             onClick={handleSubmit}
             className="inline-flex items-center gap-2 px-4 py-2 rounded-md text-xs font-semibold text-white bg-emerald-500 hover:bg-emerald-500/80 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
-            {submitting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
+            {submitting ? <SpinnerGap className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
             Add Entry
           </button>
         </div>
@@ -381,7 +381,7 @@ function LedgerTab() {
         </div>
 
         <div className="relative">
-          <Filter className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-acars-muted pointer-events-none" />
+          <Funnel className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-acars-muted pointer-events-none" />
           <select
             value={typeFilter}
             onChange={(e) => {
@@ -400,7 +400,7 @@ function LedgerTab() {
         </div>
 
         <div className="relative flex-1 max-w-[200px]">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-acars-muted pointer-events-none" />
+          <MagnifyingGlass className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-acars-muted pointer-events-none" />
           <input
             type="text"
             value={search}
@@ -418,7 +418,7 @@ function LedgerTab() {
             onClick={resetFilters}
             className="btn-secondary btn-sm flex items-center gap-1.5 h-8"
           >
-            <RotateCcw className="w-3 h-3" /> Reset
+            <ArrowCounterClockwise className="w-3 h-3" /> Reset
           </button>
         )}
 
@@ -436,13 +436,13 @@ function LedgerTab() {
       <div className="flex-1 overflow-auto">
         {loading ? (
           <div className="flex items-center justify-center h-64">
-            <Loader2 className="w-6 h-6 text-blue-400 animate-spin" />
+            <SpinnerGap className="w-6 h-6 text-blue-400 animate-spin" />
           </div>
         ) : error ? (
           <div className="flex items-center justify-center h-64 text-sm text-red-400">{error}</div>
         ) : entries.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-64 gap-3">
-            <DollarSign className="w-10 h-10 text-acars-muted/30" />
+            <CurrencyDollar className="w-10 h-10 text-acars-muted/30" />
             <p className="text-sm text-acars-muted">No ledger entries found</p>
           </div>
         ) : (
@@ -501,7 +501,7 @@ function LedgerTab() {
                       className="p-1 rounded hover:bg-red-500/10 text-acars-muted hover:text-red-400 transition-colors"
                       title="Delete entry"
                     >
-                      <Trash2 className="w-3.5 h-3.5" />
+                      <Trash className="w-3.5 h-3.5" />
                     </button>
                   </td>
                 </tr>
@@ -523,7 +523,7 @@ function LedgerTab() {
               disabled={page <= 1}
               className="h-7 w-7 rounded border border-acars-border bg-acars-panel text-acars-muted hover:text-acars-text disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center transition-colors"
             >
-              <ChevronLeft className="w-3.5 h-3.5" />
+              <CaretLeft className="w-3.5 h-3.5" />
             </button>
             <span className="text-xs text-acars-text px-2 font-mono">
               {page} / {totalPages}
@@ -533,7 +533,7 @@ function LedgerTab() {
               disabled={page >= totalPages}
               className="h-7 w-7 rounded border border-acars-border bg-acars-panel text-acars-muted hover:text-acars-text disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center transition-colors"
             >
-              <ChevronRight className="w-3.5 h-3.5" />
+              <CaretRight className="w-3.5 h-3.5" />
             </button>
           </div>
         </div>
@@ -634,7 +634,7 @@ function BalancesTab() {
         } ${className}`}
       >
         {label}
-        <ArrowUpDown className={`w-3 h-3 ${active ? 'text-blue-400' : 'text-acars-muted/50'}`} />
+        <ArrowsDownUp className={`w-3 h-3 ${active ? 'text-blue-400' : 'text-acars-muted/50'}`} />
       </button>
     );
   }
@@ -643,7 +643,7 @@ function BalancesTab() {
     <div className="flex-1 overflow-auto">
       {loading ? (
         <div className="flex items-center justify-center h-64">
-          <Loader2 className="w-6 h-6 text-blue-400 animate-spin" />
+          <SpinnerGap className="w-6 h-6 text-blue-400 animate-spin" />
         </div>
       ) : error ? (
         <div className="flex items-center justify-center h-64 text-sm text-red-400">{error}</div>
@@ -747,7 +747,7 @@ function SummaryTab() {
     color: string;
     textColor: string;
     borderColor: string;
-    icon: typeof TrendingUp;
+    icon: typeof TrendUp;
     iconColor: string;
   }[] = [
     {
@@ -756,7 +756,7 @@ function SummaryTab() {
       color: 'bg-emerald-500/10',
       textColor: 'text-emerald-400',
       borderColor: 'border-emerald-400/20',
-      icon: DollarSign,
+      icon: CurrencyDollar,
       iconColor: 'text-emerald-400',
     },
     {
@@ -765,7 +765,7 @@ function SummaryTab() {
       color: 'bg-blue-500/10',
       textColor: 'text-blue-400',
       borderColor: 'border-blue-400/20',
-      icon: Award,
+      icon: Medal,
       iconColor: 'text-blue-400',
     },
     {
@@ -774,7 +774,7 @@ function SummaryTab() {
       color: 'bg-red-500/10',
       textColor: 'text-red-400',
       borderColor: 'border-red-400/20',
-      icon: TrendingDown,
+      icon: TrendDown,
       iconColor: 'text-red-400',
     },
     {
@@ -792,7 +792,7 @@ function SummaryTab() {
       color: 'bg-emerald-500/10',
       textColor: 'text-emerald-400',
       borderColor: 'border-emerald-400/20',
-      icon: TrendingUp,
+      icon: TrendUp,
       iconColor: 'text-emerald-400',
     },
     {
@@ -839,7 +839,7 @@ function SummaryTab() {
             }}
             className="btn-secondary btn-sm flex items-center gap-1.5 h-8"
           >
-            <RotateCcw className="w-3 h-3" /> Reset
+            <ArrowCounterClockwise className="w-3 h-3" /> Reset
           </button>
         )}
       </div>
@@ -847,7 +847,7 @@ function SummaryTab() {
       {/* Cards */}
       {loading ? (
         <div className="flex items-center justify-center h-64">
-          <Loader2 className="w-6 h-6 text-blue-400 animate-spin" />
+          <SpinnerGap className="w-6 h-6 text-blue-400 animate-spin" />
         </div>
       ) : error ? (
         <div className="flex items-center justify-center h-64 text-sm text-red-400">{error}</div>
@@ -900,7 +900,7 @@ export function AdminFinancesPage() {
 
   return (
     <div className="h-full flex flex-col overflow-hidden p-6">
-      <AdminPageHeader icon={DollarSign} title="Financial Management" subtitle="Track payments, bonuses, and expenses" />
+      <AdminPageHeader icon={CurrencyDollar} title="Financial Management" subtitle="Track payments, bonuses, and expenses" />
 
       {/* Tabs */}
       <div className="flex-none flex items-center gap-6 mt-5 border-b border-acars-border">

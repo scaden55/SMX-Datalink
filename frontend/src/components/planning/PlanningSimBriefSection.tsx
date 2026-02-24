@@ -1,4 +1,4 @@
-import { Cog } from 'lucide-react';
+import { Gear } from '@phosphor-icons/react';
 import { CollapsibleSection } from '../common/CollapsibleSection';
 import { useFlightPlanStore } from '../../stores/flightPlanStore';
 
@@ -9,7 +9,7 @@ export function PlanningSimBriefSection() {
   const checkboxClass = 'w-3.5 h-3.5 rounded-md border-acars-border bg-acars-input accent-acars-blue';
 
   return (
-    <CollapsibleSection title="Generation Options" icon={<Cog className="w-3.5 h-3.5" />} defaultOpen>
+    <CollapsibleSection title="Generation Options" icon={<Gear className="w-3.5 h-3.5" />} defaultOpen>
       <div className="space-y-2">
         {/* Row 1: Units, Cont Fuel, Reserve */}
         <div className="grid grid-cols-3 gap-2.5">

@@ -1,4 +1,4 @@
-import { Fuel } from 'lucide-react';
+import { GasPump } from '@phosphor-icons/react';
 import { CollapsibleSection } from '../common/CollapsibleSection';
 import { useFlightPlanStore } from '../../stores/flightPlanStore';
 import type { FlightPlanFormData } from '@acars/shared';
@@ -25,7 +25,7 @@ export function PlanningFuelSection() {
     <CollapsibleSection
       title="Fuel"
       summary={totalSummary}
-      icon={<Fuel className="w-3.5 h-3.5" />}
+      icon={<GasPump className="w-3.5 h-3.5" />}
       status={form.fuelTotal ? 'green' : 'grey'}
       defaultOpen
     >

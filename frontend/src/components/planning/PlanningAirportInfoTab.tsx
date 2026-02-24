@@ -1,5 +1,5 @@
 import { useFlightPlanStore } from '../../stores/flightPlanStore';
-import { MapPin } from 'lucide-react';
+import { MapPin } from '@phosphor-icons/react';
 
 export function PlanningAirportInfoTab() {
   const { selectedAirportIcao, airports, weatherCache } = useFlightPlanStore();

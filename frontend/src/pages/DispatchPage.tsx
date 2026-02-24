@@ -1,6 +1,6 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CalendarDays, Plane, Route, Radio, ArrowRight } from 'lucide-react';
+import { CalendarDots, AirplaneTilt, Path, Broadcast, ArrowRight } from '@phosphor-icons/react';
 import { AppShell } from '../components/layout/AppShell';
 import { useAuthStore } from '../stores/authStore';
 import { useFlightPlanStore } from '../stores/flightPlanStore';
@@ -87,6 +87,45 @@ export function DispatchPage() {
 
   // When selected flight changes, populate the store
   const selectedFlight = flights.find((f) => f.bid.id === selectedBidId) ?? null;
+
+  // Fetch any route airports missing from the store (e.g. non-hub airports only in oa_airports)
+  const fetchedAirportsRef = useRef(new Set<string>());
+  useEffect(() => {
+    if (!selectedFlight || airports.length === 0) return;
+
+    const { bid, flightPlanData } = selectedFlight;
+    const icaos = [bid.depIcao, bid.arrIcao, flightPlanData?.alternate1, flightPlanData?.alternate2].filter(Boolean) as string[];
+    const missing = icaos.filter(icao => !airports.some(a => a.icao === icao) && !fetchedAirportsRef.current.has(icao));
+    if (missing.length === 0) return;
+
+    missing.forEach(icao => fetchedAirportsRef.current.add(icao));
+
+    Promise.all(
+      missing.map(icao =>
+        api.get<{ icao: string; name: string; latitude: number; longitude: number; elevation_ft: number | null; country: string | null; municipality: string | null; region: string | null }>(
+          `/api/airports/${icao}`
+        ).then(detail => ({
+          id: 0,
+          icao: detail.icao,
+          name: detail.name,
+          city: detail.municipality ?? '',
+          state: detail.region ?? '',
+          country: detail.country ?? '',
+          lat: detail.latitude,
+          lon: detail.longitude,
+          elevation: detail.elevation_ft ?? 0,
+          timezone: '',
+        } as Airport)).catch(() => null)
+      )
+    ).then(results => {
+      const fetched = results.filter((a): a is Airport => a !== null);
+      if (fetched.length > 0) {
+        const latest = useFlightPlanStore.getState().airports;
+        const merged = [...latest, ...fetched.filter(f => !latest.some(c => c.icao === f.icao))];
+        setAirports(merged);
+      }
+    });
+  }, [selectedFlight, airports, setAirports]);
 
   useEffect(() => {
     // Keep activeBidId in sync so TopBar can show End Flight button
@@ -193,8 +232,8 @@ export function DispatchPage() {
     return (
       <div className="flex h-full items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin h-8 w-8 border-2 border-sky-400 border-t-transparent rounded-full mx-auto mb-3" />
-          <p className="text-sm text-acars-muted">Loading dispatch flights...</p>
+          <div className="animate-spin h-6 w-6 border-2 border-blue-400/30 border-t-blue-400 rounded-full mx-auto mb-3" />
+          <p className="text-[11px] text-acars-muted">Loading dispatch flights...</p>
         </div>
       </div>
     );
@@ -205,8 +244,8 @@ export function DispatchPage() {
     return (
       <div className="flex h-full items-center justify-center">
         <div className="text-center max-w-md">
-          <p className="text-sm text-red-400 mb-2">Failed to load dispatch data</p>
-          <p className="text-xs text-acars-muted">{error}</p>
+          <p className="text-[11px] text-red-400 mb-2">Failed to load dispatch data</p>
+          <p className="text-[10px] text-acars-muted">{error}</p>
         </div>
       </div>
     );
@@ -217,7 +256,7 @@ export function DispatchPage() {
     return (
       <div className="flex h-full items-center justify-center">
         <div className="text-center max-w-lg space-y-6">
-          <h2 className="text-base font-semibold text-acars-text">
+          <h2 className="text-[13px] font-semibold text-acars-text">
             {isAdmin ? 'No Active Flights' : 'No Active Flight'}
           </h2>
 
@@ -225,35 +264,35 @@ export function DispatchPage() {
             <>
               <div className="flex items-center justify-center gap-3">
                 <div className="flex flex-col items-center gap-1.5">
-                  <div className="w-10 h-10 rounded-md bg-amber-500/10 border border-amber-400/20 flex items-center justify-center">
-                    <CalendarDays className="w-5 h-5 text-amber-400" />
+                  <div className="w-9 h-9 rounded-md bg-amber-500/10 border border-amber-400/20 flex items-center justify-center">
+                    <CalendarDots className="w-4 h-4 text-amber-400" />
                   </div>
                   <span className="text-[10px] font-medium text-amber-400">Schedule</span>
                 </div>
                 <ArrowRight className="w-4 h-4 text-sky-400/40" />
                 <div className="flex flex-col items-center gap-1.5">
-                  <div className="w-10 h-10 rounded-md bg-blue-500/10 border border-blue-400/20 flex items-center justify-center">
-                    <Plane className="w-5 h-5 text-blue-400" />
+                  <div className="w-9 h-9 rounded-md bg-blue-500/10 border border-blue-400/20 flex items-center justify-center">
+                    <AirplaneTilt className="w-4 h-4 text-blue-400" />
                   </div>
                   <span className="text-[10px] font-medium text-blue-400">Bid</span>
                 </div>
                 <ArrowRight className="w-4 h-4 text-sky-400/40" />
                 <div className="flex flex-col items-center gap-1.5">
-                  <div className="w-10 h-10 rounded-md bg-blue-500/10 border border-blue-400/20 flex items-center justify-center">
-                    <Route className="w-5 h-5 text-blue-400" />
+                  <div className="w-9 h-9 rounded-md bg-blue-500/10 border border-blue-400/20 flex items-center justify-center">
+                    <Path className="w-4 h-4 text-blue-400" />
                   </div>
                   <span className="text-[10px] font-medium text-blue-400">Plan</span>
                 </div>
                 <ArrowRight className="w-4 h-4 text-sky-400/40" />
                 <div className="flex flex-col items-center gap-1.5">
-                  <div className="w-10 h-10 rounded-md bg-sky-500/10 border border-sky-400/20 flex items-center justify-center">
-                    <Radio className="w-5 h-5 text-sky-400" />
+                  <div className="w-9 h-9 rounded-md bg-sky-500/10 border border-sky-400/20 flex items-center justify-center">
+                    <Broadcast className="w-4 h-4 text-sky-400" />
                   </div>
                   <span className="text-[10px] font-medium text-sky-400">Dispatch</span>
                 </div>
               </div>
 
-              <p className="text-xs text-acars-muted leading-relaxed max-w-sm mx-auto">
+              <p className="text-[11px] text-acars-muted leading-relaxed max-w-sm mx-auto">
                 Place a bid on the Schedule, create a flight plan on the Planning page, then your flight will appear here.
               </p>
 
@@ -267,7 +306,7 @@ export function DispatchPage() {
           )}
 
           {isAdmin && (
-            <p className="text-xs text-acars-muted leading-relaxed max-w-sm mx-auto">
+            <p className="text-[11px] text-acars-muted leading-relaxed max-w-sm mx-auto">
               No pilots currently have flights with saved flight plans. Active flights will appear here once a pilot saves a flight plan from the Planning page.
             </p>
           )}

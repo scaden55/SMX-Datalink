@@ -1,5 +1,16 @@
 import { useState, useEffect } from 'react';
-import { BarChart3, Plane, Clock, AlertCircle, DollarSign, Users, MapPin, Trophy, Loader2, RefreshCw } from 'lucide-react';
+import {
+  ChartBar,
+  AirplaneTilt,
+  Clock,
+  WarningCircle,
+  CurrencyDollar,
+  Users,
+  MapPin,
+  Trophy,
+  SpinnerGap,
+  ArrowsClockwise,
+} from '@phosphor-icons/react';
 import { AdminPageHeader } from '../../components/admin/AdminPageHeader';
 import { api } from '../../lib/api';
 import type { ReportResponse, FinanceSummary } from '@acars/shared';
@@ -78,9 +89,9 @@ export function AdminReportsPage() {
   if (loading) {
     return (
       <div className="p-6">
-        <AdminPageHeader icon={BarChart3} title="Admin Reports" subtitle="Operational overview and analytics" />
+        <AdminPageHeader icon={ChartBar} title="Admin Reports" subtitle="Operational overview and analytics" />
         <div className="flex items-center justify-center gap-2 mt-12 text-acars-muted text-sm">
-          <Loader2 className="w-4 h-4 animate-spin" />
+          <SpinnerGap className="w-4 h-4 animate-spin" />
           Loading report data...
         </div>
       </div>
@@ -90,9 +101,9 @@ export function AdminReportsPage() {
   if (error || !report) {
     return (
       <div className="p-6">
-        <AdminPageHeader icon={BarChart3} title="Admin Reports" subtitle="Operational overview and analytics" />
+        <AdminPageHeader icon={ChartBar} title="Admin Reports" subtitle="Operational overview and analytics" />
         <div className="panel mt-6 p-8 flex flex-col items-center gap-3">
-          <AlertCircle className="w-6 h-6 text-red-400" />
+          <WarningCircle className="w-6 h-6 text-red-400" />
           <p className="text-sm text-red-400">{error ?? 'No data available'}</p>
           <button
             onClick={fetchData}
@@ -113,7 +124,7 @@ export function AdminReportsPage() {
     <div className="p-6 space-y-6">
       {/* Header */}
       <AdminPageHeader
-        icon={BarChart3}
+        icon={ChartBar}
         title="Admin Reports"
         subtitle="Operational overview and analytics"
         actions={
@@ -121,7 +132,7 @@ export function AdminReportsPage() {
             onClick={fetchData}
             className="btn-secondary btn-sm flex items-center gap-1.5"
           >
-            <RefreshCw className="w-3.5 h-3.5" />
+            <ArrowsClockwise className="w-3.5 h-3.5" />
             Refresh
           </button>
         }
@@ -130,7 +141,7 @@ export function AdminReportsPage() {
       {/* ── Overview Stat Cards ─────────────────────────────────── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <StatCard
-          icon={Plane}
+          icon={AirplaneTilt}
           label="Total Flights"
           value={fmtNum(summary.totalFlights)}
           color="text-blue-400"
@@ -144,7 +155,7 @@ export function AdminReportsPage() {
           iconBg="bg-emerald-500/10"
         />
         <StatCard
-          icon={AlertCircle}
+          icon={WarningCircle}
           label="Pending PIREPs"
           value={fmtNum(pendingPireps)}
           color={pendingPireps > 0 ? 'text-amber-400' : 'text-acars-muted'}
@@ -152,7 +163,7 @@ export function AdminReportsPage() {
           highlight={pendingPireps > 0}
         />
         <StatCard
-          icon={DollarSign}
+          icon={CurrencyDollar}
           label="Net Revenue"
           value={fmtCurrency(financials.netProfit)}
           color={financials.netProfit >= 0 ? 'text-emerald-400' : 'text-red-400'}
@@ -165,9 +176,9 @@ export function AdminReportsPage() {
 
         {/* ── Top Routes ────────────────────────────────────────── */}
         <div className="panel p-0 overflow-hidden">
-          <div className="flex items-center gap-2 px-4 py-3 border-b border-acars-border">
+          <div className="flex items-center gap-2 px-4 py-2.5 border-b border-acars-border">
             <MapPin className="w-4 h-4 text-blue-400" />
-            <h2 className="text-sm font-semibold text-acars-text">Top Routes</h2>
+            <h2 className="text-[13px] font-semibold text-acars-text">Top Routes</h2>
             <span className="ml-auto text-[10px] text-acars-muted uppercase tracking-wider">
               {topRoutes.length} route{topRoutes.length !== 1 ? 's' : ''}
             </span>
@@ -180,7 +191,7 @@ export function AdminReportsPage() {
                 <thead>
                   <tr className="border-b border-acars-border text-[10px] uppercase tracking-wider text-acars-muted">
                     <th className="px-4 py-2 text-left w-8">#</th>
-                    <th className="px-4 py-2 text-left">Route</th>
+                    <th className="px-4 py-2 text-left">Path</th>
                     <th className="px-4 py-2 text-right w-16">Flights</th>
                     <th className="px-4 py-2 text-left min-w-[120px]"></th>
                   </tr>
@@ -216,9 +227,9 @@ export function AdminReportsPage() {
 
         {/* ── Top Pilots ────────────────────────────────────────── */}
         <div className="panel p-0 overflow-hidden">
-          <div className="flex items-center gap-2 px-4 py-3 border-b border-acars-border">
+          <div className="flex items-center gap-2 px-4 py-2.5 border-b border-acars-border">
             <Trophy className="w-4 h-4 text-amber-400" />
-            <h2 className="text-sm font-semibold text-acars-text">Top Pilots</h2>
+            <h2 className="text-[13px] font-semibold text-acars-text">Top Pilots</h2>
             <span className="ml-auto text-[10px] text-acars-muted uppercase tracking-wider">
               {byPilot.length} pilot{byPilot.length !== 1 ? 's' : ''}
             </span>
@@ -267,9 +278,9 @@ export function AdminReportsPage() {
       {/* ── Financial Summary ───────────────────────────────────── */}
       {financeSummary && (
         <div className="panel p-0 overflow-hidden">
-          <div className="flex items-center gap-2 px-4 py-3 border-b border-acars-border">
-            <DollarSign className="w-4 h-4 text-emerald-400" />
-            <h2 className="text-sm font-semibold text-acars-text">Financial Summary</h2>
+          <div className="flex items-center gap-2 px-4 py-2.5 border-b border-acars-border">
+            <CurrencyDollar className="w-4 h-4 text-emerald-400" />
+            <h2 className="text-[13px] font-semibold text-acars-text">Financial Summary</h2>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-px bg-acars-border">
             <FinanceCard label="Total Pay" value={financeSummary.totalPay} color="text-blue-400" />
@@ -287,9 +298,9 @@ export function AdminReportsPage() {
 
         {/* ── Flight Volume ──────────────────────────────────────── */}
         <div className="panel p-0 overflow-hidden">
-          <div className="flex items-center gap-2 px-4 py-3 border-b border-acars-border">
-            <BarChart3 className="w-4 h-4 text-blue-400" />
-            <h2 className="text-sm font-semibold text-acars-text">Flight Volume</h2>
+          <div className="flex items-center gap-2 px-4 py-2.5 border-b border-acars-border">
+            <ChartBar className="w-4 h-4 text-blue-400" />
+            <h2 className="text-[13px] font-semibold text-acars-text">Flight Volume</h2>
             <span className="ml-auto text-[10px] text-acars-muted uppercase tracking-wider">
               {report.period === 'all-time' ? 'All Time (Monthly)' : report.period}
             </span>
@@ -328,9 +339,9 @@ export function AdminReportsPage() {
 
         {/* ── Additional Stats ────────────────────────────────────── */}
         <div className="panel p-0 overflow-hidden">
-          <div className="flex items-center gap-2 px-4 py-3 border-b border-acars-border">
+          <div className="flex items-center gap-2 px-4 py-2.5 border-b border-acars-border">
             <Users className="w-4 h-4 text-blue-400" />
-            <h2 className="text-sm font-semibold text-acars-text">Additional Stats</h2>
+            <h2 className="text-[13px] font-semibold text-acars-text">Additional Stats</h2>
           </div>
           <div className="p-4 space-y-3">
             <MiniStat label="Total Pilots" value={fmtNum(totalUsers)} />

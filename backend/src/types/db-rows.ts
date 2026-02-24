@@ -154,4 +154,7 @@ export interface ScheduledFlightRow {
   is_active: number;
   charter_type: string | null;
   created_by: number | null;
+  event_tag: string | null;
+  vatsim_event_id: number | null;
+  expires_at: string | null;
 }

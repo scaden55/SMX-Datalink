@@ -1,3 +1,5 @@
+import { useRef, useCallback } from 'react';
+
 interface Tab<T extends string> {
   id: T;
   label: string;
@@ -10,8 +12,23 @@ interface TabBarProps<T extends string> {
 }
 
 export function TabBar<T extends string>({ tabs, active, onChange }: TabBarProps<T>) {
+  const ref = useRef<HTMLDivElement>(null);
+
+  const handleWheel = useCallback((e: React.WheelEvent) => {
+    if (!ref.current) return;
+    // Convert vertical scroll into horizontal scroll
+    if (e.deltaY !== 0) {
+      e.preventDefault();
+      ref.current.scrollLeft += e.deltaY;
+    }
+  }, []);
+
   return (
-    <div className="flex border-b border-acars-border">
+    <div
+      ref={ref}
+      onWheel={handleWheel}
+      className="flex overflow-x-auto border-b border-acars-border shrink-0 tab-scroll"
+    >
       {tabs.map((tab) => (
         <button
           key={tab.id}

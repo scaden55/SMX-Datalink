@@ -147,14 +147,14 @@ export interface SimBriefAircraftSearchResponse {
   cachedAt: string;
 }
 
-export type CharterType = 'reposition' | 'cargo' | 'passenger';
+export type CharterType = 'reposition' | 'cargo' | 'passenger' | 'generated' | 'event';
 
 export interface ScheduledFlight {
   id: number;
   flightNumber: string;
   depIcao: string;
   arrIcao: string;
-  aircraftType: string;
+  aircraftType: string | null;
   depTime: string;
   arrTime: string;
   distanceNm: number;
@@ -162,25 +162,30 @@ export interface ScheduledFlight {
   daysOfWeek: string;
   isActive: boolean;
   charterType: CharterType | null;
+  eventTag: string | null;
+  expiresAt: string | null;
+  depLat: number | null;
+  depLon: number | null;
+  arrLat: number | null;
+  arrLon: number | null;
 }
 
 export interface CreateCharterRequest {
   charterType: CharterType;
   depIcao: string;
   arrIcao: string;
-  aircraftType: string;
   depTime: string;
 }
 
 export interface CreateCharterResponse {
   schedule: ScheduleListItem;
-  bid: BidWithDetails;
 }
 
 export interface Bid {
   id: number;
   userId: number;
   scheduleId: number;
+  aircraftId: number | null;
   createdAt: string;
 }
 
@@ -190,13 +195,16 @@ export interface BidWithDetails extends Bid {
   arrIcao: string;
   depName: string;
   arrName: string;
-  aircraftType: string;
+  aircraftType: string | null;
   depTime: string;
   arrTime: string;
   distanceNm: number;
   flightTimeMin: number;
   daysOfWeek: string;
   charterType: CharterType | null;
+  eventTag: string | null;
+  aircraftRegistration: string | null;
+  aircraftName: string | null;
 }
 
 export interface ScheduleListItem extends ScheduledFlight {
@@ -204,6 +212,7 @@ export interface ScheduleListItem extends ScheduledFlight {
   arrName: string;
   bidCount: number;
   hasBid: boolean;
+  eventName: string | null;
 }
 
 export interface ScheduleListResponse {
@@ -213,6 +222,7 @@ export interface ScheduleListResponse {
 
 export interface BidResponse {
   bid: BidWithDetails;
+  warnings: string[];
 }
 
 export interface MyBidsResponse {
@@ -230,6 +240,14 @@ export interface AllBidsResponse {
   total: number;
 }
 
+export interface FleetForBidItem extends FleetAircraft {
+  atDeparture: boolean;
+}
+
+export interface FleetForBidResponse {
+  fleet: FleetForBidItem[];
+}
+
 export interface DashboardStats {
   totalSchedules: number;
   totalPilots: number;
@@ -239,4 +257,23 @@ export interface DashboardStats {
   pilotsOnline: number;
   flightsThisMonth: number;
   totalHours: number;
+}
+
+// ── Dynamic Charter System ──────────────────────────────────────
+
+export interface CharterGenerationStatus {
+  month: string;
+  generatedAt: string | null;
+  charterCount: number;
+  eventCount: number;
+}
+
+export interface VatsimEventInfo {
+  id: number;
+  name: string;
+  eventType: string;
+  startTime: string;
+  endTime: string;
+  airports: string[];
+  tag: string | null;
 }

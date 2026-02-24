@@ -2,26 +2,26 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft,
-  Loader2,
-  Plane,
-  PlaneTakeoff,
-  PlaneLanding,
+  SpinnerGap,
+  AirplaneTilt,
+  AirplaneTakeoff,
+  AirplaneLanding,
   Clock,
-  Fuel,
+  GasPump,
   Ruler,
   Users,
   Package,
   ArrowRight,
-  CheckCircle2,
-  AlertTriangle,
+  CheckCircle,
+  Warning,
   XCircle,
-  Ban,
-  Route,
+  Prohibit,
+  Path,
   Gauge,
-  BarChart3,
-  MessageSquare,
-  Navigation,
-} from 'lucide-react';
+  ChartBar,
+  ChatText,
+  NavigationArrow,
+} from '@phosphor-icons/react';
 import { api } from '../lib/api';
 import { VatsimBadge } from '../components/common/VatsimBadge';
 import type { LogbookEntry, LogbookStatus } from '@acars/shared';
@@ -68,19 +68,19 @@ function scoreLabel(score: number): { label: string; color: string } {
   return { label: 'Poor', color: 'text-red-400' };
 }
 
-const STATUS_CONFIG: Record<LogbookStatus, { label: string; icon: typeof CheckCircle2; color: string }> = {
+const STATUS_CONFIG: Record<LogbookStatus, { label: string; icon: typeof CheckCircle; color: string }> = {
   pending:   { label: 'Pending',   icon: Clock,         color: 'text-blue-400' },
-  approved:  { label: 'Approved',  icon: CheckCircle2,  color: 'text-emerald-400' },
-  completed: { label: 'Completed', icon: CheckCircle2,  color: 'text-emerald-400' },
-  diverted:  { label: 'Diverted',  icon: AlertTriangle, color: 'text-amber-400' },
+  approved:  { label: 'Approved',  icon: CheckCircle,  color: 'text-emerald-400' },
+  completed: { label: 'Completed', icon: CheckCircle,  color: 'text-emerald-400' },
+  diverted:  { label: 'Diverted',  icon: Warning, color: 'text-amber-400' },
   rejected:  { label: 'Rejected',  icon: XCircle,       color: 'text-red-400' },
-  cancelled: { label: 'Cancelled', icon: Ban,           color: 'text-acars-muted' },
+  cancelled: { label: 'Cancelled', icon: Prohibit,           color: 'text-acars-muted' },
 };
 
 function InfoRow({ label, value, icon: Icon, iconColor, valueClass = '' }: {
   label: string;
   value: string;
-  icon?: typeof Plane;
+  icon?: typeof AirplaneTilt;
   iconColor?: string;
   valueClass?: string;
 }) {
@@ -116,7 +116,7 @@ export function FlightDetailPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full">
-        <Loader2 className="w-6 h-6 text-amber-400 animate-spin" />
+        <SpinnerGap className="w-6 h-6 text-amber-400 animate-spin" />
       </div>
     );
   }
@@ -153,7 +153,7 @@ export function FlightDetailPage() {
         <div className="flex items-center justify-between mb-5">
           <div className="flex items-center gap-3">
             <div className="flex items-center justify-center w-10 h-10 rounded-md bg-amber-500/10 border border-amber-400/20">
-              <Plane className="w-5 h-5 text-amber-400" />
+              <AirplaneTilt className="w-5 h-5 text-amber-400" />
             </div>
             <div>
               <h1 className="text-lg font-bold text-acars-text font-mono">{entry.flightNumber}</h1>
@@ -175,12 +175,12 @@ export function FlightDetailPage() {
           </div>
         </div>
 
-        {/* ── Route Hero ─────────────────────────────────────── */}
+        {/* ── Path Hero ─────────────────────────────────────── */}
         <div className="panel rounded-md p-5 mb-4">
           <div className="flex items-center justify-center gap-8">
             {/* Departure */}
             <div className="text-center">
-              <PlaneTakeoff className="w-5 h-5 text-emerald-400 mx-auto mb-1" />
+              <AirplaneTakeoff className="w-5 h-5 text-emerald-400 mx-auto mb-1" />
               <div className="text-2xl font-bold font-mono text-acars-text">{entry.depIcao}</div>
               {entry.depName && <div className="text-xs text-acars-muted mt-0.5">{entry.depName}</div>}
               <div className="text-xs text-acars-muted mt-1">
@@ -204,7 +204,7 @@ export function FlightDetailPage() {
 
             {/* Arrival */}
             <div className="text-center">
-              <PlaneLanding className="w-5 h-5 text-red-400 mx-auto mb-1" />
+              <AirplaneLanding className="w-5 h-5 text-red-400 mx-auto mb-1" />
               <div className="text-2xl font-bold font-mono text-acars-text">{entry.arrIcao}</div>
               {entry.arrName && <div className="text-xs text-acars-muted mt-0.5">{entry.arrName}</div>}
               <div className="text-xs text-acars-muted mt-1">
@@ -222,7 +222,7 @@ export function FlightDetailPage() {
           {/* Landing & Score */}
           <div className="panel rounded-md p-4">
             <h3 className="text-[11px] uppercase tracking-wider text-acars-muted font-medium mb-3 flex items-center gap-2">
-              <BarChart3 className="w-3.5 h-3.5 text-emerald-400" />
+              <ChartBar className="w-3.5 h-3.5 text-emerald-400" />
               Performance
             </h3>
             <div className="grid grid-cols-2 gap-4">
@@ -255,22 +255,22 @@ export function FlightDetailPage() {
             </div>
           </div>
 
-          {/* Fuel */}
+          {/* GasPump */}
           <div className="panel rounded-md p-4">
             <h3 className="text-[11px] uppercase tracking-wider text-acars-muted font-medium mb-3 flex items-center gap-2">
-              <Fuel className="w-3.5 h-3.5 text-amber-400" />
-              Fuel
+              <GasPump className="w-3.5 h-3.5 text-amber-400" />
+              GasPump
             </h3>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <div className="text-[10px] uppercase tracking-wider text-acars-muted mb-1">Fuel Used</div>
+                <div className="text-[10px] uppercase tracking-wider text-acars-muted mb-1">GasPump Used</div>
                 <div className="text-xl font-bold font-mono text-acars-text">
                   {entry.fuelUsedLbs != null ? entry.fuelUsedLbs.toLocaleString() : '—'}
                   {entry.fuelUsedLbs != null && <span className="text-xs font-normal text-acars-muted ml-1">lbs</span>}
                 </div>
               </div>
               <div>
-                <div className="text-[10px] uppercase tracking-wider text-acars-muted mb-1">Fuel Planned</div>
+                <div className="text-[10px] uppercase tracking-wider text-acars-muted mb-1">GasPump Planned</div>
                 <div className="text-xl font-bold font-mono text-acars-text">
                   {entry.fuelPlannedLbs != null ? entry.fuelPlannedLbs.toLocaleString() : '—'}
                   {entry.fuelPlannedLbs != null && <span className="text-xs font-normal text-acars-muted ml-1">lbs</span>}
@@ -296,12 +296,12 @@ export function FlightDetailPage() {
         <div className="grid grid-cols-2 gap-4 mb-4">
           <div className="panel rounded-md p-4">
             <h3 className="text-[11px] uppercase tracking-wider text-acars-muted font-medium mb-3 flex items-center gap-2">
-              <Plane className="w-3.5 h-3.5 text-sky-400" />
+              <AirplaneTilt className="w-3.5 h-3.5 text-sky-400" />
               Aircraft
             </h3>
-            <InfoRow label="Type" value={entry.aircraftType} icon={Plane} iconColor="text-sky-400" />
+            <InfoRow label="Type" value={entry.aircraftType} icon={AirplaneTilt} iconColor="text-sky-400" />
             {entry.aircraftRegistration && (
-              <InfoRow label="Registration" value={entry.aircraftRegistration} icon={Navigation} iconColor="text-blue-400" />
+              <InfoRow label="Registration" value={entry.aircraftRegistration} icon={NavigationArrow} iconColor="text-blue-400" />
             )}
             <InfoRow label="Passengers" value={fmt(entry.paxCount)} icon={Users} iconColor="text-blue-400" />
             <InfoRow label="Cargo" value={fmt(entry.cargoLbs, 'lbs')} icon={Package} iconColor="text-amber-400" />
@@ -309,7 +309,7 @@ export function FlightDetailPage() {
 
           <div className="panel rounded-md p-4">
             <h3 className="text-[11px] uppercase tracking-wider text-acars-muted font-medium mb-3 flex items-center gap-2">
-              <Route className="w-3.5 h-3.5 text-blue-400" />
+              <Path className="w-3.5 h-3.5 text-blue-400" />
               Flight Plan
             </h3>
             <InfoRow label="Cruise Altitude" value={entry.cruiseAltitude ?? '—'} icon={Gauge} iconColor="text-blue-400" />
@@ -322,7 +322,7 @@ export function FlightDetailPage() {
             />
             {entry.route && (
               <div className="mt-2 pt-2 border-t border-acars-border">
-                <div className="text-[10px] uppercase tracking-wider text-acars-muted font-medium mb-1">Route</div>
+                <div className="text-[10px] uppercase tracking-wider text-acars-muted font-medium mb-1">Path</div>
                 <div className="text-xs text-acars-text font-mono leading-relaxed bg-acars-bg rounded px-2 py-1.5 border border-acars-border">
                   {entry.route}
                 </div>
@@ -334,7 +334,7 @@ export function FlightDetailPage() {
         {/* ── Pilot & Remarks ─────────────────────────────────── */}
         <div className="panel rounded-md p-4 mb-4">
           <h3 className="text-[11px] uppercase tracking-wider text-acars-muted font-medium mb-3 flex items-center gap-2">
-            <MessageSquare className="w-3.5 h-3.5 text-blue-400" />
+            <ChatText className="w-3.5 h-3.5 text-blue-400" />
             Pilot Notes
           </h3>
           <div className="flex items-center gap-4 mb-3">

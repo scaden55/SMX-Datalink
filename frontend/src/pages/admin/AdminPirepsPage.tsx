@@ -1,22 +1,22 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
-  ClipboardCheck,
-  Search,
-  Loader2,
+  ClipboardText,
+  MagnifyingGlass,
+  SpinnerGap,
   X,
   ArrowRight,
   Clock,
-  Fuel,
+  GasPump,
   Ruler,
-  Plane,
+  AirplaneTilt,
   Calendar,
-  StickyNote,
+  Note,
   User,
-  CheckCircle2,
+  CheckCircle,
   XCircle,
-  ChevronLeft,
-  ChevronRight,
-} from 'lucide-react';
+  CaretLeft,
+  CaretRight,
+} from '@phosphor-icons/react';
 import { api } from '../../lib/api';
 import { AdminPageHeader } from '../../components/admin/AdminPageHeader';
 import { StatusBadge } from '../../components/admin/StatusBadge';
@@ -342,7 +342,7 @@ export function AdminPirepsPage() {
           className="text-acars-muted hover:text-blue-400 transition-colors"
           title="View details"
         >
-          <ClipboardCheck className="w-3.5 h-3.5" />
+          <ClipboardText className="w-3.5 h-3.5" />
         </button>
       ),
     },
@@ -353,7 +353,7 @@ export function AdminPirepsPage() {
     <div className="p-6 space-y-4 h-full flex flex-col overflow-hidden relative">
       {/* ── Header ──────────────────────────────────────────────── */}
       <AdminPageHeader
-        icon={ClipboardCheck}
+        icon={ClipboardText}
         title="PIREP Review"
         subtitle="Review, approve, or reject pilot flight reports"
         stats={[
@@ -389,7 +389,7 @@ export function AdminPirepsPage() {
       {/* ── Filters bar ─────────────────────────────────────────── */}
       <div className="flex items-center gap-3 flex-wrap">
         <div className="relative flex-1 min-w-[200px] max-w-xs">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-acars-muted pointer-events-none" />
+          <MagnifyingGlass className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-acars-muted pointer-events-none" />
           <input
             type="text"
             value={search}
@@ -466,7 +466,7 @@ export function AdminPirepsPage() {
               onClick={() => setBulkConfirm({ action: 'approved' })}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-emerald-500/20 text-emerald-400 text-xs font-medium hover:bg-emerald-500/30 transition-colors"
             >
-              <CheckCircle2 className="w-3.5 h-3.5" />
+              <CheckCircle className="w-3.5 h-3.5" />
               Approve All
             </button>
             <button
@@ -510,10 +510,10 @@ export function AdminPirepsPage() {
           {/* Panel */}
           <div className="fixed top-0 right-0 bottom-0 w-96 bg-acars-panel border-l border-acars-border z-[9999] flex flex-col overflow-hidden shadow-2xl">
             {/* Panel header */}
-            <div className="flex items-center justify-between px-4 py-3 border-b border-acars-border bg-acars-bg">
+            <div className="flex items-center justify-between px-4 py-2.5 border-b border-acars-border bg-acars-bg">
               <div className="flex items-center gap-2">
-                <ClipboardCheck className="w-4 h-4 text-blue-400" />
-                <h2 className="text-sm font-semibold text-acars-text">PIREP Detail</h2>
+                <ClipboardText className="w-3.5 h-3.5 text-blue-400" />
+                <h2 className="text-[13px] font-semibold text-acars-text">PIREP Detail</h2>
               </div>
               <button
                 onClick={closeDetail}
@@ -527,7 +527,7 @@ export function AdminPirepsPage() {
             <div className="flex-1 overflow-y-auto">
               {detailLoading ? (
                 <div className="flex items-center justify-center h-40">
-                  <Loader2 className="w-5 h-5 text-acars-muted animate-spin" />
+                  <SpinnerGap className="w-5 h-5 text-acars-muted animate-spin" />
                 </div>
               ) : (
                 <div className="p-4 space-y-4">
@@ -542,11 +542,11 @@ export function AdminPirepsPage() {
                     <StatusBadge status={detailEntry.status} config={STATUS_BADGE_CONFIG} />
                   </div>
 
-                  {/* Route */}
+                  {/* Path */}
                   <div className="panel p-3 space-y-2">
                     <div className="flex items-center gap-2 text-xs text-acars-muted">
-                      <Plane className="w-3.5 h-3.5" />
-                      <span className="uppercase tracking-wider font-medium">Route</span>
+                      <AirplaneTilt className="w-3.5 h-3.5" />
+                      <span className="uppercase tracking-wider font-medium">Path</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <div className="text-center">
@@ -615,7 +615,7 @@ export function AdminPirepsPage() {
                     </div>
                     <div className="grid grid-cols-2 gap-2 text-xs">
                       <div>
-                        <span className="text-acars-muted">Fuel Used</span>
+                        <span className="text-acars-muted">GasPump Used</span>
                         <div className="text-acars-text font-mono">
                           {detailEntry.fuelUsedLbs != null ? `${detailEntry.fuelUsedLbs.toLocaleString()} lbs` : '---'}
                         </div>
@@ -655,7 +655,7 @@ export function AdminPirepsPage() {
                   {detailEntry.remarks && (
                     <div className="panel p-3 space-y-1.5">
                       <div className="flex items-center gap-2 text-xs text-acars-muted">
-                        <StickyNote className="w-3.5 h-3.5" />
+                        <Note className="w-3.5 h-3.5" />
                         <span className="uppercase tracking-wider font-medium">Pilot Notes</span>
                       </div>
                       <p className="text-xs text-acars-text leading-relaxed whitespace-pre-wrap">
@@ -669,7 +669,7 @@ export function AdminPirepsPage() {
                     // ── Already reviewed ──────────────────────────
                     <div className="panel p-3 space-y-1.5 border-emerald-400/20">
                       <div className="flex items-center gap-2 text-xs text-acars-muted">
-                        <CheckCircle2 className="w-3.5 h-3.5" />
+                        <CheckCircle className="w-3.5 h-3.5" />
                         <span className="uppercase tracking-wider font-medium">Review</span>
                       </div>
                       <div className="flex items-center justify-between">
@@ -690,7 +690,7 @@ export function AdminPirepsPage() {
                     // ── Review form ───────────────────────────────
                     <div className="panel p-3 space-y-3">
                       <div className="flex items-center gap-2 text-xs text-acars-muted">
-                        <ClipboardCheck className="w-3.5 h-3.5" />
+                        <ClipboardText className="w-3.5 h-3.5" />
                         <span className="uppercase tracking-wider font-medium">Review PIREP</span>
                       </div>
 
@@ -739,7 +739,7 @@ export function AdminPirepsPage() {
                       >
                         {reviewSubmitting ? (
                           <span className="flex items-center justify-center gap-2">
-                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            <SpinnerGap className="w-3.5 h-3.5 animate-spin" />
                             Submitting...
                           </span>
                         ) : (

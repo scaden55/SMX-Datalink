@@ -1,5 +1,5 @@
 import { useFlightPlanStore } from '../../stores/flightPlanStore';
-import { FileText, Download } from 'lucide-react';
+import { FileText, DownloadSimple } from '@phosphor-icons/react';
 
 export function PlanningOFPTab() {
   const { ofp } = useFlightPlanStore();
@@ -35,7 +35,7 @@ export function PlanningOFPTab() {
           onClick={handleDownload}
           className="btn-secondary btn-sm inline-flex items-center gap-1"
         >
-          <Download className="w-3 h-3" /> Download
+          <DownloadSimple className="w-3 h-3" /> DownloadSimple
         </button>
       </div>
       <div className="flex-1 overflow-auto p-3">
@@ -52,7 +52,7 @@ function buildOFPText(ofp: any): string {
   lines.push(`=== OPERATIONAL FLIGHT PLAN ===`);
   lines.push(`${ofp.airline}${ofp.flightNumber}  ${ofp.aircraftType}`);
   lines.push(`${ofp.origin} → ${ofp.destination}`);
-  lines.push(`Route: ${ofp.route}`);
+  lines.push(`Path: ${ofp.route}`);
   lines.push(`Cruise: FL${Math.round(ofp.cruiseAltitude / 100)}  CI: ${ofp.costIndex}`);
   lines.push('');
   lines.push(`--- FUEL ---`);

@@ -1,5 +1,5 @@
 // ─── Aircraft Cargo Configurations ──────────────────────────
-// Ported from freight-dispatch-companion with modifications for SMA ACARS.
+// Ported from freight-dispatch-companion with modifications for SMX ACARS.
 // All weights in KG.
 
 export interface AircraftSection {

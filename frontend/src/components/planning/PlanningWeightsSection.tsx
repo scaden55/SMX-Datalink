@@ -1,4 +1,4 @@
-import { Scale } from 'lucide-react';
+import { Scales } from '@phosphor-icons/react';
 import { CollapsibleSection } from '../common/CollapsibleSection';
 import { useFlightPlanStore } from '../../stores/flightPlanStore';
 import type { FlightPlanFormData } from '@acars/shared';
@@ -23,7 +23,7 @@ export function PlanningWeightsSection() {
     <CollapsibleSection
       title="Weights"
       summary={towSummary}
-      icon={<Scale className="w-3.5 h-3.5" />}
+      icon={<Scales className="w-3.5 h-3.5" />}
       status={form.estTow ? 'green' : 'grey'}
       defaultOpen
     >

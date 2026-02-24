@@ -1,5 +1,5 @@
 import { useFlightPlanStore } from '../../stores/flightPlanStore';
-import { Cloud } from 'lucide-react';
+import { Cloud } from '@phosphor-icons/react';
 
 function FlightCatBadge({ cat }: { cat: string | null }) {
   if (!cat) return null;

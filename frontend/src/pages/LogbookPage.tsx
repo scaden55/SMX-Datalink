@@ -2,24 +2,24 @@ import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   BookOpen,
-  Search,
-  RotateCcw,
-  Loader2,
-  Plane,
-  ChevronLeft,
-  ChevronRight,
-  ArrowUpDown,
+  MagnifyingGlass,
+  ArrowCounterClockwise,
+  SpinnerGap,
+  AirplaneTilt,
+  CaretLeft,
+  CaretRight,
+  ArrowsDownUp,
   Clock,
-  Fuel,
+  GasPump,
   Ruler,
   ArrowRight,
-  CheckCircle2,
-  AlertTriangle,
+  CheckCircle,
+  Warning,
   XCircle,
-  Ban,
-  Filter,
-  Radio,
-} from 'lucide-react';
+  Prohibit,
+  Funnel,
+  Broadcast,
+} from '@phosphor-icons/react';
 import { api } from '../lib/api';
 import { useAuthStore } from '../stores/authStore';
 import { VatsimBadge } from '../components/common/VatsimBadge';
@@ -62,13 +62,13 @@ function scoreColor(score: number | null): string {
   return 'text-red-400';
 }
 
-const STATUS_CONFIG: Record<LogbookStatus, { label: string; icon: typeof CheckCircle2; bg: string; text: string; border: string }> = {
+const STATUS_CONFIG: Record<LogbookStatus, { label: string; icon: typeof CheckCircle; bg: string; text: string; border: string }> = {
   pending:   { label: 'Pending',   icon: Clock,         bg: 'bg-blue-500/10',  text: 'text-blue-400',  border: 'border-blue-400/20' },
-  approved:  { label: 'Approved',  icon: CheckCircle2,  bg: 'bg-emerald-500/10', text: 'text-emerald-400', border: 'border-emerald-400/20' },
-  completed: { label: 'Completed', icon: CheckCircle2,  bg: 'bg-emerald-500/10', text: 'text-emerald-400', border: 'border-emerald-400/20' },
-  diverted:  { label: 'Diverted',  icon: AlertTriangle, bg: 'bg-amber-500/10', text: 'text-amber-400', border: 'border-amber-400/20' },
+  approved:  { label: 'Approved',  icon: CheckCircle,  bg: 'bg-emerald-500/10', text: 'text-emerald-400', border: 'border-emerald-400/20' },
+  completed: { label: 'Completed', icon: CheckCircle,  bg: 'bg-emerald-500/10', text: 'text-emerald-400', border: 'border-emerald-400/20' },
+  diverted:  { label: 'Diverted',  icon: Warning, bg: 'bg-amber-500/10', text: 'text-amber-400', border: 'border-amber-400/20' },
   rejected:  { label: 'Rejected',  icon: XCircle,       bg: 'bg-red-500/10',   text: 'text-red-400',   border: 'border-red-400/20' },
-  cancelled: { label: 'Cancelled', icon: Ban,           bg: 'bg-acars-muted/10', text: 'text-acars-muted', border: 'border-acars-border' },
+  cancelled: { label: 'Cancelled', icon: Prohibit,           bg: 'bg-acars-muted/10', text: 'text-acars-muted', border: 'border-acars-border' },
 };
 
 function StatusBadge({ status }: { status: LogbookStatus }) {
@@ -165,7 +165,7 @@ export function LogbookPage() {
         className={`flex items-center gap-1 text-[10px] uppercase tracking-wider font-medium hover:text-acars-text transition-colors ${active ? 'text-emerald-400' : 'text-acars-muted'} ${className}`}
       >
         {label}
-        <ArrowUpDown className={`w-3 h-3 ${active ? 'text-emerald-400' : 'text-acars-muted/50'}`} />
+        <ArrowsDownUp className={`w-3 h-3 ${active ? 'text-emerald-400' : 'text-acars-muted/50'}`} />
       </button>
     );
   }
@@ -200,7 +200,7 @@ export function LogbookPage() {
               className="h-8 w-8 rounded-md border border-acars-border bg-acars-panel text-acars-muted hover:text-acars-text flex items-center justify-center transition-colors"
               title="Refresh"
             >
-              <RotateCcw className="w-3.5 h-3.5" />
+              <ArrowCounterClockwise className="w-3.5 h-3.5" />
             </button>
           </div>
         </div>
@@ -208,7 +208,7 @@ export function LogbookPage() {
         {/* Stats bar */}
         <div className="grid grid-cols-4 gap-3 mb-3">
           <div className="flex items-center gap-3 rounded-md border border-acars-border bg-acars-panel/50 px-3 py-2">
-            <Plane className="w-3.5 h-3.5 text-sky-400 shrink-0" />
+            <AirplaneTilt className="w-3.5 h-3.5 text-sky-400 shrink-0" />
             <div>
               <div className="text-[10px] text-acars-muted uppercase tracking-wider">Flights</div>
               <div className="text-sm font-semibold text-acars-text tabular-nums">{totalFlights}</div>
@@ -229,7 +229,7 @@ export function LogbookPage() {
             </div>
           </div>
           <div className="flex items-center gap-3 rounded-md border border-acars-border bg-acars-panel/50 px-3 py-2">
-            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+            <CheckCircle className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
             <div>
               <div className="text-[10px] text-acars-muted uppercase tracking-wider">Avg Score</div>
               <div className={`text-sm font-semibold tabular-nums ${scoreColor(avgScore)}`}>{avgScore || '—'}</div>
@@ -240,7 +240,7 @@ export function LogbookPage() {
         {/* Filters */}
         <div className="flex items-center gap-2">
           <div className="relative flex-1 max-w-xs">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-acars-muted pointer-events-none" />
+            <MagnifyingGlass className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-acars-muted pointer-events-none" />
             <input
               type="text"
               value={search}
@@ -258,12 +258,12 @@ export function LogbookPage() {
                 : 'bg-acars-panel border-acars-border text-acars-muted hover:text-acars-text'
             }`}
           >
-            <Radio className="w-3 h-3" />
+            <Broadcast className="w-3 h-3" />
             VATSIM
           </button>
 
           <div className="relative">
-            <Filter className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-acars-muted pointer-events-none" />
+            <Funnel className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-acars-muted pointer-events-none" />
             <select
               value={statusFilter}
               onChange={e => { setStatusFilter(e.target.value as LogbookStatus | ''); setPage(1); }}
@@ -284,7 +284,7 @@ export function LogbookPage() {
       <div className="flex-1 overflow-auto">
         {loading ? (
           <div className="flex items-center justify-center h-64">
-            <Loader2 className="w-6 h-6 text-amber-400 animate-spin" />
+            <SpinnerGap className="w-6 h-6 text-amber-400 animate-spin" />
           </div>
         ) : error ? (
           <div className="flex items-center justify-center h-64 text-sm text-red-400">{error}</div>
@@ -300,7 +300,7 @@ export function LogbookPage() {
               <tr>
                 <th className="text-left px-4 py-2.5"><SortHeader field="date" label="Date" /></th>
                 <th className="text-left px-3 py-2.5"><SortHeader field="flight" label="Flight" /></th>
-                <th className="text-left px-3 py-2.5"><SortHeader field="route" label="Route" /></th>
+                <th className="text-left px-3 py-2.5"><SortHeader field="route" label="Path" /></th>
                 <th className="text-left px-3 py-2.5"><SortHeader field="aircraft" label="Aircraft" /></th>
                 <th className="text-left px-3 py-2.5"><SortHeader field="duration" label="Duration" /></th>
                 <th className="text-right px-3 py-2.5"><SortHeader field="landing" label="Landing" className="justify-end" /></th>
@@ -376,7 +376,7 @@ export function LogbookPage() {
               disabled={page <= 1}
               className="h-7 w-7 rounded border border-acars-border bg-acars-panel text-acars-muted hover:text-acars-text disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center transition-colors"
             >
-              <ChevronLeft className="w-3.5 h-3.5" />
+              <CaretLeft className="w-3.5 h-3.5" />
             </button>
             <span className="text-xs text-acars-text px-2 font-mono">{page} / {totalPages}</span>
             <button
@@ -384,7 +384,7 @@ export function LogbookPage() {
               disabled={page >= totalPages}
               className="h-7 w-7 rounded border border-acars-border bg-acars-panel text-acars-muted hover:text-acars-text disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center transition-colors"
             >
-              <ChevronRight className="w-3.5 h-3.5" />
+              <CaretRight className="w-3.5 h-3.5" />
             </button>
           </div>
         </div>

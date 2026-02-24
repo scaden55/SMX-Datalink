@@ -112,6 +112,24 @@ interface FlightPlanState {
   setAirports: (airports: Airport[]) => void;
 }
 
+const ACTIVE_BID_KEY = 'acars:activeBidId';
+
+function readPersistedBidId(): number | null {
+  try {
+    const raw = localStorage.getItem(ACTIVE_BID_KEY);
+    if (!raw) return null;
+    const n = parseInt(raw, 10);
+    return isNaN(n) ? null : n;
+  } catch { return null; }
+}
+
+function persistBidId(id: number | null) {
+  try {
+    if (id != null) localStorage.setItem(ACTIVE_BID_KEY, String(id));
+    else localStorage.removeItem(ACTIVE_BID_KEY);
+  } catch { /* localStorage unavailable */ }
+}
+
 export const useFlightPlanStore = create<FlightPlanState>((set) => ({
   // Existing
   flightPlan: null,
@@ -137,9 +155,9 @@ export const useFlightPlanStore = create<FlightPlanState>((set) => ({
   // Phase & bid
   phase: 'planning',
   setPhase: (phase) => set({ phase }),
-  activeBidId: null,
-  setActiveBidId: (id) => set({ activeBidId: id }),
-  clearActiveBid: () => set({ activeBidId: null, form: { ...emptyForm }, ofp: null, steps: [], planningWaypoints: [], phase: 'planning' }),
+  activeBidId: readPersistedBidId(),
+  setActiveBidId: (id) => { persistBidId(id); set({ activeBidId: id }); },
+  clearActiveBid: () => { persistBidId(null); set({ activeBidId: null, form: { ...emptyForm }, ofp: null, steps: [], planningWaypoints: [], phase: 'planning' }); },
 
   // Weather
   weatherCache: {},

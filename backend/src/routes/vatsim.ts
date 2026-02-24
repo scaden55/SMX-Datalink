@@ -50,7 +50,7 @@ export function vatsimRouter(vatsimService: VatsimService): Router {
 
     let pilots = snapshot.pilots;
 
-    // Optional callsign search: ?callsign=SMA
+    // Optional callsign search: ?callsign=SMX
     const callsignParam = req.query.callsign as string | undefined;
     if (callsignParam) {
       const search = callsignParam.toUpperCase();

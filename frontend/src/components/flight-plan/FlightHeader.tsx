@@ -68,82 +68,64 @@ export function FlightHeader({ ofp, formData }: FlightHeaderProps) {
     return '---';
   })();
 
-  // Build a short route-center label from OFP (coords or waypoint midpoint)
-  const routeStr = ofp?.route ?? '';
-  const routeCenter = routeStr
-    ? routeStr.split(' ').slice(0, 3).join(' ')
-    : '';
-
   return (
-    <div className="border-b border-acars-border px-4 py-3">
+    <div className="border-b border-acars-border px-4 py-2.5">
       {/* Row 1: Airport names + date */}
       <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 mb-1">
-        <span className="text-[10px] font-sans text-[#656b75] truncate">{depLabel}</span>
-        <span className="text-[10px] font-sans text-[#656b75] uppercase tracking-wider shrink-0">{formatDateHeader()}</span>
-        <span className="text-[10px] font-sans text-[#656b75] truncate text-right">{arrLabel}</span>
+        <span className="text-[10px] font-sans text-acars-muted/70 truncate">{depLabel}</span>
+        <span className="text-[10px] font-sans text-acars-muted/70 uppercase tracking-wider shrink-0">{formatDateHeader()}</span>
+        <span className="text-[10px] font-sans text-acars-muted/70 truncate text-right">{arrLabel}</span>
       </div>
 
       {/* Row 2: ICAO codes + route center line */}
       <div className="grid grid-cols-[auto_1fr_auto] items-center gap-0">
         {/* Origin */}
         <span className="shrink-0">
-          <span style={{ fontSize: 20, fontWeight: 600, color: '#dde1e8', fontFeatureSettings: '"tnum"' }}>
-            {origin}
-          </span>
-          <span className="text-[13px] text-[#656b75] ml-1">/ {depIata}</span>
+          <span className="text-[20px] font-semibold text-acars-text font-mono tabular-nums">{origin}</span>
+          <span className="text-[13px] text-acars-muted/70 ml-1">/ {depIata}</span>
         </span>
 
         {/* Center: dotted line + route data + flight number */}
         <div className="flex items-center mx-2 min-w-0">
-          <div className="flex-1 border-b border-dotted border-[#333840]" />
-          <span
-            className="px-2 shrink-0 text-center"
-            style={{ fontSize: 15, fontWeight: 500, color: '#dde1e8', fontFeatureSettings: '"tnum"' }}
-          >
+          <div className="flex-1 border-b border-dotted border-acars-border/40" />
+          <span className="px-2 shrink-0 text-center text-[15px] font-medium text-acars-text font-mono tabular-nums">
             {flightId}
           </span>
-          <div className="flex-1 border-b border-dotted border-[#333840]" />
+          <div className="flex-1 border-b border-dotted border-acars-border/40" />
         </div>
 
         {/* Destination */}
         <span className="shrink-0 text-right">
-          <span style={{ fontSize: 20, fontWeight: 600, color: '#dde1e8', fontFeatureSettings: '"tnum"' }}>
-            {destination}
-          </span>
-          <span className="text-[13px] text-[#656b75] ml-1">/ {arrIata}</span>
+          <span className="text-[20px] font-semibold text-acars-text font-mono tabular-nums">{destination}</span>
+          <span className="text-[13px] text-acars-muted/70 ml-1">/ {arrIata}</span>
         </span>
       </div>
 
       {/* Row 3: STD/ETD left | flight number center | STA/ETA right */}
       <div className="grid grid-cols-[1fr_auto_1fr] items-center mt-1.5">
         <div className="flex items-center gap-2 text-[10px] font-sans">
-          <span className="text-[#656b75]">STD <span className="text-[#cdd1d8] font-mono">{schedDep}</span></span>
-          <span className="text-[#333840]">|</span>
-          <span className="text-[#656b75]">ETD <span className="text-[#cdd1d8] font-mono">{etd}</span></span>
+          <span className="text-acars-muted/70">STD <span className="text-acars-text/80 font-mono">{schedDep}</span></span>
+          <span className="text-acars-border/60">|</span>
+          <span className="text-acars-muted/70">ETD <span className="text-acars-text/80 font-mono">{etd}</span></span>
         </div>
-        <span
-          className="text-center shrink-0 px-3"
-          style={{ fontSize: 11, fontWeight: 500, color: '#93c5fd', fontFeatureSettings: '"tnum"' }}
-        >
+        <span className="text-center shrink-0 px-3 text-[11px] font-medium text-blue-400/80 font-mono tabular-nums">
           {flightId}
         </span>
         <div className="flex items-center justify-end gap-2 text-[10px] font-sans">
-          <span className="text-[#656b75]">STA <span className="text-[#cdd1d8] font-mono">{schedArr}</span></span>
-          <span className="text-[#333840]">|</span>
-          <span className="text-[#656b75]">ETA <span className="text-[#cdd1d8] font-mono">{eta}</span></span>
+          <span className="text-acars-muted/70">STA <span className="text-acars-text/80 font-mono">{schedArr}</span></span>
+          <span className="text-acars-border/60">|</span>
+          <span className="text-acars-muted/70">ETA <span className="text-acars-text/80 font-mono">{eta}</span></span>
         </div>
       </div>
 
       {/* Row 4: On Time left | ETE center | late badge right */}
       <div className="grid grid-cols-[1fr_auto_1fr] items-center mt-1">
         <div>
-          <span className="inline-flex items-center px-1.5 py-0 rounded-[2px] text-[10px] font-semibold uppercase tracking-[0.06em] font-sans bg-[#22c55e]/15 text-[#22c55e]">
+          <span className="inline-flex items-center px-1.5 py-0 rounded-[2px] text-[10px] font-semibold uppercase tracking-[0.06em] font-sans bg-emerald-500/15 text-emerald-400">
             On Time
           </span>
         </div>
-        <span
-          className="text-center shrink-0 px-3 text-[11px] font-sans text-[#cdd1d8]"
-        >
+        <span className="text-center shrink-0 px-3 text-[11px] font-sans text-acars-text/80">
           ETE <span className="font-mono font-semibold">{ete}</span>
         </span>
         <div className="flex justify-end">

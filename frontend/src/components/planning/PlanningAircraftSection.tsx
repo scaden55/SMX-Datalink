@@ -1,4 +1,4 @@
-import { Plane } from 'lucide-react';
+import { AirplaneTilt } from '@phosphor-icons/react';
 import { CollapsibleSection } from '../common/CollapsibleSection';
 import { useFlightPlanStore } from '../../stores/flightPlanStore';
 
@@ -24,7 +24,7 @@ export function PlanningAircraftSection() {
     <CollapsibleSection
       title="Aircraft"
       summary={summary}
-      icon={<Plane className="w-3.5 h-3.5" />}
+      icon={<AirplaneTilt className="w-3.5 h-3.5" />}
       status={selected ? 'green' : 'grey'}
       defaultOpen
     >

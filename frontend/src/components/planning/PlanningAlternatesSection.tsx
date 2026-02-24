@@ -1,4 +1,4 @@
-import { MapPinPlus } from 'lucide-react';
+import { MapPinPlus } from '@phosphor-icons/react';
 import { CollapsibleSection } from '../common/CollapsibleSection';
 import { useFlightPlanStore } from '../../stores/flightPlanStore';
 

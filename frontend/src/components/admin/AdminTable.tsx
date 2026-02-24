@@ -1,5 +1,5 @@
 import { useState, useCallback, memo } from 'react';
-import { ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
+import { CaretUp, CaretDown, CaretLeft, CaretRight, SpinnerGap } from '@phosphor-icons/react';
 
 export interface ColumnDef<T> {
   key: string;
@@ -100,7 +100,7 @@ function AdminTableInner<T>({
                   <span className="flex items-center gap-1">
                     {col.header}
                     {col.sortable && sortKey === col.key && (
-                      sortDir === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />
+                      sortDir === 'asc' ? <CaretUp className="w-3 h-3" /> : <CaretDown className="w-3 h-3" />
                     )}
                   </span>
                 </th>
@@ -111,7 +111,7 @@ function AdminTableInner<T>({
             {loading ? (
               <tr>
                 <td colSpan={columns.length + (selectable ? 1 : 0)} className="px-3 py-12 text-center">
-                  <Loader2 className="w-5 h-5 animate-spin text-acars-muted mx-auto" />
+                  <SpinnerGap className="w-5 h-5 animate-spin text-acars-muted mx-auto" />
                 </td>
               </tr>
             ) : data.length === 0 ? (
@@ -168,7 +168,7 @@ function AdminTableInner<T>({
               disabled={page <= 1}
               className="p-1 rounded text-acars-muted hover:text-acars-text disabled:opacity-30 disabled:cursor-not-allowed"
             >
-              <ChevronLeft className="w-4 h-4" />
+              <CaretLeft className="w-4 h-4" />
             </button>
             {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
               let p: number;
@@ -193,7 +193,7 @@ function AdminTableInner<T>({
               disabled={page >= totalPages}
               className="p-1 rounded text-acars-muted hover:text-acars-text disabled:opacity-30 disabled:cursor-not-allowed"
             >
-              <ChevronRight className="w-4 h-4" />
+              <CaretRight className="w-4 h-4" />
             </button>
           </div>
         </div>

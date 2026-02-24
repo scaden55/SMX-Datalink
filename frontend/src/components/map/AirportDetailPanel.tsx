@@ -1,8 +1,18 @@
 import { useState, useEffect, useMemo } from 'react';
 import {
-  X, Radio, Ruler, Info, Lightbulb, ChevronDown, PlaneTakeoff, PlaneLanding,
-  Plane, Clock, Cloud, Wind,
-} from 'lucide-react';
+  X,
+  Broadcast,
+  Ruler,
+  Info,
+  Lightbulb,
+  CaretDown,
+  AirplaneTakeoff,
+  AirplaneLanding,
+  AirplaneTilt,
+  Clock,
+  Cloud,
+  Wind,
+} from '@phosphor-icons/react';
 import type { VatsimControllerWithPosition, VatsimPilot, VatsimFacilityType, VatsimAtis } from '@acars/shared';
 import { getApiBase } from '../../lib/api';
 import { fetchMetar } from '../../lib/weather-api';
@@ -236,9 +246,9 @@ export function AirportDetailPanel({ icao, controllers, pilots, atis, onClose }:
         <div className="flex items-center gap-2 mt-2">
           {traffic.total > 0 && (
             <div className="flex items-center gap-3">
-              <TrafficBadge icon={PlaneTakeoff} count={traffic.departing} label="dep" color="#3fb950" />
-              <TrafficBadge icon={Plane} count={traffic.ground} label="gnd" color="#8e939b" />
-              <TrafficBadge icon={PlaneLanding} count={traffic.arriving} label="arr" color="#f0883e" />
+              <TrafficBadge icon={AirplaneTakeoff} count={traffic.departing} label="dep" color="#3fb950" />
+              <TrafficBadge icon={AirplaneTilt} count={traffic.ground} label="gnd" color="#8e939b" />
+              <TrafficBadge icon={AirplaneLanding} count={traffic.arriving} label="arr" color="#f0883e" />
             </div>
           )}
           {liveControllers.length > 0 && (
@@ -294,8 +304,8 @@ export function AirportDetailPanel({ icao, controllers, pilots, atis, onClose }:
       {/* ── Tabs ── */}
       <div className="flex border-b border-acars-border shrink-0">
         {([
-          { key: 'traffic' as Tab, label: 'Traffic', icon: Plane },
-          { key: 'atc' as Tab, label: 'ATC', icon: Radio },
+          { key: 'traffic' as Tab, label: 'Traffic', icon: AirplaneTilt },
+          { key: 'atc' as Tab, label: 'ATC', icon: Broadcast },
           { key: 'info' as Tab, label: 'Info', icon: Info },
         ]).map(({ key, label, icon: Icon }) => (
           <button
@@ -761,7 +771,7 @@ function CollapsibleSection({
       >
         <span className="text-[10px] font-semibold text-acars-muted tracking-wider uppercase">{title}</span>
         <div className="flex-1" />
-        <ChevronDown
+        <CaretDown
           className={`w-3 h-3 text-acars-muted transition-transform duration-200 ${collapsed ? '-rotate-90' : ''}`}
         />
       </button>

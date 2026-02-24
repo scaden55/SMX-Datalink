@@ -1,11 +1,15 @@
 import { Router } from 'express';
 import { ScheduleAdminService } from '../services/schedule-admin.js';
+import { CharterGeneratorService, currentMonth } from '../services/charter-generator.js';
+import { VatsimEventsService } from '../services/vatsim-events.js';
 import { authMiddleware, dispatcherMiddleware } from '../middleware/auth.js';
 import { logger } from '../lib/logger.js';
 
 export function adminSchedulesRouter(): Router {
   const router = Router();
   const scheduleService = new ScheduleAdminService();
+  const charterGen = new CharterGeneratorService();
+  const vatsimEvents = new VatsimEventsService();
 
   // GET /api/admin/schedules/autofill — progressive airport/distance/time lookup
   router.get('/admin/schedules/autofill', authMiddleware, dispatcherMiddleware, (req, res) => {
@@ -32,6 +36,7 @@ export function adminSchedulesRouter(): Router {
         aircraftType: req.query.aircraftType as string | undefined,
         search: req.query.search as string | undefined,
         isActive: req.query.isActive !== undefined ? req.query.isActive === 'true' : undefined,
+        charterType: req.query.charterType as string | undefined,
       };
       const page = Math.max(1, parseInt(req.query.page as string) || 1);
       const pageSize = Math.min(100, Math.max(1, parseInt(req.query.pageSize as string) || 50));
@@ -107,6 +112,54 @@ export function adminSchedulesRouter(): Router {
     } catch (err) {
       logger.error('Admin', 'Clone schedule error', err);
       res.status(500).json({ error: 'Failed to clone schedule' });
+    }
+  });
+
+  // ── Dynamic Charter Management ──────────────────────────────
+
+  // GET /api/admin/charters/status — generation status for current month
+  router.get('/admin/charters/status', authMiddleware, dispatcherMiddleware, (_req, res) => {
+    try {
+      const month = currentMonth();
+      const status = vatsimEvents.getGenerationStatus(month);
+      res.json(status ?? { month, generatedAt: null, charterCount: 0, eventCount: 0 });
+    } catch (err) {
+      logger.error('Admin', 'Charter status error', err);
+      res.status(500).json({ error: 'Failed to get charter status' });
+    }
+  });
+
+  // POST /api/admin/charters/generate — manual trigger for charter generation (force re-run)
+  router.post('/admin/charters/generate', authMiddleware, dispatcherMiddleware, (_req, res) => {
+    try {
+      const result = charterGen.generateMonthlyCharters(undefined, true);
+      res.json(result);
+    } catch (err) {
+      logger.error('Admin', 'Charter generation error', err);
+      res.status(500).json({ error: 'Failed to generate charters' });
+    }
+  });
+
+  // POST /api/admin/events/refresh — manual trigger for VATSIM event poll
+  router.post('/admin/events/refresh', authMiddleware, dispatcherMiddleware, async (_req, res) => {
+    try {
+      const polled = await vatsimEvents.pollEvents();
+      const created = vatsimEvents.generateEventCharters();
+      res.json({ eventsCached: polled, chartersCreated: created });
+    } catch (err) {
+      logger.error('Admin', 'VATSIM events refresh error', err);
+      res.status(500).json({ error: 'Failed to refresh VATSIM events' });
+    }
+  });
+
+  // GET /api/admin/events — list cached VATSIM events
+  router.get('/admin/events', authMiddleware, dispatcherMiddleware, (_req, res) => {
+    try {
+      const events = vatsimEvents.getUpcomingEvents();
+      res.json({ events, total: events.length });
+    } catch (err) {
+      logger.error('Admin', 'List events error', err);
+      res.status(500).json({ error: 'Failed to list events' });
     }
   });
 

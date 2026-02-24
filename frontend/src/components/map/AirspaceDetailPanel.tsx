@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { X, Plane, Radio, ChevronDown, Clock } from 'lucide-react';
+import { X, AirplaneTilt, Broadcast, CaretDown, Clock } from '@phosphor-icons/react';
 import type { VatsimControllerWithPosition, VatsimPilot, VatsimAtis, VatsimFacilityType } from '@acars/shared';
 import { pilotsInAirspace } from '../../lib/geo-utils';
 
@@ -39,7 +39,7 @@ function deriveStatus(pilot: VatsimPilot) {
   if (gs < 50) return { label: 'On Ground', color: '#8e939b' };
   if (alt < 10000 && gs >= 50 && gs < 250) return { label: 'Departing', color: '#3fb950' };
   if (alt >= 25000 && gs >= 200) return { label: 'Cruising', color: '#79c0ff' };
-  if (alt >= 10000) return { label: 'En Route', color: '#58a6ff' };
+  if (alt >= 10000) return { label: 'En Path', color: '#58a6ff' };
   return { label: 'Arriving', color: '#f0883e' };
 }
 
@@ -129,7 +129,7 @@ export function AirspaceDetailPanel({
         {/* Summary row: aircraft count + controller count */}
         <div className="flex items-center gap-2 mt-2">
           <div className="flex items-center gap-1">
-            <Plane className="w-3 h-3 text-acars-muted" />
+            <AirplaneTilt className="w-3 h-3 text-acars-muted" />
             <span className="text-[11px] font-bold font-mono text-acars-text">
               {insidePilots.length}
             </span>
@@ -149,8 +149,8 @@ export function AirspaceDetailPanel({
       {/* ── Tabs ── */}
       <div className="flex border-b border-acars-border shrink-0">
         {([
-          { key: 'traffic' as Tab, label: 'Traffic', icon: Plane },
-          { key: 'controller' as Tab, label: 'Controller', icon: Radio },
+          { key: 'traffic' as Tab, label: 'Traffic', icon: AirplaneTilt },
+          { key: 'controller' as Tab, label: 'Controller', icon: Broadcast },
         ]).map(({ key, label, icon: Icon }) => (
           <button
             key={key}
@@ -192,7 +192,7 @@ function TrafficTab({ pilots }: { pilots: VatsimPilot[] }) {
   const groups = useMemo(() => {
     const map = new Map<string, { color: string; pilots: VatsimPilot[] }>();
     // Define a stable order
-    const order = ['Cruising', 'En Route', 'Departing', 'Arriving', 'On Ground'];
+    const order = ['Cruising', 'En Path', 'Departing', 'Arriving', 'On Ground'];
 
     for (const p of pilots) {
       const status = deriveStatus(p);
@@ -375,7 +375,7 @@ function ControllerAtisBlock({
         onClick={onToggle}
         className="flex items-center gap-1 text-[9px] text-acars-muted hover:text-acars-text transition-colors"
       >
-        <ChevronDown
+        <CaretDown
           className={`w-2.5 h-2.5 transition-transform duration-200 ${collapsed ? '-rotate-90' : ''}`}
         />
         <span className="uppercase tracking-wider font-semibold">Controller Info</span>
@@ -410,7 +410,7 @@ function CollapsibleSection({
       >
         <span className="text-[10px] font-semibold text-acars-muted tracking-wider uppercase">{title}</span>
         <div className="flex-1" />
-        <ChevronDown
+        <CaretDown
           className={`w-3 h-3 text-acars-muted transition-transform duration-200 ${collapsed ? '-rotate-90' : ''}`}
         />
       </button>

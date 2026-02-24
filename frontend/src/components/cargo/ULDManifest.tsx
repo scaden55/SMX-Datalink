@@ -1,5 +1,5 @@
 import type { CargoManifest } from '@acars/shared';
-import { Snowflake, AlertTriangle, Battery } from 'lucide-react';
+import { Snowflake, Warning, BatteryFull } from '@phosphor-icons/react';
 
 interface Props {
   manifest: CargoManifest;
@@ -19,7 +19,7 @@ export function ULDManifest({ manifest }: Props) {
             <tr className="border-b border-acars-border">
               <th className="text-left py-1 pr-2 font-medium text-acars-muted font-sans">ULD</th>
               <th className="text-left py-1 pr-2 font-medium text-acars-muted font-sans">Pos</th>
-              <th className="text-right py-1 pr-2 font-medium text-acars-muted font-sans">Weight</th>
+              <th className="text-right py-1 pr-2 font-medium text-acars-muted font-sans">Scales</th>
               <th className="text-left py-1 pr-2 font-medium text-acars-muted font-sans">AWB</th>
               <th className="text-left py-1 font-medium text-acars-muted font-sans">Description</th>
             </tr>
@@ -38,8 +38,8 @@ export function ULDManifest({ manifest }: Props) {
                   <span className="flex items-center gap-1">
                     {uld.cargo_description}
                     {uld.temp_controlled && <Snowflake className="w-3 h-3 text-blue-400 shrink-0" />}
-                    {uld.hazmat && <AlertTriangle className="w-3 h-3 text-amber-400 shrink-0" />}
-                    {uld.lithium_battery && <Battery className="w-3 h-3 text-yellow-400 shrink-0" />}
+                    {uld.hazmat && <Warning className="w-3 h-3 text-amber-400 shrink-0" />}
+                    {uld.lithium_battery && <BatteryFull className="w-3 h-3 text-yellow-400 shrink-0" />}
                   </span>
                 </td>
               </tr>
@@ -55,10 +55,10 @@ export function ULDManifest({ manifest }: Props) {
             <span className="inline-flex items-center gap-0.5 mr-2"><Snowflake className="w-2.5 h-2.5 text-blue-400" /> Temp</span>
           )}
           {manifest.ulds.filter(u => u.hazmat).length > 0 && (
-            <span className="inline-flex items-center gap-0.5 mr-2"><AlertTriangle className="w-2.5 h-2.5 text-amber-400" /> DG</span>
+            <span className="inline-flex items-center gap-0.5 mr-2"><Warning className="w-2.5 h-2.5 text-amber-400" /> DG</span>
           )}
           {manifest.ulds.filter(u => u.lithium_battery).length > 0 && (
-            <span className="inline-flex items-center gap-0.5"><Battery className="w-2.5 h-2.5 text-yellow-400" /> Li-Ion</span>
+            <span className="inline-flex items-center gap-0.5"><BatteryFull className="w-2.5 h-2.5 text-yellow-400" /> Li-Ion</span>
           )}
         </span>
         <span className="text-[9px] text-acars-muted/60 font-sans italic">Simulation only</span>

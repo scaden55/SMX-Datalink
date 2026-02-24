@@ -12,7 +12,7 @@ export function seedDatabase(): void {
       INSERT INTO users (email, callsign, password_hash, first_name, last_name, role, rank)
       VALUES (?, ?, ?, ?, ?, ?, ?)
     `);
-    insertUser.run('admin@smavirtual.com', 'SMA-001', passwordHash, 'Admin', 'User', 'admin', 'Captain');
+    insertUser.run('admin@smavirtual.com', 'SMX-001', passwordHash, 'Admin', 'User', 'admin', 'Captain');
     console.log('[Seed] Admin user created: admin@smavirtual.com');
   }
 

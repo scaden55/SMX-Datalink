@@ -24,26 +24,24 @@ interface FieldProps {
 }
 
 function Field({ label, value, sub, warn, editable, fieldKey, onFieldChange }: FieldProps) {
-  const boxStyle = { color: warn ? '#f59e0b' : '#dde1e8' };
-  const boxCls = "bg-acars-input border border-acars-border text-[11px] font-mono rounded-md px-1.5 py-0.5 w-full truncate outline-none focus:border-blue-400";
+  const boxCls = `bg-acars-input border border-acars-border text-[11px] font-mono rounded-md px-1.5 py-0.5 w-full truncate outline-none focus:border-blue-400 ${warn ? 'text-amber-400' : 'text-acars-text'}`;
 
   return (
     <div className="flex flex-col items-start min-w-0 flex-1">
-      <span className="text-[9px] font-medium uppercase tracking-[0.06em] text-[#5e646e]">{label}</span>
+      <span className="text-[9px] font-medium uppercase tracking-[0.06em] text-acars-muted/70">{label}</span>
       {editable && fieldKey && onFieldChange ? (
         <input
           type="text"
           value={value}
           onChange={(e) => onFieldChange(fieldKey, e.target.value)}
           className={boxCls}
-          style={boxStyle}
         />
       ) : (
-        <div className={boxCls} style={boxStyle}>
+        <div className={boxCls}>
           {value}
         </div>
       )}
-      {sub && <span className="text-[9px] font-sans text-[#454a52]">{sub}</span>}
+      {sub && <span className="text-[9px] font-sans text-acars-muted/50">{sub}</span>}
     </div>
   );
 }

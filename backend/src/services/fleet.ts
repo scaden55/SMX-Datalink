@@ -114,7 +114,7 @@ export class FleetService {
       data.icaoType,
       data.name,
       data.registration,
-      data.airline ?? 'SMA',
+      data.airline ?? 'SMX',
       data.rangeNm,
       data.cruiseSpeed,
       data.paxCapacity,

@@ -27,12 +27,12 @@ function downsample(points: TrackPoint[]): TrackPoint[] {
 // ── Component ───────────────────────────────────────────────
 
 interface Props {
-  /** Track points from the trackStore (DB-persisted SMA flight data) */
+  /** Track points from the trackStore (DB-persisted SMX flight data) */
   points: TrackPoint[];
 }
 
 /**
- * Renders an SMA flight's recorded track as altitude-gradient polyline segments.
+ * Renders an SMX flight's recorded track as altitude-gradient polyline segments.
  * Uses the shared altitudeToColor utility for consistent coloring across the app.
  * Segments with the same color are batched into single Polylines for performance.
  * Downsamples tracks > 500 points to prevent rendering bottlenecks.

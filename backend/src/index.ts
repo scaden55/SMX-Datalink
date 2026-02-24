@@ -44,6 +44,8 @@ import { regulatoryRouter } from './routes/regulatory.js';
 import { cargoRouter } from './routes/cargo.js';
 import { TrackService } from './services/track.js';
 import { FlightEventTracker } from './services/flight-event-tracker.js';
+import { CharterGeneratorService, currentMonth } from './services/charter-generator.js';
+import { VatsimEventsService } from './services/vatsim-events.js';
 import { logger } from './lib/logger.js';
 
 // Initialize database before anything else
@@ -101,7 +103,7 @@ const flightEventTracker = new FlightEventTracker();
 
 // Root
 app.get('/', (_req, res) => {
-  res.json({ name: 'SMA ACARS API', version: '1.0.0', status: 'online' });
+  res.json({ name: 'SMX ACARS API', version: '1.0.0', status: 'online' });
 });
 
 // REST API routes
@@ -161,6 +163,30 @@ const cleanupInterval = setInterval(() => {
 }, 60 * 60 * 1000);
 cleanupInterval.unref();
 
+// Daily charter generation & VATSIM event refresh (every 24 hours)
+const charterDailyGen = new CharterGeneratorService();
+const vatsimEventsDaily = new VatsimEventsService();
+const charterInterval = setInterval(() => {
+  try {
+    // Month rollover check — generate new month's charters if needed
+    if (charterDailyGen.needsGeneration(currentMonth())) {
+      charterDailyGen.generateMonthlyCharters();
+    }
+    // Cleanup expired charters
+    charterDailyGen.cleanupExpired();
+  } catch (err) {
+    logger.error('Server', 'Daily charter generation error', err);
+  }
+  // VATSIM events poll (async) — cleanup expired event charters, then regenerate for today
+  vatsimEventsDaily.pollEvents()
+    .then(() => {
+      charterDailyGen.cleanupExpired();
+      vatsimEventsDaily.generateEventCharters();
+    })
+    .catch(err => logger.error('Server', 'Daily VATSIM events poll error', err));
+}, 24 * 60 * 60 * 1000);
+charterInterval.unref();
+
 // Start
 httpServer.listen(config.port, '0.0.0.0', () => {
   logger.info('Server', `ACARS backend running on http://0.0.0.0:${config.port}`);
@@ -172,12 +198,35 @@ httpServer.listen(config.port, '0.0.0.0', () => {
 
   // Start VATSIM polling
   vatsimService.start();
+
+  // ── Dynamic charter generation on startup ──────────────────
+  const charterGen = new CharterGeneratorService();
+  const vatsimEventsService = new VatsimEventsService();
+
+  try {
+    if (charterGen.needsGeneration(currentMonth())) {
+      const result = charterGen.generateMonthlyCharters();
+      logger.info('Server', `Startup charter generation: ${result.charterCount} charters`);
+    }
+  } catch (err) {
+    logger.error('Server', 'Startup charter generation failed', err);
+  }
+
+  // Initial VATSIM events poll (async, non-blocking) — cleanup expired, then generate for today
+  vatsimEventsService.pollEvents()
+    .then(() => {
+      charterGen.cleanupExpired();
+      const created = vatsimEventsService.generateEventCharters();
+      if (created > 0) logger.info('Server', `Startup event charters: ${created} created`);
+    })
+    .catch(err => logger.error('Server', 'Startup VATSIM events poll failed', err));
 });
 
 // Graceful shutdown
 function shutdown(): void {
   logger.info('Server', 'Shutting down...');
   clearInterval(cleanupInterval);
+  clearInterval(charterInterval);
   vatsimService.stop();
   io.close();
   simConnect.disconnect();

@@ -2,9 +2,17 @@ import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { MapContainer, TileLayer, Polyline, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import {
-  ChevronLeft, ChevronRight, Plus, Minus, Crosshair,
-  Plane, Navigation, Gauge, ArrowUpDown, Radio,
-} from 'lucide-react';
+  CaretLeft,
+  CaretRight,
+  Plus,
+  Minus,
+  Crosshair,
+  AirplaneTilt,
+  NavigationArrow,
+  Gauge,
+  ArrowsDownUp,
+  Broadcast,
+} from '@phosphor-icons/react';
 import { api } from '../lib/api';
 import { useTelemetry } from '../hooks/useTelemetry';
 import { useVatsim } from '../hooks/useVatsim';
@@ -90,7 +98,7 @@ function FlightsSidebar({
           onClick={onToggle}
           className="flex items-center justify-center w-9 h-9 bg-acars-panel rounded-md border border-acars-border hover:bg-acars-border transition-colors"
         >
-          <ChevronRight className="w-4 h-4 text-acars-muted" />
+          <CaretRight className="w-4 h-4 text-acars-muted" />
         </button>
       </div>
     );
@@ -106,7 +114,7 @@ function FlightsSidebar({
         >
           <div className="flex items-center justify-between w-full px-3">
             <span className="text-[11px] font-bold text-acars-text tracking-wider uppercase">Flights</span>
-            <ChevronLeft className="w-4 h-4 text-acars-muted" />
+            <CaretLeft className="w-4 h-4 text-acars-muted" />
           </div>
         </button>
 
@@ -115,13 +123,13 @@ function FlightsSidebar({
             {connected && aircraft && (
               <div className="mx-2 mt-2 mb-1 p-2.5 rounded-md bg-sky-500/10 border border-sky-400/20">
                 <div className="flex items-center gap-1.5 mb-2">
-                  <Radio className="w-3 h-3 text-sky-400" />
+                  <Broadcast className="w-3 h-3 text-sky-400" />
                   <span className="text-[10px] font-bold text-sky-400 tracking-wider uppercase">Your Flight</span>
                   <span className="ml-auto w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
                 </div>
                 <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 text-[11px]">
                   <div className="flex items-center gap-1.5">
-                    <ArrowUpDown className="w-3 h-3 text-acars-muted shrink-0" />
+                    <ArrowsDownUp className="w-3 h-3 text-acars-muted shrink-0" />
                     <span className="text-acars-muted">ALT</span>
                     <span className="ml-auto text-acars-text font-mono tabular-nums">
                       {Math.round(aircraft.position.altitude).toLocaleString()}ft
@@ -135,14 +143,14 @@ function FlightsSidebar({
                     </span>
                   </div>
                   <div className="flex items-center gap-1.5">
-                    <Navigation className="w-3 h-3 text-acars-muted shrink-0" />
+                    <NavigationArrow className="w-3 h-3 text-acars-muted shrink-0" />
                     <span className="text-acars-muted">HDG</span>
                     <span className="ml-auto text-acars-text font-mono tabular-nums">
                       {Math.round(aircraft.position.heading).toString().padStart(3, '0')}&deg;
                     </span>
                   </div>
                   <div className="flex items-center gap-1.5">
-                    <Plane className="w-3 h-3 text-acars-muted shrink-0" />
+                    <AirplaneTilt className="w-3 h-3 text-acars-muted shrink-0" />
                     <span className="text-acars-muted">PHS</span>
                     <span className="ml-auto text-acars-text font-mono tabular-nums text-sky-400">
                       {flight?.phase?.replace('_', ' ') ?? '—'}
@@ -160,7 +168,7 @@ function FlightsSidebar({
             </div>
             {routes.length === 0 && (
               <div className="px-3 py-8 text-center">
-                <Plane className="w-6 h-6 text-acars-muted/20 mx-auto mb-2" />
+                <AirplaneTilt className="w-6 h-6 text-acars-muted/20 mx-auto mb-2" />
                 <p className="text-xs text-acars-muted">No active flights</p>
               </div>
             )}
@@ -241,7 +249,7 @@ function MapControlButtons({ connected, panelOpen }: { connected: boolean; panel
   );
 }
 
-// ─── Route Layer ─────────────────────────────────────────────
+// ─── Path Layer ─────────────────────────────────────────────
 
 function RouteLayer({
   routes,
@@ -580,7 +588,7 @@ export function LiveMapPage() {
         {/* Ground chart overlay (appears at high zoom near airports) */}
         <GroundChartOverlay />
 
-        {/* VATSIM boundary layers (render below SMA flights) */}
+        {/* VATSIM boundary layers (render below SMX flights) */}
         {vatsimSnapshot && (
           <>
             <FirBoundaryLayer
@@ -600,15 +608,15 @@ export function LiveMapPage() {
           </>
         )}
 
-        {/* Route polylines */}
+        {/* Path polylines */}
         <RouteLayer routes={routes} selectedBidId={selectedBidId} />
 
-        {/* Selected SMA bid: altitude-gradient flight track (already flown) */}
+        {/* Selected SMX bid: altitude-gradient flight track (already flown) */}
         {bidTrack && bidTrack.points.length > 0 && (
           <FlightTrackLine points={bidTrack.points} />
         )}
 
-        {/* Selected SMA bid: predicted future path (OFP waypoints or great-circle) */}
+        {/* Selected SMX bid: predicted future path (OFP waypoints or great-circle) */}
         {selectedBidId && bidTrack && (() => {
           const route = routes.find((r) => r.bid.id === selectedBidId);
           const lastPt = bidTrack.points[bidTrack.points.length - 1];

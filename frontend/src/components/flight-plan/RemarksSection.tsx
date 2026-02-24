@@ -12,7 +12,7 @@ export function RemarksSection({ dispatcherRemarks: initialDispatcher = '', auto
   const fuelAutoRemarks = editableFields.autoRemarks ?? initialAuto;
 
   return (
-    <div className="border-t border-acars-border px-3 py-3">
+    <div className="border-t border-acars-border px-3 py-2.5">
       <div className="grid grid-cols-2 gap-3">
         {/* Left: Remarks */}
         <div className="space-y-3">
