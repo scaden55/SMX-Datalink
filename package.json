@@ -20,11 +20,14 @@
     "build:electron": "npm run build -w electron",
     "build": "npm run build:shared && concurrently \"npm run build:backend\" \"npm run build:frontend\" \"npm run build:electron\"",
     "package": "npm run build && npm run package -w electron",
-    "package:dir": "npm run build && npm run package:dir -w electron"
+    "package:dir": "npm run build && npm run package:dir -w electron",
+    "postinstall": "node -e \"require('rcedit').rcedit(require('path').join('node_modules','electron','dist','electron.exe'),{icon:'electron/assets/icon.ico'}).then(()=>console.log('rcedit: icon stamped on electron.exe')).catch(e=>console.warn('rcedit skipped:',e.message))\""
   },
   "devDependencies": {
     "concurrently": "^9.1.0",
     "electron-builder": "^25.1.8",
+    "rcedit": "^5.0.0",
+    "sharp": "^0.34.5",
     "typescript": "^5.7.3"
   },
   "dependencies": {

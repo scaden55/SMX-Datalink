@@ -1,8 +1,11 @@
-import { app, BrowserWindow, ipcMain, dialog, shell, Menu, session } from 'electron';
+import { app, BrowserWindow, ipcMain, dialog, shell, Menu, session, nativeImage } from 'electron';
 import { autoUpdater } from 'electron-updater';
 import * as path from 'path';
 import { fork, ChildProcess } from 'child_process';
 import { IpcChannels } from './ipc-channels';
+
+// Set AppUserModelId early so Windows uses our icon, not Electron's default
+app.setAppUserModelId('com.sma.acars');
 
 // ----- Constants -----
 
@@ -13,6 +16,14 @@ const VITE_DEV_URL = `http://localhost:${VITE_DEV_PORT}`;
 // In dev mode, backend runs externally via tsx watch — Electron only forks in production
 const SKIP_BACKEND_FORK = IS_DEV && process.env.ELECTRON_SKIP_BACKEND !== 'false';
 const BACKEND_READY_TIMEOUT = 15_000; // ms
+// Use the multi-size .ico on Windows (nativeImage loads all embedded sizes as separate
+// representations, giving the OS the best match for taskbar / title-bar / alt-tab).
+// Fall back to the PNG source on other platforms.
+const iconPath = process.platform === 'win32'
+  ? path.join(__dirname, '..', 'assets', 'icon.ico')
+  : path.join(__dirname, '..', 'assets', 'logos', 'chevron-dark.png');
+const APP_ICON = nativeImage.createFromPath(iconPath);
+console.log('[Electron] Icon loaded from', iconPath, '— empty?', APP_ICON.isEmpty(), 'size:', APP_ICON.getSize());
 
 // ----- State -----
 
@@ -163,7 +174,7 @@ function createWindow(): void {
     minWidth: 1024,
     minHeight: 700,
     frame: false,
-    icon: path.join(__dirname, '..', 'assets', 'icon.ico'),
+    icon: APP_ICON,
     autoHideMenuBar: true,
     backgroundColor: '#0d1117',
     show: false, // show after ready-to-show
@@ -195,6 +206,8 @@ function createWindow(): void {
   // Show when ready — close splash and reveal main window
   mainWindow.once('ready-to-show', () => {
     closeSplash();
+    // Explicitly set icon after window is ready (ensures taskbar picks it up)
+    mainWindow?.setIcon(APP_ICON);
     mainWindow?.show();
     mainWindow?.focus();
   });

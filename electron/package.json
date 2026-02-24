@@ -25,6 +25,7 @@
     "productName": "SMX ACARS",
     "copyright": "Copyright © 2026 SMX Virtual Airlines",
     "npmRebuild": false,
+    "afterPack": "./scripts/after-pack.js",
     "directories": {
       "output": "../release"
     },
