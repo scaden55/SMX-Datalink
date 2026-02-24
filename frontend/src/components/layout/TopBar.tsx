@@ -5,6 +5,7 @@ import { useUIStore, type ViewMode } from '../../stores/uiStore';
 import { useFlightPlanStore } from '../../stores/flightPlanStore';
 import { Badge } from '../common/Badge';
 import { api } from '../../lib/api';
+import { useDispatchEdit } from '../../contexts/DispatchEditContext';
 import type { LogbookEntry } from '@acars/shared';
 
 export function TopBar() {
@@ -19,6 +20,8 @@ export function TopBar() {
   const [remarks, setRemarks] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
+
+  const { canEdit, hasUnreleasedChanges, releasing, releaseDispatch } = useDispatchEdit();
 
   // Show End Flight button when in TAXI_IN or PARKED with an active bid
   const canEndFlight = activeBidId != null
@@ -72,8 +75,29 @@ export function TopBar() {
         </div>
       </div>
 
-      {/* Center: End Flight button */}
+      {/* Center: Release Dispatch + End Flight buttons */}
       <div className="flex items-center gap-3">
+        {canEdit && (
+          <button
+            onClick={releaseDispatch}
+            disabled={!hasUnreleasedChanges || releasing}
+            className={`flex items-center gap-1.5 px-3 py-1 text-[10px] font-semibold rounded border transition-colors ${
+              hasUnreleasedChanges && !releasing
+                ? 'bg-blue-500/10 text-blue-400 border-blue-500/30 hover:bg-blue-500/20 hover:text-blue-300'
+                : 'bg-acars-input text-acars-muted border-acars-border cursor-not-allowed opacity-50'
+            }`}
+          >
+            {releasing ? (
+              <div className="w-3 h-3 border-2 border-blue-400/30 border-t-blue-400 rounded-full animate-spin" />
+            ) : (
+              <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M22 2L11 13" />
+                <path d="M22 2L15 22L11 13L2 9L22 2Z" />
+              </svg>
+            )}
+            {releasing ? 'Releasing...' : 'Release Dispatch'}
+          </button>
+        )}
         {canEndFlight && (
           <button
             onClick={() => setShowDialog(true)}
