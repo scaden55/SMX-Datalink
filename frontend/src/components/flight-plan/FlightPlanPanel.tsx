@@ -10,6 +10,7 @@ import { RouteSection } from './RouteSection';
 import { MELSection } from './MELSection';
 import { TerrainSection } from './TerrainSection';
 import { CargoSummaryRow } from '../cargo/CargoSummaryRow';
+import { DispatchActionBar } from './DispatchActionBar';
 import { RemarksSection } from './RemarksSection';
 import type { SimBriefOFP, FlightPlanFormData } from '@acars/shared';
 
@@ -46,6 +47,9 @@ export function FlightPlanPanel({ ofp, formData, ruleChips }: FlightPlanPanelPro
 
       {/* Item 3: Scenario + Flight Rules chips */}
       <ScenarioBar formData={formData} ruleChips={ruleChips} />
+
+      {/* Dispatch actions: Release Dispatch (admin) / End Flight (pilot) */}
+      <DispatchActionBar />
 
       {/* Route — positioned above nav procedures */}
       <RouteSection />
