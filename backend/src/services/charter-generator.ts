@@ -323,7 +323,9 @@ export class CharterGeneratorService {
     }
 
     // Bias towards large airports: large_airport gets 4× higher selection probability
-    sql += ' ORDER BY (RANDOM() / (CASE WHEN a.type = \'large_airport\' THEN 4.0 ELSE 1.0 END)) LIMIT 20';
+    // ABS() required because SQLite RANDOM() returns signed integers — dividing
+    // a negative value by 4 makes it LESS negative (higher), reversing the bias.
+    sql += ' ORDER BY (ABS(RANDOM()) / (CASE WHEN a.type = \'large_airport\' THEN 4.0 ELSE 1.0 END)) LIMIT 20';
 
     const candidates = db.prepare(sql).all(...params) as OaAirportRow[];
 
