@@ -3,6 +3,7 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 import { TitleBar } from './components/navigation/TitleBar';
 import { MainShell } from './components/navigation/MainShell';
 import { AuthGuard } from './components/auth/AuthGuard';
+import { Toaster } from './components/ui/Toaster';
 import { LoginPage } from './pages/LoginPage';
 import { RegisterPage } from './pages/RegisterPage';
 import { DashboardPage } from './pages/DashboardPage';
@@ -68,6 +69,7 @@ export function App() {
         </HashRouter>
       </div>
     </div>
+    <Toaster />
     </ErrorBoundary>
   );
 }
