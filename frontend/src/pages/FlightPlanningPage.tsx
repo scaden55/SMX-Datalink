@@ -52,19 +52,25 @@ export function FlightPlanningPage() {
 
   // Load reference data + bids on mount
   useEffect(() => {
+    const controller = new AbortController();
+
     Promise.all([
       api.get<Airport[]>('/api/airports'),
       api.get<FleetAircraft[]>('/api/fleet'),
       api.get<MyBidsResponse>('/api/bids/my'),
     ]).then(([airports, fleet, bidsRes]) => {
+      if (controller.signal.aborted) return;
       setAirports(airports);
       setFleet(fleet);
       setBids(bidsRes.bids);
       setBidsLoaded(true);
     }).catch((err) => {
+      if (controller.signal.aborted) return;
       console.error('[Planning] Failed to load reference data:', err);
       setBidsLoaded(true);
     });
+
+    return () => controller.abort();
   }, [setAirports, setFleet]);
 
   // Auto-redirect: if no bidId in URL but activeBidId in store, restore it
@@ -97,12 +103,12 @@ export function FlightPlanningPage() {
     setLoading(true);
     setError('');
 
-    let cancelled = false;
+    const controller = new AbortController();
 
     api.get<{ ofpJson: any; flightPlanData: any; phase: FlightPlanPhase }>(`/api/bids/${numBidId}/flight-plan`)
       .catch(() => null)
       .then((planRes) => {
-        if (cancelled) return;
+        if (controller.signal.aborted) return;
 
         const bid = bids.find((b) => b.id === numBidId);
 
@@ -134,13 +140,13 @@ export function FlightPlanningPage() {
 
         setLoading(false);
       }).catch((err) => {
-        if (cancelled) return;
+        if (controller.signal.aborted) return;
         console.error('[Planning] Failed to load bid:', err);
         setError('Failed to load flight plan data');
         setLoading(false);
       });
 
-    return () => { cancelled = true; };
+    return () => controller.abort();
   // eslint-disable-next-line react-hooks/exhaustive-deps -- only re-run on URL bidId or bids list changes
   }, [bidId, bids]);
 
