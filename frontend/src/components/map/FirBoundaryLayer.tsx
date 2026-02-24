@@ -130,7 +130,7 @@ export function FirBoundaryLayer({ controllers, visible, hoveredAirspaceId, onHo
       const icon = L.divIcon({
         className: 'airspace-badge-wrapper',
         html: `<div class="airspace-badge airspace-badge--fir">${id}</div>`,
-        iconSize: undefined as any,
+        iconSize: [0, 0],
         iconAnchor: [0, 8],
       });
 

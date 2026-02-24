@@ -13,8 +13,8 @@ export function AircraftSection({ title, tailNumber, type, formData }: AircraftS
 
   const cruiseFL = editableFields.cruiseFL ?? formData?.cruiseFL ?? '';
   const costIdx = editableFields.costIndex ?? formData?.costIndex ?? '';
-  const aobFL = (editableFields as any).aobFL ?? (formData as any)?.aobFL ?? '';
-  const pic = (editableFields as any).pic ?? (formData as any)?.pic ?? '';
+  const aobFL = editableFields.aobFL ?? formData?.aobFL ?? '';
+  const pic = editableFields.pic ?? formData?.pic ?? '';
 
   const inputCls = "bg-acars-input border border-acars-border text-[11px] font-mono text-[#cdd1d8] rounded-md px-1.5 py-0.5 outline-none focus:border-blue-400 truncate w-full";
 

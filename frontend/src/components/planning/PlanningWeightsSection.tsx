@@ -1,11 +1,14 @@
 import { Scale } from 'lucide-react';
 import { CollapsibleSection } from '../common/CollapsibleSection';
 import { useFlightPlanStore } from '../../stores/flightPlanStore';
+import type { FlightPlanFormData } from '@acars/shared';
+
+type WeightField = 'estZfw' | 'estTow' | 'estLdw' | 'payload' | 'paxCount' | 'cargoLbs';
 
 export function PlanningWeightsSection() {
   const { form, setFormField } = useFlightPlanStore();
 
-  const fields: { key: keyof typeof form; label: string }[] = [
+  const fields: { key: WeightField; label: string }[] = [
     { key: 'estZfw', label: 'ZFW' },
     { key: 'estTow', label: 'TOW' },
     { key: 'estLdw', label: 'LDW' },
@@ -30,8 +33,8 @@ export function PlanningWeightsSection() {
             <label className="planning-label">{label}</label>
             <input
               type="text"
-              value={form[key] as string}
-              onChange={(e) => setFormField(key as any, e.target.value)}
+              value={form[key]}
+              onChange={(e) => setFormField(key, e.target.value)}
               placeholder="0"
               className="planning-input"
             />

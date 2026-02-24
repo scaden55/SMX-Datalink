@@ -14,7 +14,7 @@ import { PlanningInfoPanel } from '../components/planning/PlanningInfoPanel';
 import { PlanningRightPanel } from '../components/planning/PlanningRightPanel';
 import { VatsimPrefile } from '../components/planning/VatsimPrefile';
 import { stepsToWaypoints } from '../components/planning/simbrief-parser';
-import type { MyBidsResponse, BidWithDetails, Airport, FleetAircraft } from '@acars/shared';
+import type { MyBidsResponse, BidWithDetails, Airport, FleetAircraft, FlightPlanPhase } from '@acars/shared';
 
 export function FlightPlanningPage() {
   const { bidId } = useParams<{ bidId?: string }>();
@@ -99,7 +99,7 @@ export function FlightPlanningPage() {
 
     let cancelled = false;
 
-    api.get<{ ofpJson: any; flightPlanData: any; phase: string }>(`/api/bids/${numBidId}/flight-plan`)
+    api.get<{ ofpJson: any; flightPlanData: any; phase: FlightPlanPhase }>(`/api/bids/${numBidId}/flight-plan`)
       .catch(() => null)
       .then((planRes) => {
         if (cancelled) return;
@@ -120,7 +120,7 @@ export function FlightPlanningPage() {
               setPlanningWaypoints(stepsToWaypoints(planRes.ofpJson.steps, ob, db));
             }
           }
-          setPhase((planRes.phase as any) ?? 'planning');
+          setPhase(planRes.phase ?? 'planning');
         } else if (bid) {
           replaceForm({
             ...emptyForm,

@@ -73,7 +73,7 @@ function getIcon(icao: string, badges: BadgeInfo[]): L.DivIcon {
   icon = L.divIcon({
     html,
     className: 'airport-label-wrapper',
-    iconSize: undefined as any,
+    iconSize: [0, 0],
     iconAnchor: [2, 22],
   });
 

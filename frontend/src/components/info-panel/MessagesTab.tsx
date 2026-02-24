@@ -71,7 +71,7 @@ export function MessagesTab() {
   useEffect(() => {
     if (!socket || !bidId) return;
 
-    socket.emit('dispatch:subscribe' as any, bidId);
+    socket.emit('dispatch:subscribe', bidId);
 
     const handler = (msg: Message) => {
       setMessages((prev) => {
@@ -80,11 +80,11 @@ export function MessagesTab() {
         return [...prev, msg];
       });
     };
-    socket.on('acars:message' as any, handler);
+    socket.on('acars:message', handler);
 
     return () => {
-      socket.emit('dispatch:unsubscribe' as any, bidId);
-      socket.off('acars:message' as any, handler);
+      socket.emit('dispatch:unsubscribe', bidId);
+      socket.off('acars:message', handler);
     };
   }, [socket, bidId]);
 

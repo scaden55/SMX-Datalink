@@ -447,7 +447,7 @@ function ScheduleFormModal({
                 type="number"
                 value={form.distanceNm}
                 onChange={e =>
-                  set('distanceNm', e.target.value ? parseInt(e.target.value) : ('' as any))
+                  set('distanceNm', e.target.value ? parseInt(e.target.value) : '')
                 }
                 placeholder="2475"
                 className={INPUT_CLS}
@@ -462,7 +462,7 @@ function ScheduleFormModal({
                 type="number"
                 value={form.flightTimeMin}
                 onChange={e =>
-                  set('flightTimeMin', e.target.value ? parseInt(e.target.value) : ('' as any))
+                  set('flightTimeMin', e.target.value ? parseInt(e.target.value) : '')
                 }
                 placeholder="330"
                 className={INPUT_CLS}

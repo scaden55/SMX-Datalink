@@ -132,13 +132,13 @@ function createRunwayOverlays(geojson: GeoJSON.FeatureCollection): L.LayerGroup 
 
     // Add white edge lines for polygons
     if (feature.geometry.type === 'Polygon' || feature.geometry.type === 'MultiPolygon') {
-      L.geoJSON(feature as any, {
+      L.geoJSON(feature as GeoJSON.Feature, {
         style: { color: '#ffffff', weight: 1.5, opacity: 0.6, fill: false },
       }).addTo(group);
     }
 
     // Add dashed centerline
-    L.geoJSON(feature as any, {
+    L.geoJSON(feature as GeoJSON.Feature, {
       style: {
         color: '#ffffff',
         weight: 1,
@@ -162,7 +162,7 @@ function createTaxiwayEdgeOverlays(geojson: GeoJSON.FeatureCollection): L.LayerG
     if (feature.geometry.type !== 'LineString') continue;
 
     // Yellow edge line on top of the dark taxiway line
-    L.geoJSON(feature as any, {
+    L.geoJSON(feature as GeoJSON.Feature, {
       style: { color: '#eab308', weight: 1, opacity: 0.6, fill: false },
     }).addTo(group);
   }

@@ -167,7 +167,7 @@ export function TraconBoundaryLayer({ controllers, visible, hoveredAirspaceId, o
       const icon = L.divIcon({
         className: 'airspace-badge-wrapper',
         html: `<div class="airspace-badge airspace-badge--tracon">${id}</div>`,
-        iconSize: undefined as any,
+        iconSize: [0, 0],
         iconAnchor: [0, 8],
       });
 

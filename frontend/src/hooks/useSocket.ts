@@ -37,7 +37,7 @@ export function useSocket(): AcarsSocket | null {
     });
 
     socketRef.current = socket;
-    setSocket(socket as any);
+    setSocket(socket);
 
     socket.on('connect', () => {
       console.log('[Socket] Connected');

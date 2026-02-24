@@ -167,10 +167,10 @@ export function NavProcedureRow({ formData }: NavProcedureRowProps) {
     }
   }, [dest]);
 
-  const depRunway = (editableFields as any).depRunway ?? formData?.depRunway ?? '';
-  const arrRunway = (editableFields as any).arrRunway ?? formData?.arrRunway ?? '';
-  const sid = (editableFields as any).sid ?? formData?.sid ?? '';
-  const star = (editableFields as any).star ?? formData?.star ?? '';
+  const depRunway = editableFields.depRunway ?? formData?.depRunway ?? '';
+  const arrRunway = editableFields.arrRunway ?? formData?.arrRunway ?? '';
+  const sid = editableFields.sid ?? formData?.sid ?? '';
+  const star = editableFields.star ?? formData?.star ?? '';
   const alt1 = editableFields.alternate1 ?? formData?.alternate1 ?? '';
   const alt2 = editableFields.alternate2 ?? formData?.alternate2 ?? '';
 

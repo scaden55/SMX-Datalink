@@ -1,11 +1,14 @@
 import { Fuel } from 'lucide-react';
 import { CollapsibleSection } from '../common/CollapsibleSection';
 import { useFlightPlanStore } from '../../stores/flightPlanStore';
+import type { FlightPlanFormData } from '@acars/shared';
+
+type FuelField = 'fuelBurn' | 'fuelPlanned' | 'fuelExtra' | 'fuelAlternate' | 'fuelReserve' | 'fuelTaxi' | 'fuelContingency' | 'fuelTotal';
 
 export function PlanningFuelSection() {
   const { form, setFormField } = useFlightPlanStore();
 
-  const fields: { key: keyof typeof form; label: string }[] = [
+  const fields: { key: FuelField; label: string }[] = [
     { key: 'fuelBurn', label: 'Burn' },
     { key: 'fuelPlanned', label: 'Planned' },
     { key: 'fuelExtra', label: 'Extra' },
@@ -32,8 +35,8 @@ export function PlanningFuelSection() {
             <label className="planning-label">{label}</label>
             <input
               type="text"
-              value={form[key] as string}
-              onChange={(e) => setFormField(key as any, e.target.value)}
+              value={form[key]}
+              onChange={(e) => setFormField(key, e.target.value)}
               placeholder="0"
               className="planning-input"
             />
