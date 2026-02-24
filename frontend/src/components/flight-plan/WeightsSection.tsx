@@ -20,12 +20,12 @@ function WeightField({ label, value, maxLabel, warn }: WeightFieldProps) {
   return (
     <div className="flex flex-col items-start min-w-0 flex-1">
       <span className="text-[9px] font-medium uppercase tracking-[0.06em] text-[#5e646e]">{label}</span>
-      <span
-        className="text-[12px] font-mono leading-tight"
+      <div
+        className="bg-acars-input border border-acars-border text-[11px] font-mono rounded-md px-1.5 py-0.5 w-full truncate"
         style={{ color: warn ? '#f59e0b' : '#dde1e8' }}
       >
         {value}
-      </span>
+      </div>
       {maxLabel && (
         <span className="text-[9px] font-sans text-[#454a52]">{maxLabel}</span>
       )}
@@ -37,7 +37,7 @@ export function WeightsSection({ ofpWeights }: WeightsSectionProps) {
   const w = ofpWeights;
 
   return (
-    <div className="border-b border-acars-border px-3 py-2">
+    <div className="border-b border-acars-border px-3 py-1.5">
       <div className="flex items-start gap-2">
         <WeightField
           label="ZFW"

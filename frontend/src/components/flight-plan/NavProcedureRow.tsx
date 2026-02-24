@@ -188,7 +188,7 @@ export function NavProcedureRow({ formData }: NavProcedureRowProps) {
   const inputCls = selectCls;
 
   return (
-    <div className="border-b border-acars-border px-3 py-2">
+    <div className="border-b border-acars-border px-3 py-1.5">
       <div className="flex items-end gap-1.5">
         {/* Departure Runway */}
         <div className="flex flex-col min-w-0 flex-1">

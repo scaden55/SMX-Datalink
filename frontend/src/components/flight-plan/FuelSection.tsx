@@ -27,6 +27,9 @@ interface FuelFieldProps {
 }
 
 function FuelField({ label, value, sub, warn, editable, fieldKey, onFieldChange }: FuelFieldProps) {
+  const boxStyle = { color: warn ? '#f59e0b' : '#dde1e8' };
+  const boxCls = "bg-acars-input border border-acars-border text-[11px] font-mono rounded-md px-1.5 py-0.5 w-full truncate outline-none focus:border-blue-400";
+
   return (
     <div className="flex flex-col min-w-0 flex-1">
       <span className="text-[9px] font-medium uppercase tracking-[0.06em] text-[#5e646e]">{label}</span>
@@ -35,16 +38,13 @@ function FuelField({ label, value, sub, warn, editable, fieldKey, onFieldChange 
           type="text"
           value={value}
           onChange={(e) => onFieldChange(fieldKey, e.target.value)}
-          className="bg-acars-input border border-acars-border text-[12px] font-mono rounded-md px-1 py-0 outline-none focus:border-blue-400 w-full"
-          style={{ color: warn ? '#f59e0b' : '#dde1e8' }}
+          className={boxCls}
+          style={boxStyle}
         />
       ) : (
-        <span
-          className="text-[12px] font-mono leading-tight"
-          style={{ color: warn ? '#f59e0b' : '#dde1e8' }}
-        >
+        <div className={boxCls} style={boxStyle}>
           {value}
-        </span>
+        </div>
       )}
       {sub && <span className="text-[9px] font-sans text-[#454a52]">{sub}</span>}
     </div>
