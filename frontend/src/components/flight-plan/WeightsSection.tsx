@@ -1,11 +1,9 @@
-import { useFlightPlanStore } from '../../stores/flightPlanStore';
 import { useDispatchEdit } from '../../contexts/DispatchEditContext';
 import type { SimBriefWeights, SimBriefFuel } from '@acars/shared';
 
 interface WeightsSectionProps {
   ofpWeights?: SimBriefWeights | null;
   ofpFuel?: SimBriefFuel | null;
-  liveFuelLbs?: number | null;
 }
 
 function fmt(val: number | string | undefined | null): string {
@@ -50,10 +48,9 @@ function Field({ label, value, sub, warn, editable, fieldKey, onFieldChange }: F
   );
 }
 
-export function WeightsSection({ ofpWeights, ofpFuel, liveFuelLbs }: WeightsSectionProps) {
+export function WeightsSection({ ofpWeights, ofpFuel }: WeightsSectionProps) {
   const w = ofpWeights;
   const f = ofpFuel;
-  const progress = useFlightPlanStore((s) => s.progress);
   const { canEditFuel, editableFields, onFieldChange } = useDispatchEdit();
 
   // Contingency fuel: default 5% of planned burn
@@ -71,8 +68,11 @@ export function WeightsSection({ ofpWeights, ofpFuel, liveFuelLbs }: WeightsSect
         />
         <Field
           label="Plan Gate"
-          value={`${fmt(w?.estTow)} lbs`}
+          value={String(editableFields.fuelTotal ?? f?.totalLbs ?? '---')}
           sub={w?.maxTow ? `Max ${fmt(w.maxTow)} lbs` : undefined}
+          editable={canEditFuel}
+          fieldKey="fuelTotal"
+          onFieldChange={onFieldChange}
         />
         <Field
           label="Taxi Out"
@@ -105,8 +105,11 @@ export function WeightsSection({ ofpWeights, ofpFuel, liveFuelLbs }: WeightsSect
         />
         <Field
           label="REMF"
-          value={progress?.fuelAtDestination ? `${fmt(progress.fuelAtDestination)} lbs` : `${fmt(editableFields.fuelReserve ?? f?.reserveLbs)} lbs`}
-          sub={f?.reserveLbs ? `Rsv ${fmt(f.reserveLbs)} lbs` : undefined}
+          value={String(editableFields.fuelReserve ?? f?.reserveLbs ?? '---')}
+          sub="FAA reserve"
+          editable={canEditFuel}
+          fieldKey="fuelReserve"
+          onFieldChange={onFieldChange}
         />
       </div>
     </div>

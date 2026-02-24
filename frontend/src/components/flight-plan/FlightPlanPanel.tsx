@@ -5,7 +5,6 @@ import { ScenarioBar } from './ScenarioBar';
 import { NavProcedureRow } from './NavProcedureRow';
 import { AircraftSection } from './AircraftSection';
 import { WeightsSection } from './WeightsSection';
-import { FuelSection } from './FuelSection';
 import { RouteSection } from './RouteSection';
 import { MELSection } from './MELSection';
 import { TerrainSection } from './TerrainSection';
@@ -21,7 +20,7 @@ interface FlightPlanPanelProps {
 }
 
 export function FlightPlanPanel({ ofp, formData, ruleChips }: FlightPlanPanelProps) {
-  const { aircraft, fuel } = useTelemetry();
+  const { aircraft } = useTelemetry();
   const { canEdit, saving, lastSavedAt } = useDispatchEdit();
 
   return (
@@ -69,7 +68,6 @@ export function FlightPlanPanel({ ofp, formData, ruleChips }: FlightPlanPanelPro
       <WeightsSection
         ofpWeights={ofp?.weights ?? null}
         ofpFuel={ofp?.fuel ?? null}
-        liveFuelLbs={fuel?.totalQuantityWeight ?? null}
       />
 
       {/* Item 7: Bottom collapsible sections with checkmarks */}
@@ -80,11 +78,6 @@ export function FlightPlanPanel({ ofp, formData, ruleChips }: FlightPlanPanelPro
           complete={!!aircraft}
         />
         <MELSection melRestrictions={formData?.melRestrictions ?? ''} />
-        <FuelSection
-          totalWeight={fuel?.totalQuantityWeight ?? null}
-          fuelPct={fuel?.fuelPercentage ?? null}
-          ofpFuel={ofp?.fuel ?? null}
-        />
         <TerrainSection ofp={ofp} />
         <CargoSummaryRow />
       </div>
