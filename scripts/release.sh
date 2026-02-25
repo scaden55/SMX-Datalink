@@ -111,14 +111,16 @@ step 6 "Deploying backend to VPS (${VPS_HOST})"
 scp -r "$ROOT/backend/dist" "${VPS_USER}@${VPS_HOST}:${VPS_PATH}/dist-new" || fail "SCP dist failed"
 scp "$ROOT/backend/package.json" "${VPS_USER}@${VPS_HOST}:${VPS_PATH}/package-new.json" || fail "SCP package.json failed"
 
-# Swap and restart
+# Swap and restart (sleep + fuser to ensure port 3001 is released before restart)
 ssh "${VPS_USER}@${VPS_HOST}" "cd ${VPS_PATH} && \
   pm2 stop sma-acars && \
+  sleep 2 && \
+  fuser -k 3001/tcp 2>/dev/null; \
   rm -rf dist && \
   mv dist-new dist && \
   mv package-new.json package.json && \
   npm install --omit=dev --silent && \
-  pm2 restart sma-acars" || fail "VPS deploy failed"
+  pm2 start sma-acars" || fail "VPS deploy failed"
 
 ok "Backend deployed and restarted"
 

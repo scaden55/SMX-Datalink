@@ -46,6 +46,7 @@ import { TrackService } from './services/track.js';
 import { FlightEventTracker } from './services/flight-event-tracker.js';
 import { CharterGeneratorService, currentMonth } from './services/charter-generator.js';
 import { VatsimEventsService } from './services/vatsim-events.js';
+import { needsAirportData, importAirportData } from './services/airport-data.js';
 import { logger } from './lib/logger.js';
 
 // Initialize database before anything else
@@ -199,27 +200,40 @@ httpServer.listen(config.port, '0.0.0.0', () => {
   // Start VATSIM polling
   vatsimService.start();
 
-  // ── Dynamic charter generation on startup ──────────────────
+  // ── Ensure airport data + charter generation on startup ─────
   const charterGen = new CharterGeneratorService();
   const vatsimEventsService = new VatsimEventsService();
 
-  try {
-    if (charterGen.needsGeneration(currentMonth())) {
-      const result = charterGen.generateMonthlyCharters();
-      logger.info('Server', `Startup charter generation: ${result.charterCount} charters`);
+  (async () => {
+    // Auto-import OurAirports data on first run (needed for charter generation)
+    try {
+      if (needsAirportData()) {
+        await importAirportData();
+      }
+    } catch (err) {
+      logger.error('Server', 'Airport data import failed — charter generation may not work', err);
     }
-  } catch (err) {
-    logger.error('Server', 'Startup charter generation failed', err);
-  }
 
-  // Initial VATSIM events poll (async, non-blocking) — cleanup expired, then generate for today
-  vatsimEventsService.pollEvents()
-    .then(() => {
+    // Charter generation (runs after airport data is available)
+    try {
+      if (charterGen.needsGeneration(currentMonth())) {
+        const result = charterGen.generateMonthlyCharters();
+        logger.info('Server', `Startup charter generation: ${result.charterCount} charters`);
+      }
+    } catch (err) {
+      logger.error('Server', 'Startup charter generation failed', err);
+    }
+
+    // VATSIM events poll — cleanup expired, then generate for today
+    try {
+      await vatsimEventsService.pollEvents();
       charterGen.cleanupExpired();
       const created = vatsimEventsService.generateEventCharters();
       if (created > 0) logger.info('Server', `Startup event charters: ${created} created`);
-    })
-    .catch(err => logger.error('Server', 'Startup VATSIM events poll failed', err));
+    } catch (err) {
+      logger.error('Server', 'Startup VATSIM events poll failed', err);
+    }
+  })();
 });
 
 // Graceful shutdown

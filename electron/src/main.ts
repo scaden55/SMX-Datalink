@@ -61,7 +61,9 @@ function startBackend(): Promise<void> {
       env: {
         ...process.env,
         PORT: String(BACKEND_PORT),
-        CORS_ORIGIN: IS_DEV ? VITE_DEV_URL : `file://`,
+        // file:// pages send Origin: null, not Origin: file:// — use * for the
+        // locally-forked backend (only listens on localhost, not exposed to network)
+        CORS_ORIGIN: IS_DEV ? VITE_DEV_URL : '*',
         ELECTRON_RUN_AS_NODE: undefined,
       },
       stdio: ['pipe', 'pipe', 'pipe', 'ipc'],
