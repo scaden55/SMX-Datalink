@@ -91,5 +91,6 @@ frontend/dist/
 # Electron
 release/
 electron/dist/
+.backend-standalone/
 *.blockmap
 *.snap

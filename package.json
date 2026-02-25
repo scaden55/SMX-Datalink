@@ -1,6 +1,6 @@
 {
   "name": "acars-system",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "private": true,
   "workspaces": [
     "shared",
@@ -19,8 +19,9 @@
     "build:frontend": "npm run build -w frontend",
     "build:electron": "npm run build -w electron",
     "build": "npm run build:shared && concurrently \"npm run build:backend\" \"npm run build:frontend\" \"npm run build:electron\"",
-    "package": "npm run build && npm run package -w electron",
-    "package:dir": "npm run build && npm run package:dir -w electron",
+    "prepare:backend": "node scripts/prepare-backend.js",
+    "package": "npm run build && npm run prepare:backend && npm run package -w electron",
+    "package:dir": "npm run build && npm run prepare:backend && npm run package:dir -w electron",
     "postinstall": "node -e \"require('rcedit').rcedit(require('path').join('node_modules','electron','dist','electron.exe'),{icon:'electron/assets/icon.ico'}).then(()=>console.log('rcedit: icon stamped on electron.exe')).catch(e=>console.warn('rcedit skipped:',e.message))\""
   },
   "devDependencies": {

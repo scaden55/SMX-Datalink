@@ -64,7 +64,8 @@ function startBackend(): Promise<void> {
         // file:// pages send Origin: null, not Origin: file:// — use * for the
         // locally-forked backend (only listens on localhost, not exposed to network)
         CORS_ORIGIN: IS_DEV ? VITE_DEV_URL : '*',
-        ELECTRON_RUN_AS_NODE: undefined,
+        // Required: tells the Electron binary to act as plain Node.js when forking
+        ELECTRON_RUN_AS_NODE: '1',
       },
       stdio: ['pipe', 'pipe', 'pipe', 'ipc'],
     });
