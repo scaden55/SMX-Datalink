@@ -65,14 +65,16 @@ fi
 
 step 1 "Bumping version to ${VERSION}"
 
-# Update electron/package.json version (top-level and build)
+# Update root and electron/package.json version
 node -e "
   const fs = require('fs');
-  const p = JSON.parse(fs.readFileSync('electron/package.json', 'utf8'));
-  p.version = '${VERSION}';
-  fs.writeFileSync('electron/package.json', JSON.stringify(p, null, 2) + '\n');
+  for (const f of ['package.json', 'electron/package.json']) {
+    const p = JSON.parse(fs.readFileSync(f, 'utf8'));
+    p.version = '${VERSION}';
+    fs.writeFileSync(f, JSON.stringify(p, null, 2) + '\n');
+  }
 "
-ok "electron/package.json → ${VERSION}"
+ok "package.json + electron/package.json → ${VERSION}"
 
 # ── Step 2: Build shared types ─────────────────────────────────
 
@@ -84,8 +86,8 @@ ok "shared compiled"
 # ── Step 3: Build backend ──────────────────────────────────────
 
 step 3 "Building backend"
-cd "$ROOT/backend"
-npx tsc || fail "backend type-check failed"
+cd "$ROOT"
+npm run build:backend || fail "backend build failed"
 ok "backend compiled"
 
 # ── Step 4: Build frontend ─────────────────────────────────────
@@ -100,6 +102,9 @@ ok "frontend built"
 step 5 "Packaging Electron installer"
 cd "$ROOT/electron"
 npx tsc || fail "electron type-check failed"
+cd "$ROOT"
+npm run prepare:backend || fail "prepare-backend failed"
+cd "$ROOT/electron"
 npx electron-builder --win || fail "electron-builder failed"
 ok "Installer: ${INSTALLER}"
 

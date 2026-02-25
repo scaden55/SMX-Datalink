@@ -149,7 +149,8 @@
       "Bash(cd \"/c/Users/scade/Documents/SMA ACARS\" && npx better-sqlite3-cli data/acars.db \".schema charter_generation_log\" 2>&1 || node -e \"const db = require\\('better-sqlite3'\\)\\('./data/acars.db'\\); console.log\\(db.prepare\\(\\\\\"SELECT sql FROM sqlite_master WHERE name='charter_generation_log'\\\\\"\\).get\\(\\)\\)\" 2>&1)",
       "Bash(which:*)",
       "WebFetch(domain:www.electronjs.org)",
-      "Bash(ie4uinit.exe:*)"
+      "Bash(ie4uinit.exe:*)",
+      "Bash(npm ls:*)"
     ]
   },
   "hooks": {
