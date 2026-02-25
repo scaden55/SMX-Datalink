@@ -1,6 +1,6 @@
 {
   "name": "@acars/electron",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "SMX ACARS Desktop Client",
   "author": "SMX Virtual Airlines",
   "private": true,
@@ -34,13 +34,6 @@
       "assets/**/*"
     ],
     "extraResources": [
-      {
-        "from": "../.backend-standalone",
-        "to": "backend",
-        "filter": [
-          "**/*"
-        ]
-      },
       {
         "from": "../frontend/dist",
         "to": "frontend",
