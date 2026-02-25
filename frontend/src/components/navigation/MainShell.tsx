@@ -7,6 +7,7 @@ import { DebugOverlay } from '../debug/DebugOverlay';
 import { useSocket } from '../../hooks/useSocket';
 import { useAuthStore } from '../../stores/authStore';
 import { useUIStore } from '../../stores/uiStore';
+import { toast } from '../../stores/toastStore';
 import { api } from '../../lib/api';
 import type { VaSettingsResponse } from '@acars/shared';
 
@@ -36,6 +37,26 @@ export function MainShell() {
         // Silently fail — keep local state
       });
   }, [user?.role, setDevMode]);
+
+  // Auto-updater notifications (Electron only)
+  useEffect(() => {
+    if (!isElectron) return;
+    const api = window.electronAPI!;
+
+    const unsubs = [
+      api.on('update:available', () => {
+        toast.info('A new update is available. Downloading...');
+      }),
+      api.on('update:downloaded', () => {
+        toast.success('Update downloaded — it will install on next restart.');
+      }),
+      api.on('update:error', (msg: unknown) => {
+        toast.error(`Update failed: ${msg}`);
+      }),
+    ];
+
+    return () => unsubs.forEach((unsub) => unsub());
+  }, []);
 
   // Keyboard shortcuts
   useEffect(() => {
