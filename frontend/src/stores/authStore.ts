@@ -96,6 +96,18 @@ export const useAuthStore = create<AuthState>()(
 
       setTokens: (accessToken, refreshToken) => {
         set({ accessToken, refreshToken });
+        // Forward refreshed token to Electron relay
+        if (typeof window !== 'undefined' && (window as any).electronAPI?.isElectron) {
+          const user = get().user;
+          if (user) {
+            (window as any).electronAPI.setRelayAuth({
+              token: accessToken,
+              userId: user.id,
+              callsign: user.callsign,
+              vpsUrl: getApiBase(),
+            });
+          }
+        }
       },
 
       clearAuth: () => {

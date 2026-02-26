@@ -37,6 +37,7 @@ import { useTrack } from '../hooks/useTrack';
 import { useTrackStore } from '../stores/trackStore';
 import type { Airport, ActiveBidEntry, AllBidsResponse, VatsimPilot } from '@acars/shared';
 import { useActiveFlightsStore } from '../stores/activeFlightsStore';
+import { useSocketStore } from '../stores/socketStore';
 
 // ─── Types ───────────────────────────────────────────────────
 
@@ -450,6 +451,7 @@ export function LiveMapPage() {
     y: number;
   } | null>(null);
 
+  const socket = useSocketStore((s) => s.socket);
   const { aircraft, flight, connected } = useTelemetry();
   const activeFlights = useActiveFlightsStore((s) => s.flights);
   useVatsim();
@@ -463,6 +465,27 @@ export function LiveMapPage() {
   const clearServerTrack = useVatsimStore((s) => s.clearServerTrack);
   const bidTrack = useTrackStore((s) => s.selectedBidTrack);
   const ofpSteps = useTrackStore((s) => s.ofpSteps);
+
+  // Subscribe to livemap channel only while this page is mounted
+  useEffect(() => {
+    if (!socket) return;
+
+    // Subscribe now if already connected
+    if (socket.connected) {
+      socket.emit('livemap:subscribe');
+    }
+
+    // Also subscribe on reconnect
+    const onConnect = () => {
+      socket.emit('livemap:subscribe');
+    };
+    socket.on('connect', onConnect);
+
+    return () => {
+      socket.off('connect', onConnect);
+      socket.emit('livemap:unsubscribe');
+    };
+  }, [socket]);
 
   const detailPanelOpen = selectedAirport != null || selectedPilot != null || selectedAirspace != null;
 

@@ -245,6 +245,16 @@ export function setupWebSocket(
 
     socket.on('telemetry:unsubscribe', () => {
       telemetrySubscribers.delete(socket.id);
+      // Remove from all observer sets and signal relay:stop if needed
+      for (const [pilotUserId, observers] of flightObservers) {
+        observers.delete(socket.id);
+        if (observers.size === 0) {
+          const pilotSocketId = pilotSockets.get(pilotUserId);
+          if (pilotSocketId) {
+            io.to(pilotSocketId).emit('relay:stop');
+          }
+        }
+      }
       stopBroadcast();
     });
 

@@ -45,7 +45,6 @@ export function useSocket(): AcarsSocket | null {
     socket.on('connect', () => {
       console.log('[Socket] Connected');
       socket.emit('telemetry:subscribe');
-      socket.emit('livemap:subscribe');
     });
 
     socket.on('flights:active', (flights) => {
@@ -66,7 +65,6 @@ export function useSocket(): AcarsSocket | null {
 
     return () => {
       socket.emit('telemetry:unsubscribe');
-      socket.emit('livemap:unsubscribe');
       socket.disconnect();
       socketRef.current = null;
       setSocket(null);
