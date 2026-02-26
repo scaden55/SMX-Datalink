@@ -1,6 +1,6 @@
 import type { Server as HttpServer } from 'http';
 import { Server as SocketServer, type Socket } from 'socket.io';
-import type { ServerToClientEvents, ClientToServerEvents, AuthPayload, VatsimDataSnapshot, VatsimFlightStatus } from '@acars/shared';
+import type { ServerToClientEvents, ClientToServerEvents, AuthPayload, VatsimDataSnapshot, VatsimFlightStatus, ActiveFlightHeartbeat, TelemetrySnapshot } from '@acars/shared';
 import type { TelemetryService } from '../services/telemetry.js';
 import type { ISimConnectManager } from '../simconnect/types.js';
 import type { VatsimService } from '../services/vatsim.js';
@@ -44,6 +44,10 @@ export function setupWebSocket(
   let phaseCheckInterval: ReturnType<typeof setInterval> | null = null;
   const telemetrySubscribers = new Set<string>();
   const vatsimSubscribers = new Set<string>();
+  const livemapSubscribers = new Set<string>();
+  const activeFlights = new Map<number, ActiveFlightHeartbeat>();
+  const flightObservers = new Map<number, Set<string>>();
+  const pilotSockets = new Map<number, string>();
   const trackService = new TrackService();
   const vatsimTrackService = new VatsimTrackService();
 
@@ -220,6 +224,23 @@ export function setupWebSocket(
     socket.on('telemetry:subscribe', () => {
       telemetrySubscribers.add(socket.id);
       startBroadcast();
+      // If this subscriber is NOT a pilot with an active flight,
+      // they're an observer — signal all active pilots to start relaying
+      const isActivePilot = socket.user && activeFlights.has(socket.user.userId);
+      if (!isActivePilot) {
+        for (const [pilotUserId, pilotSocketId] of pilotSockets) {
+          let observers = flightObservers.get(pilotUserId);
+          if (!observers) {
+            observers = new Set();
+            flightObservers.set(pilotUserId, observers);
+          }
+          const wasEmpty = observers.size === 0;
+          observers.add(socket.id);
+          if (wasEmpty) {
+            io.to(pilotSocketId).emit('relay:start');
+          }
+        }
+      }
     });
 
     socket.on('telemetry:unsubscribe', () => {
@@ -272,8 +293,67 @@ export function setupWebSocket(
       vatsimSubscribers.delete(socket.id);
     });
 
+    // ── Active flight relay ──────────────────────────────────────
+
+    socket.on('flight:heartbeat', (data: ActiveFlightHeartbeat) => {
+      if (!socket.user) return;
+      activeFlights.set(socket.user.userId, data);
+      pilotSockets.set(socket.user.userId, socket.id);
+      const flights = Array.from(activeFlights.values());
+      for (const sid of livemapSubscribers) {
+        io.to(sid).emit('flights:active', flights);
+      }
+    });
+
+    socket.on('flight:telemetry', (snapshot: TelemetrySnapshot) => {
+      if (!socket.user) return;
+      const observers = flightObservers.get(socket.user.userId);
+      if (observers) {
+        for (const sid of observers) {
+          io.to(sid).emit('telemetry:update', snapshot);
+        }
+      }
+    });
+
+    socket.on('flight:ended', () => {
+      if (!socket.user) return;
+      activeFlights.delete(socket.user.userId);
+      pilotSockets.delete(socket.user.userId);
+      flightObservers.delete(socket.user.userId);
+      const flights = Array.from(activeFlights.values());
+      for (const sid of livemapSubscribers) {
+        io.to(sid).emit('flights:active', flights);
+      }
+    });
+
+    socket.on('livemap:subscribe', () => {
+      livemapSubscribers.add(socket.id);
+      socket.emit('flights:active', Array.from(activeFlights.values()));
+    });
+
+    socket.on('livemap:unsubscribe', () => {
+      livemapSubscribers.delete(socket.id);
+    });
+
     socket.on('disconnect', () => {
       logger.info('WebSocket', `Client disconnected: ${socket.id}`);
+      // Clean up active flight if pilot disconnects
+      if (socket.user && activeFlights.has(socket.user.userId)) {
+        activeFlights.delete(socket.user.userId);
+        pilotSockets.delete(socket.user.userId);
+        flightObservers.delete(socket.user.userId);
+      }
+      // Remove from all observer sets and signal relay:stop if needed
+      for (const [pilotUserId, observers] of flightObservers) {
+        observers.delete(socket.id);
+        if (observers.size === 0) {
+          const pilotSocketId = pilotSockets.get(pilotUserId);
+          if (pilotSocketId) {
+            io.to(pilotSocketId).emit('relay:stop');
+          }
+        }
+      }
+      livemapSubscribers.delete(socket.id);
       telemetrySubscribers.delete(socket.id);
       vatsimSubscribers.delete(socket.id);
       stopBroadcast();
