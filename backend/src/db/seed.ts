@@ -16,49 +16,104 @@ export function seedDatabase(): void {
     console.log('[Seed] Admin user created: admin@smavirtual.com');
   }
 
-  // ── Airports (26 major US hubs) ────────────────────────────────
+  // ── Airports (95 SMA route airports from oa_airports) ─────────
   const airportCount = db.prepare('SELECT COUNT(*) as count FROM airports').get() as { count: number };
   if (airportCount.count === 0) {
+    const icaos = [
+      'CYLW','CYQM','CYWG','CYYC','CYYZ','EDDP','HKJK','KAFW','KBDL','KBNA',
+      'KBRO','KBUR','KBWI','KCLE','KCMH','KCRP','KDEN','KDTW','KEB','KELP',
+      'KFAT','KFLL','KGJT','KGPT','KGSP','KJFK','KLAX','KLGB','KMDT','KMIA',
+      'KMKE','KMRY','KMSY','KOAK','KOKC','KOMA','KPDX','KPSP','KRDU','KRFD',
+      'KRIC','KRNO','KSAN','KSBA','KSBP','KSDF','KSEA','KSJC','KSLC','KSTL',
+      'KSYR','KTPA','MDSD','MKJS','MMGL','MMMY','MTPP','MUGM','MYGF','MYNN',
+      'PABR','PACV','PACX','PADQ','PAEN','PAFA','PAGK','PAHO','PAHU','PAJN',
+      'PAKD','PAKH','PAMC','PANC','PANO','PAOM','PARY','PASO','PATK','PAUN',
+      'PAYA','PFAL','PFTO','PFYU','PHNL','PHTO','RJTT','SBEG','SBFI','SBGR',
+      'SKBO','SMJP','SPJC','TJSJ','TPO',
+    ];
+
+    /** Derive country ISO-2 from ICAO prefix */
+    function countryFromIcao(icao: string): string {
+      if (icao.startsWith('K') || icao.startsWith('PH') || icao.startsWith('PA') || icao.startsWith('PF') || icao.startsWith('TJ')) return 'US';
+      if (icao.startsWith('CY')) return 'CA';
+      if (icao.startsWith('ED')) return 'DE';
+      if (icao.startsWith('HK')) return 'KE';
+      if (icao.startsWith('SB')) return 'BR';
+      if (icao.startsWith('SP')) return 'PE';
+      if (icao.startsWith('SK')) return 'CO';
+      if (icao.startsWith('SM')) return 'SR';
+      if (icao.startsWith('MM')) return 'MX';
+      if (icao.startsWith('MD')) return 'DO';
+      if (icao.startsWith('MK')) return 'JM';
+      if (icao.startsWith('MT')) return 'HT';
+      if (icao.startsWith('MU')) return 'CU';
+      if (icao.startsWith('MY')) return 'BS';
+      if (icao.startsWith('RJ')) return 'JP';
+      return 'XX';
+    }
+
+    /** Derive timezone from ICAO prefix (rough approximation) */
+    function timezoneFromIcao(icao: string): string {
+      if (icao.startsWith('PA') || icao.startsWith('PF')) return 'America/Anchorage';
+      if (icao.startsWith('PH')) return 'Pacific/Honolulu';
+      if (icao.startsWith('CY')) return 'America/Toronto';
+      if (icao.startsWith('ED')) return 'Europe/Berlin';
+      if (icao.startsWith('HK')) return 'Africa/Nairobi';
+      if (icao.startsWith('SB')) return 'America/Sao_Paulo';
+      if (icao.startsWith('SP')) return 'America/Lima';
+      if (icao.startsWith('SK')) return 'America/Bogota';
+      if (icao.startsWith('SM')) return 'America/Paramaribo';
+      if (icao.startsWith('MM')) return 'America/Mexico_City';
+      if (icao.startsWith('MD')) return 'America/Santo_Domingo';
+      if (icao.startsWith('MK')) return 'America/Jamaica';
+      if (icao.startsWith('MT')) return 'America/Port-au-Prince';
+      if (icao.startsWith('MU')) return 'America/Havana';
+      if (icao.startsWith('MY')) return 'America/Nassau';
+      if (icao.startsWith('RJ')) return 'Asia/Tokyo';
+      if (icao.startsWith('TJ')) return 'America/Puerto_Rico';
+      return 'America/New_York'; // default for K-prefixed US airports
+    }
+
     const insertAirport = db.prepare(`
-      INSERT INTO airports (icao, name, city, state, country, lat, lon, elevation, timezone)
+      INSERT OR IGNORE INTO airports (icao, name, city, state, country, lat, lon, elevation, timezone)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
-    const airports = [
-      ['KJFK', 'John F Kennedy Intl',         'New York',      'NY', 'US', 40.6398, -73.7789, 13,   'America/New_York'],
-      ['KLAX', 'Los Angeles Intl',             'Los Angeles',   'CA', 'US', 33.9425, -118.4081, 126, 'America/Los_Angeles'],
-      ['KORD', "Chicago O'Hare Intl",          'Chicago',       'IL', 'US', 41.9742, -87.9073, 672,  'America/Chicago'],
-      ['KATL', 'Hartsfield-Jackson Atlanta Intl', 'Atlanta',    'GA', 'US', 33.6407, -84.4277, 1026, 'America/New_York'],
-      ['KDFW', 'Dallas/Fort Worth Intl',       'Dallas',        'TX', 'US', 32.8998, -97.0403, 607,  'America/Chicago'],
-      ['KDEN', 'Denver Intl',                  'Denver',        'CO', 'US', 39.8561, -104.6737, 5431, 'America/Denver'],
-      ['KSFO', 'San Francisco Intl',           'San Francisco', 'CA', 'US', 37.6213, -122.3790, 13,  'America/Los_Angeles'],
-      ['KIAH', 'George Bush Intercontinental',  'Houston',      'TX', 'US', 29.9844, -95.3414, 97,   'America/Chicago'],
-      ['KMIA', 'Miami Intl',                   'Miami',         'FL', 'US', 25.7959, -80.2870, 8,    'America/New_York'],
-      ['KBOS', 'Boston Logan Intl',            'Boston',        'MA', 'US', 42.3656, -71.0096, 20,   'America/New_York'],
-      ['KSEA', 'Seattle-Tacoma Intl',          'Seattle',       'WA', 'US', 47.4502, -122.3088, 433, 'America/Los_Angeles'],
-      ['KMSP', 'Minneapolis-St Paul Intl',     'Minneapolis',   'MN', 'US', 44.8848, -93.2223, 841,  'America/Chicago'],
-      ['KDTW', 'Detroit Metro Wayne County',   'Detroit',       'MI', 'US', 42.2124, -83.3534, 645,  'America/New_York'],
-      ['KPHX', 'Phoenix Sky Harbor Intl',      'Phoenix',       'AZ', 'US', 33.4373, -112.0078, 1135, 'America/Phoenix'],
-      ['KLAS', 'Harry Reid Intl',              'Las Vegas',     'NV', 'US', 36.0840, -115.1537, 2181, 'America/Los_Angeles'],
-      ['KMCO', 'Orlando Intl',                 'Orlando',       'FL', 'US', 28.4312, -81.3081, 96,   'America/New_York'],
-      ['KEWR', 'Newark Liberty Intl',          'Newark',        'NJ', 'US', 40.6895, -74.1745, 18,   'America/New_York'],
-      ['KCLT', 'Charlotte Douglas Intl',       'Charlotte',     'NC', 'US', 35.2144, -80.9473, 748,  'America/New_York'],
-      ['KPHL', 'Philadelphia Intl',            'Philadelphia',  'PA', 'US', 39.8744, -75.2424, 36,   'America/New_York'],
-      ['KSLC', 'Salt Lake City Intl',          'Salt Lake City','UT', 'US', 40.7884, -111.9778, 4227, 'America/Denver'],
-      ['KBWI', 'Baltimore/Washington Intl',    'Baltimore',     'MD', 'US', 39.1754, -76.6683, 146,  'America/New_York'],
-      ['KSAN', 'San Diego Intl',               'San Diego',     'CA', 'US', 32.7336, -117.1897, 17,  'America/Los_Angeles'],
-      ['KTPA', 'Tampa Intl',                   'Tampa',         'FL', 'US', 27.9755, -82.5332, 26,   'America/New_York'],
-      ['KAUS', 'Austin-Bergstrom Intl',        'Austin',        'TX', 'US', 30.1945, -97.6699, 542,  'America/Chicago'],
-      ['KRDU', 'Raleigh-Durham Intl',          'Raleigh',       'NC', 'US', 35.8776, -78.7875, 435,  'America/New_York'],
-      ['KPDX', 'Portland Intl',               'Portland',      'OR', 'US', 45.5887, -122.5975, 31,  'America/Los_Angeles'],
-    ] as const;
+    const lookupOa = db.prepare(`
+      SELECT name, municipality, iso_region, latitude_deg, longitude_deg, elevation_ft
+      FROM oa_airports WHERE ident = ?
+    `);
 
-    const insertMany = db.transaction(() => {
-      for (const a of airports) {
-        insertAirport.run(...a);
+    type OaRow = {
+      name: string; municipality: string | null; iso_region: string | null;
+      latitude_deg: number | null; longitude_deg: number | null; elevation_ft: number | null;
+    };
+
+    const txn = db.transaction(() => {
+      let seeded = 0;
+      for (const icao of icaos) {
+        const oa = lookupOa.get(icao) as OaRow | undefined;
+
+        if (!oa || oa.latitude_deg == null) {
+          console.log(`[Seed] WARNING: Airport ${icao} not found in oa_airports — skipping`);
+          continue;
+        }
+
+        // Extract state from iso_region (e.g., "US-CA" → "CA")
+        const state = oa.iso_region?.split('-')[1] ?? '';
+        const country = countryFromIcao(icao);
+        const timezone = timezoneFromIcao(icao);
+
+        insertAirport.run(
+          icao, oa.name, oa.municipality ?? '', state, country,
+          oa.latitude_deg, oa.longitude_deg, oa.elevation_ft ?? 0, timezone
+        );
+        seeded++;
       }
+      return seeded;
     });
-    insertMany();
-    console.log(`[Seed] ${airports.length} airports created`);
+
+    const count = txn();
+    console.log(`[Seed] ${count} airports created from oa_airports`);
   }
 }

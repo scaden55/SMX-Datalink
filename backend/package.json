@@ -8,7 +8,8 @@
     "build": "tsc && copyfiles -u 1 \"src/db/migrations/*.sql\" dist",
     "start": "node dist/index.js",
     "import:airports": "tsx scripts/import-airports.ts",
-    "import:navdata": "tsx scripts/import-navdata.ts"
+    "import:navdata": "tsx scripts/import-navdata.ts",
+    "import:schedules": "tsx scripts/import-schedules.ts"
   },
   "dependencies": {
     "@acars/shared": "*",
