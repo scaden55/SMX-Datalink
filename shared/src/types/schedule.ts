@@ -9,6 +9,8 @@ export interface Airport {
   lon: number;
   elevation: number;
   timezone: string;
+  isHub: boolean;
+  handler: string | null;
 }
 
 export type FleetStatus = 'active' | 'stored' | 'retired' | 'maintenance';
