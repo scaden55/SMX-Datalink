@@ -28,6 +28,8 @@ interface AirportRow {
   lon: number;
   elevation: number;
   timezone: string;
+  is_hub: number;
+  handler: string | null;
 }
 
 interface FleetRow {
@@ -533,6 +535,8 @@ export class ScheduleService {
       lon: row.lon,
       elevation: row.elevation,
       timezone: row.timezone,
+      isHub: row.is_hub === 1,
+      handler: row.handler,
     };
   }
 
