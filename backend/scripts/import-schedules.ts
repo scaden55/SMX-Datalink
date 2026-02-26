@@ -131,6 +131,18 @@ function timezoneFromIcao(icao: string): string {
 }
 
 // ---------------------------------------------------------------------------
+// ICAO alias map — old/non-standard codes → current oa_airports ident
+// ---------------------------------------------------------------------------
+const ICAO_ALIASES: Record<string, string> = {
+  'SPJC': 'SPIM', // Lima Jorge Chávez — ICAO changed from SPJC to SPIM in 2017
+};
+
+/** Resolve an ICAO code through the alias map, or return as-is. */
+function resolveIcao(icao: string): string {
+  return ICAO_ALIASES[icao] ?? icao;
+}
+
+// ---------------------------------------------------------------------------
 // Main
 // ---------------------------------------------------------------------------
 
@@ -195,10 +207,12 @@ function main() {
   const missingAirports: string[] = [];
 
   for (const icao of uniqueIcaos) {
-    const oa = lookupOa.get(icao) as OaRow | undefined;
+    const resolved = resolveIcao(icao);
+    const oa = lookupOa.get(resolved) as OaRow | undefined;
     if (oa) {
+      // Store under the original CSV code so route lookups work
       airportCoords.set(icao, { lat: oa.latitude_deg, lon: oa.longitude_deg });
-      airportData.set(icao, oa);
+      airportData.set(icao, { ...oa, ident: resolved });
     } else {
       missingAirports.push(icao);
     }

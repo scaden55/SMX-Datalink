@@ -79,6 +79,11 @@ export function seedDatabase(): void {
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
+    // Old/non-standard ICAO → current oa_airports ident
+    const icaoAliases: Record<string, string> = {
+      'SPJC': 'SPIM', // Lima Jorge Chávez — code changed 2017
+    };
+
     const lookupOa = db.prepare(`
       SELECT name, municipality, iso_region, latitude_deg, longitude_deg, elevation_ft
       FROM oa_airports WHERE ident = ?
@@ -92,7 +97,8 @@ export function seedDatabase(): void {
     const txn = db.transaction(() => {
       let seeded = 0;
       for (const icao of icaos) {
-        const oa = lookupOa.get(icao) as OaRow | undefined;
+        const lookupCode = icaoAliases[icao] ?? icao;
+        const oa = lookupOa.get(lookupCode) as OaRow | undefined;
 
         if (!oa || oa.latitude_deg == null) {
           console.log(`[Seed] WARNING: Airport ${icao} not found in oa_airports — skipping`);
