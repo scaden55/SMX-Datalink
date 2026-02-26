@@ -72,7 +72,9 @@ export function StatusBar() {
               {connectionStatus.applicationName}
             </span>
           ) : (
-            <span className="text-red-400/40">Offline</span>
+            <span className="text-red-400/40 truncate max-w-[200px]">
+              {connectionStatus.lastError || 'Offline'}
+            </span>
           )}
         </span>
         {flight && (

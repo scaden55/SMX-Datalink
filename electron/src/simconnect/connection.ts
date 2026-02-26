@@ -15,6 +15,7 @@ export class SimConnectManager extends EventEmitter implements ISimConnectManage
   private _simInfo: Partial<RecvOpen> = {};
   private _closing = false;
   private _loggedReadError = false;
+  private _lastError = '';
 
   constructor(private reconnectInterval = 5000) {
     super();
@@ -33,6 +34,7 @@ export class SimConnectManager extends EventEmitter implements ISimConnectManage
         : 'unknown',
       applicationName: this._simInfo.applicationName || 'unknown',
       lastUpdate: new Date().toISOString(),
+      lastError: this._lastError || undefined,
     };
   }
 
@@ -73,6 +75,7 @@ export class SimConnectManager extends EventEmitter implements ISimConnectManage
         this.handle = handle;
         this._simInfo = recvOpen;
         this._connected = true;
+        this._lastError = '';
 
         // Register definitions & start data flow
         registerAllDefinitions(handle);
@@ -87,7 +90,11 @@ export class SimConnectManager extends EventEmitter implements ISimConnectManage
         this.setupLifecycleHandlers(handle);
       })
       .catch((err: Error) => {
+        this._lastError = err.message.includes('ECONNREFUSED')
+          ? 'Waiting for MSFS...'
+          : err.message;
         console.log(`[SimConnect] Connection failed: ${err.message}`);
+        this.emit('disconnected');
         this.scheduleReconnect();
       });
   }

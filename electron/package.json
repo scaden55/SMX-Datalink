@@ -1,6 +1,6 @@
 {
   "name": "@acars/electron",
-  "version": "1.0.61",
+  "version": "1.0.70",
   "description": "SMX ACARS Desktop Client",
   "author": "SMX Virtual Airlines",
   "private": true,
@@ -33,6 +33,9 @@
     "directories": {
       "output": "../release"
     },
+    "asarUnpack": [
+      "**/regedit/vbs/**"
+    ],
     "files": [
       "dist/**/*",
       "assets/**/*"

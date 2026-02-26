@@ -1,6 +1,6 @@
 {
   "name": "acars-system",
-  "version": "1.0.61",
+  "version": "1.0.70",
   "private": true,
   "workspaces": [
     "shared",
@@ -14,6 +14,7 @@
     "dev:electron": "npm run build -w electron && npm run dev -w electron",
     "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
     "dev:all": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\" \"npm run dev:electron\"",
+    "dev:vps": "concurrently \"npm run dev:vps -w frontend\" \"npm run dev:electron\"",
     "build:shared": "npm run build -w shared",
     "build:backend": "npm run build -w backend",
     "build:frontend": "npm run build -w frontend",
@@ -21,7 +22,7 @@
     "build": "npm run build:shared && concurrently \"npm run build:backend\" \"npm run build:frontend\" \"npm run build:electron\"",
     "package": "npm run build && npm run package -w electron",
     "package:dir": "npm run build && npm run package:dir -w electron",
-    "postinstall": "node -e \"require('rcedit').rcedit(require('path').join('node_modules','electron','dist','electron.exe'),{icon:'electron/assets/icon.ico'}).then(()=>console.log('rcedit: icon stamped on electron.exe')).catch(e=>console.warn('rcedit skipped:',e.message))\""
+    "postinstall": "node -e \"try{require('rcedit').rcedit(require('path').join('node_modules','electron','dist','electron.exe'),{icon:'electron/assets/icon.ico'}).then(()=>console.log('rcedit: icon stamped on electron.exe')).catch(e=>console.warn('rcedit skipped:',e.message))}catch(e){console.warn('rcedit skipped:',e.message)}\""
   },
   "devDependencies": {
     "concurrently": "^9.1.0",

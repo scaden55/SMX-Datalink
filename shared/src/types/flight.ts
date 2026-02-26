@@ -28,6 +28,7 @@ export interface ConnectionStatus {
   simConnectVersion: string;
   applicationName: string;
   lastUpdate: string; // ISO timestamp
+  lastError?: string;
 }
 
 /** Lightweight heartbeat sent by pilot's Electron app every 30s */
