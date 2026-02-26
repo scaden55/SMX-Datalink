@@ -5,6 +5,7 @@ import { TitleBar } from './components/navigation/TitleBar';
 import { MainShell } from './components/navigation/MainShell';
 import { AuthGuard } from './components/auth/AuthGuard';
 import { Toaster } from './components/ui/Toaster';
+import { useLocalSimConnect } from './hooks/useLocalSimConnect';
 import { LoginPage } from './pages/LoginPage';
 import { RegisterPage } from './pages/RegisterPage';
 import { DispatchPage } from './pages/DispatchPage';
@@ -39,6 +40,8 @@ const FlightPlanningPage = lazy(() =>
 const PageFallback = () => <div className="flex-1 h-full bg-acars-bg" />;
 
 export function App() {
+  useLocalSimConnect();
+
   return (
     <ErrorBoundary>
     <div className="flex flex-col h-full">

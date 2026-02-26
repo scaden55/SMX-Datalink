@@ -39,6 +39,16 @@ export const useAuthStore = create<AuthState>()(
           user: data.user,
           isAuthenticated: true,
         });
+
+        // Send relay auth to Electron main process (no-op in browser)
+        if (typeof window !== 'undefined' && (window as any).electronAPI?.isElectron) {
+          (window as any).electronAPI.setRelayAuth({
+            token: data.accessToken,
+            userId: data.user.id,
+            callsign: data.user.callsign,
+            vpsUrl: getApiBase(),
+          });
+        }
       },
 
       register: async (email, password, firstName, lastName) => {
@@ -51,6 +61,16 @@ export const useAuthStore = create<AuthState>()(
           user: data.user,
           isAuthenticated: true,
         });
+
+        // Send relay auth to Electron main process (no-op in browser)
+        if (typeof window !== 'undefined' && (window as any).electronAPI?.isElectron) {
+          (window as any).electronAPI.setRelayAuth({
+            token: data.accessToken,
+            userId: data.user.id,
+            callsign: data.user.callsign,
+            vpsUrl: getApiBase(),
+          });
+        }
       },
 
       logout: () => {
