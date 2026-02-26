@@ -6,6 +6,7 @@ import { MaintenanceLogTab } from '../../components/admin/maintenance/Maintenanc
 import { CheckSchedulesTab } from '../../components/admin/maintenance/CheckSchedulesTab';
 import { AirworthinessDirectivesTab } from '../../components/admin/maintenance/AirworthinessDirectivesTab';
 import { MELDeferralsTab } from '../../components/admin/maintenance/MELDeferralsTab';
+import { ComponentsTab } from '../../components/admin/maintenance/ComponentsTab';
 
 type MaintenanceTab = 'fleet-status' | 'log' | 'schedules' | 'ads' | 'mel' | 'components';
 
@@ -56,7 +57,7 @@ export function AdminMaintenancePage() {
         {activeTab === 'schedules' && <CheckSchedulesTab />}
         {activeTab === 'ads' && <AirworthinessDirectivesTab />}
         {activeTab === 'mel' && <MELDeferralsTab />}
-        {activeTab === 'components' && <div className="panel p-6 text-acars-muted text-sm">Components — coming soon</div>}
+        {activeTab === 'components' && <ComponentsTab />}
       </div>
     </div>
   );
