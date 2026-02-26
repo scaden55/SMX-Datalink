@@ -37,7 +37,11 @@
       "WebSearch",
       "WebFetch",
       "mcp__plugin_playwright_playwright__*",
-      "mcp__plugin_context7_context7__*"
+      "mcp__plugin_context7_context7__*",
+      "Bash(npx kill-port:*)",
+      "Bash(wmic process:*)",
+      "Skill(commit-commands:commit)",
+      "Bash(bash:*)"
     ],
     "deny": [
       "Bash(taskkill //F //IM explorer.exe:*)",
