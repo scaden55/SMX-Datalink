@@ -175,6 +175,40 @@ export type {
   GenerateCargoRequest,
 } from './types/cargo.js';
 
+// Maintenance
+export type {
+  MaintenanceCheckType,
+  MaintenanceLogType,
+  MaintenanceLogStatus,
+  ADComplianceStatus,
+  MELCategory,
+  MELStatus,
+  ComponentType,
+  ComponentStatus,
+  AircraftHours,
+  MaintenanceCheckSchedule,
+  MaintenanceLogEntry,
+  AirworthinessDirective,
+  MELDeferral,
+  AircraftComponent,
+  CheckDueStatus,
+  FleetMaintenanceStatus,
+  CreateMaintenanceLogRequest,
+  UpdateMaintenanceLogRequest,
+  CreateCheckScheduleRequest,
+  UpdateCheckScheduleRequest,
+  CreateADRequest,
+  UpdateADRequest,
+  CreateMELRequest,
+  UpdateMELRequest,
+  CreateComponentRequest,
+  UpdateComponentRequest,
+  AdjustHoursRequest,
+  MaintenanceLogListResponse,
+  ADListResponse,
+  MELListResponse,
+} from './types/maintenance.js';
+
 // Utilities
 export { altitudeToColor } from './utils/altitudeColor.js';
 
