@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Wrench } from '@phosphor-icons/react';
 import { AdminPageHeader } from '../../components/admin/AdminPageHeader';
 import { FleetStatusTab } from '../../components/admin/maintenance/FleetStatusTab';
+import { MaintenanceLogTab } from '../../components/admin/maintenance/MaintenanceLogTab';
 
 type MaintenanceTab = 'fleet-status' | 'log' | 'schedules' | 'ads' | 'mel' | 'components';
 
@@ -48,7 +49,7 @@ export function AdminMaintenancePage() {
       {/* Tab content */}
       <div className="flex-1 flex flex-col overflow-hidden mt-4">
         {activeTab === 'fleet-status' && <FleetStatusTab />}
-        {activeTab === 'log' && <div className="panel p-6 text-acars-muted text-sm">Maintenance Log — coming soon</div>}
+        {activeTab === 'log' && <MaintenanceLogTab />}
         {activeTab === 'schedules' && <div className="panel p-6 text-acars-muted text-sm">Check Schedules — coming soon</div>}
         {activeTab === 'ads' && <div className="panel p-6 text-acars-muted text-sm">Airworthiness Directives — coming soon</div>}
         {activeTab === 'mel' && <div className="panel p-6 text-acars-muted text-sm">MEL Deferrals — coming soon</div>}
