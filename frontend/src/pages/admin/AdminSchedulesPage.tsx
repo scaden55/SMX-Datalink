@@ -20,6 +20,7 @@ import {
 import { api } from '../../lib/api';
 import { AdminPageHeader } from '../../components/admin/AdminPageHeader';
 import { ConfirmDialog } from '../../components/admin/ConfirmDialog';
+import { ApprovedAirportsTab } from '../../components/admin/schedules/ApprovedAirportsTab';
 
 // ─── Types ──────────────────────────────────────────────────────
 
@@ -618,7 +619,16 @@ function CloneModal({ schedule, onClone, onClose, submitting, error }: CloneModa
 
 // ─── Admin Schedules Page ───────────────────────────────────────
 
+type SchedulePageTab = 'schedules' | 'approved-airports';
+
 export function AdminSchedulesPage() {
+  const [activeTab, setActiveTab] = useState<SchedulePageTab>('schedules');
+
+  const tabs: { key: SchedulePageTab; label: string }[] = [
+    { key: 'schedules', label: 'Schedules' },
+    { key: 'approved-airports', label: 'Approved Airports' },
+  ];
+
   // Data
   const [schedules, setSchedules] = useState<ScheduleListItem[]>([]);
   const [total, setTotal] = useState(0);
@@ -892,15 +902,38 @@ export function AdminSchedulesPage() {
           { label: 'Total Bids', value: stats.totalBids, color: 'text-blue-400' },
         ]}
         actions={
-          <button
-            onClick={() => setCreateOpen(true)}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[11px] font-semibold text-emerald-400 bg-emerald-500/10 border border-emerald-400/20 hover:bg-emerald-500/20 transition-colors"
-          >
-            <Plus className="w-3.5 h-3.5" /> Add Path
-          </button>
+          activeTab === 'schedules' ? (
+            <button
+              onClick={() => setCreateOpen(true)}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[11px] font-semibold text-emerald-400 bg-emerald-500/10 border border-emerald-400/20 hover:bg-emerald-500/20 transition-colors"
+            >
+              <Plus className="w-3.5 h-3.5" /> Add Path
+            </button>
+          ) : undefined
         }
       />
 
+      {/* Tab bar */}
+      <div className="flex-none flex items-center gap-6 border-b border-acars-border">
+        {tabs.map((tab) => (
+          <button
+            key={tab.key}
+            onClick={() => setActiveTab(tab.key)}
+            className={`pb-2.5 text-xs font-medium transition-colors relative ${
+              activeTab === tab.key
+                ? 'text-blue-400'
+                : 'text-acars-muted hover:text-acars-text'
+            }`}
+          >
+            {tab.label}
+            {activeTab === tab.key && (
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-500 rounded-full" />
+            )}
+          </button>
+        ))}
+      </div>
+
+      {activeTab === 'schedules' && (<>
       {/* Charter Generation Panel */}
       <div className="panel">
         <div className="flex items-center justify-between px-4 py-3">
@@ -1252,6 +1285,9 @@ export function AdminSchedulesPage() {
           </div>
         )}
       </div>
+      </>)}
+
+      {activeTab === 'approved-airports' && <ApprovedAirportsTab />}
 
       {/* ── Modals ────────────────────────────────────────────────── */}
 
