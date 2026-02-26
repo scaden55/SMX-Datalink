@@ -88,6 +88,11 @@ interface ScheduleRow {
   bid_count: number;
   has_bid: number;
   event_name: string | null;
+  origin_handler: string | null;
+  dest_handler: string | null;
+  fare_code: string | null;
+  cargo_remarks: string | null;
+  group_class: string | null;
 }
 
 interface BidRow {
@@ -592,6 +597,11 @@ export class ScheduleService {
       bidCount: row.bid_count,
       hasBid: row.has_bid > 0,
       eventName: row.event_name ?? null,
+      originHandler: row.origin_handler ?? null,
+      destHandler: row.dest_handler ?? null,
+      fareCode: row.fare_code ?? null,
+      cargoRemarks: row.cargo_remarks ?? null,
+      groupClass: row.group_class ?? null,
     };
   }
 
