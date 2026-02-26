@@ -18,6 +18,8 @@ interface AirportRow {
   lat: number;
   lon: number;
   country: string;
+  is_hub: number;
+  handler: string | null;
 }
 
 interface OaAirportRow {
@@ -96,7 +98,7 @@ export class CharterGeneratorService {
     logger.info('CharterGen', `Force-reset generation for ${targetMonth}`);
   }
 
-  /** Generate 50–100 random charters for the given month. */
+  /** Generate 100–300 random charters for the given month. */
   generateMonthlyCharters(month?: string, force = false): { charterCount: number; eventCount: number } {
     const targetMonth = month ?? currentMonth();
 
@@ -127,21 +129,21 @@ export class CharterGeneratorService {
     }
 
     // Load hub airports (95 route-network airports)
-    const hubs = db.prepare('SELECT icao, lat, lon, country FROM airports').all() as AirportRow[];
+    const hubs = db.prepare('SELECT icao, lat, lon, country, is_hub, handler FROM airports').all() as AirportRow[];
 
     if (hubs.length === 0) {
       logger.warn('CharterGen', 'No hub airports found — skipping generation');
       return { charterCount: 0, eventCount: 0 };
     }
 
-    // Target count: random between 50–100
-    const targetCount = 50 + Math.floor(Math.random() * 51);
+    // Target count: random between 100–300
+    const targetCount = 100 + Math.floor(Math.random() * 201);
     const expiresAt = lastDayOfMonth(targetMonth);
 
     const insertStmt = db.prepare(`
       INSERT INTO scheduled_flights
-        (flight_number, dep_icao, arr_icao, aircraft_type, dep_time, arr_time, distance_nm, flight_time_min, days_of_week, is_active, charter_type, expires_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, '1234567', 1, 'generated', ?)
+        (flight_number, dep_icao, arr_icao, aircraft_type, dep_time, arr_time, distance_nm, flight_time_min, days_of_week, is_active, charter_type, expires_at, origin_handler, dest_handler)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, '1234567', 1, 'generated', ?, ?, ?)
     `);
 
     // Build weighted aircraft selection
@@ -169,17 +171,17 @@ export class CharterGeneratorService {
 
         if (roll < 0.70) {
           // Domestic: hub → same-country destination
-          origin = randomPick(hubs);
+          origin = pickWeightedAirport(hubs);
           destination = this.findRandomDestination(db, origin, maxRange, origin.country, minRunway);
         } else if (roll < 0.90) {
           // International: hub → any country
-          origin = randomPick(hubs);
+          origin = pickWeightedAirport(hubs);
           destination = this.findRandomDestination(db, origin, maxRange, null, minRunway);
         } else {
           // Global: any large airport → any within range
           const globalOrigin = this.findRandomLargeAirport(db, minRunway);
           if (!globalOrigin) continue;
-          origin = { icao: globalOrigin.ident, lat: globalOrigin.latitude_deg, lon: globalOrigin.longitude_deg, country: globalOrigin.iso_country };
+          origin = { icao: globalOrigin.ident, lat: globalOrigin.latitude_deg, lon: globalOrigin.longitude_deg, country: globalOrigin.iso_country, is_hub: 0, handler: null };
           destination = this.findRandomDestination(db, origin, maxRange, null, minRunway);
         }
 
@@ -203,9 +205,13 @@ export class CharterGeneratorService {
 
         const flightNumber = randomFlightNumber(db);
 
+        const originHandler = origin.handler ?? null;
+        const destAirport = hubs.find(h => h.icao === destination.ident);
+        const destHandler = destAirport?.handler ?? null;
         insertStmt.run(
           flightNumber, origin.icao, destination.ident, aircraft.icao_type,
           depTime, arrTime, distanceNm, flightTimeMin, expiresAt,
+          originHandler, destHandler,
         );
         charterCount++;
       }
@@ -230,7 +236,7 @@ export class CharterGeneratorService {
         const locCoords = lookupCoords(db, ac.location);
         if (!locCoords) continue;
 
-        const origin: AirportRow = { icao: ac.location, lat: locCoords.lat, lon: locCoords.lon, country: locCoords.country };
+        const origin: AirportRow = { icao: ac.location, lat: locCoords.lat, lon: locCoords.lon, country: locCoords.country, is_hub: 0, handler: locCoords.handler };
         const maxRange = Math.floor((ac.range_nm || 2000) * 0.9);
         const minRwy = minRunwayForCategory(ac.cat);
 
@@ -253,7 +259,10 @@ export class CharterGeneratorService {
           const aTime = `${String(aH).padStart(2, '0')}:${String(aM).padStart(2, '0')}`;
 
           const fn = randomFlightNumber(db);
-          insertStmt.run(fn, origin.icao, dest.ident, ac.icao_type, dTime, aTime, distNm, ftMin, expiresAt);
+          const oHandler = origin.handler ?? null;
+          const dAirport = hubs.find(h => h.icao === dest.ident);
+          const dHandler = dAirport?.handler ?? null;
+          insertStmt.run(fn, origin.icao, dest.ident, ac.icao_type, dTime, aTime, distNm, ftMin, expiresAt, oHandler, dHandler);
           charterCount++;
           locationCount++;
         }
@@ -387,6 +396,17 @@ function randomPick<T>(arr: T[]): T {
   return arr[Math.floor(Math.random() * arr.length)];
 }
 
+/** Pick a random airport with 3x weighting for hub airports. */
+function pickWeightedAirport(airports: AirportRow[]): AirportRow {
+  const totalWeight = airports.reduce((s, a) => s + (a.is_hub ? 3 : 1), 0);
+  let r = Math.random() * totalWeight;
+  for (const a of airports) {
+    r -= a.is_hub ? 3 : 1;
+    if (r <= 0) return a;
+  }
+  return airports[airports.length - 1];
+}
+
 /** Generate a unique random SMX- flight number (100–9999). */
 export function randomFlightNumber(db: ReturnType<typeof getDb>): string {
   const existing = new Set(
@@ -407,11 +427,11 @@ export function randomFlightNumber(db: ReturnType<typeof getDb>): string {
 }
 
 /** Look up airport coordinates and country from hubs or oa_airports. */
-function lookupCoords(db: ReturnType<typeof getDb>, icao: string): { lat: number; lon: number; country: string } | null {
-  const legacy = db.prepare('SELECT lat, lon, country FROM airports WHERE icao = ?').get(icao) as { lat: number; lon: number; country: string } | undefined;
+function lookupCoords(db: ReturnType<typeof getDb>, icao: string): { lat: number; lon: number; country: string; handler: string | null } | null {
+  const legacy = db.prepare('SELECT lat, lon, country, handler FROM airports WHERE icao = ?').get(icao) as { lat: number; lon: number; country: string; handler: string | null } | undefined;
   if (legacy) return legacy;
   const oa = db.prepare('SELECT latitude_deg AS lat, longitude_deg AS lon, iso_country AS country FROM oa_airports WHERE ident = ? AND latitude_deg IS NOT NULL').get(icao) as { lat: number; lon: number; country: string } | undefined;
-  return oa ?? null;
+  return oa ? { ...oa, handler: null } : null;
 }
 
 function pickWeighted(types: FleetTypeRow[], totalWeight: number): FleetTypeRow {
