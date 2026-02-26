@@ -3,6 +3,7 @@ import { AuditService } from './audit.js';
 import { NotificationService } from './notification.js';
 import { FinanceService } from './finance.js';
 import { SettingsService } from './settings.js';
+import { MaintenanceService } from './maintenance.js';
 import type { LogbookEntry, LogbookStatus, LogbookFilters } from '@acars/shared';
 
 interface LogbookRow {
@@ -48,6 +49,7 @@ const auditService = new AuditService();
 const notificationService = new NotificationService();
 const financeService = new FinanceService();
 const settingsService = new SettingsService();
+const maintenanceService = new MaintenanceService();
 
 export class PirepAdminService {
 
@@ -128,6 +130,11 @@ export class PirepAdminService {
           description: `Flight pay: ${pirep.flight_number} (${pirep.dep_icao}-${pirep.arr_icao})`,
           pirepId,
         }, reviewerId);
+
+        // Accumulate aircraft flight hours/cycles for maintenance tracking
+        if (pirep.aircraft_registration) {
+          maintenanceService.accumulateFlightHours(pirep.aircraft_registration, pirep.flight_time_min);
+        }
 
         notificationService.send({
           userId: pirep.user_id,
