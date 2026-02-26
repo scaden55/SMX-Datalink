@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from 'react';
-import { useTelemetry } from '../../hooks/useTelemetry';
+import { useDispatchTelemetry } from '../../hooks/useDispatchTelemetry';
 import { useDispatchEdit } from '../../contexts/DispatchEditContext';
 import { useFlightPlanStore } from '../../stores/flightPlanStore';
 import type { SimBriefOFP, FlightPlanFormData } from '@acars/shared';
@@ -248,9 +248,8 @@ function ReadOnlyField({ label, value, warn }: { label: string; value: string; w
 /* ── Main component ─────────────────────────────────────────────── */
 
 export function FlightDetailSections({ ofp, formData }: FlightDetailSectionsProps) {
-  const telemetry = useTelemetry();
-  const { editableFields, canEdit, canEditFuel, canEditMEL, canEditRoute, isOwnFlight, onFieldChange } = useDispatchEdit();
-  const aircraft = isOwnFlight ? telemetry.aircraft : null;
+  const { aircraft } = useDispatchTelemetry();
+  const { editableFields, canEdit, canEditFuel, canEditMEL, canEditRoute, onFieldChange } = useDispatchEdit();
   const flightPlan = useFlightPlanStore((s) => s.flightPlan);
 
   const w = ofp?.weights;

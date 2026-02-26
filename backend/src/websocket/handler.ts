@@ -60,6 +60,12 @@ export function setupWebSocket(
        LIMIT 1`,
     );
 
+  // Look up a pilot's active bid by user_id (for dispatch telemetry relay)
+  const findActiveBidByUser = () =>
+    getDb().prepare(
+      `SELECT id FROM active_bids WHERE user_id = ? AND flight_plan_phase = 'active' LIMIT 1`,
+    );
+
   // Wire up VATSIM broadcast callbacks
   if (vatsimService) {
     vatsimService.setOnUpdate((snapshot: VatsimDataSnapshot) => {
@@ -334,6 +340,16 @@ export function setupWebSocket(
         for (const sid of observers) {
           io.to(sid).emit('telemetry:update', snapshot);
         }
+      }
+
+      // Relay telemetry to dispatch room subscribers watching this pilot's flight
+      try {
+        const bid = findActiveBidByUser().get(socket.user.userId) as { id: number } | undefined;
+        if (bid) {
+          io.to(`bid:${bid.id}`).emit('dispatch:telemetry', snapshot);
+        }
+      } catch {
+        // Non-critical — don't break relay
       }
     });
 

@@ -6,10 +6,11 @@ import { useAuthStore } from '../stores/authStore';
 import { useFlightPlanStore } from '../stores/flightPlanStore';
 import { useCargoStore } from '../stores/cargoStore';
 import { useSocketStore } from '../stores/socketStore';
+import { useTelemetryStore } from '../stores/telemetryStore';
 import { DispatchEditProvider } from '../contexts/DispatchEditContext';
 import { api } from '../lib/api';
 import { stepsToWaypoints } from '../components/planning/simbrief-parser';
-import type { DispatchFlight, DispatchFlightsResponse, Airport, VatsimFlightStatus, RegulatoryAssessment, CargoManifest } from '@acars/shared';
+import type { DispatchFlight, DispatchFlightsResponse, Airport, VatsimFlightStatus, RegulatoryAssessment, CargoManifest, TelemetrySnapshot } from '@acars/shared';
 
 export function DispatchPage() {
   const navigate = useNavigate();
@@ -223,6 +224,31 @@ export function DispatchPage() {
     };
   }, [setFlightPlan, setProgress, setOfp, setActiveBidId]);
 
+  // Subscribe to dispatch:telemetry for the selected bid (remote pilot data)
+  const isOwnFlight = user?.id === selectedFlight?.bid?.userId;
+  const setRemoteSnapshot = useTelemetryStore((s) => s.setRemoteSnapshot);
+  const clearRemoteSnapshot = useTelemetryStore((s) => s.clearRemoteSnapshot);
+
+  useEffect(() => {
+    if (!socket || !selectedBidId || isOwnFlight) {
+      clearRemoteSnapshot();
+      return;
+    }
+
+    socket.emit('dispatch:subscribe', selectedBidId);
+
+    const handleTelemetry = (data: TelemetrySnapshot) => {
+      setRemoteSnapshot(data);
+    };
+    socket.on('dispatch:telemetry', handleTelemetry);
+
+    return () => {
+      socket.off('dispatch:telemetry', handleTelemetry);
+      socket.emit('dispatch:unsubscribe', selectedBidId);
+      clearRemoteSnapshot();
+    };
+  }, [socket, selectedBidId, isOwnFlight, setRemoteSnapshot, clearRemoteSnapshot]);
+
   const handleSelectFlight = useCallback((bidId: number) => {
     setSelectedBidId(bidId);
   }, []);
@@ -314,8 +340,6 @@ export function DispatchPage() {
       </div>
     );
   }
-
-  const isOwnFlight = user?.id === selectedFlight?.bid?.userId;
 
   return (
     <DispatchEditProvider

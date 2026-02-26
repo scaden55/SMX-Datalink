@@ -1,6 +1,5 @@
 import { useFlightPlanStore } from '../../stores/flightPlanStore';
-import { useTelemetry } from '../../hooks/useTelemetry';
-import { useDispatchEdit } from '../../contexts/DispatchEditContext';
+import { useDispatchTelemetry } from '../../hooks/useDispatchTelemetry';
 import type { SimBriefOFP, FlightPlanFormData } from '@acars/shared';
 
 interface FlightHeaderProps {
@@ -30,9 +29,7 @@ export function FlightHeader({ ofp, formData }: FlightHeaderProps) {
   const flightPlan = useFlightPlanStore((s) => s.flightPlan);
   const progress = useFlightPlanStore((s) => s.progress);
   const airports = useFlightPlanStore((s) => s.airports);
-  const telemetry = useTelemetry();
-  const { isOwnFlight } = useDispatchEdit();
-  const aircraft = isOwnFlight ? telemetry.aircraft : null;
+  const { aircraft } = useDispatchTelemetry();
 
   const origin = flightPlan?.origin ?? 'XXXX';
   const destination = flightPlan?.destination ?? 'XXXX';

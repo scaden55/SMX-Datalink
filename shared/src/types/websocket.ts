@@ -37,6 +37,7 @@ export interface ServerToClientEvents {
   'track:point': (data: { bidId: number; point: TrackPoint }) => void;
   'flight:completed': (data: { bidId: number; logbookId: number }) => void;
   'dispatch:released': (data: { bidId: number; changedFields: string[] }) => void;
+  'dispatch:telemetry': (data: TelemetrySnapshot) => void;
   'relay:start': () => void;
   'relay:stop': () => void;
   'flights:active': (flights: ActiveFlightHeartbeat[]) => void;

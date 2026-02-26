@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDispatchEdit } from '../../contexts/DispatchEditContext';
-import { useTelemetry } from '../../hooks/useTelemetry';
+import { useDispatchTelemetry } from '../../hooks/useDispatchTelemetry';
 import { useFlightPlanStore } from '../../stores/flightPlanStore';
 import { useCargoStore } from '../../stores/cargoStore';
 import { api } from '../../lib/api';
@@ -23,11 +23,10 @@ function DiamondIcon({ active }: { active: boolean }) {
  */
 export function DispatchActionBar() {
   const navigate = useNavigate();
-  const telemetry = useTelemetry();
+  const { flight } = useDispatchTelemetry();
   const activeBidId = useFlightPlanStore((s) => s.activeBidId);
   const clearActiveBid = useFlightPlanStore((s) => s.clearActiveBid);
   const { canEdit, isOwnFlight, hasUnreleasedChanges, releasing, releaseDispatch, editableFields } = useDispatchEdit();
-  const flight = isOwnFlight ? telemetry.flight : null;
   const manifest = useCargoStore((s) => s.manifest);
 
   const [showDialog, setShowDialog] = useState(false);

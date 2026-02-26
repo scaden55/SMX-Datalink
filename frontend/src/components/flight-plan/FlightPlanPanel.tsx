@@ -1,4 +1,4 @@
-import { useTelemetry } from '../../hooks/useTelemetry';
+import { useDispatchTelemetry } from '../../hooks/useDispatchTelemetry';
 import { useDispatchEdit } from '../../contexts/DispatchEditContext';
 import { FlightHeader } from './FlightHeader';
 import { ScenarioBar } from './ScenarioBar';
@@ -18,9 +18,8 @@ interface FlightPlanPanelProps {
 }
 
 export function FlightPlanPanel({ ofp, formData, ruleChips }: FlightPlanPanelProps) {
-  const telemetry = useTelemetry();
-  const { canEdit, isOwnFlight, saving, lastSavedAt } = useDispatchEdit();
-  const aircraft = isOwnFlight ? telemetry.aircraft : null;
+  const { aircraft } = useDispatchTelemetry();
+  const { canEdit, saving, lastSavedAt } = useDispatchEdit();
 
   return (
     <div className="bg-acars-bg">
