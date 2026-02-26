@@ -20,6 +20,7 @@ import { AdminFinancesPage } from './pages/admin/AdminFinancesPage';
 import { AdminReportsPage } from './pages/admin/AdminReportsPage';
 import { AdminSettingsPage } from './pages/admin/AdminSettingsPage';
 import { AdminAuditPage } from './pages/admin/AdminAuditPage';
+import { AdminMaintenancePage } from './pages/admin/AdminMaintenancePage';
 
 // Lazy-load pages that import Leaflet/react-leaflet to split the map chunk
 const DashboardPage = lazy(() =>
@@ -72,6 +73,7 @@ export function App() {
             <Route element={<AuthGuard minRole="admin" />}>
               <Route element={<MainShell />}>
                 <Route path="/admin/users" element={<AdminUsersPage />} />
+                <Route path="/admin/maintenance" element={<AdminMaintenancePage />} />
                 <Route path="/admin/finances" element={<AdminFinancesPage />} />
                 <Route path="/admin/reports" element={<AdminReportsPage />} />
                 <Route path="/admin/settings" element={<AdminSettingsPage />} />

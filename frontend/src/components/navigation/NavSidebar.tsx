@@ -19,6 +19,7 @@ import {
   Bell,
   SignOut,
   Shield,
+  Wrench,
 } from '@phosphor-icons/react';
 import { useUIStore } from '../../stores/uiStore';
 import { useTelemetry } from '../../hooks/useTelemetry';
@@ -51,6 +52,7 @@ const dispatcherAdminItems: NavItem[] = [
 ];
 
 const adminOnlyItems: NavItem[] = [
+  { to: '/admin/maintenance', label: 'Maintenance', icon: Wrench },
   { to: '/admin/users', label: 'Users', icon: Users },
   { to: '/admin/finances', label: 'Finances', icon: CurrencyDollar },
   { to: '/admin/reports', label: 'Admin Reports', icon: ChartBar },
