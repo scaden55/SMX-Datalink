@@ -140,7 +140,7 @@ export function adminAirportsRouter(): Router {
         return;
       }
 
-      const country = countryFromIcao(icaoUpper);
+      const country = oa.iso_country ?? countryFromIcao(icaoUpper);
       const timezone = timezoneFromIcao(icaoUpper);
       const state = oa.iso_region?.replace(/^[A-Z]{2}-/, '') ?? '';
       const hubValue = isHub ? 1 : 0;
