@@ -61,27 +61,35 @@ const adminOnlyItems: NavItem[] = [
 ];
 
 function ConnectionDot({ collapsed }: { collapsed: boolean }) {
-  const { connected, flight } = useTelemetry();
+  const { connected, connectionStatus, flight } = useTelemetry();
 
   let color = 'bg-red-500';
   let textColor = 'text-red-400/70';
   let label = 'Disconnected';
+  let tooltip = connectionStatus.lastError || 'SimConnect not connected';
 
   if (connected && flight) {
     color = 'bg-emerald-500';
     textColor = 'text-emerald-400/70';
     label = 'SimConnect Live';
+    tooltip = `Connected to ${connectionStatus.applicationName}`;
   } else if (connected) {
     color = 'bg-amber-500';
     textColor = 'text-amber-400/70';
     label = 'Sim Connected';
+    tooltip = `Connected to ${connectionStatus.applicationName}`;
   }
 
   return (
-    <span className={`flex items-center gap-2 ${collapsed ? 'justify-center' : ''}`}>
-      <span className={`inline-block h-2 w-2 rounded-full shrink-0 ${color}`} />
+    <span className={`flex items-center gap-2 ${collapsed ? 'justify-center' : ''}`} title={tooltip}>
+      <span className={`inline-block h-2 w-2 rounded-full shrink-0 ${color} ${!connected ? 'animate-pulse' : ''}`} />
       {!collapsed && (
-        <span className={`text-[10px] truncate ${textColor}`}>{label}</span>
+        <span className={`text-[10px] truncate ${textColor}`}>
+          {label}
+          {!connected && connectionStatus.lastError && (
+            <span className="block text-[9px] text-acars-muted/50 truncate">{connectionStatus.lastError}</span>
+          )}
+        </span>
       )}
     </span>
   );

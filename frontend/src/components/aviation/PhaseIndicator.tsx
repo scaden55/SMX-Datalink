@@ -25,7 +25,8 @@ interface PhaseIndicatorProps {
  * color-coded styling matching aviation conventions.
  */
 export function PhaseIndicator({ phase, className }: PhaseIndicatorProps) {
-  const style = PHASE_STYLES[phase.toLowerCase()] ?? PHASE_STYLES.preflight;
+  const key = (phase || 'preflight').toLowerCase();
+  const style = PHASE_STYLES[key] ?? PHASE_STYLES.preflight;
 
   return (
     <span
@@ -37,7 +38,7 @@ export function PhaseIndicator({ phase, className }: PhaseIndicatorProps) {
       )}
     >
       <span className={cn('w-1.5 h-1.5 rounded-full', style.text.replace('text-', 'bg-'))} />
-      {phase.replace('_', ' ')}
+      {(phase || 'preflight').replace('_', ' ')}
     </span>
   );
 }

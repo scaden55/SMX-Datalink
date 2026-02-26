@@ -54,20 +54,25 @@ export function readEngine(data: RawBuffer): EngineData {
   return { numberOfEngines, engines };
 }
 
+/** Safe FLOAT64 read — returns 0 if buffer is exhausted */
+function safeFloat64(data: RawBuffer): number {
+  try { return data.readFloat64(); } catch { return 0; }
+}
+
 /**
  * Reads fuel data. Must match FUEL_VARS order exactly.
  */
 export function readFuel(data: RawBuffer): FuelData {
-  const totalQuantityWeight = data.readFloat64();
-  const totalQuantityGallons = data.readFloat64();
-  const totalCapacityGallons = data.readFloat64();
+  const totalQuantityWeight = safeFloat64(data);
+  const totalQuantityGallons = safeFloat64(data);
+  const totalCapacityGallons = safeFloat64(data);
 
-  const leftQty = data.readFloat64();
-  const rightQty = data.readFloat64();
-  const centerQty = data.readFloat64();
-  const leftCap = data.readFloat64();
-  const rightCap = data.readFloat64();
-  const centerCap = data.readFloat64();
+  const leftQty = safeFloat64(data);
+  const rightQty = safeFloat64(data);
+  const centerQty = safeFloat64(data);
+  const leftCap = safeFloat64(data);
+  const rightCap = safeFloat64(data);
+  const centerCap = safeFloat64(data);
 
   const tanks: FuelTank[] = [
     { name: 'Left', quantityGallons: leftQty, capacityGallons: leftCap },

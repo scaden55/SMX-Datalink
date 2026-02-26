@@ -64,10 +64,10 @@ export const FUEL_VARS: SimVarDefinition[] = [
   { name: 'FUEL TOTAL CAPACITY', units: 'gallons', dataType: SimConnectDataType.FLOAT64 },
   { name: 'FUEL LEFT QUANTITY', units: 'gallons', dataType: SimConnectDataType.FLOAT64 },
   { name: 'FUEL RIGHT QUANTITY', units: 'gallons', dataType: SimConnectDataType.FLOAT64 },
-  { name: 'FUEL CENTER QUANTITY', units: 'gallons', dataType: SimConnectDataType.FLOAT64 },
+  { name: 'FUEL TANK CENTER QUANTITY', units: 'gallons', dataType: SimConnectDataType.FLOAT64 },
   { name: 'FUEL LEFT CAPACITY', units: 'gallons', dataType: SimConnectDataType.FLOAT64 },
   { name: 'FUEL RIGHT CAPACITY', units: 'gallons', dataType: SimConnectDataType.FLOAT64 },
-  { name: 'FUEL CENTER CAPACITY', units: 'gallons', dataType: SimConnectDataType.FLOAT64 },
+  { name: 'FUEL TANK CENTER CAPACITY', units: 'gallons', dataType: SimConnectDataType.FLOAT64 },
 ];
 
 /** Flight state SimVars */

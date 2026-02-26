@@ -326,7 +326,7 @@ function LiveAircraftMarker({
     // Escape HTML to prevent XSS from telemetry data
     const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     const safeAtcId = esc(aircraft.atcId || 'Unknown');
-    const safePhase = flight ? esc(flight.phase.replace('_', ' ')) : '';
+    const safePhase = flight?.phase ? esc(flight.phase.replace('_', ' ')) : '';
 
     const popupContent = `
       <div style="font-family: Inter, system-ui, sans-serif; font-feature-settings: 'tnum'; font-size: 11px; color: #e6e9ee; background: var(--bg-panel); padding: 8px 10px; border-radius: 6px; line-height: 1.6; min-width: 140px; border: 1px solid var(--border-panel);">

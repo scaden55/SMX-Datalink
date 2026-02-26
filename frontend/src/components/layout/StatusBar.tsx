@@ -41,7 +41,7 @@ function ActiveFlightPill() {
     >
       <AirplaneTilt className="w-2.5 h-2.5" />
       <span className="font-medium uppercase tracking-wide">
-        {flight.phase.replace('_', ' ')}
+        {flight.phase?.replace('_', ' ') ?? 'IDLE'}
       </span>
       <span className="text-emerald-400/40">|</span>
       <span className="font-mono tabular-nums">

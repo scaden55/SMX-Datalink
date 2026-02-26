@@ -18,6 +18,7 @@ export class SimConnectManager extends EventEmitter implements ISimConnectManage
   private _simInfo: Partial<RecvOpen> = {};
   private _closing = false;
   private _loggedReadError = false;
+  private _lastError = '';
 
   get connected(): boolean {
     return this._connected;
@@ -32,6 +33,7 @@ export class SimConnectManager extends EventEmitter implements ISimConnectManage
         : 'unknown',
       applicationName: this._simInfo.applicationName || 'unknown',
       lastUpdate: new Date().toISOString(),
+      lastError: this._lastError || undefined,
     };
   }
 
@@ -72,6 +74,7 @@ export class SimConnectManager extends EventEmitter implements ISimConnectManage
         this.handle = handle;
         this._simInfo = recvOpen;
         this._connected = true;
+        this._lastError = '';
 
         // Register definitions & start data flow
         registerAllDefinitions(handle);
@@ -86,7 +89,13 @@ export class SimConnectManager extends EventEmitter implements ISimConnectManage
         this.setupLifecycleHandlers(handle);
       })
       .catch((err: Error) => {
-        logger.info('SimConnect', `Connection failed: ${err.message}`);
+        const msg = err.message || String(err) || 'Unknown error';
+        const isNormal = msg.includes('ECONNREFUSED') || msg.includes('pipe')
+          || msg.includes('AggregateError') || err.name === 'AggregateError'
+          || !msg || msg === 'Unknown error';
+        this._lastError = isNormal ? 'Waiting for MSFS...' : msg;
+        logger.info('SimConnect', `Connection failed: ${msg}`);
+        this.emit('disconnected');
         this.scheduleReconnect();
       });
   }

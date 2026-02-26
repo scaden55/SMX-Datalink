@@ -90,10 +90,12 @@ export class SimConnectManager extends EventEmitter implements ISimConnectManage
         this.setupLifecycleHandlers(handle);
       })
       .catch((err: Error) => {
-        this._lastError = err.message.includes('ECONNREFUSED')
-          ? 'Waiting for MSFS...'
-          : err.message;
-        console.log(`[SimConnect] Connection failed: ${err.message}`);
+        const msg = err.message || String(err) || 'Unknown error';
+        const isNormal = msg.includes('ECONNREFUSED') || msg.includes('pipe')
+          || msg.includes('AggregateError') || err.name === 'AggregateError'
+          || !msg || msg === 'Unknown error';
+        this._lastError = isNormal ? 'Waiting for MSFS...' : msg;
+        console.log(`[SimConnect] Connection failed: ${msg}`);
         this.emit('disconnected');
         this.scheduleReconnect();
       });

@@ -4,6 +4,7 @@ import * as path from 'path';
 import { IpcChannels } from './ipc-channels';
 import type { ISimConnectManager } from './simconnect/types';
 import { NullSimConnectManager } from './simconnect/null-manager';
+import { FlightPhaseService } from './simconnect/flight-phase';
 import { VpsRelay } from './relay';
 
 // Set AppUserModelId early so Windows uses our icon, not Electron's default
@@ -388,12 +389,14 @@ app.whenReady().then(async () => {
   createWindow();
 
   // ── SimConnect ─────────────────────────────────────────────
+  let simConnectLoadError: string | undefined;
   try {
     const { SimConnectManager } = require('./simconnect/connection');
     simConnect = new SimConnectManager();
-    console.log('[Electron] SimConnect module loaded');
+    console.log('[Electron] SimConnect module loaded successfully');
   } catch (err) {
-    console.warn('[Electron] SimConnect not available:', (err as Error).message);
+    simConnectLoadError = (err as Error).message;
+    console.warn('[Electron] SimConnect not available:', simConnectLoadError);
     simConnect = new NullSimConnectManager();
   }
 
@@ -402,8 +405,19 @@ app.whenReady().then(async () => {
 
   sim.connect();
 
+  // Send initial connection status to renderer as soon as the window is ready
+  mainWindow!.webContents.on('did-finish-load', () => {
+    const status = sim.getConnectionStatus();
+    if (simConnectLoadError) {
+      status.lastError = `Module load failed: ${simConnectLoadError}`;
+    }
+    mainWindow?.webContents.send(IpcChannels.SIM_STATUS, status);
+  });
+
   // Accumulate latest data from each SimConnect group
   const latestData: Record<string, unknown> = {};
+  const phaseService = new FlightPhaseService();
+
   sim.on('positionUpdate', (data) => { latestData.position = data; });
   sim.on('engineUpdate', (data) => { latestData.engine = data; });
   sim.on('fuelUpdate', (data) => { latestData.fuel = data; });
@@ -412,22 +426,44 @@ app.whenReady().then(async () => {
   sim.on('radioUpdate', (data) => { latestData.radio = data; });
   sim.on('aircraftInfoUpdate', (data) => { latestData.aircraftInfo = data; });
 
+  sim.on('simStart', () => { phaseService.reset(); });
+
   // Broadcast composed snapshot to renderer at poll interval
   sim.on('connected', (status) => {
     mainWindow?.webContents.send(IpcChannels.SIM_STATUS, status);
     if (!telemetryInterval) {
       telemetryInterval = setInterval(() => {
         if (!sim.connected || !mainWindow) return;
+
+        // Flatten radio + aircraftInfo into aircraft to match AircraftData shape
+        const radio = (latestData.radio ?? {}) as Record<string, unknown>;
+        const info = (latestData.aircraftInfo ?? {}) as Record<string, unknown>;
+        const position = (latestData.position ?? {}) as Record<string, number>;
+        const flightState = (latestData.flightState ?? {}) as Record<string, unknown>;
+        const engine = (latestData.engine ?? {}) as Record<string, unknown>;
+
+        // Compute flight phase from accumulated telemetry
+        const engines = (engine.engines ?? []) as Array<{ n1: number }>;
+        const phase = phaseService.update({
+          groundSpeed: position.groundSpeed ?? 0,
+          verticalSpeed: position.verticalSpeed ?? 0,
+          altitude: position.altitude ?? 0,
+          simOnGround: (flightState.simOnGround as boolean) ?? true,
+          gearHandlePosition: (flightState.gearHandlePosition as boolean) ?? false,
+          engineN1: engines[0]?.n1 ?? 0,
+          parkingBrake: (flightState.parkingBrake as boolean) ?? true,
+        });
+
         const snapshot = {
           aircraft: {
             position: latestData.position ?? {},
             autopilot: latestData.autopilot ?? {},
-            radio: latestData.radio ?? {},
-            info: latestData.aircraftInfo ?? {},
+            ...radio,   // transponder, com1, com2, nav1, nav2
+            ...info,     // title, atcId, atcType, atcModel
           },
           engine: latestData.engine ?? {},
           fuel: latestData.fuel ?? {},
-          flight: latestData.flightState ?? {},
+          flight: { ...flightState, phase },
           timestamp: new Date().toISOString(),
         };
         mainWindow!.webContents.send(IpcChannels.SIM_TELEMETRY, snapshot);

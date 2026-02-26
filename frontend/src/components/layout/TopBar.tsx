@@ -30,7 +30,7 @@ export function TopBar() {
             <Badge variant="red">DISCONNECTED</Badge>
           )}
           {flight && (
-            <Badge variant="amber">{flight.phase.replace('_', ' ')}</Badge>
+            <Badge variant="amber">{flight.phase?.replace('_', ' ') ?? 'IDLE'}</Badge>
           )}
         </div>
       </div>
