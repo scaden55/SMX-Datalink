@@ -168,9 +168,9 @@ export class MaintenanceService {
             dueAtHours = hours.hours_at_last_a + check.interval_hours;
             remainingHours = dueAtHours - hours.total_hours;
           }
-          // A checks: overflight tolerance applies
+          // A checks: overflight tolerance applies (% of interval, not absolute hours)
           if (dueAtHours != null && remainingHours != null) {
-            const overflightLimit = dueAtHours + dueAtHours * overflightPct;
+            const overflightLimit = dueAtHours + check.interval_hours! * overflightPct;
             if (hours.total_hours > overflightLimit) {
               isOverdue = true;
             } else if (hours.total_hours > dueAtHours) {
@@ -184,9 +184,9 @@ export class MaintenanceService {
             dueAtHours = hours.hours_at_last_b + check.interval_hours;
             remainingHours = dueAtHours - hours.total_hours;
           }
-          // B checks: overflight tolerance applies
+          // B checks: overflight tolerance applies (% of interval, not absolute hours)
           if (dueAtHours != null && remainingHours != null) {
-            const overflightLimit = dueAtHours + dueAtHours * overflightPct;
+            const overflightLimit = dueAtHours + check.interval_hours! * overflightPct;
             if (hours.total_hours > overflightLimit) {
               isOverdue = true;
             } else if (hours.total_hours > dueAtHours) {
