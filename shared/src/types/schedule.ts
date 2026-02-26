@@ -168,6 +168,11 @@ export interface ScheduledFlight {
   depLon: number | null;
   arrLat: number | null;
   arrLon: number | null;
+  originHandler: string | null;
+  destHandler: string | null;
+  fareCode: string | null;
+  cargoRemarks: string | null;
+  groupClass: string | null;
 }
 
 export interface CreateCharterRequest {
