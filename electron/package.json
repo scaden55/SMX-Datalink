@@ -1,6 +1,6 @@
 {
   "name": "@acars/electron",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "SMX ACARS Desktop Client",
   "author": "SMX Virtual Airlines",
   "private": true,
