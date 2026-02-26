@@ -53,6 +53,12 @@ const standalonePkg = {
   dependencies: { ...backendPkg.dependencies },
 };
 
+// Carry over optionalDependencies (node-simconnect) so it's available
+// in the Electron exe for SimConnect communication with MSFS.
+if (backendPkg.optionalDependencies) {
+  standalonePkg.optionalDependencies = { ...backendPkg.optionalDependencies };
+}
+
 // Remove workspace reference — we install @acars/shared manually
 delete standalonePkg.dependencies['@acars/shared'];
 

@@ -60,6 +60,7 @@
       "repo": "SMX-Datalink"
     },
     "nsis": {
+      "artifactName": "SMX-ACARS-Setup-${version}.${ext}",
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
       "installerIcon": "assets/icon.ico",

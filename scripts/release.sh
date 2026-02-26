@@ -43,7 +43,7 @@ cd "$ROOT"
 VPS_HOST="138.197.127.39"
 VPS_USER="root"
 VPS_PATH="/opt/sma-acars"
-INSTALLER="release/SMX ACARS Setup ${VERSION}.exe"
+INSTALLER="release/SMX-ACARS-Setup-${VERSION}.exe"
 
 # ── Preflight checks ──────────────────────────────────────────
 
@@ -112,7 +112,16 @@ step 6 "Deploying backend to VPS (${VPS_HOST})"
 
 # Upload new dist
 scp -r "$ROOT/backend/dist" "${VPS_USER}@${VPS_HOST}:${VPS_PATH}/dist-new" || fail "SCP dist failed"
-scp "$ROOT/backend/package.json" "${VPS_USER}@${VPS_HOST}:${VPS_PATH}/package-new.json" || fail "SCP package.json failed"
+
+# Create a VPS-specific package.json that strips optionalDependencies
+# (node-simconnect is Windows-only and fails to compile on Linux)
+node -e "
+  const pkg = JSON.parse(require('fs').readFileSync('$ROOT/backend/package.json', 'utf8'));
+  delete pkg.optionalDependencies;
+  delete pkg.devDependencies;
+  require('fs').writeFileSync('/tmp/vps-package.json', JSON.stringify(pkg, null, 2));
+"
+scp /tmp/vps-package.json "${VPS_USER}@${VPS_HOST}:${VPS_PATH}/package-new.json" || fail "SCP package.json failed"
 
 # Swap and restart (sleep + fuser to ensure port 3001 is released before restart)
 ssh "${VPS_USER}@${VPS_HOST}" "cd ${VPS_PATH} && \
@@ -152,6 +161,7 @@ ok "Pushed v${VERSION} with tag"
 step 8 "Creating GitHub Release"
 gh release create "v${VERSION}" \
   "$ROOT/$INSTALLER" \
+  "$ROOT/release/latest.yml" \
   --repo scaden55/SMX-Datalink \
   --title "SMX ACARS v${VERSION}" \
   --notes "## SMX ACARS v${VERSION}
@@ -168,5 +178,5 @@ ok "Release published"
 echo ""
 echo -e "${GREEN}═══ Release v${VERSION} complete ═══${NC}"
 echo -e "  Installer: ${INSTALLER}"
-echo -e "  Download:  https://github.com/scaden55/SMX-Datalink/releases/download/v${VERSION}/SMX.ACARS.Setup.${VERSION}.exe"
+echo -e "  Download:  https://github.com/scaden55/SMX-Datalink/releases/download/v${VERSION}/SMX-ACARS-Setup-${VERSION}.exe"
 echo -e "  VPS:       http://${VPS_HOST}:3001"

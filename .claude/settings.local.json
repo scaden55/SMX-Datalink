@@ -150,7 +150,9 @@
       "Bash(which:*)",
       "WebFetch(domain:www.electronjs.org)",
       "Bash(ie4uinit.exe:*)",
-      "Bash(npm ls:*)"
+      "Bash(npm ls:*)",
+      "WebFetch(domain:www.naa.edu)",
+      "WebFetch(domain:en.wikipedia.org)"
     ]
   },
   "hooks": {

@@ -1,6 +1,5 @@
 import { Router } from 'express';
 import { authMiddleware } from '../middleware/auth.js';
-import { logger } from '../lib/logger.js';
 
 const FAA_NAS_URL = 'https://nasstatus.faa.gov/api/airport-events';
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
@@ -22,7 +21,7 @@ export function faaRouter(): Router {
 
       const upstream = await fetch(FAA_NAS_URL);
       if (!upstream.ok) {
-        logger.error('FAA', `Upstream returned ${upstream.status}`);
+        console.error(`[FAA] Upstream returned ${upstream.status}`);
         // Return stale cache if available
         if (cachedData) {
           res.json(cachedData);
@@ -37,7 +36,7 @@ export function faaRouter(): Router {
       cachedAt = now;
       res.json(json);
     } catch (err) {
-      logger.error('FAA', 'Proxy error', err);
+      console.error('[FAA] Proxy error:', err);
       // Return stale cache on network error
       if (cachedData) {
         res.json(cachedData);
