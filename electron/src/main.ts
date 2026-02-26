@@ -378,7 +378,13 @@ app.whenReady().then(async () => {
 
   // VPS relay — started when renderer sends auth info after login
   ipcMain.handle(IpcChannels.RELAY_AUTH, (_event, data: { token: string; userId: number; callsign: string; vpsUrl: string }) => {
-    if (vpsRelay) vpsRelay.stop();
+    if (vpsRelay) {
+      // Token refresh — just update the auth, don't recreate
+      vpsRelay.updateAuth(data.token);
+      return true;
+    }
+
+    // Initial setup — create new relay
     vpsRelay = new VpsRelay(sim, {
       vpsUrl: data.vpsUrl,
       heartbeatIntervalMs: 30_000,

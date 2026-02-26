@@ -72,13 +72,21 @@ const PLANE_SVG = (heading: number, size: number, color: string, glow: boolean) 
       fill="${color}" stroke="rgba(0,0,0,0.3)" stroke-width="0.5"/>
   </svg>`;
 
-function createActiveFlightIcon(heading: number): L.DivIcon {
-  return L.divIcon({
-    html: PLANE_SVG(heading, 28, '#3b82f6', true),
-    className: '',
-    iconSize: [28, 28],
-    iconAnchor: [14, 14],
-  });
+const activeFlightIconCache = new Map<number, L.DivIcon>();
+
+function getActiveFlightIcon(heading: number): L.DivIcon {
+  const rounded = Math.round(heading / 5) * 5;
+  let icon = activeFlightIconCache.get(rounded);
+  if (!icon) {
+    icon = L.divIcon({
+      html: PLANE_SVG(rounded, 28, '#3b82f6', true),
+      className: '',
+      iconSize: [28, 28],
+      iconAnchor: [14, 14],
+    });
+    activeFlightIconCache.set(rounded, icon);
+  }
+  return icon;
 }
 
 // ─── Sidebar Component ──────────────────────────────────────
@@ -710,7 +718,7 @@ export function LiveMapPage() {
           <Marker
             key={af.userId}
             position={[af.latitude, af.longitude]}
-            icon={createActiveFlightIcon(af.heading)}
+            icon={getActiveFlightIcon(af.heading)}
           >
             <Tooltip direction="top" offset={[0, -14]} opacity={0.95}>
               <span className="font-mono text-xs">{af.callsign} · FL{Math.round(af.altitude / 100)}</span>

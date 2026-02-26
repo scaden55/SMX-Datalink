@@ -307,7 +307,19 @@ export function setupWebSocket(
 
     socket.on('flight:heartbeat', (data: ActiveFlightHeartbeat) => {
       if (!socket.user) return;
-      activeFlights.set(socket.user.userId, data);
+      const sanitized: ActiveFlightHeartbeat = {
+        userId: socket.user.userId,
+        callsign: socket.user.callsign,
+        aircraftType: String(data.aircraftType || '').slice(0, 64),
+        latitude: Number.isFinite(data.latitude) ? data.latitude : 0,
+        longitude: Number.isFinite(data.longitude) ? data.longitude : 0,
+        altitude: Number.isFinite(data.altitude) ? data.altitude : 0,
+        heading: Number.isFinite(data.heading) ? data.heading : 0,
+        groundSpeed: Number.isFinite(data.groundSpeed) ? data.groundSpeed : 0,
+        phase: String(data.phase || 'unknown').slice(0, 32),
+        timestamp: new Date().toISOString(),
+      };
+      activeFlights.set(socket.user.userId, sanitized);
       pilotSockets.set(socket.user.userId, socket.id);
       const flights = Array.from(activeFlights.values());
       for (const sid of livemapSubscribers) {
@@ -352,6 +364,11 @@ export function setupWebSocket(
         activeFlights.delete(socket.user.userId);
         pilotSockets.delete(socket.user.userId);
         flightObservers.delete(socket.user.userId);
+        // Broadcast updated list so livemap removes the disconnected pilot
+        const flights = Array.from(activeFlights.values());
+        for (const sid of livemapSubscribers) {
+          io.to(sid).emit('flights:active', flights);
+        }
       }
       // Remove from all observer sets and signal relay:stop if needed
       for (const [pilotUserId, observers] of flightObservers) {

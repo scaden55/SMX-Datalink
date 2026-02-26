@@ -18,6 +18,8 @@ export class VpsRelay {
   private latestPhase = 'unknown';
   private config: RelayConfig;
   private simConnect: ISimConnectManager;
+  private onPositionUpdate: ((data: any) => void) | null = null;
+  private onAircraftInfoUpdate: ((data: any) => void) | null = null;
 
   constructor(simConnect: ISimConnectManager, config: RelayConfig) {
     this.simConnect = simConnect;
@@ -54,12 +56,14 @@ export class VpsRelay {
     });
 
     // Listen to SimConnect updates for heartbeat data
-    this.simConnect.on('positionUpdate', (data: any) => {
+    this.onPositionUpdate = (data: any) => {
       this.latestPosition = data;
-    });
-    this.simConnect.on('aircraftInfoUpdate', (data: any) => {
+    };
+    this.onAircraftInfoUpdate = (data: any) => {
       this.latestAircraftType = data.atcType || data.title || '';
-    });
+    };
+    this.simConnect.on('positionUpdate', this.onPositionUpdate);
+    this.simConnect.on('aircraftInfoUpdate', this.onAircraftInfoUpdate);
   }
 
   sendTelemetry(snapshot: unknown): void {
@@ -83,6 +87,15 @@ export class VpsRelay {
     this.socket?.disconnect();
     this.socket = null;
     this.relaying = false;
+    // Remove SimConnect listeners to prevent accumulation across restarts
+    if (this.onPositionUpdate) {
+      this.simConnect.removeListener('positionUpdate', this.onPositionUpdate);
+      this.onPositionUpdate = null;
+    }
+    if (this.onAircraftInfoUpdate) {
+      this.simConnect.removeListener('aircraftInfoUpdate', this.onAircraftInfoUpdate);
+      this.onAircraftInfoUpdate = null;
+    }
   }
 
   private startHeartbeat(): void {
