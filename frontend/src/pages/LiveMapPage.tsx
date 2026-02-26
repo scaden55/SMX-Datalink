@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { MapContainer, TileLayer, Polyline, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Polyline, Marker, Tooltip, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import {
   CaretLeft,
@@ -36,6 +36,7 @@ import { GroundChartOverlay } from '../components/map/GroundChartOverlay';
 import { useTrack } from '../hooks/useTrack';
 import { useTrackStore } from '../stores/trackStore';
 import type { Airport, ActiveBidEntry, AllBidsResponse, VatsimPilot } from '@acars/shared';
+import { useActiveFlightsStore } from '../stores/activeFlightsStore';
 
 // ─── Types ───────────────────────────────────────────────────
 
@@ -69,6 +70,15 @@ const PLANE_SVG = (heading: number, size: number, color: string, glow: boolean) 
       C30 3 31 2 32 2 Z"
       fill="${color}" stroke="rgba(0,0,0,0.3)" stroke-width="0.5"/>
   </svg>`;
+
+function createActiveFlightIcon(heading: number): L.DivIcon {
+  return L.divIcon({
+    html: PLANE_SVG(heading, 28, '#3b82f6', true),
+    className: '',
+    iconSize: [28, 28],
+    iconAnchor: [14, 14],
+  });
+}
 
 // ─── Sidebar Component ──────────────────────────────────────
 
@@ -441,6 +451,7 @@ export function LiveMapPage() {
   } | null>(null);
 
   const { aircraft, flight, connected } = useTelemetry();
+  const activeFlights = useActiveFlightsStore((s) => s.flights);
   useVatsim();
   useTrack(selectedBidId);
   const vatsimSnapshot = useVatsimStore((s) => s.snapshot);
@@ -670,6 +681,19 @@ export function LiveMapPage() {
             onSelectPilot={(p) => { setSelectedPilot(p); setSelectedAirport(null); setSelectedAirspace(null); }}
           />
         )}
+
+        {/* Active airline flights (heartbeats from other pilots) */}
+        {activeFlights.map((af) => (
+          <Marker
+            key={af.userId}
+            position={[af.latitude, af.longitude]}
+            icon={createActiveFlightIcon(af.heading)}
+          >
+            <Tooltip direction="top" offset={[0, -14]} opacity={0.95}>
+              <span className="font-mono text-xs">{af.callsign} · FL{Math.round(af.altitude / 100)}</span>
+            </Tooltip>
+          </Marker>
+        ))}
 
         {/* Live aircraft */}
         {connected && aircraft && (

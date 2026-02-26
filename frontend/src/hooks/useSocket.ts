@@ -4,6 +4,7 @@ import type { ServerToClientEvents, ClientToServerEvents } from '@acars/shared';
 import { useTelemetryStore } from '../stores/telemetryStore';
 import { useAuthStore } from '../stores/authStore';
 import { useSocketStore } from '../stores/socketStore';
+import { useActiveFlightsStore } from '../stores/activeFlightsStore';
 import { getApiBase } from '../lib/api';
 
 type AcarsSocket = Socket<ServerToClientEvents, ClientToServerEvents>;
@@ -39,9 +40,16 @@ export function useSocket(): AcarsSocket | null {
     socketRef.current = socket;
     setSocket(socket);
 
+    const setActiveFlights = useActiveFlightsStore.getState().setFlights;
+
     socket.on('connect', () => {
       console.log('[Socket] Connected');
       socket.emit('telemetry:subscribe');
+      socket.emit('livemap:subscribe');
+    });
+
+    socket.on('flights:active', (flights) => {
+      setActiveFlights(flights);
     });
 
     socket.on('telemetry:update', (data) => {
@@ -58,6 +66,7 @@ export function useSocket(): AcarsSocket | null {
 
     return () => {
       socket.emit('telemetry:unsubscribe');
+      socket.emit('livemap:unsubscribe');
       socket.disconnect();
       socketRef.current = null;
       setSocket(null);
