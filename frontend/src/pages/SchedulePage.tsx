@@ -21,6 +21,8 @@ import {
   ArrowClockwise,
   Path,
   Warning,
+  Warehouse,
+  Tag,
 } from '@phosphor-icons/react';
 import { MapContainer, TileLayer, CircleMarker, Polyline, Tooltip, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -459,6 +461,29 @@ function FlightPreviewPanel({ schedule: s, hasBid, isBidding, onBid, onRemoveBid
           </div>
         )}
 
+        {/* Ground Handlers */}
+        {(s.originHandler || s.destHandler) && (
+          <div className="col-span-2 space-y-2 pt-1 border-t border-acars-border">
+            <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-acars-muted font-medium">
+              <Warehouse className="w-3 h-3 text-amber-400" /> Ground Handling
+            </div>
+            <div className="grid grid-cols-2 gap-x-6 gap-y-1">
+              {s.originHandler && (
+                <div>
+                  <p className="text-[10px] text-acars-muted uppercase tracking-wider">Origin Handler</p>
+                  <p className="text-[11px] text-acars-text font-mono">{s.originHandler}</p>
+                </div>
+              )}
+              {s.destHandler && (
+                <div>
+                  <p className="text-[10px] text-acars-muted uppercase tracking-wider">Dest Handler</p>
+                  <p className="text-[11px] text-acars-text font-mono">{s.destHandler}</p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Stats row */}
         <div className="col-span-2 flex items-center gap-5 pt-1 border-t border-acars-border">
           <div className="flex items-center gap-1.5 text-[11px] text-acars-muted">
@@ -477,6 +502,12 @@ function FlightPreviewPanel({ schedule: s, hasBid, isBidding, onBid, onRemoveBid
             <CalendarDots className="w-3.5 h-3.5 text-blue-400" />
             <DaysIndicator days={s.daysOfWeek} />
           </div>
+          {s.groupClass && (
+            <div className="flex items-center gap-1.5 text-[11px] text-acars-muted">
+              <Tag className="w-3.5 h-3.5 text-violet-400" />
+              <span className="text-acars-text">{s.groupClass}</span>
+            </div>
+          )}
           <div className="ml-auto">
             {hasBid ? (
               <button
