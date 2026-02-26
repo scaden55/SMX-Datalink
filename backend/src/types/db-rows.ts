@@ -158,3 +158,143 @@ export interface ScheduledFlightRow {
   vatsim_event_id: number | null;
   expires_at: string | null;
 }
+
+// ─────────────────────────────────────────────────────────────
+// maintenance.ts
+// ─────────────────────────────────────────────────────────────
+
+/** aircraft_hours table — SELECT * shape */
+export interface AircraftHoursRow {
+  aircraft_id: number;
+  total_hours: number;
+  total_cycles: number;
+  hours_at_last_a: number;
+  hours_at_last_b: number;
+  hours_at_last_c: number;
+  cycles_at_last_c: number;
+  last_d_check_date: string | null;
+  updated_at: string;
+}
+
+/** maintenance_checks table — SELECT * shape */
+export interface MaintenanceCheckRow {
+  id: number;
+  icao_type: string;
+  check_type: string;
+  interval_hours: number | null;
+  interval_cycles: number | null;
+  interval_months: number | null;
+  overflight_pct: number;
+  estimated_duration_hours: number | null;
+  description: string | null;
+}
+
+/** maintenance_log table — SELECT * shape */
+export interface MaintenanceLogRow {
+  id: number;
+  aircraft_id: number;
+  check_type: string;
+  title: string;
+  description: string | null;
+  performed_by: string | null;
+  performed_at: string | null;
+  hours_at_check: number | null;
+  cycles_at_check: number | null;
+  cost: number | null;
+  status: string;
+  sfp_destination: string | null;
+  sfp_expiry: string | null;
+  created_by: number | null;
+  created_at: string;
+  updated_at: string;
+}
+
+/** airworthiness_directives table — SELECT * shape */
+export interface AirworthinessDirectiveRow {
+  id: number;
+  aircraft_id: number;
+  ad_number: string;
+  title: string;
+  description: string | null;
+  compliance_status: string;
+  compliance_date: string | null;
+  compliance_method: string | null;
+  recurring_interval_hours: number | null;
+  next_due_hours: number | null;
+  next_due_date: string | null;
+  created_by: number | null;
+  created_at: string;
+  updated_at: string;
+}
+
+/** mel_deferrals table — SELECT * shape */
+export interface MELDeferralRow {
+  id: number;
+  aircraft_id: number;
+  item_number: string;
+  title: string;
+  category: string;
+  deferral_date: string;
+  expiry_date: string;
+  rectified_date: string | null;
+  status: string;
+  remarks: string | null;
+  created_by: number | null;
+  created_at: string;
+}
+
+/** aircraft_components table — SELECT * shape */
+export interface AircraftComponentRow {
+  id: number;
+  aircraft_id: number;
+  component_type: string;
+  position: string | null;
+  serial_number: string | null;
+  part_number: string | null;
+  hours_since_new: number;
+  cycles_since_new: number;
+  hours_since_overhaul: number;
+  cycles_since_overhaul: number;
+  overhaul_interval_hours: number | null;
+  installed_date: string | null;
+  status: string;
+  remarks: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+/** Fleet + aircraft_hours JOIN for fleet status overview */
+export interface FleetMaintenanceStatusRow {
+  id: number;
+  registration: string;
+  icao_type: string;
+  name: string;
+  status: string;
+  total_hours: number | null;
+  total_cycles: number | null;
+  hours_at_last_a: number | null;
+  hours_at_last_b: number | null;
+  hours_at_last_c: number | null;
+  cycles_at_last_c: number | null;
+  last_d_check_date: string | null;
+}
+
+/** maintenance_log JOIN fleet for list queries */
+export interface MaintenanceLogJoinRow extends MaintenanceLogRow {
+  registration: string;
+}
+
+/** airworthiness_directives JOIN fleet for list queries */
+export interface ADJoinRow extends AirworthinessDirectiveRow {
+  registration: string;
+}
+
+/** mel_deferrals JOIN fleet for list queries */
+export interface MELJoinRow extends MELDeferralRow {
+  registration: string;
+}
+
+/** aircraft_components JOIN fleet for list queries */
+export interface ComponentJoinRow extends AircraftComponentRow {
+  registration: string;
+}
