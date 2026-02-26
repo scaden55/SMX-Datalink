@@ -29,3 +29,17 @@ export interface ConnectionStatus {
   applicationName: string;
   lastUpdate: string; // ISO timestamp
 }
+
+/** Lightweight heartbeat sent by pilot's Electron app every 30s */
+export interface ActiveFlightHeartbeat {
+  userId: number;
+  callsign: string;
+  aircraftType: string;
+  latitude: number;
+  longitude: number;
+  altitude: number;
+  heading: number;
+  groundSpeed: number;
+  phase: string;
+  timestamp: string;
+}

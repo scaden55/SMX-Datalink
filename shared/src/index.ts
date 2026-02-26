@@ -2,7 +2,7 @@
 export type { AircraftPosition, AutopilotState, TransponderState, ComRadio, NavRadio, AircraftData } from './types/aircraft.js';
 export type { EngineData, EngineParameters } from './types/engine.js';
 export type { FuelData, FuelTank } from './types/fuel.js';
-export type { FlightData, ConnectionStatus } from './types/flight.js';
+export type { FlightData, ConnectionStatus, ActiveFlightHeartbeat } from './types/flight.js';
 export type { Waypoint, FlightPlan, FlightPlanProgress } from './types/flight-plan.js';
 export type { OOOIEventType, AcarsMessage, DispatcherRemarks, SystemInfo } from './types/acars.js';
 export type { TelemetrySnapshot, AcarsMessagePayload, ServerToClientEvents, ClientToServerEvents } from './types/websocket.js';
