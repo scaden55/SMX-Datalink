@@ -4,6 +4,7 @@ import { AdminPageHeader } from '../../components/admin/AdminPageHeader';
 import { FleetStatusTab } from '../../components/admin/maintenance/FleetStatusTab';
 import { MaintenanceLogTab } from '../../components/admin/maintenance/MaintenanceLogTab';
 import { CheckSchedulesTab } from '../../components/admin/maintenance/CheckSchedulesTab';
+import { AirworthinessDirectivesTab } from '../../components/admin/maintenance/AirworthinessDirectivesTab';
 
 type MaintenanceTab = 'fleet-status' | 'log' | 'schedules' | 'ads' | 'mel' | 'components';
 
@@ -52,7 +53,7 @@ export function AdminMaintenancePage() {
         {activeTab === 'fleet-status' && <FleetStatusTab />}
         {activeTab === 'log' && <MaintenanceLogTab />}
         {activeTab === 'schedules' && <CheckSchedulesTab />}
-        {activeTab === 'ads' && <div className="panel p-6 text-acars-muted text-sm">Airworthiness Directives — coming soon</div>}
+        {activeTab === 'ads' && <AirworthinessDirectivesTab />}
         {activeTab === 'mel' && <div className="panel p-6 text-acars-muted text-sm">MEL Deferrals — coming soon</div>}
         {activeTab === 'components' && <div className="panel p-6 text-acars-muted text-sm">Components — coming soon</div>}
       </div>
