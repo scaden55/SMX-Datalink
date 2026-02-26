@@ -1,0 +1,1446 @@
+import { getDb } from '../db/index.js';
+import { logger } from '../lib/logger.js';
+import { AuditService } from './audit.js';
+import type {
+  AircraftHours,
+  MaintenanceCheckSchedule,
+  MaintenanceLogEntry,
+  AirworthinessDirective,
+  MELDeferral,
+  AircraftComponent,
+  CheckDueStatus,
+  FleetMaintenanceStatus,
+  MaintenanceCheckType,
+  MaintenanceLogType,
+  MaintenanceLogStatus,
+  ADComplianceStatus,
+  MELCategory,
+  MELStatus,
+  ComponentType,
+  ComponentStatus,
+  CreateMaintenanceLogRequest,
+  UpdateMaintenanceLogRequest,
+  CreateCheckScheduleRequest,
+  UpdateCheckScheduleRequest,
+  CreateADRequest,
+  UpdateADRequest,
+  CreateMELRequest,
+  UpdateMELRequest,
+  CreateComponentRequest,
+  UpdateComponentRequest,
+  AdjustHoursRequest,
+  MaintenanceLogListResponse,
+  ADListResponse,
+  MELListResponse,
+} from '@acars/shared';
+import type {
+  AircraftHoursRow,
+  MaintenanceCheckRow,
+  MaintenanceLogRow,
+  AirworthinessDirectiveRow,
+  MELDeferralRow,
+  AircraftComponentRow,
+  FleetMaintenanceStatusRow,
+  MaintenanceLogJoinRow,
+  ADJoinRow,
+  MELJoinRow,
+  ComponentJoinRow,
+} from '../types/db-rows.js';
+
+const TAG = 'Maintenance';
+const auditService = new AuditService();
+
+export class MaintenanceService {
+
+  // ═══════════════════════════════════════════════════════════
+  // Fleet Status
+  // ═══════════════════════════════════════════════════════════
+
+  getFleetStatus(): FleetMaintenanceStatus[] {
+    const db = getDb();
+    const rows = db.prepare(`
+      SELECT f.id, f.registration, f.icao_type, f.name, f.status,
+             h.total_hours, h.total_cycles,
+             h.hours_at_last_a, h.hours_at_last_b,
+             h.hours_at_last_c, h.cycles_at_last_c,
+             h.last_d_check_date
+      FROM fleet f
+      LEFT JOIN aircraft_hours h ON h.aircraft_id = f.id
+      ORDER BY f.icao_type, f.registration
+    `).all() as FleetMaintenanceStatusRow[];
+
+    return rows.map(row => this.buildFleetStatus(row));
+  }
+
+  getAircraftStatus(aircraftId: number): FleetMaintenanceStatus | undefined {
+    const db = getDb();
+    const row = db.prepare(`
+      SELECT f.id, f.registration, f.icao_type, f.name, f.status,
+             h.total_hours, h.total_cycles,
+             h.hours_at_last_a, h.hours_at_last_b,
+             h.hours_at_last_c, h.cycles_at_last_c,
+             h.last_d_check_date
+      FROM fleet f
+      LEFT JOIN aircraft_hours h ON h.aircraft_id = f.id
+      WHERE f.id = ?
+    `).get(aircraftId) as FleetMaintenanceStatusRow | undefined;
+
+    return row ? this.buildFleetStatus(row) : undefined;
+  }
+
+  adjustHours(aircraftId: number, data: AdjustHoursRequest, actorId: number): AircraftHours | undefined {
+    const db = getDb();
+    this.ensureAircraftHours(aircraftId);
+
+    const before = db.prepare('SELECT * FROM aircraft_hours WHERE aircraft_id = ?')
+      .get(aircraftId) as AircraftHoursRow | undefined;
+    if (!before) return undefined;
+
+    const sets: string[] = [];
+    const params: unknown[] = [];
+
+    if (data.totalHours !== undefined) {
+      sets.push('total_hours = ?');
+      params.push(data.totalHours);
+    }
+    if (data.totalCycles !== undefined) {
+      sets.push('total_cycles = ?');
+      params.push(data.totalCycles);
+    }
+
+    if (sets.length === 0) return this.toAircraftHours(before);
+
+    sets.push('updated_at = datetime(\'now\')');
+    params.push(aircraftId);
+
+    db.prepare(`UPDATE aircraft_hours SET ${sets.join(', ')} WHERE aircraft_id = ?`).run(...params);
+
+    const after = db.prepare('SELECT * FROM aircraft_hours WHERE aircraft_id = ?')
+      .get(aircraftId) as AircraftHoursRow;
+
+    auditService.log({
+      actorId,
+      action: 'maintenance.adjust_hours',
+      targetType: 'aircraft',
+      targetId: aircraftId,
+      before: { totalHours: before.total_hours, totalCycles: before.total_cycles },
+      after: { totalHours: after.total_hours, totalCycles: after.total_cycles, reason: data.reason },
+    });
+
+    logger.info(TAG, `Hours adjusted for aircraft ${aircraftId}: ${data.reason}`);
+
+    this.checkAndGroundAircraft(aircraftId);
+
+    return this.toAircraftHours(after);
+  }
+
+  ensureAircraftHours(aircraftId: number): void {
+    getDb().prepare(`
+      INSERT OR IGNORE INTO aircraft_hours (aircraft_id, total_hours, total_cycles,
+        hours_at_last_a, hours_at_last_b, hours_at_last_c, cycles_at_last_c)
+      VALUES (?, 0, 0, 0, 0, 0, 0)
+    `).run(aircraftId);
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // Check Due Computation (Critical Business Logic)
+  // ═══════════════════════════════════════════════════════════
+
+  computeChecksDue(hours: AircraftHoursRow, checks: MaintenanceCheckRow[]): CheckDueStatus[] {
+    const results: CheckDueStatus[] = [];
+    const now = new Date();
+
+    for (const check of checks) {
+      const checkType = check.check_type as MaintenanceCheckType;
+      let dueAtHours: number | null = null;
+      let dueAtCycles: number | null = null;
+      let dueAtDate: string | null = null;
+      let remainingHours: number | null = null;
+      let remainingCycles: number | null = null;
+      let isOverdue = false;
+      let isInOverflight = false;
+      const overflightPct = check.overflight_pct;
+
+      // Determine base hours/cycles at last check for each type
+      switch (checkType) {
+        case 'A': {
+          if (check.interval_hours != null) {
+            dueAtHours = hours.hours_at_last_a + check.interval_hours;
+            remainingHours = dueAtHours - hours.total_hours;
+          }
+          // A checks: overflight tolerance applies
+          if (dueAtHours != null && remainingHours != null) {
+            const overflightLimit = dueAtHours + dueAtHours * overflightPct;
+            if (hours.total_hours > overflightLimit) {
+              isOverdue = true;
+            } else if (hours.total_hours > dueAtHours) {
+              isInOverflight = true;
+            }
+          }
+          break;
+        }
+        case 'B': {
+          if (check.interval_hours != null) {
+            dueAtHours = hours.hours_at_last_b + check.interval_hours;
+            remainingHours = dueAtHours - hours.total_hours;
+          }
+          // B checks: overflight tolerance applies
+          if (dueAtHours != null && remainingHours != null) {
+            const overflightLimit = dueAtHours + dueAtHours * overflightPct;
+            if (hours.total_hours > overflightLimit) {
+              isOverdue = true;
+            } else if (hours.total_hours > dueAtHours) {
+              isInOverflight = true;
+            }
+          }
+          break;
+        }
+        case 'C': {
+          if (check.interval_hours != null) {
+            dueAtHours = hours.hours_at_last_c + check.interval_hours;
+            remainingHours = dueAtHours - hours.total_hours;
+          }
+          if (check.interval_cycles != null) {
+            dueAtCycles = hours.cycles_at_last_c + check.interval_cycles;
+            remainingCycles = dueAtCycles - hours.total_cycles;
+          }
+          // C checks: no overflight tolerance — overdue immediately
+          if (dueAtHours != null && hours.total_hours >= dueAtHours) {
+            isOverdue = true;
+          }
+          if (dueAtCycles != null && hours.total_cycles >= dueAtCycles) {
+            isOverdue = true;
+          }
+          // isInOverflight always false for C
+          break;
+        }
+        case 'D': {
+          // D checks use calendar-based intervals
+          if (hours.last_d_check_date && check.interval_months != null) {
+            const lastD = new Date(hours.last_d_check_date);
+            const dueDate = new Date(lastD);
+            dueDate.setMonth(dueDate.getMonth() + check.interval_months);
+            dueAtDate = dueDate.toISOString().split('T')[0];
+
+            if (now >= dueDate) {
+              isOverdue = true;
+            }
+          } else if (!hours.last_d_check_date && check.interval_months != null) {
+            // No D check recorded — consider overdue
+            isOverdue = true;
+          }
+          // D checks can also have interval_hours
+          if (check.interval_hours != null) {
+            // For D checks, use hours_at_last_c as a proxy if no specific D hours field
+            // In practice the total_hours since last D check matters
+            // Since we track last_d_check_date but not hours at last D, we use total_hours directly
+            // if interval_hours is set; this is a secondary trigger
+            dueAtHours = check.interval_hours;
+            remainingHours = dueAtHours - hours.total_hours;
+            if (hours.total_hours >= dueAtHours) {
+              isOverdue = true;
+            }
+          }
+          // isInOverflight always false for D
+          break;
+        }
+      }
+
+      results.push({
+        checkType,
+        dueAtHours,
+        dueAtCycles,
+        dueAtDate,
+        currentHours: hours.total_hours,
+        currentCycles: hours.total_cycles,
+        isOverdue,
+        isInOverflight,
+        remainingHours,
+        remainingCycles,
+        overflightPct,
+      });
+    }
+
+    return results;
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // Grounding Logic
+  // ═══════════════════════════════════════════════════════════
+
+  checkAndGroundAircraft(aircraftId: number): void {
+    const db = getDb();
+
+    // Get aircraft info
+    const fleet = db.prepare('SELECT id, registration, icao_type, status FROM fleet WHERE id = ?')
+      .get(aircraftId) as { id: number; registration: string; icao_type: string; status: string } | undefined;
+    if (!fleet) return;
+
+    // Check overdue maintenance checks
+    const hours = db.prepare('SELECT * FROM aircraft_hours WHERE aircraft_id = ?')
+      .get(aircraftId) as AircraftHoursRow | undefined;
+
+    let shouldGround = false;
+    const reasons: string[] = [];
+
+    if (hours) {
+      const checks = db.prepare('SELECT * FROM maintenance_checks WHERE icao_type = ?')
+        .all(fleet.icao_type) as MaintenanceCheckRow[];
+
+      const checksDue = this.computeChecksDue(hours, checks);
+      const overdueChecks = checksDue.filter(c => c.isOverdue);
+      if (overdueChecks.length > 0) {
+        shouldGround = true;
+        reasons.push(`Overdue checks: ${overdueChecks.map(c => c.checkType).join(', ')}`);
+      }
+    }
+
+    // Check open ADs past due
+    const now = new Date().toISOString();
+    const overdueADs = db.prepare(`
+      SELECT COUNT(*) as count FROM airworthiness_directives
+      WHERE aircraft_id = ? AND compliance_status IN ('open', 'recurring')
+        AND (
+          (next_due_date IS NOT NULL AND next_due_date < ?)
+          OR (next_due_hours IS NOT NULL AND next_due_hours <= (
+            SELECT total_hours FROM aircraft_hours WHERE aircraft_id = ?
+          ))
+        )
+    `).get(aircraftId, now.split('T')[0], aircraftId) as { count: number };
+
+    if (overdueADs.count > 0) {
+      shouldGround = true;
+      reasons.push(`${overdueADs.count} overdue AD(s)`);
+    }
+
+    // Check expired MELs
+    const expiredMELs = db.prepare(`
+      SELECT COUNT(*) as count FROM mel_deferrals
+      WHERE aircraft_id = ? AND status = 'open' AND expiry_date < ?
+    `).get(aircraftId, now.split('T')[0]) as { count: number };
+
+    if (expiredMELs.count > 0) {
+      shouldGround = true;
+      reasons.push(`${expiredMELs.count} expired MEL deferral(s)`);
+    }
+
+    if (shouldGround && fleet.status !== 'maintenance') {
+      db.prepare('UPDATE fleet SET status = ?, updated_at = datetime(\'now\') WHERE id = ?')
+        .run('maintenance', aircraftId);
+      logger.warn(TAG, `Aircraft ${fleet.registration} grounded: ${reasons.join('; ')}`);
+    }
+  }
+
+  returnToService(aircraftId: number, actorId: number): boolean {
+    const db = getDb();
+
+    const fleet = db.prepare('SELECT id, registration, icao_type, status FROM fleet WHERE id = ?')
+      .get(aircraftId) as { id: number; registration: string; icao_type: string; status: string } | undefined;
+    if (!fleet) return false;
+
+    // Check for outstanding items
+    const hours = db.prepare('SELECT * FROM aircraft_hours WHERE aircraft_id = ?')
+      .get(aircraftId) as AircraftHoursRow | undefined;
+
+    if (hours) {
+      const checks = db.prepare('SELECT * FROM maintenance_checks WHERE icao_type = ?')
+        .all(fleet.icao_type) as MaintenanceCheckRow[];
+      const checksDue = this.computeChecksDue(hours, checks);
+      if (checksDue.some(c => c.isOverdue)) {
+        logger.warn(TAG, `Cannot return ${fleet.registration} to service: overdue checks remain`);
+        return false;
+      }
+    }
+
+    const now = new Date().toISOString();
+    const overdueADs = db.prepare(`
+      SELECT COUNT(*) as count FROM airworthiness_directives
+      WHERE aircraft_id = ? AND compliance_status IN ('open', 'recurring')
+        AND (
+          (next_due_date IS NOT NULL AND next_due_date < ?)
+          OR (next_due_hours IS NOT NULL AND next_due_hours <= (
+            SELECT total_hours FROM aircraft_hours WHERE aircraft_id = ?
+          ))
+        )
+    `).get(aircraftId, now.split('T')[0], aircraftId) as { count: number };
+
+    if (overdueADs.count > 0) {
+      logger.warn(TAG, `Cannot return ${fleet.registration} to service: ${overdueADs.count} overdue AD(s)`);
+      return false;
+    }
+
+    const expiredMELs = db.prepare(`
+      SELECT COUNT(*) as count FROM mel_deferrals
+      WHERE aircraft_id = ? AND status = 'open' AND expiry_date < ?
+    `).get(aircraftId, now.split('T')[0]) as { count: number };
+
+    if (expiredMELs.count > 0) {
+      logger.warn(TAG, `Cannot return ${fleet.registration} to service: ${expiredMELs.count} expired MEL(s)`);
+      return false;
+    }
+
+    db.prepare('UPDATE fleet SET status = ?, updated_at = datetime(\'now\') WHERE id = ?')
+      .run('active', aircraftId);
+
+    auditService.log({
+      actorId,
+      action: 'maintenance.return_to_service',
+      targetType: 'aircraft',
+      targetId: aircraftId,
+      before: { status: fleet.status },
+      after: { status: 'active' },
+    });
+
+    logger.info(TAG, `Aircraft ${fleet.registration} returned to service by actor ${actorId}`);
+    return true;
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // Maintenance Log CRUD
+  // ═══════════════════════════════════════════════════════════
+
+  findAllLog(
+    filters: { aircraftId?: number; checkType?: string; status?: string; dateFrom?: string; dateTo?: string },
+    page = 1,
+    pageSize = 50,
+  ): MaintenanceLogListResponse {
+    const db = getDb();
+    const conditions: string[] = [];
+    const params: unknown[] = [];
+
+    if (filters.aircraftId) {
+      conditions.push('ml.aircraft_id = ?');
+      params.push(filters.aircraftId);
+    }
+    if (filters.checkType) {
+      conditions.push('ml.check_type = ?');
+      params.push(filters.checkType);
+    }
+    if (filters.status) {
+      conditions.push('ml.status = ?');
+      params.push(filters.status);
+    }
+    if (filters.dateFrom) {
+      conditions.push('ml.performed_at >= ?');
+      params.push(filters.dateFrom);
+    }
+    if (filters.dateTo) {
+      conditions.push('ml.performed_at <= ?');
+      params.push(filters.dateTo);
+    }
+
+    const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
+
+    const { count: total } = db.prepare(
+      `SELECT COUNT(*) as count FROM maintenance_log ml ${where}`,
+    ).get(...params) as { count: number };
+
+    const offset = (page - 1) * pageSize;
+    const rows = db.prepare(`
+      SELECT ml.*, f.registration
+      FROM maintenance_log ml
+      LEFT JOIN fleet f ON f.id = ml.aircraft_id
+      ${where}
+      ORDER BY ml.performed_at DESC, ml.created_at DESC
+      LIMIT ? OFFSET ?
+    `).all(...params, pageSize, offset) as MaintenanceLogJoinRow[];
+
+    return { entries: rows.map(r => this.toLogEntry(r)), total };
+  }
+
+  getLogEntry(id: number): MaintenanceLogEntry | undefined {
+    const db = getDb();
+    const row = db.prepare(`
+      SELECT ml.*, f.registration
+      FROM maintenance_log ml
+      LEFT JOIN fleet f ON f.id = ml.aircraft_id
+      WHERE ml.id = ?
+    `).get(id) as MaintenanceLogJoinRow | undefined;
+
+    return row ? this.toLogEntry(row) : undefined;
+  }
+
+  createLog(data: CreateMaintenanceLogRequest, actorId: number): MaintenanceLogEntry {
+    const db = getDb();
+    const now = new Date().toISOString();
+    const status = data.status ?? 'scheduled';
+
+    const result = db.prepare(`
+      INSERT INTO maintenance_log (
+        aircraft_id, check_type, title, description, performed_by, performed_at,
+        hours_at_check, cycles_at_check, cost, status, sfp_destination, sfp_expiry,
+        created_by, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      data.aircraftId,
+      data.checkType,
+      data.title,
+      data.description ?? null,
+      data.performedBy ?? null,
+      data.performedAt ?? null,
+      data.hoursAtCheck ?? null,
+      data.cyclesAtCheck ?? null,
+      data.cost ?? null,
+      status,
+      data.sfpDestination ?? null,
+      data.sfpExpiry ?? null,
+      actorId,
+      now,
+      now,
+    );
+
+    const entry = this.getLogEntry(result.lastInsertRowid as number)!;
+
+    auditService.log({
+      actorId,
+      action: 'maintenance.create_log',
+      targetType: 'maintenance_log',
+      targetId: entry.id,
+      after: { checkType: entry.checkType, title: entry.title, aircraftId: entry.aircraftId },
+    });
+
+    logger.info(TAG, `Maintenance log created: ${entry.title} (${entry.checkType}) for aircraft ${entry.aircraftId}`);
+    return entry;
+  }
+
+  updateLog(id: number, data: UpdateMaintenanceLogRequest, actorId: number): MaintenanceLogEntry | undefined {
+    const db = getDb();
+    const existing = db.prepare('SELECT * FROM maintenance_log WHERE id = ?').get(id) as MaintenanceLogRow | undefined;
+    if (!existing) return undefined;
+
+    const sets: string[] = [];
+    const params: unknown[] = [];
+
+    if (data.checkType !== undefined) { sets.push('check_type = ?'); params.push(data.checkType); }
+    if (data.title !== undefined) { sets.push('title = ?'); params.push(data.title); }
+    if (data.description !== undefined) { sets.push('description = ?'); params.push(data.description); }
+    if (data.performedBy !== undefined) { sets.push('performed_by = ?'); params.push(data.performedBy); }
+    if (data.performedAt !== undefined) { sets.push('performed_at = ?'); params.push(data.performedAt); }
+    if (data.hoursAtCheck !== undefined) { sets.push('hours_at_check = ?'); params.push(data.hoursAtCheck); }
+    if (data.cyclesAtCheck !== undefined) { sets.push('cycles_at_check = ?'); params.push(data.cyclesAtCheck); }
+    if (data.cost !== undefined) { sets.push('cost = ?'); params.push(data.cost); }
+    if (data.status !== undefined) { sets.push('status = ?'); params.push(data.status); }
+    if (data.sfpDestination !== undefined) { sets.push('sfp_destination = ?'); params.push(data.sfpDestination); }
+    if (data.sfpExpiry !== undefined) { sets.push('sfp_expiry = ?'); params.push(data.sfpExpiry); }
+
+    if (sets.length === 0) return this.getLogEntry(id);
+
+    sets.push('updated_at = datetime(\'now\')');
+    params.push(id);
+
+    db.prepare(`UPDATE maintenance_log SET ${sets.join(', ')} WHERE id = ?`).run(...params);
+
+    const updated = this.getLogEntry(id)!;
+
+    auditService.log({
+      actorId,
+      action: 'maintenance.update_log',
+      targetType: 'maintenance_log',
+      targetId: id,
+      before: { checkType: existing.check_type, title: existing.title, status: existing.status },
+      after: { checkType: updated.checkType, title: updated.title, status: updated.status },
+    });
+
+    return updated;
+  }
+
+  completeCheck(id: number, actorId: number): MaintenanceLogEntry | undefined {
+    const db = getDb();
+    const existing = db.prepare('SELECT * FROM maintenance_log WHERE id = ?').get(id) as MaintenanceLogRow | undefined;
+    if (!existing) return undefined;
+
+    const now = new Date().toISOString();
+    const aircraftId = existing.aircraft_id;
+
+    this.ensureAircraftHours(aircraftId);
+    const hours = db.prepare('SELECT * FROM aircraft_hours WHERE aircraft_id = ?')
+      .get(aircraftId) as AircraftHoursRow;
+
+    // Mark log entry as completed
+    db.prepare(`
+      UPDATE maintenance_log
+      SET status = 'completed',
+          performed_at = COALESCE(performed_at, ?),
+          hours_at_check = ?,
+          cycles_at_check = ?,
+          updated_at = datetime('now')
+      WHERE id = ?
+    `).run(now, hours.total_hours, hours.total_cycles, id);
+
+    // Update aircraft_hours snapshot fields based on check_type
+    const checkType = existing.check_type as MaintenanceCheckType;
+    switch (checkType) {
+      case 'A':
+        db.prepare('UPDATE aircraft_hours SET hours_at_last_a = ?, updated_at = datetime(\'now\') WHERE aircraft_id = ?')
+          .run(hours.total_hours, aircraftId);
+        break;
+      case 'B':
+        db.prepare('UPDATE aircraft_hours SET hours_at_last_b = ?, updated_at = datetime(\'now\') WHERE aircraft_id = ?')
+          .run(hours.total_hours, aircraftId);
+        break;
+      case 'C':
+        db.prepare('UPDATE aircraft_hours SET hours_at_last_c = ?, cycles_at_last_c = ?, updated_at = datetime(\'now\') WHERE aircraft_id = ?')
+          .run(hours.total_hours, hours.total_cycles, aircraftId);
+        break;
+      case 'D':
+        db.prepare('UPDATE aircraft_hours SET last_d_check_date = ?, updated_at = datetime(\'now\') WHERE aircraft_id = ?')
+          .run(now.split('T')[0], aircraftId);
+        break;
+    }
+
+    auditService.log({
+      actorId,
+      action: 'maintenance.complete_check',
+      targetType: 'maintenance_log',
+      targetId: id,
+      before: { status: existing.status },
+      after: { status: 'completed', checkType, hoursAtCheck: hours.total_hours },
+    });
+
+    logger.info(TAG, `Check ${checkType} completed for aircraft ${aircraftId} at ${hours.total_hours}h`);
+
+    // Attempt return to service
+    this.returnToService(aircraftId, actorId);
+
+    return this.getLogEntry(id);
+  }
+
+  deleteLog(id: number, actorId: number): boolean {
+    const db = getDb();
+    const existing = db.prepare('SELECT * FROM maintenance_log WHERE id = ?').get(id) as MaintenanceLogRow | undefined;
+    if (!existing) return false;
+
+    db.prepare('DELETE FROM maintenance_log WHERE id = ?').run(id);
+
+    auditService.log({
+      actorId,
+      action: 'maintenance.delete_log',
+      targetType: 'maintenance_log',
+      targetId: id,
+      before: { checkType: existing.check_type, title: existing.title, aircraftId: existing.aircraft_id },
+    });
+
+    logger.info(TAG, `Maintenance log ${id} deleted`);
+    return true;
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // Check Schedules CRUD
+  // ═══════════════════════════════════════════════════════════
+
+  findAllCheckSchedules(): MaintenanceCheckSchedule[] {
+    const db = getDb();
+    const rows = db.prepare(
+      'SELECT * FROM maintenance_checks ORDER BY icao_type, check_type',
+    ).all() as MaintenanceCheckRow[];
+
+    return rows.map(r => this.toCheckSchedule(r));
+  }
+
+  createCheckSchedule(data: CreateCheckScheduleRequest, actorId: number): MaintenanceCheckSchedule {
+    const db = getDb();
+
+    const result = db.prepare(`
+      INSERT INTO maintenance_checks (
+        icao_type, check_type, interval_hours, interval_cycles,
+        interval_months, overflight_pct, estimated_duration_hours, description
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      data.icaoType,
+      data.checkType,
+      data.intervalHours ?? null,
+      data.intervalCycles ?? null,
+      data.intervalMonths ?? null,
+      data.overflightPct ?? 0,
+      data.estimatedDurationHours ?? null,
+      data.description ?? null,
+    );
+
+    const id = result.lastInsertRowid as number;
+    const row = db.prepare('SELECT * FROM maintenance_checks WHERE id = ?').get(id) as MaintenanceCheckRow;
+    const schedule = this.toCheckSchedule(row);
+
+    auditService.log({
+      actorId,
+      action: 'maintenance.create_check_schedule',
+      targetType: 'maintenance_check',
+      targetId: id,
+      after: { icaoType: schedule.icaoType, checkType: schedule.checkType, intervalHours: schedule.intervalHours },
+    });
+
+    logger.info(TAG, `Check schedule created: ${schedule.icaoType} ${schedule.checkType}`);
+    return schedule;
+  }
+
+  updateCheckSchedule(id: number, data: UpdateCheckScheduleRequest, actorId: number): MaintenanceCheckSchedule | undefined {
+    const db = getDb();
+    const existing = db.prepare('SELECT * FROM maintenance_checks WHERE id = ?').get(id) as MaintenanceCheckRow | undefined;
+    if (!existing) return undefined;
+
+    const sets: string[] = [];
+    const params: unknown[] = [];
+
+    if (data.intervalHours !== undefined) { sets.push('interval_hours = ?'); params.push(data.intervalHours); }
+    if (data.intervalCycles !== undefined) { sets.push('interval_cycles = ?'); params.push(data.intervalCycles); }
+    if (data.intervalMonths !== undefined) { sets.push('interval_months = ?'); params.push(data.intervalMonths); }
+    if (data.overflightPct !== undefined) { sets.push('overflight_pct = ?'); params.push(data.overflightPct); }
+    if (data.estimatedDurationHours !== undefined) { sets.push('estimated_duration_hours = ?'); params.push(data.estimatedDurationHours); }
+    if (data.description !== undefined) { sets.push('description = ?'); params.push(data.description); }
+
+    if (sets.length === 0) return this.toCheckSchedule(existing);
+
+    params.push(id);
+    db.prepare(`UPDATE maintenance_checks SET ${sets.join(', ')} WHERE id = ?`).run(...params);
+
+    const row = db.prepare('SELECT * FROM maintenance_checks WHERE id = ?').get(id) as MaintenanceCheckRow;
+    const updated = this.toCheckSchedule(row);
+
+    auditService.log({
+      actorId,
+      action: 'maintenance.update_check_schedule',
+      targetType: 'maintenance_check',
+      targetId: id,
+      before: { intervalHours: existing.interval_hours, overflightPct: existing.overflight_pct },
+      after: { intervalHours: updated.intervalHours, overflightPct: updated.overflightPct },
+    });
+
+    return updated;
+  }
+
+  deleteCheckSchedule(id: number, actorId: number): boolean {
+    const db = getDb();
+    const existing = db.prepare('SELECT * FROM maintenance_checks WHERE id = ?').get(id) as MaintenanceCheckRow | undefined;
+    if (!existing) return false;
+
+    db.prepare('DELETE FROM maintenance_checks WHERE id = ?').run(id);
+
+    auditService.log({
+      actorId,
+      action: 'maintenance.delete_check_schedule',
+      targetType: 'maintenance_check',
+      targetId: id,
+      before: { icaoType: existing.icao_type, checkType: existing.check_type },
+    });
+
+    logger.info(TAG, `Check schedule ${id} deleted (${existing.icao_type} ${existing.check_type})`);
+    return true;
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // Airworthiness Directives CRUD
+  // ═══════════════════════════════════════════════════════════
+
+  findAllADs(
+    filters: { aircraftId?: number; status?: string },
+    page = 1,
+    pageSize = 50,
+  ): ADListResponse {
+    const db = getDb();
+    const conditions: string[] = [];
+    const params: unknown[] = [];
+
+    if (filters.aircraftId) {
+      conditions.push('ad.aircraft_id = ?');
+      params.push(filters.aircraftId);
+    }
+    if (filters.status) {
+      conditions.push('ad.compliance_status = ?');
+      params.push(filters.status);
+    }
+
+    const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
+
+    const { count: total } = db.prepare(
+      `SELECT COUNT(*) as count FROM airworthiness_directives ad ${where}`,
+    ).get(...params) as { count: number };
+
+    const offset = (page - 1) * pageSize;
+    const rows = db.prepare(`
+      SELECT ad.*, f.registration
+      FROM airworthiness_directives ad
+      LEFT JOIN fleet f ON f.id = ad.aircraft_id
+      ${where}
+      ORDER BY ad.id DESC
+      LIMIT ? OFFSET ?
+    `).all(...params, pageSize, offset) as ADJoinRow[];
+
+    return { directives: rows.map(r => this.toAD(r)), total };
+  }
+
+  createAD(data: CreateADRequest, actorId: number): AirworthinessDirective {
+    const db = getDb();
+    const now = new Date().toISOString();
+    const status = data.complianceStatus ?? 'open';
+
+    const result = db.prepare(`
+      INSERT INTO airworthiness_directives (
+        aircraft_id, ad_number, title, description, compliance_status,
+        compliance_date, compliance_method, recurring_interval_hours,
+        next_due_hours, next_due_date, created_by, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      data.aircraftId,
+      data.adNumber,
+      data.title,
+      data.description ?? null,
+      status,
+      data.complianceDate ?? null,
+      data.complianceMethod ?? null,
+      data.recurringIntervalHours ?? null,
+      data.nextDueHours ?? null,
+      data.nextDueDate ?? null,
+      actorId,
+      now,
+      now,
+    );
+
+    const id = result.lastInsertRowid as number;
+    const row = db.prepare(`
+      SELECT ad.*, f.registration
+      FROM airworthiness_directives ad
+      LEFT JOIN fleet f ON f.id = ad.aircraft_id
+      WHERE ad.id = ?
+    `).get(id) as ADJoinRow;
+
+    const ad = this.toAD(row);
+
+    auditService.log({
+      actorId,
+      action: 'maintenance.create_ad',
+      targetType: 'airworthiness_directive',
+      targetId: id,
+      after: { adNumber: ad.adNumber, title: ad.title, aircraftId: ad.aircraftId },
+    });
+
+    logger.info(TAG, `AD created: ${ad.adNumber} for aircraft ${ad.aircraftId}`);
+    return ad;
+  }
+
+  updateAD(id: number, data: UpdateADRequest, actorId: number): AirworthinessDirective | undefined {
+    const db = getDb();
+    const existing = db.prepare('SELECT * FROM airworthiness_directives WHERE id = ?')
+      .get(id) as AirworthinessDirectiveRow | undefined;
+    if (!existing) return undefined;
+
+    const sets: string[] = [];
+    const params: unknown[] = [];
+
+    if (data.adNumber !== undefined) { sets.push('ad_number = ?'); params.push(data.adNumber); }
+    if (data.title !== undefined) { sets.push('title = ?'); params.push(data.title); }
+    if (data.description !== undefined) { sets.push('description = ?'); params.push(data.description); }
+    if (data.complianceStatus !== undefined) { sets.push('compliance_status = ?'); params.push(data.complianceStatus); }
+    if (data.complianceDate !== undefined) { sets.push('compliance_date = ?'); params.push(data.complianceDate); }
+    if (data.complianceMethod !== undefined) { sets.push('compliance_method = ?'); params.push(data.complianceMethod); }
+    if (data.recurringIntervalHours !== undefined) { sets.push('recurring_interval_hours = ?'); params.push(data.recurringIntervalHours); }
+    if (data.nextDueHours !== undefined) { sets.push('next_due_hours = ?'); params.push(data.nextDueHours); }
+    if (data.nextDueDate !== undefined) { sets.push('next_due_date = ?'); params.push(data.nextDueDate); }
+
+    if (sets.length === 0) {
+      const row = db.prepare(`
+        SELECT ad.*, f.registration FROM airworthiness_directives ad
+        LEFT JOIN fleet f ON f.id = ad.aircraft_id WHERE ad.id = ?
+      `).get(id) as ADJoinRow;
+      return this.toAD(row);
+    }
+
+    sets.push('updated_at = datetime(\'now\')');
+    params.push(id);
+
+    db.prepare(`UPDATE airworthiness_directives SET ${sets.join(', ')} WHERE id = ?`).run(...params);
+
+    const row = db.prepare(`
+      SELECT ad.*, f.registration FROM airworthiness_directives ad
+      LEFT JOIN fleet f ON f.id = ad.aircraft_id WHERE ad.id = ?
+    `).get(id) as ADJoinRow;
+    const updated = this.toAD(row);
+
+    auditService.log({
+      actorId,
+      action: 'maintenance.update_ad',
+      targetType: 'airworthiness_directive',
+      targetId: id,
+      before: { complianceStatus: existing.compliance_status, title: existing.title },
+      after: { complianceStatus: updated.complianceStatus, title: updated.title },
+    });
+
+    return updated;
+  }
+
+  deleteAD(id: number, actorId: number): boolean {
+    const db = getDb();
+    const existing = db.prepare('SELECT * FROM airworthiness_directives WHERE id = ?')
+      .get(id) as AirworthinessDirectiveRow | undefined;
+    if (!existing) return false;
+
+    db.prepare('DELETE FROM airworthiness_directives WHERE id = ?').run(id);
+
+    auditService.log({
+      actorId,
+      action: 'maintenance.delete_ad',
+      targetType: 'airworthiness_directive',
+      targetId: id,
+      before: { adNumber: existing.ad_number, title: existing.title, aircraftId: existing.aircraft_id },
+    });
+
+    logger.info(TAG, `AD ${id} deleted (${existing.ad_number})`);
+    return true;
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // MEL Deferrals CRUD
+  // ═══════════════════════════════════════════════════════════
+
+  findAllMEL(
+    filters: { aircraftId?: number; status?: string; category?: string },
+    page = 1,
+    pageSize = 50,
+  ): MELListResponse {
+    const db = getDb();
+    const conditions: string[] = [];
+    const params: unknown[] = [];
+
+    if (filters.aircraftId) {
+      conditions.push('mel.aircraft_id = ?');
+      params.push(filters.aircraftId);
+    }
+    if (filters.status) {
+      conditions.push('mel.status = ?');
+      params.push(filters.status);
+    }
+    if (filters.category) {
+      conditions.push('mel.category = ?');
+      params.push(filters.category);
+    }
+
+    const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
+
+    const { count: total } = db.prepare(
+      `SELECT COUNT(*) as count FROM mel_deferrals mel ${where}`,
+    ).get(...params) as { count: number };
+
+    const offset = (page - 1) * pageSize;
+    const rows = db.prepare(`
+      SELECT mel.*, f.registration
+      FROM mel_deferrals mel
+      LEFT JOIN fleet f ON f.id = mel.aircraft_id
+      ${where}
+      ORDER BY mel.id DESC
+      LIMIT ? OFFSET ?
+    `).all(...params, pageSize, offset) as MELJoinRow[];
+
+    return { deferrals: rows.map(r => this.toMEL(r)), total };
+  }
+
+  createMEL(data: CreateMELRequest, actorId: number): MELDeferral {
+    const db = getDb();
+    const now = new Date().toISOString();
+
+    const result = db.prepare(`
+      INSERT INTO mel_deferrals (
+        aircraft_id, item_number, title, category, deferral_date,
+        expiry_date, status, remarks, created_by, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, 'open', ?, ?, ?)
+    `).run(
+      data.aircraftId,
+      data.itemNumber,
+      data.title,
+      data.category,
+      data.deferralDate,
+      data.expiryDate,
+      data.remarks ?? null,
+      actorId,
+      now,
+    );
+
+    const id = result.lastInsertRowid as number;
+    const row = db.prepare(`
+      SELECT mel.*, f.registration FROM mel_deferrals mel
+      LEFT JOIN fleet f ON f.id = mel.aircraft_id WHERE mel.id = ?
+    `).get(id) as MELJoinRow;
+
+    const mel = this.toMEL(row);
+
+    auditService.log({
+      actorId,
+      action: 'maintenance.create_mel',
+      targetType: 'mel_deferral',
+      targetId: id,
+      after: { itemNumber: mel.itemNumber, title: mel.title, category: mel.category, aircraftId: mel.aircraftId },
+    });
+
+    logger.info(TAG, `MEL deferral created: ${mel.itemNumber} for aircraft ${mel.aircraftId}`);
+    return mel;
+  }
+
+  updateMEL(id: number, data: UpdateMELRequest, actorId: number): MELDeferral | undefined {
+    const db = getDb();
+    const existing = db.prepare('SELECT * FROM mel_deferrals WHERE id = ?')
+      .get(id) as MELDeferralRow | undefined;
+    if (!existing) return undefined;
+
+    const sets: string[] = [];
+    const params: unknown[] = [];
+
+    if (data.itemNumber !== undefined) { sets.push('item_number = ?'); params.push(data.itemNumber); }
+    if (data.title !== undefined) { sets.push('title = ?'); params.push(data.title); }
+    if (data.category !== undefined) { sets.push('category = ?'); params.push(data.category); }
+    if (data.deferralDate !== undefined) { sets.push('deferral_date = ?'); params.push(data.deferralDate); }
+    if (data.expiryDate !== undefined) { sets.push('expiry_date = ?'); params.push(data.expiryDate); }
+    if (data.rectifiedDate !== undefined) { sets.push('rectified_date = ?'); params.push(data.rectifiedDate); }
+    if (data.status !== undefined) { sets.push('status = ?'); params.push(data.status); }
+    if (data.remarks !== undefined) { sets.push('remarks = ?'); params.push(data.remarks); }
+
+    if (sets.length === 0) {
+      const row = db.prepare(`
+        SELECT mel.*, f.registration FROM mel_deferrals mel
+        LEFT JOIN fleet f ON f.id = mel.aircraft_id WHERE mel.id = ?
+      `).get(id) as MELJoinRow;
+      return this.toMEL(row);
+    }
+
+    params.push(id);
+    db.prepare(`UPDATE mel_deferrals SET ${sets.join(', ')} WHERE id = ?`).run(...params);
+
+    const row = db.prepare(`
+      SELECT mel.*, f.registration FROM mel_deferrals mel
+      LEFT JOIN fleet f ON f.id = mel.aircraft_id WHERE mel.id = ?
+    `).get(id) as MELJoinRow;
+    const updated = this.toMEL(row);
+
+    auditService.log({
+      actorId,
+      action: 'maintenance.update_mel',
+      targetType: 'mel_deferral',
+      targetId: id,
+      before: { status: existing.status, category: existing.category },
+      after: { status: updated.status, category: updated.category },
+    });
+
+    return updated;
+  }
+
+  deleteMEL(id: number, actorId: number): boolean {
+    const db = getDb();
+    const existing = db.prepare('SELECT * FROM mel_deferrals WHERE id = ?')
+      .get(id) as MELDeferralRow | undefined;
+    if (!existing) return false;
+
+    db.prepare('DELETE FROM mel_deferrals WHERE id = ?').run(id);
+
+    auditService.log({
+      actorId,
+      action: 'maintenance.delete_mel',
+      targetType: 'mel_deferral',
+      targetId: id,
+      before: { itemNumber: existing.item_number, title: existing.title, aircraftId: existing.aircraft_id },
+    });
+
+    logger.info(TAG, `MEL deferral ${id} deleted (${existing.item_number})`);
+    return true;
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // Components CRUD
+  // ═══════════════════════════════════════════════════════════
+
+  findAllComponents(
+    filters: { aircraftId?: number; componentType?: string; status?: string },
+  ): AircraftComponent[] {
+    const db = getDb();
+    const conditions: string[] = [];
+    const params: unknown[] = [];
+
+    if (filters.aircraftId) {
+      conditions.push('ac.aircraft_id = ?');
+      params.push(filters.aircraftId);
+    }
+    if (filters.componentType) {
+      conditions.push('ac.component_type = ?');
+      params.push(filters.componentType);
+    }
+    if (filters.status) {
+      conditions.push('ac.status = ?');
+      params.push(filters.status);
+    }
+
+    const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
+
+    const rows = db.prepare(`
+      SELECT ac.*, f.registration
+      FROM aircraft_components ac
+      LEFT JOIN fleet f ON f.id = ac.aircraft_id
+      ${where}
+      ORDER BY ac.aircraft_id, ac.component_type, ac.position
+    `).all(...params) as ComponentJoinRow[];
+
+    return rows.map(r => this.toComponent(r));
+  }
+
+  createComponent(data: CreateComponentRequest, actorId: number): AircraftComponent {
+    const db = getDb();
+    const now = new Date().toISOString();
+    const status = data.status ?? 'installed';
+
+    const result = db.prepare(`
+      INSERT INTO aircraft_components (
+        aircraft_id, component_type, position, serial_number, part_number,
+        hours_since_new, cycles_since_new, hours_since_overhaul, cycles_since_overhaul,
+        overhaul_interval_hours, installed_date, status, remarks, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      data.aircraftId,
+      data.componentType,
+      data.position ?? null,
+      data.serialNumber ?? null,
+      data.partNumber ?? null,
+      data.hoursSinceNew ?? 0,
+      data.cyclesSinceNew ?? 0,
+      data.hoursSinceOverhaul ?? 0,
+      data.cyclesSinceOverhaul ?? 0,
+      data.overhaulIntervalHours ?? null,
+      data.installedDate ?? null,
+      status,
+      data.remarks ?? null,
+      now,
+      now,
+    );
+
+    const id = result.lastInsertRowid as number;
+    const row = db.prepare(`
+      SELECT ac.*, f.registration FROM aircraft_components ac
+      LEFT JOIN fleet f ON f.id = ac.aircraft_id WHERE ac.id = ?
+    `).get(id) as ComponentJoinRow;
+
+    const component = this.toComponent(row);
+
+    auditService.log({
+      actorId,
+      action: 'maintenance.create_component',
+      targetType: 'aircraft_component',
+      targetId: id,
+      after: { componentType: component.componentType, serialNumber: component.serialNumber, aircraftId: component.aircraftId },
+    });
+
+    logger.info(TAG, `Component created: ${component.componentType} for aircraft ${component.aircraftId}`);
+    return component;
+  }
+
+  updateComponent(id: number, data: UpdateComponentRequest, actorId: number): AircraftComponent | undefined {
+    const db = getDb();
+    const existing = db.prepare('SELECT * FROM aircraft_components WHERE id = ?')
+      .get(id) as AircraftComponentRow | undefined;
+    if (!existing) return undefined;
+
+    const sets: string[] = [];
+    const params: unknown[] = [];
+
+    if (data.componentType !== undefined) { sets.push('component_type = ?'); params.push(data.componentType); }
+    if (data.position !== undefined) { sets.push('position = ?'); params.push(data.position); }
+    if (data.serialNumber !== undefined) { sets.push('serial_number = ?'); params.push(data.serialNumber); }
+    if (data.partNumber !== undefined) { sets.push('part_number = ?'); params.push(data.partNumber); }
+    if (data.hoursSinceNew !== undefined) { sets.push('hours_since_new = ?'); params.push(data.hoursSinceNew); }
+    if (data.cyclesSinceNew !== undefined) { sets.push('cycles_since_new = ?'); params.push(data.cyclesSinceNew); }
+    if (data.hoursSinceOverhaul !== undefined) { sets.push('hours_since_overhaul = ?'); params.push(data.hoursSinceOverhaul); }
+    if (data.cyclesSinceOverhaul !== undefined) { sets.push('cycles_since_overhaul = ?'); params.push(data.cyclesSinceOverhaul); }
+    if (data.overhaulIntervalHours !== undefined) { sets.push('overhaul_interval_hours = ?'); params.push(data.overhaulIntervalHours); }
+    if (data.installedDate !== undefined) { sets.push('installed_date = ?'); params.push(data.installedDate); }
+    if (data.status !== undefined) { sets.push('status = ?'); params.push(data.status); }
+    if (data.remarks !== undefined) { sets.push('remarks = ?'); params.push(data.remarks); }
+
+    if (sets.length === 0) {
+      const row = db.prepare(`
+        SELECT ac.*, f.registration FROM aircraft_components ac
+        LEFT JOIN fleet f ON f.id = ac.aircraft_id WHERE ac.id = ?
+      `).get(id) as ComponentJoinRow;
+      return this.toComponent(row);
+    }
+
+    sets.push('updated_at = datetime(\'now\')');
+    params.push(id);
+
+    db.prepare(`UPDATE aircraft_components SET ${sets.join(', ')} WHERE id = ?`).run(...params);
+
+    const row = db.prepare(`
+      SELECT ac.*, f.registration FROM aircraft_components ac
+      LEFT JOIN fleet f ON f.id = ac.aircraft_id WHERE ac.id = ?
+    `).get(id) as ComponentJoinRow;
+    const updated = this.toComponent(row);
+
+    auditService.log({
+      actorId,
+      action: 'maintenance.update_component',
+      targetType: 'aircraft_component',
+      targetId: id,
+      before: { status: existing.status, hoursSinceNew: existing.hours_since_new },
+      after: { status: updated.status, hoursSinceNew: updated.hoursSinceNew },
+    });
+
+    return updated;
+  }
+
+  deleteComponent(id: number, actorId: number): boolean {
+    const db = getDb();
+    const existing = db.prepare('SELECT * FROM aircraft_components WHERE id = ?')
+      .get(id) as AircraftComponentRow | undefined;
+    if (!existing) return false;
+
+    db.prepare('DELETE FROM aircraft_components WHERE id = ?').run(id);
+
+    auditService.log({
+      actorId,
+      action: 'maintenance.delete_component',
+      targetType: 'aircraft_component',
+      targetId: id,
+      before: { componentType: existing.component_type, serialNumber: existing.serial_number, aircraftId: existing.aircraft_id },
+    });
+
+    logger.info(TAG, `Component ${id} deleted (${existing.component_type})`);
+    return true;
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // PIREP Hook
+  // ═══════════════════════════════════════════════════════════
+
+  accumulateFlightHours(aircraftRegistration: string, flightTimeMin: number): void {
+    const db = getDb();
+
+    // Look up fleet.id by registration
+    const fleet = db.prepare('SELECT id FROM fleet WHERE registration = ?')
+      .get(aircraftRegistration) as { id: number } | undefined;
+    if (!fleet) {
+      logger.warn(TAG, `Cannot accumulate hours: aircraft "${aircraftRegistration}" not found in fleet`);
+      return;
+    }
+
+    const aircraftId = fleet.id;
+    const flightHours = flightTimeMin / 60;
+
+    this.ensureAircraftHours(aircraftId);
+
+    // Update hours and cycles
+    db.prepare(`
+      UPDATE aircraft_hours
+      SET total_hours = total_hours + ?,
+          total_cycles = total_cycles + 1,
+          updated_at = datetime('now')
+      WHERE aircraft_id = ?
+    `).run(flightHours, aircraftId);
+
+    // Update installed components
+    db.prepare(`
+      UPDATE aircraft_components
+      SET hours_since_new = hours_since_new + ?,
+          cycles_since_new = cycles_since_new + 1,
+          hours_since_overhaul = hours_since_overhaul + ?,
+          cycles_since_overhaul = cycles_since_overhaul + 1,
+          updated_at = datetime('now')
+      WHERE aircraft_id = ? AND status = 'installed'
+    `).run(flightHours, flightHours, aircraftId);
+
+    logger.info(TAG, `Accumulated ${flightHours.toFixed(2)}h / 1 cycle for ${aircraftRegistration}`);
+
+    this.checkAndGroundAircraft(aircraftId);
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // Private: Fleet Status Builder
+  // ═══════════════════════════════════════════════════════════
+
+  private buildFleetStatus(row: FleetMaintenanceStatusRow): FleetMaintenanceStatus {
+    const db = getDb();
+    const totalHours = row.total_hours ?? 0;
+    const totalCycles = row.total_cycles ?? 0;
+
+    // Build AircraftHoursRow for computeChecksDue
+    const hoursRow: AircraftHoursRow = {
+      aircraft_id: row.id,
+      total_hours: totalHours,
+      total_cycles: totalCycles,
+      hours_at_last_a: row.hours_at_last_a ?? 0,
+      hours_at_last_b: row.hours_at_last_b ?? 0,
+      hours_at_last_c: row.hours_at_last_c ?? 0,
+      cycles_at_last_c: row.cycles_at_last_c ?? 0,
+      last_d_check_date: row.last_d_check_date,
+      updated_at: '',
+    };
+
+    const checks = db.prepare('SELECT * FROM maintenance_checks WHERE icao_type = ?')
+      .all(row.icao_type) as MaintenanceCheckRow[];
+
+    const checksDue = this.computeChecksDue(hoursRow, checks);
+    const hasOverdueChecks = checksDue.some(c => c.isOverdue);
+
+    // Check for overdue ADs
+    const now = new Date().toISOString().split('T')[0];
+    const overdueADs = db.prepare(`
+      SELECT COUNT(*) as count FROM airworthiness_directives
+      WHERE aircraft_id = ? AND compliance_status IN ('open', 'recurring')
+        AND (
+          (next_due_date IS NOT NULL AND next_due_date < ?)
+          OR (next_due_hours IS NOT NULL AND next_due_hours <= ?)
+        )
+    `).get(row.id, now, totalHours) as { count: number };
+
+    // Check for expired MELs
+    const expiredMELs = db.prepare(`
+      SELECT COUNT(*) as count FROM mel_deferrals
+      WHERE aircraft_id = ? AND status = 'open' AND expiry_date < ?
+    `).get(row.id, now) as { count: number };
+
+    // Determine next check due
+    let nextCheckType: string | null = null;
+    let nextCheckDueIn: number | null = null;
+
+    for (const check of checksDue) {
+      if (check.remainingHours != null) {
+        if (nextCheckDueIn === null || check.remainingHours < nextCheckDueIn) {
+          nextCheckDueIn = check.remainingHours;
+          nextCheckType = check.checkType;
+        }
+      }
+    }
+
+    return {
+      aircraftId: row.id,
+      registration: row.registration,
+      icaoType: row.icao_type,
+      name: row.name,
+      status: row.status,
+      totalHours,
+      totalCycles,
+      checksDue,
+      hasOverdueChecks,
+      hasOverdueADs: overdueADs.count > 0,
+      hasExpiredMEL: expiredMELs.count > 0,
+      nextCheckType,
+      nextCheckDueIn,
+    };
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // Private: Row-to-DTO Converters
+  // ═══════════════════════════════════════════════════════════
+
+  private toAircraftHours(row: AircraftHoursRow): AircraftHours {
+    return {
+      aircraftId: row.aircraft_id,
+      totalHours: row.total_hours,
+      totalCycles: row.total_cycles,
+      hoursAtLastA: row.hours_at_last_a,
+      hoursAtLastB: row.hours_at_last_b,
+      hoursAtLastC: row.hours_at_last_c,
+      cyclesAtLastC: row.cycles_at_last_c,
+      lastDCheckDate: row.last_d_check_date,
+      updatedAt: row.updated_at,
+    };
+  }
+
+  private toCheckSchedule(row: MaintenanceCheckRow): MaintenanceCheckSchedule {
+    return {
+      id: row.id,
+      icaoType: row.icao_type,
+      checkType: row.check_type as MaintenanceCheckType,
+      intervalHours: row.interval_hours,
+      intervalCycles: row.interval_cycles,
+      intervalMonths: row.interval_months,
+      overflightPct: row.overflight_pct,
+      estimatedDurationHours: row.estimated_duration_hours,
+      description: row.description,
+    };
+  }
+
+  private toLogEntry(row: MaintenanceLogRow | MaintenanceLogJoinRow): MaintenanceLogEntry {
+    const entry: MaintenanceLogEntry = {
+      id: row.id,
+      aircraftId: row.aircraft_id,
+      checkType: row.check_type as MaintenanceLogType,
+      title: row.title,
+      description: row.description,
+      performedBy: row.performed_by,
+      performedAt: row.performed_at,
+      hoursAtCheck: row.hours_at_check,
+      cyclesAtCheck: row.cycles_at_check,
+      cost: row.cost,
+      status: row.status as MaintenanceLogStatus,
+      sfpDestination: row.sfp_destination,
+      sfpExpiry: row.sfp_expiry,
+      createdBy: row.created_by,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at,
+    };
+    if ('registration' in row && row.registration) {
+      entry.aircraftRegistration = row.registration;
+    }
+    return entry;
+  }
+
+  private toAD(row: AirworthinessDirectiveRow | ADJoinRow): AirworthinessDirective {
+    const ad: AirworthinessDirective = {
+      id: row.id,
+      aircraftId: row.aircraft_id,
+      adNumber: row.ad_number,
+      title: row.title,
+      description: row.description,
+      complianceStatus: row.compliance_status as ADComplianceStatus,
+      complianceDate: row.compliance_date,
+      complianceMethod: row.compliance_method,
+      recurringIntervalHours: row.recurring_interval_hours,
+      nextDueHours: row.next_due_hours,
+      nextDueDate: row.next_due_date,
+      createdBy: row.created_by,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at,
+    };
+    if ('registration' in row && row.registration) {
+      ad.aircraftRegistration = row.registration;
+    }
+    return ad;
+  }
+
+  private toMEL(row: MELDeferralRow | MELJoinRow): MELDeferral {
+    const mel: MELDeferral = {
+      id: row.id,
+      aircraftId: row.aircraft_id,
+      itemNumber: row.item_number,
+      title: row.title,
+      category: row.category as MELCategory,
+      deferralDate: row.deferral_date,
+      expiryDate: row.expiry_date,
+      rectifiedDate: row.rectified_date,
+      status: row.status as MELStatus,
+      remarks: row.remarks,
+      createdBy: row.created_by,
+      createdAt: row.created_at,
+    };
+    if ('registration' in row && row.registration) {
+      mel.aircraftRegistration = row.registration;
+    }
+    return mel;
+  }
+
+  private toComponent(row: AircraftComponentRow | ComponentJoinRow): AircraftComponent {
+    const comp: AircraftComponent = {
+      id: row.id,
+      aircraftId: row.aircraft_id,
+      componentType: row.component_type as ComponentType,
+      position: row.position,
+      serialNumber: row.serial_number,
+      partNumber: row.part_number,
+      hoursSinceNew: row.hours_since_new,
+      cyclesSinceNew: row.cycles_since_new,
+      hoursSinceOverhaul: row.hours_since_overhaul,
+      cyclesSinceOverhaul: row.cycles_since_overhaul,
+      overhaulIntervalHours: row.overhaul_interval_hours,
+      installedDate: row.installed_date,
+      status: row.status as ComponentStatus,
+      remarks: row.remarks,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at,
+    };
+    if ('registration' in row && row.registration) {
+      comp.aircraftRegistration = row.registration;
+    }
+    return comp;
+  }
+}
