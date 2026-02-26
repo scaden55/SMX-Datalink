@@ -115,13 +115,14 @@ scp -r "$ROOT/backend/dist" "${VPS_USER}@${VPS_HOST}:${VPS_PATH}/dist-new" || fa
 
 # Create a VPS-specific package.json that strips optionalDependencies
 # (node-simconnect is Windows-only and fails to compile on Linux)
+cd "$ROOT"
 node -e "
-  const pkg = JSON.parse(require('fs').readFileSync('$ROOT/backend/package.json', 'utf8'));
+  const pkg = JSON.parse(require('fs').readFileSync('./backend/package.json', 'utf8'));
   delete pkg.optionalDependencies;
   delete pkg.devDependencies;
-  require('fs').writeFileSync('/tmp/vps-package.json', JSON.stringify(pkg, null, 2));
-"
-scp /tmp/vps-package.json "${VPS_USER}@${VPS_HOST}:${VPS_PATH}/package-new.json" || fail "SCP package.json failed"
+  process.stdout.write(JSON.stringify(pkg, null, 2));
+" > "$ROOT/backend/dist/vps-package.json"
+scp "$ROOT/backend/dist/vps-package.json" "${VPS_USER}@${VPS_HOST}:${VPS_PATH}/package-new.json" || fail "SCP package.json failed"
 
 # Swap and restart (sleep + fuser to ensure port 3001 is released before restart)
 ssh "${VPS_USER}@${VPS_HOST}" "cd ${VPS_PATH} && \
