@@ -39,7 +39,7 @@ function createSplash(): void {
 
   splashWindow = new BrowserWindow({
     width: 400,
-    height: 300,
+    height: 340,
     frame: false,
     transparent: false,
     resizable: false,
@@ -71,6 +71,75 @@ function closeSplash(): void {
   if (splashWindow && !splashWindow.isDestroyed()) {
     splashWindow.close();
     splashWindow = null;
+  }
+}
+
+function splashExec(js: string): Promise<unknown> {
+  if (!splashWindow || splashWindow.isDestroyed()) return Promise.resolve();
+  return splashWindow.webContents.executeJavaScript(js);
+}
+
+async function checkForUpdateDuringSplash(): Promise<void> {
+  if (IS_DEV) return; // No updates in dev
+
+  autoUpdater.autoDownload = false;
+
+  try {
+    const result = await autoUpdater.checkForUpdates();
+    if (!result || !result.updateInfo) return; // No update
+
+    // Compare versions — if current version is same, skip
+    const current = app.getVersion();
+    if (result.updateInfo.version === current) return;
+
+    // Show update prompt on splash
+    await splashExec(`showUpdate(${JSON.stringify(result.updateInfo.version)})`);
+
+    // Wait for user decision (Promise resolves when button is clicked)
+    const action = await splashExec(`
+      new Promise(resolve => {
+        document.getElementById('btn-download').onclick = () => resolve('download');
+        document.getElementById('btn-skip').onclick = () => resolve('skip');
+      })
+    `);
+
+    if (action !== 'download') return;
+
+    // User chose to download
+    await splashExec('showDownloading()');
+
+    // Wire up progress (cleaned up in finally to avoid listener leak)
+    const onProgress = (progress: { percent: number }) => {
+      splashExec(`setProgress(${Math.round(progress.percent)})`);
+    };
+    autoUpdater.on('download-progress', onProgress);
+
+    try {
+      // Start download and wait for completion
+      await autoUpdater.downloadUpdate();
+    } finally {
+      autoUpdater.removeListener('download-progress', onProgress);
+    }
+
+    // Download complete — show installing
+    await splashExec('showInstalling()');
+
+    // Brief UX pause, then quit+install. quitAndInstall exits the process on success;
+    // if it somehow fails, this function returns and the app continues normally.
+    setTimeout(() => autoUpdater.quitAndInstall(false, true), 1500);
+    return;
+
+  } catch (err) {
+    console.error('[AutoUpdater] Splash update error:', err);
+    // Show error on splash, let user continue
+    const msg = (err as Error).message ?? 'Unknown error';
+    await splashExec(`showError(${JSON.stringify(msg)})`);
+    await splashExec(`
+      new Promise(resolve => {
+        document.getElementById('btn-continue').onclick = () => resolve('continue');
+      })
+    `);
+    // User clicked continue — proceed to app
   }
 }
 
@@ -248,9 +317,9 @@ function registerIpcHandlers(): void {
 // ----- Auto-Updater Events -----
 
 function setupAutoUpdater(): void {
-  if (IS_DEV) return; // No auto-updates in development
+  if (IS_DEV) return;
 
-  autoUpdater.autoDownload = true;
+  autoUpdater.autoDownload = false;
   autoUpdater.autoInstallOnAppQuit = true;
 
   autoUpdater.on('update-available', (info) => {
@@ -275,12 +344,6 @@ function setupAutoUpdater(): void {
     console.error('[AutoUpdater] Error:', err.message);
     mainWindow?.webContents.send(IpcChannels.UPDATE_ERROR, err.message);
   });
-
-  // Check for updates automatically after a short delay (let the window load first)
-  setTimeout(() => {
-    console.log('[AutoUpdater] Checking for updates...');
-    autoUpdater.checkForUpdatesAndNotify();
-  }, 5_000);
 }
 
 // ----- App Lifecycle -----
@@ -308,10 +371,15 @@ app.on('before-quit', () => {
 
 app.whenReady().then(async () => {
   registerIpcHandlers();
-  setupAutoUpdater();
 
   // Show splash immediately so users see feedback during boot
   createSplash();
+
+  // Check for updates during splash (blocks until resolved or skipped)
+  await checkForUpdateDuringSplash();
+
+  // Set up auto-updater for runtime re-checks (after splash update check)
+  setupAutoUpdater();
 
   // Packaged exe connects to VPS — no local backend needed
   // Dev mode uses external backend via `npm run dev:backend`
