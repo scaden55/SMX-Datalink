@@ -33,12 +33,14 @@ const INVOKE_CHANNELS = new Set<string>([
   IpcChannels.FILE_OPEN_DIALOG,
   IpcChannels.FILE_SAVE_DIALOG,
   IpcChannels.SIMBRIEF_CLEAR_SESSION,
+  IpcChannels.RELAY_AUTH,
 ]);
 
 // Channels the renderer is allowed to listen to FROM main
 const RECEIVE_CHANNELS = new Set<string>([
   IpcChannels.BACKEND_STATUS,
   IpcChannels.SIM_STATUS,
+  IpcChannels.SIM_TELEMETRY,
   IpcChannels.UPDATE_AVAILABLE,
   IpcChannels.UPDATE_DOWNLOADED,
   IpcChannels.UPDATE_PROGRESS,
@@ -73,6 +75,10 @@ const electronAPI = {
 
   // --- SimBrief Session ---
   clearSimbriefSession: () => ipcRenderer.invoke(IpcChannels.SIMBRIEF_CLEAR_SESSION) as Promise<boolean>,
+
+  // --- Relay Auth ---
+  setRelayAuth: (data: { token: string; userId: number; callsign: string; vpsUrl: string }) =>
+    ipcRenderer.invoke(IpcChannels.RELAY_AUTH, data),
 
   // --- Developer Tools ---
   toggleDevTools: () => ipcRenderer.send(IpcChannels.DEVTOOLS_TOGGLE),

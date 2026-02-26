@@ -2,6 +2,9 @@ import { app, BrowserWindow, ipcMain, dialog, shell, Menu, session, nativeImage 
 import { autoUpdater } from 'electron-updater';
 import * as path from 'path';
 import { IpcChannels } from './ipc-channels';
+import type { ISimConnectManager } from './simconnect/types';
+import { NullSimConnectManager } from './simconnect/null-manager';
+import { VpsRelay } from './relay';
 
 // Set AppUserModelId early so Windows uses our icon, not Electron's default
 app.setAppUserModelId('com.sma.acars');
@@ -25,6 +28,9 @@ console.log('[Electron] Icon loaded from', iconPath, '— empty?', APP_ICON.isEm
 let mainWindow: BrowserWindow | null = null;
 let splashWindow: BrowserWindow | null = null;
 let isQuitting = false;
+let simConnect: ISimConnectManager | null = null;
+let vpsRelay: VpsRelay | null = null;
+let telemetryInterval: ReturnType<typeof setInterval> | null = null;
 
 // ----- Splash Screen -----
 
@@ -295,6 +301,9 @@ if (!gotLock) {
 app.on('before-quit', () => {
   isQuitting = true;
   closeSplash();
+  simConnect?.disconnect();
+  vpsRelay?.stop();
+  if (telemetryInterval) clearInterval(telemetryInterval);
 });
 
 app.whenReady().then(async () => {
@@ -309,6 +318,77 @@ app.whenReady().then(async () => {
   console.log(`[Electron] Mode: ${IS_DEV ? 'dev (local backend via tsx watch)' : 'production (VPS backend)'}`);
 
   createWindow();
+
+  // ── SimConnect ─────────────────────────────────────────────
+  try {
+    const { SimConnectManager } = require('./simconnect/connection');
+    simConnect = new SimConnectManager();
+    console.log('[Electron] SimConnect module loaded');
+  } catch (err) {
+    console.warn('[Electron] SimConnect not available:', (err as Error).message);
+    simConnect = new NullSimConnectManager();
+  }
+
+  // Local alias — guaranteed non-null after the try/catch above
+  const sim = simConnect!;
+
+  sim.connect();
+
+  // Accumulate latest data from each SimConnect group
+  const latestData: Record<string, unknown> = {};
+  sim.on('positionUpdate', (data) => { latestData.position = data; });
+  sim.on('engineUpdate', (data) => { latestData.engine = data; });
+  sim.on('fuelUpdate', (data) => { latestData.fuel = data; });
+  sim.on('flightStateUpdate', (data) => { latestData.flightState = data; });
+  sim.on('autopilotUpdate', (data) => { latestData.autopilot = data; });
+  sim.on('radioUpdate', (data) => { latestData.radio = data; });
+  sim.on('aircraftInfoUpdate', (data) => { latestData.aircraftInfo = data; });
+
+  // Broadcast composed snapshot to renderer at poll interval
+  sim.on('connected', (status) => {
+    mainWindow?.webContents.send(IpcChannels.SIM_STATUS, status);
+    if (!telemetryInterval) {
+      telemetryInterval = setInterval(() => {
+        if (!sim.connected || !mainWindow) return;
+        const snapshot = {
+          aircraft: {
+            position: latestData.position ?? {},
+            autopilot: latestData.autopilot ?? {},
+            radio: latestData.radio ?? {},
+            info: latestData.aircraftInfo ?? {},
+          },
+          engine: latestData.engine ?? {},
+          fuel: latestData.fuel ?? {},
+          flight: latestData.flightState ?? {},
+          timestamp: new Date().toISOString(),
+        };
+        mainWindow!.webContents.send(IpcChannels.SIM_TELEMETRY, snapshot);
+        vpsRelay?.sendTelemetry(snapshot);
+      }, 200);
+    }
+  });
+
+  sim.on('disconnected', () => {
+    mainWindow?.webContents.send(IpcChannels.SIM_STATUS, sim.getConnectionStatus());
+    if (telemetryInterval) {
+      clearInterval(telemetryInterval);
+      telemetryInterval = null;
+    }
+  });
+
+  // VPS relay — started when renderer sends auth info after login
+  ipcMain.handle(IpcChannels.RELAY_AUTH, (_event, data: { token: string; userId: number; callsign: string; vpsUrl: string }) => {
+    if (vpsRelay) vpsRelay.stop();
+    vpsRelay = new VpsRelay(sim, {
+      vpsUrl: data.vpsUrl,
+      heartbeatIntervalMs: 30_000,
+      token: data.token,
+      userId: data.userId,
+      callsign: data.callsign,
+    });
+    vpsRelay.start();
+    return true;
+  });
 });
 
 app.on('window-all-closed', () => {
