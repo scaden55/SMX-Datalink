@@ -315,11 +315,14 @@ export function DispatchPage() {
     );
   }
 
+  const isOwnFlight = user?.id === selectedFlight?.bid?.userId;
+
   return (
     <DispatchEditProvider
       bidId={selectedBidId}
       phase={selectedFlight?.phase ?? 'planning'}
       isAdmin={!!isAdmin}
+      isOwnFlight={!!isOwnFlight}
       flightPlanData={selectedFlight?.flightPlanData ?? null}
     >
       <AppShell

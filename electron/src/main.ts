@@ -405,13 +405,13 @@ app.whenReady().then(async () => {
 
   sim.connect();
 
-  // Send initial connection status to renderer as soon as the window is ready
-  mainWindow!.webContents.on('did-finish-load', () => {
+  // Let the renderer pull current status on demand (avoids race with push events)
+  ipcMain.handle(IpcChannels.SIM_REQUEST_STATUS, () => {
     const status = sim.getConnectionStatus();
     if (simConnectLoadError) {
       status.lastError = `Module load failed: ${simConnectLoadError}`;
     }
-    mainWindow?.webContents.send(IpcChannels.SIM_STATUS, status);
+    return status;
   });
 
   // Accumulate latest data from each SimConnect group

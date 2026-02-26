@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { MapContainer, TileLayer, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import { useTelemetry } from '../../hooks/useTelemetry';
+import { useDispatchEdit } from '../../contexts/DispatchEditContext';
 import { useFlightPlanStore } from '../../stores/flightPlanStore';
 import { AircraftMarker } from './AircraftMarker';
 import { RoutePolyline } from './RoutePolyline';
@@ -33,7 +34,10 @@ function FitRoute() {
 }
 
 export function FlightMap() {
-  const { aircraft, connected } = useTelemetry();
+  const telemetry = useTelemetry();
+  const { isOwnFlight } = useDispatchEdit();
+  const aircraft = isOwnFlight ? telemetry.aircraft : null;
+  const connected = isOwnFlight ? telemetry.connected : false;
 
   return (
     <div className="relative h-full w-full">

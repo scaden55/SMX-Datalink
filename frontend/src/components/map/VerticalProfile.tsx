@@ -1,6 +1,7 @@
 import { useRef, useEffect, useState } from 'react';
 import * as d3 from 'd3';
 import { useTelemetry } from '../../hooks/useTelemetry';
+import { useDispatchEdit } from '../../contexts/DispatchEditContext';
 import { useFlightPlanStore } from '../../stores/flightPlanStore';
 
 const MARGIN = { top: 10, right: 40, bottom: 25, left: 50 };
@@ -32,7 +33,11 @@ export function VerticalProfile() {
   const svgRef = useRef<SVGSVGElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerW, containerH] = useSize(containerRef);
-  const { aircraft, connected, isStale } = useTelemetry();
+  const telemetry = useTelemetry();
+  const { isOwnFlight } = useDispatchEdit();
+  const aircraft = isOwnFlight ? telemetry.aircraft : null;
+  const connected = isOwnFlight ? telemetry.connected : false;
+  const isStale = isOwnFlight ? telemetry.isStale : true;
   const flightPlan = useFlightPlanStore((s) => s.flightPlan);
 
   useEffect(() => {

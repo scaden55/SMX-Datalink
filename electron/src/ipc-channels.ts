@@ -22,6 +22,7 @@ export const IpcChannels = {
   // SimConnect status (forwarded from backend)
   SIM_STATUS: 'sim:status',
   SIM_TELEMETRY: 'sim:telemetry',
+  SIM_REQUEST_STATUS: 'sim:request-status',
 
   // Relay auth (renderer → main after login)
   RELAY_AUTH: 'relay:auth',

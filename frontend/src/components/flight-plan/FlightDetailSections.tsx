@@ -248,8 +248,9 @@ function ReadOnlyField({ label, value, warn }: { label: string; value: string; w
 /* ── Main component ─────────────────────────────────────────────── */
 
 export function FlightDetailSections({ ofp, formData }: FlightDetailSectionsProps) {
-  const { aircraft } = useTelemetry();
-  const { editableFields, canEdit, canEditFuel, canEditMEL, canEditRoute, onFieldChange } = useDispatchEdit();
+  const telemetry = useTelemetry();
+  const { editableFields, canEdit, canEditFuel, canEditMEL, canEditRoute, isOwnFlight, onFieldChange } = useDispatchEdit();
+  const aircraft = isOwnFlight ? telemetry.aircraft : null;
   const flightPlan = useFlightPlanStore((s) => s.flightPlan);
 
   const w = ofp?.weights;

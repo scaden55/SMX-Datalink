@@ -9,6 +9,7 @@ interface DispatchEditContextValue {
   canEditRoute: boolean;
   canEditMEL: boolean;
   canEditRemarks: boolean;
+  isOwnFlight: boolean;
   phase: FlightPlanPhase;
   bidId: number | null;
   editableFields: Partial<FlightPlanFormData>;
@@ -26,6 +27,7 @@ const DispatchEditContext = createContext<DispatchEditContextValue>({
   canEditRoute: false,
   canEditMEL: false,
   canEditRemarks: false,
+  isOwnFlight: false,
   phase: 'planning',
   bidId: null,
   editableFields: {},
@@ -46,10 +48,11 @@ interface DispatchEditProviderProps {
   bidId: number | null;
   phase: FlightPlanPhase;
   isAdmin: boolean;
+  isOwnFlight: boolean;
   flightPlanData: FlightPlanFormData | null;
 }
 
-export function DispatchEditProvider({ children, bidId, phase, isAdmin, flightPlanData }: DispatchEditProviderProps) {
+export function DispatchEditProvider({ children, bidId, phase, isAdmin, isOwnFlight, flightPlanData }: DispatchEditProviderProps) {
   const [editableFields, setEditableFields] = useState<Partial<FlightPlanFormData>>({});
   const [saving, setSaving] = useState(false);
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
@@ -156,6 +159,7 @@ export function DispatchEditProvider({ children, bidId, phase, isAdmin, flightPl
         canEditRoute,
         canEditMEL,
         canEditRemarks,
+        isOwnFlight,
         phase,
         bidId,
         editableFields,

@@ -1,13 +1,19 @@
 import { useTelemetry } from '../../hooks/useTelemetry';
+import { useDispatchEdit } from '../../contexts/DispatchEditContext';
 import { formatAltitude, formatHeading, formatFrequency, formatSquawk } from '../../utils/format';
 
 export function FlightLogTab() {
-  const { aircraft, engine, fuel, flight } = useTelemetry();
+  const telemetry = useTelemetry();
+  const { isOwnFlight } = useDispatchEdit();
+  const aircraft = isOwnFlight ? telemetry.aircraft : null;
+  const engine = isOwnFlight ? telemetry.engine : null;
+  const fuel = isOwnFlight ? telemetry.fuel : null;
+  const flight = isOwnFlight ? telemetry.flight : null;
 
   if (!aircraft) {
     return (
       <div className="text-[11px] text-acars-muted italic">
-        Awaiting simulator connection...
+        {isOwnFlight ? 'Awaiting simulator connection...' : 'Live telemetry is only available for your own flights.'}
       </div>
     );
   }

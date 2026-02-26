@@ -53,6 +53,12 @@
       to { transform: rotate(360deg); }
     }
 
+    .state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
     .status {
       margin-top: 16px;
       font-size: 11px;
@@ -145,13 +151,13 @@
   <div class="title">SMX ACARS</div>
 
   <!-- State: loading (default) -->
-  <div id="state-loading">
+  <div id="state-loading" class="state">
     <div class="spinner"></div>
     <div class="status">Starting up&hellip;</div>
   </div>
 
   <!-- State: update-available -->
-  <div id="state-update" style="display:none">
+  <div id="state-update" class="state" style="display:none">
     <div class="update-msg">Version <span id="update-version"></span> is available</div>
     <div class="button-row">
       <button id="btn-download" class="btn btn-primary">Download &amp; Install</button>
@@ -160,19 +166,19 @@
   </div>
 
   <!-- State: downloading -->
-  <div id="state-downloading" style="display:none">
+  <div id="state-downloading" class="state" style="display:none">
     <div class="progress-track"><div id="progress-fill" class="progress-fill"></div></div>
     <div class="status"><span id="dl-percent">0</span>% &mdash; Downloading update&hellip;</div>
   </div>
 
   <!-- State: installing -->
-  <div id="state-installing" style="display:none">
+  <div id="state-installing" class="state" style="display:none">
     <div class="spinner"></div>
     <div class="status">Installing update&hellip;</div>
   </div>
 
   <!-- State: error -->
-  <div id="state-error" style="display:none">
+  <div id="state-error" class="state" style="display:none">
     <div class="error-msg" id="error-text">Update failed</div>
     <button id="btn-continue" class="btn btn-ghost">Continue</button>
   </div>

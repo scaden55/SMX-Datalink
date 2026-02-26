@@ -15,6 +15,11 @@ export function useLocalSimConnect(): void {
     const api = (window as any).electronAPI;
     if (!api?.isElectron) return; // Not in Electron — no-op
 
+    // Pull current status immediately (covers race where main connected before we mounted)
+    api.requestSimStatus?.().then((status: ConnectionStatus) => {
+      if (status) setConnectionStatus(status);
+    }).catch(() => {});
+
     const unsubTelemetry = api.on('sim:telemetry', (data: unknown) => {
       setSnapshot(data as TelemetrySnapshot);
     });

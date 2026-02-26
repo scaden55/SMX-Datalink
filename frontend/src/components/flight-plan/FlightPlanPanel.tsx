@@ -18,8 +18,9 @@ interface FlightPlanPanelProps {
 }
 
 export function FlightPlanPanel({ ofp, formData, ruleChips }: FlightPlanPanelProps) {
-  const { aircraft } = useTelemetry();
-  const { canEdit, saving, lastSavedAt } = useDispatchEdit();
+  const telemetry = useTelemetry();
+  const { canEdit, isOwnFlight, saving, lastSavedAt } = useDispatchEdit();
+  const aircraft = isOwnFlight ? telemetry.aircraft : null;
 
   return (
     <div className="bg-acars-bg">

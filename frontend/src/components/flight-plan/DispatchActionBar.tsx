@@ -23,10 +23,11 @@ function DiamondIcon({ active }: { active: boolean }) {
  */
 export function DispatchActionBar() {
   const navigate = useNavigate();
-  const { flight } = useTelemetry();
+  const telemetry = useTelemetry();
   const activeBidId = useFlightPlanStore((s) => s.activeBidId);
   const clearActiveBid = useFlightPlanStore((s) => s.clearActiveBid);
-  const { canEdit, hasUnreleasedChanges, releasing, releaseDispatch, editableFields } = useDispatchEdit();
+  const { canEdit, isOwnFlight, hasUnreleasedChanges, releasing, releaseDispatch, editableFields } = useDispatchEdit();
+  const flight = isOwnFlight ? telemetry.flight : null;
   const manifest = useCargoStore((s) => s.manifest);
 
   const [showDialog, setShowDialog] = useState(false);
