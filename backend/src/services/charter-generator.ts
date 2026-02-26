@@ -17,6 +17,7 @@ interface AirportRow {
   icao: string;
   lat: number;
   lon: number;
+  country: string;
 }
 
 interface OaAirportRow {
@@ -125,10 +126,10 @@ export class CharterGeneratorService {
       return { charterCount: 0, eventCount: 0 };
     }
 
-    // Load 26 US hub airports (legacy airports table)
-    const usHubs = db.prepare('SELECT icao, lat, lon FROM airports').all() as AirportRow[];
+    // Load hub airports (95 route-network airports)
+    const hubs = db.prepare('SELECT icao, lat, lon, country FROM airports').all() as AirportRow[];
 
-    if (usHubs.length === 0) {
+    if (hubs.length === 0) {
       logger.warn('CharterGen', 'No hub airports found — skipping generation');
       return { charterCount: 0, eventCount: 0 };
     }
@@ -167,18 +168,18 @@ export class CharterGeneratorService {
         const minRunway = minRunwayForCategory(aircraft.cat);
 
         if (roll < 0.70) {
-          // Domestic: US hub → US hub (via oa_airports for more variety)
-          origin = randomPick(usHubs);
-          destination = this.findRandomDestination(db, origin, maxRange, 'US', minRunway);
+          // Domestic: hub → same-country destination
+          origin = randomPick(hubs);
+          destination = this.findRandomDestination(db, origin, maxRange, origin.country, minRunway);
         } else if (roll < 0.90) {
-          // International: US hub → foreign or foreign → US hub
-          origin = randomPick(usHubs);
+          // International: hub → any country
+          origin = randomPick(hubs);
           destination = this.findRandomDestination(db, origin, maxRange, null, minRunway);
         } else {
           // Global: any large airport → any within range
           const globalOrigin = this.findRandomLargeAirport(db, minRunway);
           if (!globalOrigin) continue;
-          origin = { icao: globalOrigin.ident, lat: globalOrigin.latitude_deg, lon: globalOrigin.longitude_deg };
+          origin = { icao: globalOrigin.ident, lat: globalOrigin.latitude_deg, lon: globalOrigin.longitude_deg, country: globalOrigin.iso_country };
           destination = this.findRandomDestination(db, origin, maxRange, null, minRunway);
         }
 
@@ -229,7 +230,7 @@ export class CharterGeneratorService {
         const locCoords = lookupCoords(db, ac.location);
         if (!locCoords) continue;
 
-        const origin: AirportRow = { icao: ac.location, lat: locCoords.lat, lon: locCoords.lon };
+        const origin: AirportRow = { icao: ac.location, lat: locCoords.lat, lon: locCoords.lon, country: locCoords.country };
         const maxRange = Math.floor((ac.range_nm || 2000) * 0.9);
         const minRwy = minRunwayForCategory(ac.cat);
 
@@ -405,11 +406,11 @@ export function randomFlightNumber(db: ReturnType<typeof getDb>): string {
   throw new Error('No available SMX- flight numbers');
 }
 
-/** Look up airport coordinates from legacy hubs or oa_airports. */
-function lookupCoords(db: ReturnType<typeof getDb>, icao: string): { lat: number; lon: number } | null {
-  const legacy = db.prepare('SELECT lat, lon FROM airports WHERE icao = ?').get(icao) as { lat: number; lon: number } | undefined;
+/** Look up airport coordinates and country from hubs or oa_airports. */
+function lookupCoords(db: ReturnType<typeof getDb>, icao: string): { lat: number; lon: number; country: string } | null {
+  const legacy = db.prepare('SELECT lat, lon, country FROM airports WHERE icao = ?').get(icao) as { lat: number; lon: number; country: string } | undefined;
   if (legacy) return legacy;
-  const oa = db.prepare('SELECT latitude_deg AS lat, longitude_deg AS lon FROM oa_airports WHERE ident = ? AND latitude_deg IS NOT NULL').get(icao) as { lat: number; lon: number } | undefined;
+  const oa = db.prepare('SELECT latitude_deg AS lat, longitude_deg AS lon, iso_country AS country FROM oa_airports WHERE ident = ? AND latitude_deg IS NOT NULL').get(icao) as { lat: number; lon: number; country: string } | undefined;
   return oa ?? null;
 }
 
