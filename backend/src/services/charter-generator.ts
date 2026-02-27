@@ -203,7 +203,7 @@ export class CharterGeneratorService {
         const arrM = arrTotalMin % 60;
         const arrTime = `${String(arrH).padStart(2, '0')}:${String(arrM).padStart(2, '0')}`;
 
-        const flightNumber = randomFlightNumber(db);
+        const flightNumber = randomFlightNumber(db, origin.icao, destination.ident);
 
         const originHandler = origin.handler ?? null;
         const destAirport = hubs.find(h => h.icao === destination.ident);
@@ -258,7 +258,7 @@ export class CharterGeneratorService {
           const aM = aTotalMin % 60;
           const aTime = `${String(aH).padStart(2, '0')}:${String(aM).padStart(2, '0')}`;
 
-          const fn = randomFlightNumber(db);
+          const fn = randomFlightNumber(db, origin.icao, dest.ident);
           const oHandler = origin.handler ?? null;
           const dAirport = hubs.find(h => h.icao === dest.ident);
           const dHandler = dAirport?.handler ?? null;
@@ -407,23 +407,84 @@ function pickWeightedAirport(airports: AirportRow[]): AirportRow {
   return airports[airports.length - 1];
 }
 
-/** Generate a unique random SMX- flight number (100–9999). */
-export function randomFlightNumber(db: ReturnType<typeof getDb>): string {
+/** ISO country codes for European nations (used for flight number stub suffixes). */
+const EUROPEAN_COUNTRIES = new Set([
+  'AT','BE','BG','HR','CY','CZ','DK','EE','FI','FR','DE','GR','HU','IS','IE',
+  'IT','LV','LT','LU','MT','NL','NO','PL','PT','RO','SK','SI','ES','SE','CH',
+  'GB','UA','RS','ME','MK','AL','BA','MD','BY','XK',
+]);
+
+/** Valid stub suffix letters (A-Z minus I and O). */
+const STUB_LETTERS = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
+
+/**
+ * Number ranges EXCLUDED from auto-generation.
+ * 0-9: Reserved (admin only)
+ * 10-99: Tactical (user charter / admin)
+ * 500-599, 5000-5999: Custom Dispatch
+ * 700-799, 7000-7999: Reserved
+ * 900-999, 9000-9999: Non-revenue
+ */
+function isReservedNumber(n: number): boolean {
+  if (n <= 99) return true;                          // 0-99
+  if (n >= 500 && n <= 599) return true;             // 500-599
+  if (n >= 700 && n <= 799) return true;             // 700-799
+  if (n >= 900 && n <= 999) return true;             // 900-999
+  if (n >= 5000 && n <= 5999) return true;           // 5000-5999
+  if (n >= 7000 && n <= 7999) return true;           // 7000-7999
+  if (n >= 9000 && n <= 9999) return true;           // 9000-9999
+  return false;
+}
+
+/**
+ * Generate a unique random SMX flight number from the auto-generation pool.
+ * Appends a European stub suffix letter if either airport is in Europe.
+ *
+ * @param db - Database handle
+ * @param depIcao - Departure ICAO (for European suffix detection)
+ * @param arrIcao - Arrival ICAO (for European suffix detection)
+ */
+export function randomFlightNumber(
+  db: ReturnType<typeof getDb>,
+  depIcao?: string,
+  arrIcao?: string,
+): string {
   const existing = new Set(
-    (db.prepare("SELECT flight_number FROM scheduled_flights WHERE flight_number LIKE 'SMX-%'").all() as { flight_number: string }[])
+    (db.prepare("SELECT flight_number FROM scheduled_flights WHERE flight_number LIKE 'SMX%'").all() as { flight_number: string }[])
       .map(r => r.flight_number),
   );
+
+  // Check if either airport is European
+  let isEuropean = false;
+  if (depIcao || arrIcao) {
+    const checkCountry = (icao: string): string | null => {
+      const legacy = db.prepare('SELECT country FROM airports WHERE icao = ?').get(icao) as { country: string } | undefined;
+      if (legacy) return legacy.country;
+      const oa = db.prepare('SELECT iso_country FROM oa_airports WHERE ident = ?').get(icao) as { iso_country: string } | undefined;
+      return oa?.iso_country ?? null;
+    };
+    if (depIcao) { const c = checkCountry(depIcao); if (c && EUROPEAN_COUNTRIES.has(c)) isEuropean = true; }
+    if (!isEuropean && arrIcao) { const c = checkCountry(arrIcao); if (c && EUROPEAN_COUNTRIES.has(c)) isEuropean = true; }
+  }
+
+  const suffix = isEuropean ? STUB_LETTERS[Math.floor(Math.random() * STUB_LETTERS.length)] : '';
+
+  // Try random numbers from auto-generation pool (100-9999 minus reserved)
   for (let i = 0; i < 500; i++) {
     const num = 100 + Math.floor(Math.random() * 9900); // 100–9999
-    const fn = `SMX-${num}`;
+    if (isReservedNumber(num)) continue;
+    const fn = `SMX${num}${suffix}`;
     if (!existing.has(fn)) return fn;
   }
-  // Fallback: find first unused number sequentially
+
+  // Fallback: sequential scan
   for (let n = 100; n <= 9999; n++) {
-    const fn = `SMX-${n}`;
+    if (isReservedNumber(n)) continue;
+    const fn = `SMX${n}${suffix}`;
     if (!existing.has(fn)) return fn;
   }
-  throw new Error('No available SMX- flight numbers');
+
+  throw new Error('No available SMX flight numbers');
 }
 
 /** Look up airport coordinates and country from hubs or oa_airports. */
