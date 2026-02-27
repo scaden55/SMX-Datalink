@@ -4,6 +4,9 @@ import { registerAllDefinitions, requestAllData, subscribeSystemEvents, SystemEv
 import { readPosition, readEngine, readFuel, readFlightState, readAutopilot, readRadio, readAircraftInfo } from './reader';
 import type { ISimConnectManager } from './types';
 
+/** Timeout for a single open() attempt — prevents hanging when MSFS pipe exists but isn't responding. */
+const OPEN_TIMEOUT_MS = 10_000;
+
 /**
  * SimConnect connection manager.
  * Handles connection lifecycle, auto-reconnect, and data dispatch.
@@ -68,34 +71,52 @@ export class SimConnectManager extends EventEmitter implements ISimConnectManage
 
     console.log(`[SimConnect] Attempting connection...`);
 
-    open('SMX ACARS', Protocol.KittyHawk)
+    // Race open() against a timeout — prevents hanging when MSFS pipe
+    // exists but the SimConnect server isn't responding to handshakes.
+    const timeout = new Promise<never>((_, reject) => {
+      setTimeout(() => reject(new Error('Connection timed out')), OPEN_TIMEOUT_MS);
+    });
+
+    Promise.race([open('SMX ACARS', Protocol.KittyHawk), timeout])
       .then(({ recvOpen, handle }) => {
+        if (this._closing) { handle.close(); return; }
+
         console.log(`[SimConnect] Connected to ${recvOpen.applicationName} (v${recvOpen.applicationVersionMajor}.${recvOpen.applicationVersionMinor})`);
 
         this.handle = handle;
         this._simInfo = recvOpen;
         this._connected = true;
         this._lastError = '';
+        this._loggedReadError = false;
 
         // Register definitions & start data flow
         registerAllDefinitions(handle);
         requestAllData(handle);
         subscribeSystemEvents(handle);
 
-        this.emit('connected', this.getConnectionStatus());
-
-        // Wire up data handlers
+        // Wire up handlers before emitting connected — listeners may
+        // query data immediately after the event.
         this.setupDataHandlers(handle);
         this.setupEventHandlers(handle);
         this.setupLifecycleHandlers(handle);
+
+        this.emit('connected', this.getConnectionStatus());
       })
       .catch((err: Error) => {
-        const msg = err.message || String(err) || 'Unknown error';
+        // Clean up handle if open() succeeded but something else threw
+        if (this.handle && !this._connected) {
+          try { this.handle.close(); } catch { /* ignore */ }
+          this.handle = null;
+        }
+
+        const msg = err?.message || String(err) || 'Unknown error';
         const isNormal = msg.includes('ECONNREFUSED') || msg.includes('pipe')
-          || msg.includes('AggregateError') || err.name === 'AggregateError'
+          || msg.includes('AggregateError') || err?.name === 'AggregateError'
+          || msg.includes('timed out')
           || !msg || msg === 'Unknown error';
         this._lastError = isNormal ? 'Waiting for MSFS...' : msg;
         console.log(`[SimConnect] Connection failed: ${msg}`);
+        this._connected = false;
         this.emit('disconnected');
         this.scheduleReconnect();
       });

@@ -403,8 +403,6 @@ app.whenReady().then(async () => {
   // Local alias — guaranteed non-null after the try/catch above
   const sim = simConnect!;
 
-  sim.connect();
-
   // Let the renderer pull current status on demand (avoids race with push events)
   ipcMain.handle(IpcChannels.SIM_REQUEST_STATUS, () => {
     const status = sim.getConnectionStatus();
@@ -479,6 +477,10 @@ app.whenReady().then(async () => {
       telemetryInterval = null;
     }
   });
+
+  // Start connection loop AFTER all listeners are registered — ensures
+  // the 'connected' event is never missed if MSFS is already running.
+  sim.connect();
 
   // VPS relay — started when renderer sends auth info after login
   ipcMain.handle(IpcChannels.RELAY_AUTH, (_event, data: { token: string; userId: number; callsign: string; vpsUrl: string }) => {
