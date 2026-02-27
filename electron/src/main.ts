@@ -394,14 +394,27 @@ app.whenReady().then(async () => {
   createWindow();
 
   // ── SimConnect ─────────────────────────────────────────────
+  // Boot diagnostics buffer — stores messages from before the renderer is ready
+  const bootDiag: Array<{ ts: string; level: string; msg: string }> = [];
+  const pushDiag = (level: string, msg: string) => {
+    const entry = { ts: new Date().toISOString(), level, msg };
+    bootDiag.push(entry);
+    console.log(`[SimConnect:${level}] ${msg}`);
+    // Try sending to renderer immediately (may be null during boot)
+    mainWindow?.webContents.send(IpcChannels.SIM_DIAGNOSTIC, entry);
+  };
+
   let simConnectLoadError: string | undefined;
   try {
+    pushDiag('info', 'Loading node-simconnect native module...');
     const { SimConnectManager } = require('./simconnect/connection');
     simConnect = new SimConnectManager();
-    console.log('[Electron] SimConnect module loaded successfully');
+    pushDiag('info', 'SimConnect module loaded successfully');
   } catch (err) {
     simConnectLoadError = (err as Error).message;
-    console.warn('[Electron] SimConnect not available:', simConnectLoadError);
+    const stack = (err as Error).stack?.split('\n').slice(0, 3).join(' | ') || '';
+    pushDiag('error', `SimConnect module FAILED to load: ${simConnectLoadError}`);
+    pushDiag('error', `Stack: ${stack}`);
     simConnect = new NullSimConnectManager();
   }
 
@@ -422,9 +435,17 @@ app.whenReady().then(async () => {
     mainWindow?.webContents.send(IpcChannels.SIM_DIAGNOSTIC, event);
   });
 
-  // Let renderer pull full diagnostic log on demand
+  // Let renderer pull full diagnostic log on demand (includes boot diagnostics)
   ipcMain.handle(IpcChannels.SIM_DIAGNOSTIC_LOG, () => {
-    return (sim as any).getDiagnosticLog?.() ?? [];
+    const managerLog = (sim as any).getDiagnosticLog?.() ?? [];
+    return [...bootDiag, ...managerLog];
+  });
+
+  // Flush boot diagnostics to renderer once it's ready
+  mainWindow?.webContents.once('did-finish-load', () => {
+    for (const entry of bootDiag) {
+      mainWindow?.webContents.send(IpcChannels.SIM_DIAGNOSTIC, entry);
+    }
   });
 
   // Accumulate latest data from each SimConnect group

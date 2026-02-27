@@ -32,7 +32,23 @@ export function useLocalSimConnect(): void {
 
     // Pull current status immediately (covers race where main connected before we mounted)
     api.requestSimStatus?.().then((status: ConnectionStatus) => {
-      if (status) setConnectionStatus(status);
+      if (status) {
+        setConnectionStatus(status);
+        // Log status to DevTools for debugging
+        const style = status.connected ? 'color: #34d399' : 'color: #f87171';
+        console.log(`%c[SimConnect] Status: connected=${status.connected}, sim=${status.simulator}, app=${status.applicationName}${status.lastError ? `, error="${status.lastError}"` : ''}`, style);
+      }
+    }).catch(() => {});
+
+    // Pull boot diagnostic log (catches messages from before renderer mounted)
+    api.getSimDiagnosticLog?.().then((log: DiagEvent[]) => {
+      if (log?.length) {
+        console.group(`%c[SimConnect] Boot log (${log.length} events)`, 'color: #60a5fa; font-weight: bold');
+        for (const e of log) {
+          console.log(`%c${e.ts} [${e.level}] ${e.msg}`, DIAG_STYLES[e.level] || '');
+        }
+        console.groupEnd();
+      }
     }).catch(() => {});
 
     const unsubTelemetry = api.on('sim:telemetry', (data: unknown) => {
