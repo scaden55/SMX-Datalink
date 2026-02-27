@@ -109,6 +109,11 @@ async function checkForUpdateDuringSplash(): Promise<void> {
     // User chose to download
     await splashExec('showDownloading()');
 
+    // Re-check before downloading — electron-updater clears internal state
+    // (updateInfoAndProvider) in some cases, causing "Please check update first".
+    // A fresh check guarantees the state is set right before downloadUpdate().
+    await autoUpdater.checkForUpdates();
+
     // Wire up progress (cleaned up in finally to avoid listener leak)
     const onProgress = (progress: { percent: number }) => {
       splashExec(`setProgress(${Math.round(progress.percent)})`);
