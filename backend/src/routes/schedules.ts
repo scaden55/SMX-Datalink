@@ -5,6 +5,8 @@ import type { ScheduleFilters } from '../services/schedule.js';
 import type { CreateCharterRequest, CharterType, ServerToClientEvents, ClientToServerEvents } from '@acars/shared';
 import type { Server as SocketServer } from 'socket.io';
 import { logger } from '../lib/logger.js';
+import { randomFlightNumber } from '../services/charter-generator.js';
+import { getDb } from '../db/index.js';
 
 export function scheduleRouter(io?: SocketServer<ClientToServerEvents, ServerToClientEvents>): Router {
   const router = Router();
@@ -219,6 +221,19 @@ export function scheduleRouter(io?: SocketServer<ClientToServerEvents, ServerToC
     }
   });
 
+  // GET /api/charters/random-number — generate a random available flight number
+  router.get('/charters/random-number', authMiddleware, (req, res) => {
+    try {
+      const depIcao = req.query.dep_icao as string | undefined;
+      const arrIcao = req.query.arr_icao as string | undefined;
+      const flightNumber = randomFlightNumber(getDb(), depIcao, arrIcao);
+      res.json({ flightNumber });
+    } catch (err) {
+      logger.error('Schedule', 'Random flight number error', err);
+      res.status(500).json({ error: 'Failed to generate flight number' });
+    }
+  });
+
   // POST /api/charters — auth required (create charter, no auto-bid)
   const VALID_CHARTER_TYPES = new Set<CharterType>(['reposition', 'cargo', 'passenger']);
 
@@ -241,6 +256,16 @@ export function scheduleRouter(io?: SocketServer<ClientToServerEvents, ServerToC
       if (!/^\d{2}:\d{2}$/.test(body.depTime)) {
         res.status(400).json({ error: 'depTime must be in HH:MM format' });
         return;
+      }
+
+      // Optional flight number validation
+      if (body.flightNumber !== undefined) {
+        if (typeof body.flightNumber !== 'string' || body.flightNumber.trim().length === 0) {
+          res.status(400).json({ error: 'flightNumber must be a non-empty string if provided' });
+          return;
+        }
+        // Normalize: strip whitespace
+        body.flightNumber = body.flightNumber.trim().toUpperCase();
       }
 
       const result = service.createCharter(req.user!.userId, body as CreateCharterRequest);
