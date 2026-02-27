@@ -89,6 +89,8 @@ interface ScheduleRow {
   arr_lon: number | null;
   bid_count: number;
   has_bid: number;
+  is_reserved: number;
+  reserved_by_callsign: string | null;
   event_name: string | null;
   origin_handler: string | null;
   dest_handler: string | null;
@@ -103,6 +105,7 @@ interface BidRow {
   schedule_id: number;
   aircraft_id: number | null;
   created_at: string;
+  expires_at: string | null;
   flight_number: string;
   dep_icao: string;
   arr_icao: string;
@@ -165,10 +168,20 @@ export class ScheduleService {
     return rows.map(r => r.icao_type);
   }
 
-  findFleetForBid(depIcao: string): FleetForBidItem[] {
+  findFleetForBid(depIcao: string, userId: number): FleetForBidItem[] {
     const rows = getDb()
-      .prepare("SELECT * FROM fleet WHERE status = 'active' ORDER BY icao_type, registration")
-      .all() as FleetRow[];
+      .prepare(`
+        SELECT f.* FROM fleet f
+        WHERE f.status = 'active'
+          AND NOT EXISTS (
+            SELECT 1 FROM active_bids ab
+            WHERE ab.aircraft_id = f.id
+              AND ab.user_id != ?
+              AND (ab.expires_at IS NULL OR ab.expires_at > datetime('now'))
+          )
+        ORDER BY f.icao_type, f.registration
+      `)
+      .all(userId) as FleetRow[];
 
     return rows.map(row => {
       const aircraft = this.toFleetAircraft(row);
@@ -246,8 +259,10 @@ export class ScheduleService {
         COALESCE(dep.lon, oa_dep.longitude_deg) AS dep_lon,
         COALESCE(arr.lat, oa_arr.latitude_deg) AS arr_lat,
         COALESCE(arr.lon, oa_arr.longitude_deg) AS arr_lon,
-        (SELECT COUNT(*) FROM active_bids ab WHERE ab.schedule_id = sf.id) AS bid_count,
-        (SELECT COUNT(*) FROM active_bids ab WHERE ab.schedule_id = sf.id AND ab.user_id = ?) AS has_bid,
+        (SELECT COUNT(*) FROM active_bids ab WHERE ab.schedule_id = sf.id AND (ab.expires_at IS NULL OR ab.expires_at > datetime('now'))) AS bid_count,
+        (SELECT COUNT(*) FROM active_bids ab WHERE ab.schedule_id = sf.id AND ab.user_id = ? AND (ab.expires_at IS NULL OR ab.expires_at > datetime('now'))) AS has_bid,
+        (SELECT COUNT(*) FROM active_bids ab WHERE ab.schedule_id = sf.id AND ab.user_id != ? AND (ab.expires_at IS NULL OR ab.expires_at > datetime('now'))) AS is_reserved,
+        (SELECT u.callsign FROM active_bids ab JOIN users u ON u.id = ab.user_id WHERE ab.schedule_id = sf.id AND ab.user_id != ? AND (ab.expires_at IS NULL OR ab.expires_at > datetime('now')) LIMIT 1) AS reserved_by_callsign,
         ve.name AS event_name
       FROM scheduled_flights sf
       LEFT JOIN airports dep ON dep.icao = sf.dep_icao
@@ -261,7 +276,7 @@ export class ScheduleService {
 
     const rows = getDb()
       .prepare(sql)
-      .all(userIdParam, ...params) as ScheduleRow[];
+      .all(userIdParam, userIdParam, userIdParam, ...params) as ScheduleRow[];
 
     return rows.map(this.toScheduleListItem);
   }
@@ -278,8 +293,10 @@ export class ScheduleService {
         COALESCE(dep.lon, oa_dep.longitude_deg) AS dep_lon,
         COALESCE(arr.lat, oa_arr.latitude_deg) AS arr_lat,
         COALESCE(arr.lon, oa_arr.longitude_deg) AS arr_lon,
-        (SELECT COUNT(*) FROM active_bids ab WHERE ab.schedule_id = sf.id) AS bid_count,
-        (SELECT COUNT(*) FROM active_bids ab WHERE ab.schedule_id = sf.id AND ab.user_id = ?) AS has_bid,
+        (SELECT COUNT(*) FROM active_bids ab WHERE ab.schedule_id = sf.id AND (ab.expires_at IS NULL OR ab.expires_at > datetime('now'))) AS bid_count,
+        (SELECT COUNT(*) FROM active_bids ab WHERE ab.schedule_id = sf.id AND ab.user_id = ? AND (ab.expires_at IS NULL OR ab.expires_at > datetime('now'))) AS has_bid,
+        (SELECT COUNT(*) FROM active_bids ab WHERE ab.schedule_id = sf.id AND ab.user_id != ? AND (ab.expires_at IS NULL OR ab.expires_at > datetime('now'))) AS is_reserved,
+        (SELECT u.callsign FROM active_bids ab JOIN users u ON u.id = ab.user_id WHERE ab.schedule_id = sf.id AND ab.user_id != ? AND (ab.expires_at IS NULL OR ab.expires_at > datetime('now')) LIMIT 1) AS reserved_by_callsign,
         ve.name AS event_name
       FROM scheduled_flights sf
       LEFT JOIN airports dep ON dep.icao = sf.dep_icao
@@ -288,7 +305,7 @@ export class ScheduleService {
       LEFT JOIN oa_airports oa_arr ON oa_arr.ident = sf.arr_icao
       LEFT JOIN vatsim_events ve ON ve.id = sf.vatsim_event_id
       WHERE sf.id = ?
-    `).get(userIdParam, id) as ScheduleRow | undefined;
+    `).get(userIdParam, userIdParam, userIdParam, id) as ScheduleRow | undefined;
 
     return row ? this.toScheduleListItem(row) : undefined;
   }
@@ -316,7 +333,30 @@ export class ScheduleService {
     } | undefined;
     if (!aircraft) return { error: 'Aircraft is not active' };
 
-    // 3. Soft warnings (location mismatch is a warning, not a block — enforced at flight start)
+    // 3. Check schedule exclusivity — only one pilot per flight
+    const existingScheduleBid = db.prepare(`
+      SELECT ab.id, u.callsign FROM active_bids ab
+      JOIN users u ON u.id = ab.user_id
+      WHERE ab.schedule_id = ? AND ab.user_id != ?
+        AND (ab.expires_at IS NULL OR ab.expires_at > datetime('now'))
+    `).get(scheduleId, userId) as { id: number; callsign: string } | undefined;
+    if (existingScheduleBid) {
+      return { error: `This flight is already reserved by ${existingScheduleBid.callsign}` };
+    }
+
+    // 4. Check aircraft exclusivity — only one pilot per aircraft
+    const existingAircraftBid = db.prepare(`
+      SELECT ab.id, u.callsign, sf.flight_number FROM active_bids ab
+      JOIN users u ON u.id = ab.user_id
+      JOIN scheduled_flights sf ON sf.id = ab.schedule_id
+      WHERE ab.aircraft_id = ? AND ab.user_id != ?
+        AND (ab.expires_at IS NULL OR ab.expires_at > datetime('now'))
+    `).get(aircraftId, userId) as { id: number; callsign: string; flight_number: string } | undefined;
+    if (existingAircraftBid) {
+      return { error: `Aircraft is reserved by ${existingAircraftBid.callsign} for flight ${existingAircraftBid.flight_number}` };
+    }
+
+    // 5. Soft warnings (location mismatch is a warning, not a block — enforced at flight start)
     const warnings: string[] = [];
 
     if (aircraft.effective_location && aircraft.effective_location !== schedule.dep_icao) {
@@ -351,9 +391,9 @@ export class ScheduleService {
       }
     }
 
-    // 5. Insert bid
+    // 6. Insert bid
     try {
-      db.prepare('INSERT INTO active_bids (user_id, schedule_id, aircraft_id) VALUES (?, ?, ?)').run(userId, scheduleId, aircraftId);
+      db.prepare("INSERT INTO active_bids (user_id, schedule_id, aircraft_id, expires_at) VALUES (?, ?, ?, datetime('now', '+24 hours'))").run(userId, scheduleId, aircraftId);
     } catch (err: any) {
       if (err.code === 'SQLITE_CONSTRAINT_UNIQUE') return { error: 'Bid already exists for this schedule' };
       throw err;
@@ -388,10 +428,30 @@ export class ScheduleService {
     return true;
   }
 
+  forceRemoveBid(bidId: number): { userId: number; flightNumber: string } | null {
+    const db = getDb();
+
+    const bid = db.prepare(
+      'SELECT ab.user_id, ab.schedule_id, sf.flight_number, sf.charter_type FROM active_bids ab JOIN scheduled_flights sf ON sf.id = ab.schedule_id WHERE ab.id = ?'
+    ).get(bidId) as { user_id: number; schedule_id: number; flight_number: string; charter_type: string | null } | undefined;
+
+    if (!bid) return null;
+
+    db.prepare('DELETE FROM active_bids WHERE id = ?').run(bidId);
+
+    // User-created charters are one-off — delete the schedule when bid is removed
+    const userCreatedTypes = ['reposition', 'cargo', 'passenger'];
+    if (bid.charter_type && userCreatedTypes.includes(bid.charter_type)) {
+      db.prepare('DELETE FROM scheduled_flights WHERE id = ?').run(bid.schedule_id);
+    }
+
+    return { userId: bid.user_id, flightNumber: bid.flight_number };
+  }
+
   findMyBids(userId: number): BidWithDetails[] {
     const rows = getDb().prepare(`
       SELECT
-        ab.id, ab.user_id, ab.schedule_id, ab.aircraft_id, ab.created_at,
+        ab.id, ab.user_id, ab.schedule_id, ab.aircraft_id, ab.created_at, ab.expires_at,
         sf.flight_number, sf.dep_icao, sf.arr_icao, sf.aircraft_type,
         sf.dep_time, sf.arr_time, sf.distance_nm, sf.flight_time_min, sf.days_of_week,
         sf.charter_type, sf.event_tag,
@@ -416,7 +476,7 @@ export class ScheduleService {
   findAllBids(): ActiveBidEntry[] {
     const rows = getDb().prepare(`
       SELECT
-        ab.id, ab.user_id, ab.schedule_id, ab.aircraft_id, ab.created_at,
+        ab.id, ab.user_id, ab.schedule_id, ab.aircraft_id, ab.created_at, ab.expires_at,
         sf.flight_number, sf.dep_icao, sf.arr_icao, sf.aircraft_type,
         sf.dep_time, sf.arr_time, sf.distance_nm, sf.flight_time_min, sf.days_of_week,
         sf.charter_type, sf.event_tag,
@@ -500,7 +560,7 @@ export class ScheduleService {
   private findBidByUserAndSchedule(userId: number, scheduleId: number): BidWithDetails | null {
     const row = getDb().prepare(`
       SELECT
-        ab.id, ab.user_id, ab.schedule_id, ab.aircraft_id, ab.created_at,
+        ab.id, ab.user_id, ab.schedule_id, ab.aircraft_id, ab.created_at, ab.expires_at,
         sf.flight_number, sf.dep_icao, sf.arr_icao, sf.aircraft_type,
         sf.dep_time, sf.arr_time, sf.distance_nm, sf.flight_time_min, sf.days_of_week,
         sf.charter_type, sf.event_tag,
@@ -573,6 +633,9 @@ export class ScheduleService {
       cat: row.cat,
       selcal: row.selcal,
       hexCode: row.hex_code,
+      // Bid reservation info (null — schedule service doesn't join bid data for fleet)
+      reservedByPilot: null,
+      bidFlightPhase: null,
     };
   }
 
@@ -600,6 +663,8 @@ export class ScheduleService {
       arrName: row.arr_name,
       bidCount: row.bid_count,
       hasBid: row.has_bid > 0,
+      isReserved: row.is_reserved > 0,
+      reservedByCallsign: row.reserved_by_callsign ?? null,
       eventName: row.event_name ?? null,
       originHandler: row.origin_handler ?? null,
       destHandler: row.dest_handler ?? null,
@@ -616,6 +681,7 @@ export class ScheduleService {
       scheduleId: row.schedule_id,
       aircraftId: row.aircraft_id,
       createdAt: row.created_at,
+      expiresAt: row.expires_at ?? null,
       flightNumber: row.flight_number,
       depIcao: row.dep_icao,
       arrIcao: row.arr_icao,
@@ -641,6 +707,7 @@ export class ScheduleService {
       scheduleId: row.schedule_id,
       aircraftId: row.aircraft_id,
       createdAt: row.created_at,
+      expiresAt: row.expires_at ?? null,
       flightNumber: row.flight_number,
       depIcao: row.dep_icao,
       arrIcao: row.arr_icao,

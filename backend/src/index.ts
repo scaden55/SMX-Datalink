@@ -46,6 +46,7 @@ import { regulatoryRouter } from './routes/regulatory.js';
 import { cargoRouter } from './routes/cargo.js';
 import { TrackService } from './services/track.js';
 import { FlightEventTracker } from './services/flight-event-tracker.js';
+import { BidExpirationService } from './services/bid-expiration.js';
 import { CharterGeneratorService, currentMonth } from './services/charter-generator.js';
 import { VatsimEventsService } from './services/vatsim-events.js';
 import { needsAirportData, importAirportData } from './services/airport-data.js';
@@ -116,7 +117,6 @@ app.use('/api', flightRouter(telemetry, config.simconnectEnabled));
 app.use('/api', fuelRouter(telemetry, config.simconnectEnabled));
 app.use('/api', engineRouter(telemetry, config.simconnectEnabled));
 app.use('/api', authRouter());
-app.use('/api', scheduleRouter());
 app.use('/api', adminRouter());
 app.use('/api', flightPlanRouter());
 app.use('/api', faaRouter());
@@ -149,6 +149,13 @@ const io = setupWebSocket(httpServer, telemetry, simConnect, vatsimService, flig
 
 // Register dispatch router with io for real-time broadcasts
 app.use('/api', dispatchRouter(io, telemetry, flightEventTracker));
+
+// Register schedule router with io for bid:expired notifications
+app.use('/api', scheduleRouter(io));
+
+// Bid expiration sweep (every 5 minutes)
+const bidExpiration = new BidExpirationService(io);
+bidExpiration.start();
 
 // Periodic cleanup of expired refresh tokens (every hour)
 const authService = new AuthService();
@@ -245,6 +252,7 @@ function shutdown(): void {
   logger.info('Server', 'Shutting down...');
   clearInterval(cleanupInterval);
   clearInterval(charterInterval);
+  bidExpiration.stop();
   vatsimService.stop();
   io.close();
   simConnect.disconnect();

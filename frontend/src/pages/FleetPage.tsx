@@ -57,6 +57,30 @@ function StatusBadge({ status }: { status: FleetStatus }) {
   );
 }
 
+function FleetStatusDisplay({ aircraft }: { aircraft: FleetAircraft }) {
+  // If aircraft has an active flight (airborne or active phase)
+  if (aircraft.bidFlightPhase === 'airborne' || aircraft.bidFlightPhase === 'active') {
+    return (
+      <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide bg-blue-500/10 text-blue-400 border border-blue-400/20">
+        In Flight
+      </span>
+    );
+  }
+  // If aircraft is reserved by a pilot (bid exists but not airborne)
+  if (aircraft.reservedByPilot) {
+    return (
+      <div className="flex flex-col items-center gap-0.5">
+        <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide bg-amber-500/10 text-amber-400 border border-amber-400/20">
+          Reserved
+        </span>
+        <span className="text-[9px] text-acars-muted">{aircraft.reservedByPilot}</span>
+      </div>
+    );
+  }
+  // Normal fleet status
+  return <StatusBadge status={aircraft.status} />;
+}
+
 function fmt(val: number | null | undefined, suffix = ''): string {
   if (val == null) return '—';
   return val.toLocaleString() + (suffix ? ` ${suffix}` : '');
@@ -835,8 +859,17 @@ export function FleetPage() {
 
   // ── Status counts ───────────────────────────────────────────
   const statusCounts = useMemo(() => {
-    const counts = { active: 0, stored: 0, retired: 0, maintenance: 0 };
-    fleet.forEach(a => { if (counts[a.status] !== undefined) counts[a.status]++; });
+    const counts = { active: 0, stored: 0, retired: 0, maintenance: 0, reserved: 0, inFlight: 0 };
+    fleet.forEach(a => {
+      if (a.bidFlightPhase === 'airborne' || a.bidFlightPhase === 'active') {
+        counts.inFlight++;
+      } else if (a.reservedByPilot) {
+        counts.reserved++;
+      }
+      if (counts[a.status as keyof typeof counts] !== undefined) {
+        (counts as any)[a.status]++;
+      }
+    });
     return counts;
   }, [fleet]);
 
@@ -891,6 +924,8 @@ export function FleetPage() {
                 <span className="text-[10px] text-emerald-400 tabular-nums">{statusCounts.active} active</span>
                 {statusCounts.stored > 0 && <span className="text-[10px] text-amber-400 tabular-nums">{statusCounts.stored} stored</span>}
                 {statusCounts.retired > 0 && <span className="text-[10px] text-red-400 tabular-nums">{statusCounts.retired} retired</span>}
+                {statusCounts.reserved > 0 && <span className="text-[10px] text-amber-400 tabular-nums">{statusCounts.reserved} reserved</span>}
+                {statusCounts.inFlight > 0 && <span className="text-[10px] text-blue-400 tabular-nums">{statusCounts.inFlight} in flight</span>}
               </div>
             )}
             {loading && <SpinnerGap className="w-3.5 h-3.5 text-blue-400 animate-spin" />}
@@ -1013,7 +1048,7 @@ export function FleetPage() {
                         <td className="px-4 py-2.5 text-right font-mono text-acars-muted tabular-nums">{a.paxCapacity}</td>
                         <td className="px-4 py-2.5 text-right font-mono text-acars-muted tabular-nums">{a.cargoCapacityLbs.toLocaleString()}</td>
                         <td className="px-4 py-2.5 text-center">
-                          <StatusBadge status={a.status} />
+                          <FleetStatusDisplay aircraft={a} />
                         </td>
                       </tr>
                       {isExpanded && (

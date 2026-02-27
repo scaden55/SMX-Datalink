@@ -63,24 +63,44 @@ export class FleetService {
     const params: unknown[] = [];
 
     if (filters?.icaoType) {
-      conditions.push('icao_type = ?');
+      conditions.push('f.icao_type = ?');
       params.push(filters.icaoType);
     }
     if (filters?.status && VALID_STATUSES.has(filters.status)) {
-      conditions.push('status = ?');
+      conditions.push('f.status = ?');
       params.push(filters.status);
     }
     if (filters?.search) {
-      conditions.push('(registration LIKE ? OR name LIKE ? OR icao_type LIKE ? OR base_icao LIKE ?)');
+      conditions.push('(f.registration LIKE ? OR f.name LIKE ? OR f.icao_type LIKE ? OR f.base_icao LIKE ?)');
       const term = `%${filters.search}%`;
       params.push(term, term, term, term);
     }
 
     const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
-    const sql = `SELECT * FROM fleet ${where} ORDER BY icao_type, registration`;
+    const sql = `
+      SELECT f.*,
+        ab.id AS bid_id,
+        ab.flight_plan_phase AS bid_flight_phase,
+        u.callsign AS bid_pilot_callsign
+      FROM fleet f
+      LEFT JOIN active_bids ab ON ab.aircraft_id = f.id
+        AND (ab.expires_at IS NULL OR ab.expires_at > datetime('now'))
+      LEFT JOIN users u ON u.id = ab.user_id
+      ${where}
+      ORDER BY f.icao_type, f.registration
+    `;
 
-    const rows = getDb().prepare(sql).all(...params) as FleetRow[];
-    return rows.map(this.toFleetAircraft);
+    const rows = getDb().prepare(sql).all(...params) as (FleetRow & {
+      bid_id: number | null;
+      bid_flight_phase: string | null;
+      bid_pilot_callsign: string | null;
+    })[];
+
+    return rows.map(row => ({
+      ...this.toFleetAircraft(row),
+      reservedByPilot: row.bid_pilot_callsign ?? null,
+      bidFlightPhase: row.bid_flight_phase ?? null,
+    }));
   }
 
   findById(id: number): FleetAircraft | undefined {
@@ -270,6 +290,9 @@ export class FleetService {
       cat: row.cat,
       selcal: row.selcal,
       hexCode: row.hex_code,
+      // Bid reservation info (null unless overridden by caller with JOIN data)
+      reservedByPilot: null,
+      bidFlightPhase: null,
     };
   }
 }

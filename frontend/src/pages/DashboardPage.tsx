@@ -27,6 +27,7 @@ import {
 import { MapContainer, TileLayer } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import { api } from '../lib/api';
+import { toast } from '../stores/toastStore';
 import { useAuthStore } from '../stores/authStore';
 import type {
   ActiveBidEntry,
@@ -106,8 +107,19 @@ function PhaseBadge({ phase }: { phase: string }) {
   );
 }
 
-function ActiveBidsTable({ bids }: { bids: ActiveBidEntry[] }) {
+function ActiveBidsTable({ bids, isAdmin, onBidRemoved }: { bids: ActiveBidEntry[]; isAdmin: boolean; onBidRemoved: () => void }) {
   const navigate = useNavigate();
+
+  const handleForceRemove = async (bidId: number) => {
+    if (!confirm('Remove this bid? The pilot will be notified.')) return;
+    try {
+      await api.delete(`/api/bids/${bidId}/force`);
+      toast.success('Bid removed');
+      onBidRemoved();
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to remove bid');
+    }
+  };
 
   return (
     <div className="panel flex flex-col max-h-[360px]">
@@ -149,6 +161,7 @@ function ActiveBidsTable({ bids }: { bids: ActiveBidEntry[] }) {
                 <th className="text-left px-4 py-2 font-medium hidden lg:table-cell">Duration</th>
                 <th className="text-left px-4 py-2 font-medium">Pilot</th>
                 <th className="text-left px-4 py-2 font-medium">Status</th>
+                {isAdmin && <th className="text-right px-4 py-2 font-medium">Action</th>}
               </tr>
             </thead>
             <tbody>
@@ -175,6 +188,17 @@ function ActiveBidsTable({ bids }: { bids: ActiveBidEntry[] }) {
                   <td className="px-4 py-2">
                     <PhaseBadge phase="reserved" />
                   </td>
+                  {isAdmin && (
+                    <td className="px-4 py-2 text-right">
+                      <button
+                        onClick={() => handleForceRemove(bid.id)}
+                        className="text-[10px] text-red-400 hover:text-red-300 transition-colors font-medium"
+                        title="Force remove this bid (admin only)"
+                      >
+                        Remove
+                      </button>
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>
@@ -665,6 +689,14 @@ export function DashboardPage() {
   const [bids, setBids] = useState<ActiveBidEntry[]>([]);
   const [recentFlights, setRecentFlights] = useState<LogbookEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const user = useAuthStore(s => s.user);
+  const isAdmin = user?.role === 'admin';
+
+  const fetchBids = useCallback(() => {
+    api.get<AllBidsResponse>('/api/bids/all')
+      .then(data => setBids(data.bids))
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     setLoading(true);
@@ -705,7 +737,7 @@ export function DashboardPage() {
       <QuickActions />
 
       {/* Row 2: Active Bids — primary operational view (full width) */}
-      <ActiveBidsTable bids={bids} />
+      <ActiveBidsTable bids={bids} isAdmin={!!isAdmin} onBidRemoved={fetchBids} />
 
       {/* Row 3: Network Map (full width, hero) */}
       <NetworkMapPreview />

@@ -41,6 +41,7 @@ export interface ServerToClientEvents {
   'relay:start': () => void;
   'relay:stop': () => void;
   'flights:active': (flights: ActiveFlightHeartbeat[]) => void;
+  'bid:expired': (data: { bidId: number; flightNumber: string; reason: 'expired' | 'admin_removed' }) => void;
 }
 
 export interface ClientToServerEvents {

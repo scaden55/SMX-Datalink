@@ -1,11 +1,12 @@
 import { Router } from 'express';
 import { ScheduleService } from '../services/schedule.js';
-import { authMiddleware, optionalAuthMiddleware } from '../middleware/auth.js';
+import { authMiddleware, optionalAuthMiddleware, adminMiddleware } from '../middleware/auth.js';
 import type { ScheduleFilters } from '../services/schedule.js';
-import type { CreateCharterRequest, CharterType } from '@acars/shared';
+import type { CreateCharterRequest, CharterType, ServerToClientEvents, ClientToServerEvents } from '@acars/shared';
+import type { Server as SocketServer } from 'socket.io';
 import { logger } from '../lib/logger.js';
 
-export function scheduleRouter(): Router {
+export function scheduleRouter(io?: SocketServer<ClientToServerEvents, ServerToClientEvents>): Router {
   const router = Router();
   const service = new ScheduleService();
 
@@ -50,7 +51,7 @@ export function scheduleRouter(): Router {
         res.status(400).json({ error: 'dep_icao query parameter is required' });
         return;
       }
-      const fleet = service.findFleetForBid(depIcao);
+      const fleet = service.findFleetForBid(depIcao, req.user!.userId);
       res.json({ fleet });
     } catch (err) {
       logger.error('Schedule', 'Fleet for bid error', err);
@@ -159,6 +160,39 @@ export function scheduleRouter(): Router {
       res.status(204).send();
     } catch (err) {
       logger.error('Schedule', 'Remove bid error', err);
+      res.status(500).json({ error: 'Failed to remove bid' });
+    }
+  });
+
+  // DELETE /api/bids/:id/force — admin force-remove (any bid)
+  router.delete('/bids/:id/force', authMiddleware, adminMiddleware, (req, res) => {
+    try {
+      const bidId = parseInt(req.params.id as string, 10);
+      if (isNaN(bidId)) {
+        res.status(400).json({ error: 'Invalid bid ID' });
+        return;
+      }
+
+      const result = service.forceRemoveBid(bidId);
+      if (!result) {
+        res.status(404).json({ error: 'Bid not found' });
+        return;
+      }
+
+      // Notify the affected pilot via socket
+      if (io) {
+        for (const [, socket] of io.sockets.sockets) {
+          const s = socket as any;
+          if (s.user?.userId === result.userId) {
+            socket.emit('bid:expired', { bidId, flightNumber: result.flightNumber, reason: 'admin_removed' });
+          }
+        }
+      }
+
+      logger.info('Schedule', `Admin ${req.user!.callsign} force-removed bid ${bidId} (flight ${result.flightNumber})`);
+      res.status(204).send();
+    } catch (err) {
+      logger.error('Schedule', 'Force remove bid error', err);
       res.status(500).json({ error: 'Failed to remove bid' });
     }
   });

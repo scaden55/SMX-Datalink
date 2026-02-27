@@ -50,6 +50,9 @@ export interface FleetAircraft {
   cat: string | null;
   selcal: string | null;
   hexCode: string | null;
+  // Bid reservation info (computed, not stored in DB)
+  reservedByPilot: string | null;
+  bidFlightPhase: string | null;
 }
 
 export interface CreateFleetAircraftRequest {
@@ -194,6 +197,7 @@ export interface Bid {
   scheduleId: number;
   aircraftId: number | null;
   createdAt: string;
+  expiresAt: string | null;
 }
 
 export interface BidWithDetails extends Bid {
@@ -219,6 +223,8 @@ export interface ScheduleListItem extends ScheduledFlight {
   arrName: string;
   bidCount: number;
   hasBid: boolean;
+  isReserved: boolean;
+  reservedByCallsign: string | null;
   eventName: string | null;
 }
 

@@ -28,6 +28,7 @@ import { MapContainer, TileLayer, CircleMarker, Polyline, Tooltip, useMap } from
 import 'leaflet/dist/leaflet.css';
 import { api } from '../lib/api';
 import { useFlightPlanStore } from '../stores/flightPlanStore';
+import { useSocketSubscription } from '../hooks/useSocketSubscription';
 import type {
   Airport,
   ScheduleListItem,
@@ -48,6 +49,15 @@ function formatDuration(min: number): string {
   const h = Math.floor(min / 60);
   const m = min % 60;
   return `${h}h ${String(m).padStart(2, '0')}m`;
+}
+
+function formatTimeRemaining(expiresAt: string | null): string | null {
+  if (!expiresAt) return null;
+  const ms = new Date(expiresAt + 'Z').getTime() - Date.now();
+  if (ms <= 0) return 'Expired';
+  const hours = Math.floor(ms / 3600000);
+  const mins = Math.floor((ms % 3600000) / 60000);
+  return `${hours}h ${mins}m`;
 }
 
 const DAY_LABELS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'] as const;
@@ -517,6 +527,13 @@ function FlightPreviewPanel({ schedule: s, hasBid, isBidding, onBid, onRemoveBid
               >
                 {isBidding ? <SpinnerGap className="w-3 h-3 animate-spin" /> : 'Remove Bid'}
               </button>
+            ) : s.isReserved ? (
+              <div className="flex flex-col items-center gap-0.5">
+                <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide bg-amber-500/10 text-amber-400 border border-amber-400/20">
+                  Reserved
+                </span>
+                <span className="text-[9px] text-acars-muted">{s.reservedByCallsign}</span>
+              </div>
             ) : (
               <button
                 disabled={isBidding}
@@ -823,6 +840,21 @@ export function SchedulePage() {
   const findBidForSchedule = (scheduleId: number) =>
     myBids.find(b => b.scheduleId === scheduleId);
 
+  // ── Bid expiration socket listener ─────────────────────────
+  useSocketSubscription<{ bidId: number; flightNumber: string; reason: 'expired' | 'admin_removed' }>(
+    'bid:expired',
+    (data) => {
+      if (data.reason === 'expired') {
+        toast.warning(`Your bid for ${data.flightNumber} has expired`);
+      } else {
+        toast.warning(`Your bid for ${data.flightNumber} was removed by an administrator`);
+      }
+      // Remove expired bid from local state and refresh schedules
+      setMyBids(prev => prev.filter(b => b.id !== data.bidId));
+      fetchSchedules();
+    },
+  );
+
   // ── Charter created ──────────────────────────────────────────
   const handleCharterCreated = (res: CreateCharterResponse) => {
     setSchedules(prev => [...prev, res.schedule]);
@@ -1024,6 +1056,13 @@ export function SchedulePage() {
                               >
                                 {isBidding ? <SpinnerGap className="w-3 h-3 animate-spin" /> : 'Remove'}
                               </button>
+                            ) : s.isReserved ? (
+                              <div className="flex flex-col items-center gap-0.5">
+                                <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide bg-amber-500/10 text-amber-400 border border-amber-400/20">
+                                  Reserved
+                                </span>
+                                <span className="text-[9px] text-acars-muted">{s.reservedByCallsign}</span>
+                              </div>
                             ) : (
                               <button
                                 disabled={isBidding}
@@ -1103,6 +1142,9 @@ export function SchedulePage() {
                     </span>
                     <span className="tabular-nums">{formatDuration(bid.flightTimeMin)}</span>
                   </div>
+                  {bid.expiresAt && (
+                    <span className="text-[9px] text-acars-muted">{formatTimeRemaining(bid.expiresAt)} remaining</span>
+                  )}
                   <button
                     onClick={() => navigate(`/planning/${bid.id}`)}
                     className="mt-2 w-full btn-primary btn-sm text-[9px] uppercase tracking-wide"

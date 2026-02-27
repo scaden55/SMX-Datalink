@@ -31,6 +31,7 @@ interface DispatchBidRow {
   vatsim_connected: number;
   vatsim_callsign: string | null;
   vatsim_cid: number | null;
+  expires_at: string | null;
 }
 
 export class DispatchService {
@@ -64,6 +65,7 @@ export class DispatchService {
         ab.vatsim_connected,
         ab.vatsim_callsign,
         ab.vatsim_cid,
+        ab.expires_at,
         f.registration AS aircraft_registration,
         f.name AS aircraft_name,
         u.callsign AS pilot_callsign,
@@ -100,6 +102,7 @@ export class DispatchService {
         scheduleId: row.schedule_id,
         aircraftId: row.aircraft_id ?? null,
         createdAt: row.created_at,
+        expiresAt: row.expires_at ?? null,
         flightNumber: row.flight_number,
         depIcao: row.dep_icao,
         arrIcao: row.arr_icao,
