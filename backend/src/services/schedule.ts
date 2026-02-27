@@ -539,7 +539,10 @@ export class ScheduleService {
     `);
 
     const txn = db.transaction(() => {
-      const flightNumber = randomFlightNumber(db);
+      // Use user-provided flight number or generate one
+      const flightNumber = req.flightNumber
+        ? req.flightNumber
+        : randomFlightNumber(db, req.depIcao, req.arrIcao);
       const result = insertSchedule.run(
         flightNumber, req.depIcao, req.arrIcao,
         req.depTime, arrTime, distanceNm, flightTimeMin,

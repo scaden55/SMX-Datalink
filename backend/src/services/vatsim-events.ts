@@ -247,7 +247,7 @@ export class VatsimEventsService {
             const arrTime = `${String(arrH).padStart(2, '0')}:${String(arrM).padStart(2, '0')}`;
 
             // Outbound: hub → event airport
-            const outboundFN = randomFlightNumber(db);
+            const outboundFN = randomFlightNumber(db, hub.icao, eventIcao);
             insertStmt.run(
               outboundFN, hub.icao, eventIcao, aircraft.icao_type,
               depTime, arrTime, distanceNm, flightTimeMin,
@@ -256,7 +256,7 @@ export class VatsimEventsService {
             totalCreated++;
 
             // Return: event airport → hub (departs after event end)
-            const returnFN = randomFlightNumber(db);
+            const returnFN = randomFlightNumber(db, eventIcao, hub.icao);
             const endHour = (new Date(evt.end_time)).getUTCHours();
             const retDepTime = `${String((endHour + 1) % 24).padStart(2, '0')}:00`;
             const retArrTotalMin = ((endHour + 1) % 24) * 60 + flightTimeMin;

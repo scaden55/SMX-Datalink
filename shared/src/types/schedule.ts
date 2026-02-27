@@ -185,6 +185,7 @@ export interface CreateCharterRequest {
   depIcao: string;
   arrIcao: string;
   depTime: string;
+  flightNumber?: string;  // Optional: user-provided flight number
 }
 
 export interface CreateCharterResponse {
