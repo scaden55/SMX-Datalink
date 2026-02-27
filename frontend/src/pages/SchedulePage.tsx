@@ -229,8 +229,26 @@ function CharterModal({ onClose, onCreated }: CharterModalProps) {
   const [depTime, setDepTime] = useState('08:00');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [flightNumber, setFlightNumber] = useState('');
+  const [generatingFn, setGeneratingFn] = useState(false);
 
   const canSubmit = depIcao && arrIcao && depTime && depIcao !== arrIcao && !submitting;
+
+  const generateRandomFn = async () => {
+    setGeneratingFn(true);
+    try {
+      const params = new URLSearchParams();
+      if (depIcao) params.set('dep_icao', depIcao);
+      if (arrIcao) params.set('arr_icao', arrIcao);
+      const qs = params.toString();
+      const res = await api.get<{ flightNumber: string }>(`/api/charters/random-number${qs ? `?${qs}` : ''}`);
+      setFlightNumber(res.flightNumber);
+    } catch {
+      setFlightNumber('');
+    } finally {
+      setGeneratingFn(false);
+    }
+  };
 
   const handleSubmit = async () => {
     if (!canSubmit) return;
@@ -242,6 +260,7 @@ function CharterModal({ onClose, onCreated }: CharterModalProps) {
         depIcao,
         arrIcao,
         depTime,
+        ...(flightNumber.trim() ? { flightNumber: flightNumber.trim() } : {}),
       });
       onCreated(res);
     } catch (err: any) {
@@ -331,6 +350,32 @@ function CharterModal({ onClose, onCreated }: CharterModalProps) {
               onChange={e => setDepTime(e.target.value)}
               className="w-full h-9 rounded-md border border-acars-border bg-acars-bg text-xs text-acars-text font-mono px-2.5 outline-none focus:border-blue-400 transition-colors"
             />
+          </div>
+
+          {/* Flight Number */}
+          <div>
+            <label className="text-[10px] uppercase tracking-wider text-acars-muted font-medium mb-1.5 block">Flight Number</label>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={flightNumber}
+                onChange={e => setFlightNumber(e.target.value.toUpperCase())}
+                placeholder="SMX1234 (optional)"
+                maxLength={10}
+                className="flex-1 h-9 rounded-md border border-acars-border bg-acars-bg text-xs text-acars-text font-mono px-2.5 outline-none focus:border-blue-400 transition-colors placeholder:text-acars-muted/50"
+              />
+              <button
+                type="button"
+                onClick={generateRandomFn}
+                disabled={generatingFn}
+                className="btn-secondary h-9 px-3 text-[10px] shrink-0"
+                title="Generate random flight number"
+              >
+                {generatingFn ? <SpinnerGap className="w-3 h-3 animate-spin" /> : <ArrowCounterClockwise className="w-3 h-3" />}
+                Random
+              </button>
+            </div>
+            <p className="text-[9px] text-acars-muted mt-1">Leave blank to auto-assign</p>
           </div>
 
           {/* Error */}
