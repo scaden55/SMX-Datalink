@@ -56,7 +56,12 @@ export function useSocket(): AcarsSocket | null {
     });
 
     socket.on('connection:status', (status) => {
-      setConnectionStatus(status);
+      // In Electron, local SimConnect status (from useLocalSimConnect) takes priority
+      // over the VPS backend's status (VPS is Linux — SimConnect is always disconnected)
+      const isElectron = !!(window as any).electronAPI?.isElectron;
+      if (!isElectron) {
+        setConnectionStatus(status);
+      }
     });
 
     socket.on('disconnect', () => {
