@@ -124,18 +124,23 @@ node -e "
 " > "$ROOT/backend/dist/vps-package.json"
 scp "$ROOT/backend/dist/vps-package.json" "${VPS_USER}@${VPS_HOST}:${VPS_PATH}/package-new.json" || fail "SCP package.json failed"
 
-# Swap and restart (sleep + fuser to ensure port 3001 is released before restart)
+# Delete process (prevents PM2 auto-restart race), swap files, re-register
 ssh "${VPS_USER}@${VPS_HOST}" "cd ${VPS_PATH} && \
-  pm2 stop sma-acars && \
+  pm2 delete sma-acars 2>/dev/null; \
   sleep 2 && \
   fuser -k 3001/tcp 2>/dev/null; \
+  sleep 1 && \
   rm -rf dist && \
   mv dist-new dist && \
   mv package-new.json package.json && \
   npm install --omit=dev --silent && \
-  pm2 start sma-acars" || fail "VPS deploy failed"
+  pm2 start dist/index.js --name sma-acars && \
+  pm2 save" || fail "VPS deploy failed"
 
 ok "Backend deployed and restarted"
+
+# Wait for server to fully boot (loads boundaries, runs migrations, binds port)
+sleep 5
 
 # Verify health
 HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "http://${VPS_HOST}:3001/api/schedules" 2>/dev/null || echo "000")

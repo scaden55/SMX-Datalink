@@ -7,6 +7,15 @@ import type { ISimConnectManager } from './types';
 /** Timeout for a single open() attempt — prevents hanging when MSFS pipe exists but isn't responding. */
 const OPEN_TIMEOUT_MS = 10_000;
 
+/** Max diagnostic events to keep in ring buffer. */
+const DIAG_MAX = 200;
+
+export interface DiagEvent {
+  ts: string;
+  level: 'info' | 'warn' | 'error';
+  msg: string;
+}
+
 /**
  * SimConnect connection manager.
  * Handles connection lifecycle, auto-reconnect, and data dispatch.
@@ -19,9 +28,27 @@ export class SimConnectManager extends EventEmitter implements ISimConnectManage
   private _closing = false;
   private _loggedReadError = false;
   private _lastError = '';
+  private _attemptCount = 0;
+
+  /** Diagnostic event ring buffer — viewable from renderer DevTools. */
+  private _diagLog: DiagEvent[] = [];
 
   constructor(private reconnectInterval = 5000) {
     super();
+  }
+
+  /** Push a diagnostic event and emit it for IPC forwarding. */
+  private diag(level: DiagEvent['level'], msg: string): void {
+    const entry: DiagEvent = { ts: new Date().toISOString(), level, msg };
+    this._diagLog.push(entry);
+    if (this._diagLog.length > DIAG_MAX) this._diagLog.shift();
+    console.log(`[SimConnect:${level}] ${msg}`);
+    this.emit('diagnostic', entry);
+  }
+
+  /** Return the full diagnostic log (for on-demand IPC pull). */
+  getDiagnosticLog(): DiagEvent[] {
+    return [...this._diagLog];
   }
 
   get connected(): boolean {
@@ -46,6 +73,8 @@ export class SimConnectManager extends EventEmitter implements ISimConnectManage
    */
   async connect(): Promise<void> {
     this._closing = false;
+    this._attemptCount = 0;
+    this.diag('info', 'connect() called — starting connection loop');
     this.attemptConnection();
   }
 
@@ -53,6 +82,7 @@ export class SimConnectManager extends EventEmitter implements ISimConnectManage
    * Closes the connection and stops reconnection attempts.
    */
   disconnect(): void {
+    this.diag('info', 'disconnect() called — shutting down');
     this._closing = true;
     if (this.reconnectTimer) {
       clearTimeout(this.reconnectTimer);
@@ -67,9 +97,14 @@ export class SimConnectManager extends EventEmitter implements ISimConnectManage
   }
 
   private attemptConnection(): void {
-    if (this._closing) return;
+    if (this._closing) {
+      this.diag('info', 'attemptConnection() skipped — _closing=true');
+      return;
+    }
 
-    console.log(`[SimConnect] Attempting connection...`);
+    this._attemptCount++;
+    const attempt = this._attemptCount;
+    this.diag('info', `Attempt #${attempt}: calling open('SMX ACARS', KittyHawk) with ${OPEN_TIMEOUT_MS}ms timeout`);
 
     // Race open() against a timeout — prevents hanging when MSFS pipe
     // exists but the SimConnect server isn't responding to handshakes.
@@ -77,11 +112,18 @@ export class SimConnectManager extends EventEmitter implements ISimConnectManage
       setTimeout(() => reject(new Error('Connection timed out')), OPEN_TIMEOUT_MS);
     });
 
+    const openStart = Date.now();
+
     Promise.race([open('SMX ACARS', Protocol.KittyHawk), timeout])
       .then(({ recvOpen, handle }) => {
-        if (this._closing) { handle.close(); return; }
+        const elapsed = Date.now() - openStart;
+        this.diag('info', `Attempt #${attempt}: open() resolved in ${elapsed}ms — app="${recvOpen.applicationName}" v${recvOpen.applicationVersionMajor}.${recvOpen.applicationVersionMinor}`);
 
-        console.log(`[SimConnect] Connected to ${recvOpen.applicationName} (v${recvOpen.applicationVersionMajor}.${recvOpen.applicationVersionMinor})`);
+        if (this._closing) {
+          this.diag('warn', `Attempt #${attempt}: _closing=true after open() resolved, closing handle`);
+          handle.close();
+          return;
+        }
 
         this.handle = handle;
         this._simInfo = recvOpen;
@@ -90,6 +132,7 @@ export class SimConnectManager extends EventEmitter implements ISimConnectManage
         this._loggedReadError = false;
 
         // Register definitions & start data flow
+        this.diag('info', `Attempt #${attempt}: registering definitions + requesting data + subscribing events`);
         registerAllDefinitions(handle);
         requestAllData(handle);
         subscribeSystemEvents(handle);
@@ -100,22 +143,31 @@ export class SimConnectManager extends EventEmitter implements ISimConnectManage
         this.setupEventHandlers(handle);
         this.setupLifecycleHandlers(handle);
 
+        this.diag('info', `Attempt #${attempt}: emitting 'connected' — _connected=${this._connected}`);
         this.emit('connected', this.getConnectionStatus());
       })
       .catch((err: Error) => {
+        const elapsed = Date.now() - openStart;
+
         // Clean up handle if open() succeeded but something else threw
         if (this.handle && !this._connected) {
+          this.diag('warn', `Attempt #${attempt}: cleaning up orphan handle`);
           try { this.handle.close(); } catch { /* ignore */ }
           this.handle = null;
         }
 
         const msg = err?.message || String(err) || 'Unknown error';
+        const errName = err?.name || 'Error';
+        const stack = err?.stack?.split('\n').slice(0, 3).join(' | ') || '';
         const isNormal = msg.includes('ECONNREFUSED') || msg.includes('pipe')
           || msg.includes('AggregateError') || err?.name === 'AggregateError'
           || msg.includes('timed out')
           || !msg || msg === 'Unknown error';
         this._lastError = isNormal ? 'Waiting for MSFS...' : msg;
-        console.log(`[SimConnect] Connection failed: ${msg}`);
+
+        this.diag(isNormal ? 'info' : 'error',
+          `Attempt #${attempt}: FAILED after ${elapsed}ms — ${errName}: ${msg}${stack ? ` [${stack}]` : ''}`);
+
         this._connected = false;
         this.emit('disconnected');
         this.scheduleReconnect();
@@ -123,8 +175,13 @@ export class SimConnectManager extends EventEmitter implements ISimConnectManage
   }
 
   private setupDataHandlers(handle: SimConnectConnection): void {
+    let dataFrameCount = 0;
     handle.on('simObjectData', (recv) => {
       try {
+        dataFrameCount++;
+        if (dataFrameCount === 1) {
+          this.diag('info', `First simObjectData frame received (requestID=${recv.requestID})`);
+        }
         switch (recv.requestID) {
           case RequestID.POSITION:
             this.emit('positionUpdate', readPosition(recv.data));
@@ -151,7 +208,7 @@ export class SimConnectManager extends EventEmitter implements ISimConnectManage
       } catch (err) {
         // Buffer read errors are non-fatal — skip this frame rather than crashing
         if (!this._loggedReadError) {
-          console.warn(`[SimConnect] Data read error (requestID=${recv.requestID}): ${(err as Error).message}`);
+          this.diag('warn', `Data read error (requestID=${recv.requestID}): ${(err as Error).message}`);
           this._loggedReadError = true;
         }
       }
@@ -162,24 +219,27 @@ export class SimConnectManager extends EventEmitter implements ISimConnectManage
     handle.on('event', (recv) => {
       switch (recv.clientEventId) {
         case SystemEventID.PAUSE:
+          this.diag('info', `Event: PAUSE (data=${recv.data})`);
           this.emit('paused', recv.data === 1);
           break;
         case SystemEventID.SIM_START:
+          this.diag('info', 'Event: SIM_START — re-requesting data');
           this.emit('simStart');
-          // Re-request aircraft info on new flight
           requestAllData(handle);
           break;
         case SystemEventID.SIM_STOP:
+          this.diag('info', 'Event: SIM_STOP');
           this.emit('simStop');
           break;
         case SystemEventID.CRASHED:
+          this.diag('warn', 'Event: CRASHED');
           this.emit('crashed');
           break;
       }
     });
 
     handle.on('exception', (recv) => {
-      console.error(`[SimConnect] Exception: ${recv.exception} (sendId: ${recv.sendId}, index: ${recv.index})`);
+      this.diag('error', `SimConnect exception: ${recv.exception} (sendId: ${recv.sendId}, index: ${recv.index})`);
     });
   }
 
@@ -187,7 +247,7 @@ export class SimConnectManager extends EventEmitter implements ISimConnectManage
     let simQuitting = false;
 
     handle.on('quit', () => {
-      console.log(`[SimConnect] Simulator is shutting down`);
+      this.diag('info', 'Lifecycle: quit — simulator shutting down');
       simQuitting = true;
       this._connected = false;
       this.handle = null;
@@ -197,18 +257,23 @@ export class SimConnectManager extends EventEmitter implements ISimConnectManage
 
     handle.on('close', () => {
       if (!simQuitting && !this._closing) {
-        console.warn(`[SimConnect] Connection lost unexpectedly`);
+        this.diag('warn', 'Lifecycle: close — connection lost unexpectedly');
         this._connected = false;
         this.handle = null;
         this.emit('disconnected');
         this.scheduleReconnect();
+      } else {
+        this.diag('info', `Lifecycle: close (expected — simQuitting=${simQuitting}, _closing=${this._closing})`);
       }
     });
   }
 
   private scheduleReconnect(): void {
-    if (this._closing || this.reconnectTimer) return;
-    console.log(`[SimConnect] Reconnecting in ${this.reconnectInterval / 1000}s...`);
+    if (this._closing || this.reconnectTimer) {
+      this.diag('info', `scheduleReconnect() skipped — _closing=${this._closing}, timerActive=${!!this.reconnectTimer}`);
+      return;
+    }
+    this.diag('info', `Scheduling reconnect in ${this.reconnectInterval / 1000}s`);
     this.reconnectTimer = setTimeout(() => {
       this.reconnectTimer = null;
       this.attemptConnection();

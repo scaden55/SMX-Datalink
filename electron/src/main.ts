@@ -412,6 +412,16 @@ app.whenReady().then(async () => {
     return status;
   });
 
+  // Forward SimConnect diagnostic events to renderer DevTools console
+  sim.on('diagnostic', (event: { ts: string; level: string; msg: string }) => {
+    mainWindow?.webContents.send(IpcChannels.SIM_DIAGNOSTIC, event);
+  });
+
+  // Let renderer pull full diagnostic log on demand
+  ipcMain.handle(IpcChannels.SIM_DIAGNOSTIC_LOG, () => {
+    return (sim as any).getDiagnosticLog?.() ?? [];
+  });
+
   // Accumulate latest data from each SimConnect group
   const latestData: Record<string, unknown> = {};
   const phaseService = new FlightPhaseService();

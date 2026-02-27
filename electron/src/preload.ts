@@ -35,6 +35,7 @@ const INVOKE_CHANNELS = new Set<string>([
   IpcChannels.SIMBRIEF_CLEAR_SESSION,
   IpcChannels.RELAY_AUTH,
   IpcChannels.SIM_REQUEST_STATUS,
+  IpcChannels.SIM_DIAGNOSTIC_LOG,
 ]);
 
 // Channels the renderer is allowed to listen to FROM main
@@ -42,6 +43,7 @@ const RECEIVE_CHANNELS = new Set<string>([
   IpcChannels.BACKEND_STATUS,
   IpcChannels.SIM_STATUS,
   IpcChannels.SIM_TELEMETRY,
+  IpcChannels.SIM_DIAGNOSTIC,
   IpcChannels.UPDATE_AVAILABLE,
   IpcChannels.UPDATE_DOWNLOADED,
   IpcChannels.UPDATE_PROGRESS,
@@ -83,6 +85,7 @@ const electronAPI = {
 
   // --- SimConnect ---
   requestSimStatus: () => ipcRenderer.invoke(IpcChannels.SIM_REQUEST_STATUS),
+  getSimDiagnosticLog: () => ipcRenderer.invoke(IpcChannels.SIM_DIAGNOSTIC_LOG),
 
   // --- Developer Tools ---
   toggleDevTools: () => ipcRenderer.send(IpcChannels.DEVTOOLS_TOGGLE),

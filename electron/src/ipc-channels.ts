@@ -23,6 +23,8 @@ export const IpcChannels = {
   SIM_STATUS: 'sim:status',
   SIM_TELEMETRY: 'sim:telemetry',
   SIM_REQUEST_STATUS: 'sim:request-status',
+  SIM_DIAGNOSTIC: 'sim:diagnostic',
+  SIM_DIAGNOSTIC_LOG: 'sim:diagnostic-log',
 
   // Relay auth (renderer → main after login)
   RELAY_AUTH: 'relay:auth',
