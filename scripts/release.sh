@@ -124,14 +124,15 @@ node -e "
 " > "$ROOT/backend/dist/vps-package.json"
 scp "$ROOT/backend/dist/vps-package.json" "${VPS_USER}@${VPS_HOST}:${VPS_PATH}/package-new.json" || fail "SCP package.json failed"
 
-# Delete PM2 process, kill ALL holders of port 3001, then swap and re-register
+# Delete PM2 process, aggressively kill ALL holders of port 3001, then swap and re-register
 ssh "${VPS_USER}@${VPS_HOST}" "cd ${VPS_PATH} && \
   pm2 delete sma-acars 2>/dev/null; \
   sleep 1 && \
-  fuser -k 3001/tcp 2>/dev/null; \
+  fuser -k -9 3001/tcp 2>/dev/null; \
   sleep 1 && \
-  fuser -k 3001/tcp 2>/dev/null; \
+  fuser -k -9 3001/tcp 2>/dev/null; \
   sleep 2 && \
+  if fuser 3001/tcp >/dev/null 2>&1; then echo 'ERROR: port 3001 still in use'; fuser -v 3001/tcp; exit 1; fi && \
   rm -rf dist && \
   mv dist-new dist && \
   mv package-new.json package.json && \
