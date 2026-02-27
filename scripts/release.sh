@@ -124,34 +124,53 @@ node -e "
 " > "$ROOT/backend/dist/vps-package.json"
 scp "$ROOT/backend/dist/vps-package.json" "${VPS_USER}@${VPS_HOST}:${VPS_PATH}/package-new.json" || fail "SCP package.json failed"
 
-# Delete PM2 process, aggressively kill ALL holders of port 3001, then swap and re-register
-ssh "${VPS_USER}@${VPS_HOST}" "cd ${VPS_PATH} && \
-  pm2 delete sma-acars 2>/dev/null; \
-  sleep 1 && \
-  fuser -k -9 3001/tcp 2>/dev/null; \
-  sleep 1 && \
-  fuser -k -9 3001/tcp 2>/dev/null; \
-  sleep 2 && \
-  if fuser 3001/tcp >/dev/null 2>&1; then echo 'ERROR: port 3001 still in use'; fuser -v 3001/tcp; exit 1; fi && \
-  rm -rf dist && \
-  mv dist-new dist && \
-  mv package-new.json package.json && \
-  npm install --omit=dev --silent && \
-  pm2 start dist/index.js --name sma-acars && \
-  pm2 save" || fail "VPS deploy failed"
+# Deploy: stop → wait for port free → swap files → start → verify
+ssh "${VPS_USER}@${VPS_HOST}" 'bash -s' <<'DEPLOY_EOF' || fail "VPS deploy failed"
+set -e
+cd /opt/sma-acars
+
+echo "[deploy] Stopping old process..."
+pm2 delete sma-acars 2>/dev/null || true
+
+echo "[deploy] Waiting for port 3001 to be free..."
+for i in $(seq 1 20); do
+  if ! fuser 3001/tcp >/dev/null 2>&1; then
+    echo "[deploy] Port 3001 is free (after ${i}s)"
+    break
+  fi
+  if [ "$i" -ge 20 ]; then
+    echo "[deploy] ERROR: port 3001 still held after 20s"
+    fuser -v 3001/tcp 2>&1 || true
+    exit 1
+  fi
+  fuser -k -9 3001/tcp 2>/dev/null || true
+  sleep 1
+done
+
+echo "[deploy] Swapping dist..."
+rm -rf dist
+mv dist-new dist
+mv package-new.json package.json
+npm install --omit=dev --silent
+
+echo "[deploy] Starting new process..."
+pm2 start dist/index.js --name sma-acars --kill-timeout 5000
+pm2 save
+
+echo "[deploy] Waiting for server to be ready..."
+for i in $(seq 1 15); do
+  CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3001/api/stats 2>/dev/null || echo "000")
+  if [ "$CODE" = "200" ]; then
+    echo "[deploy] Server healthy (HTTP 200 after ${i}s)"
+    exit 0
+  fi
+  sleep 1
+done
+echo "[deploy] WARNING: server not healthy after 15s (HTTP $CODE)"
+pm2 logs sma-acars --lines 10 --nostream 2>&1 || true
+DEPLOY_EOF
 
 ok "Backend deployed and restarted"
-
-# Wait for server to fully boot (loads boundaries, runs migrations, binds port)
-sleep 5
-
-# Verify health (use /api/stats — no auth required)
-HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "http://${VPS_HOST}:3001/api/stats" 2>/dev/null || echo "000")
-if [[ "$HTTP_CODE" == "200" ]]; then
-  ok "API health check passed (HTTP 200)"
-else
-  warn "API returned HTTP ${HTTP_CODE} — check VPS logs"
-fi
 
 # ── Step 7: Commit, tag, push ──────────────────────────────────
 
