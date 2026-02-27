@@ -124,12 +124,14 @@ node -e "
 " > "$ROOT/backend/dist/vps-package.json"
 scp "$ROOT/backend/dist/vps-package.json" "${VPS_USER}@${VPS_HOST}:${VPS_PATH}/package-new.json" || fail "SCP package.json failed"
 
-# Delete process (prevents PM2 auto-restart race), swap files, re-register
+# Delete PM2 process, kill ALL holders of port 3001, then swap and re-register
 ssh "${VPS_USER}@${VPS_HOST}" "cd ${VPS_PATH} && \
   pm2 delete sma-acars 2>/dev/null; \
-  sleep 2 && \
+  sleep 1 && \
   fuser -k 3001/tcp 2>/dev/null; \
   sleep 1 && \
+  fuser -k 3001/tcp 2>/dev/null; \
+  sleep 2 && \
   rm -rf dist && \
   mv dist-new dist && \
   mv package-new.json package.json && \
@@ -142,8 +144,8 @@ ok "Backend deployed and restarted"
 # Wait for server to fully boot (loads boundaries, runs migrations, binds port)
 sleep 5
 
-# Verify health
-HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "http://${VPS_HOST}:3001/api/schedules" 2>/dev/null || echo "000")
+# Verify health (use /api/stats — no auth required)
+HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "http://${VPS_HOST}:3001/api/stats" 2>/dev/null || echo "000")
 if [[ "$HTTP_CODE" == "200" ]]; then
   ok "API health check passed (HTTP 200)"
 else
