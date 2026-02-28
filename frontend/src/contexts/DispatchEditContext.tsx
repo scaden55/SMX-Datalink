@@ -19,6 +19,10 @@ interface DispatchEditContextValue {
   hasUnreleasedChanges: boolean;
   releasing: boolean;
   releaseDispatch: () => Promise<void>;
+  /** Fields changed in the last dispatcher release (pilot sees these highlighted) */
+  releasedFields: string[] | null;
+  /** Pilot acknowledges released changes, clearing highlights */
+  acknowledgeRelease: () => Promise<void>;
 }
 
 const DispatchEditContext = createContext<DispatchEditContextValue>({
@@ -37,6 +41,8 @@ const DispatchEditContext = createContext<DispatchEditContextValue>({
   hasUnreleasedChanges: false,
   releasing: false,
   releaseDispatch: async () => {},
+  releasedFields: null,
+  acknowledgeRelease: async () => {},
 });
 
 export function useDispatchEdit() {
@@ -50,18 +56,20 @@ interface DispatchEditProviderProps {
   isAdmin: boolean;
   isOwnFlight: boolean;
   flightPlanData: FlightPlanFormData | null;
+  releasedFields: string[] | null;
 }
 
-export function DispatchEditProvider({ children, bidId, phase, isAdmin, isOwnFlight, flightPlanData }: DispatchEditProviderProps) {
+export function DispatchEditProvider({ children, bidId, phase, isAdmin, isOwnFlight, flightPlanData, releasedFields: releasedFieldsProp }: DispatchEditProviderProps) {
   const [editableFields, setEditableFields] = useState<Partial<FlightPlanFormData>>({});
   const [saving, setSaving] = useState(false);
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
   const dirtyFieldsRef = useRef<Partial<DispatchEditPayload>>({});
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const bidIdRef = useRef(bidId);
-  const releasedFieldsRef = useRef<Set<string>>(new Set());
+  const pendingReleaseFieldsRef = useRef<Set<string>>(new Set());
   const [hasUnreleasedChanges, setHasUnreleasedChanges] = useState(false);
   const [releasing, setReleasing] = useState(false);
+  const [releasedFields, setReleasedFields] = useState<string[] | null>(releasedFieldsProp);
 
   // Compute permission booleans
   const isCompleted = phase === 'completed';
@@ -71,12 +79,17 @@ export function DispatchEditProvider({ children, bidId, phase, isAdmin, isOwnFli
   const canEditMEL = canEdit;
   const canEditRemarks = canEdit;
 
+  // Sync releasedFields when prop changes (WebSocket update or new flight)
+  useEffect(() => {
+    setReleasedFields(releasedFieldsProp);
+  }, [releasedFieldsProp]);
+
   // Sync editableFields when flight selection / data changes
   useEffect(() => {
     bidIdRef.current = bidId;
     setEditableFields(flightPlanData ?? {});
     dirtyFieldsRef.current = {};
-    releasedFieldsRef.current = new Set();
+    pendingReleaseFieldsRef.current = new Set();
     setHasUnreleasedChanges(false);
     setLastSavedAt(null);
     if (debounceTimerRef.current) {
@@ -108,7 +121,7 @@ export function DispatchEditProvider({ children, bidId, phase, isAdmin, isOwnFli
   const onFieldChange = useCallback((key: string, value: string) => {
     setEditableFields((prev) => ({ ...prev, [key]: value }));
     dirtyFieldsRef.current[key as keyof DispatchEditPayload] = value;
-    releasedFieldsRef.current.add(key);
+    pendingReleaseFieldsRef.current.add(key);
     setHasUnreleasedChanges(true);
 
     if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
@@ -117,7 +130,7 @@ export function DispatchEditProvider({ children, bidId, phase, isAdmin, isOwnFli
 
   const releaseDispatch = useCallback(async () => {
     const currentBidId = bidIdRef.current;
-    if (!currentBidId || releasedFieldsRef.current.size === 0) return;
+    if (!currentBidId || pendingReleaseFieldsRef.current.size === 0) return;
 
     // Flush any pending auto-save first
     if (debounceTimerRef.current) {
@@ -126,11 +139,11 @@ export function DispatchEditProvider({ children, bidId, phase, isAdmin, isOwnFli
       await flush();
     }
 
-    const changedFields = Array.from(releasedFieldsRef.current);
+    const changedFields = Array.from(pendingReleaseFieldsRef.current);
     setReleasing(true);
     try {
       await api.post(`/api/dispatch/flights/${currentBidId}/release`, { changedFields });
-      releasedFieldsRef.current = new Set();
+      pendingReleaseFieldsRef.current = new Set();
       setHasUnreleasedChanges(false);
       toast.success('Dispatch released to pilot');
     } catch (err) {
@@ -140,6 +153,19 @@ export function DispatchEditProvider({ children, bidId, phase, isAdmin, isOwnFli
       setReleasing(false);
     }
   }, [flush]);
+
+  const acknowledgeRelease = useCallback(async () => {
+    const currentBidId = bidIdRef.current;
+    if (!currentBidId) return;
+
+    try {
+      await api.post(`/api/dispatch/flights/${currentBidId}/acknowledge`);
+      setReleasedFields(null);
+    } catch (err) {
+      console.error('[DispatchEdit] Acknowledge failed:', err);
+      toast.error('Failed to acknowledge changes');
+    }
+  }, []);
 
   // Flush on unmount
   useEffect(() => {
@@ -169,6 +195,8 @@ export function DispatchEditProvider({ children, bidId, phase, isAdmin, isOwnFli
         hasUnreleasedChanges,
         releasing,
         releaseDispatch,
+        releasedFields,
+        acknowledgeRelease,
       }}
     >
       {children}

@@ -29,6 +29,8 @@ export function AppShell({ dispatchFlight, flights, selectedBidId, onSelectFligh
               ofp={dispatchFlight?.ofpJson ?? null}
               formData={dispatchFlight?.flightPlanData ?? null}
               ruleChips={ruleChips}
+              pilot={dispatchFlight?.pilot}
+              flightNumber={dispatchFlight?.bid.flightNumber}
             />
           </div>
         )}

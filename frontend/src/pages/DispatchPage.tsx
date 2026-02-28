@@ -78,11 +78,23 @@ export function DispatchPage() {
       setFlights((prev) => prev.filter((f) => f.bid.id !== data.bidId));
     };
 
+    const handleReleased = (data: { bidId: number; changedFields: string[] }) => {
+      setFlights((prev) =>
+        prev.map((f) =>
+          f.bid.id === data.bidId
+            ? { ...f, releasedFields: data.changedFields }
+            : f,
+        ),
+      );
+    };
+
     socket.on('dispatch:vatsimStatus', handleVatsimStatus);
     socket.on('flight:completed', handleFlightCompleted);
+    socket.on('dispatch:released', handleReleased);
     return () => {
       socket.off('dispatch:vatsimStatus', handleVatsimStatus);
       socket.off('flight:completed', handleFlightCompleted);
+      socket.off('dispatch:released', handleReleased);
     };
   }, [socket]);
 
@@ -348,12 +360,13 @@ export function DispatchPage() {
       isAdmin={!!isAdmin}
       isOwnFlight={!!isOwnFlight}
       flightPlanData={selectedFlight?.flightPlanData ?? null}
+      releasedFields={selectedFlight?.releasedFields ?? null}
     >
       <AppShell
         dispatchFlight={selectedFlight}
-        flights={isAdmin ? flights : undefined}
+        flights={flights}
         selectedBidId={selectedBidId}
-        onSelectFlight={isAdmin ? handleSelectFlight : undefined}
+        onSelectFlight={handleSelectFlight}
         ruleChips={regulatoryAssessment?.ruleChips}
       />
     </DispatchEditProvider>

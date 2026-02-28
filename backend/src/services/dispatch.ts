@@ -32,6 +32,7 @@ interface DispatchBidRow {
   vatsim_callsign: string | null;
   vatsim_cid: number | null;
   expires_at: string | null;
+  released_fields: string | null;
 }
 
 export class DispatchService {
@@ -66,6 +67,7 @@ export class DispatchService {
         ab.vatsim_callsign,
         ab.vatsim_cid,
         ab.expires_at,
+        ab.released_fields,
         f.registration AS aircraft_registration,
         f.name AS aircraft_name,
         u.callsign AS pilot_callsign,
@@ -128,6 +130,19 @@ export class DispatchService {
       },
       vatsimConnected: row.vatsim_connected === 1,
       vatsimCallsign: row.vatsim_callsign ?? null,
+      releasedFields: row.released_fields ? JSON.parse(row.released_fields) : null,
     };
+  }
+
+  /** Persist the list of changed fields when a dispatcher releases edits */
+  setReleasedFields(bidId: number, fields: string[]): void {
+    getDb().prepare('UPDATE active_bids SET released_fields = ? WHERE id = ?')
+      .run(JSON.stringify(fields), bidId);
+  }
+
+  /** Clear released fields after the pilot acknowledges the changes */
+  acknowledgeRelease(bidId: number): void {
+    getDb().prepare('UPDATE active_bids SET released_fields = NULL WHERE id = ?')
+      .run(bidId);
   }
 }

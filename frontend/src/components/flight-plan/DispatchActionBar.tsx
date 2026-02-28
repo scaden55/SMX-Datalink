@@ -28,13 +28,16 @@ export function DispatchActionBar() {
   const { flight } = useDispatchTelemetry();
   const activeBidId = useFlightPlanStore((s) => s.activeBidId);
   const clearActiveBid = useFlightPlanStore((s) => s.clearActiveBid);
-  const { canEdit, isOwnFlight, hasUnreleasedChanges, releasing, releaseDispatch, editableFields } = useDispatchEdit();
+  const { canEdit, isOwnFlight, hasUnreleasedChanges, releasing, releaseDispatch, editableFields, releasedFields, acknowledgeRelease } = useDispatchEdit();
   const manifest = useCargoStore((s) => s.manifest);
 
   const [showDialog, setShowDialog] = useState(false);
   const [remarks, setRemarks] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [acknowledging, setAcknowledging] = useState(false);
+
+  const hasReleasedFields = releasedFields != null && releasedFields.length > 0;
 
   const canEndFlight = activeBidId != null
     && flight != null
@@ -121,6 +124,26 @@ export function DispatchActionBar() {
                 </svg>
               )}
               {releasing ? 'Releasing...' : 'Release/File'}
+            </button>
+          )}
+          {isOwnFlight && hasReleasedFields && (
+            <button
+              onClick={async () => {
+                setAcknowledging(true);
+                await acknowledgeRelease();
+                setAcknowledging(false);
+              }}
+              disabled={acknowledging}
+              className="flex items-center gap-1.5 px-3 py-0.5 text-[10px] font-semibold rounded border transition-colors duration-150 bg-amber-500/10 text-amber-400 border-amber-500/30 hover:bg-amber-500/20 hover:text-amber-300 disabled:opacity-50"
+            >
+              {acknowledging ? (
+                <div className="w-3 h-3 border-2 border-amber-400/30 border-t-amber-400 rounded-full animate-spin" />
+              ) : (
+                <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M20 6L9 17l-5-5" />
+                </svg>
+              )}
+              {acknowledging ? 'Acknowledging...' : 'Acknowledge Changes'}
             </button>
           )}
           {canEndFlight && (

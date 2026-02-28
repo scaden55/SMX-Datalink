@@ -6,17 +6,19 @@ interface RemarksSectionProps {
 }
 
 export function RemarksSection({ dispatcherRemarks: initialDispatcher = '', autoRemarks: initialAuto = '' }: RemarksSectionProps) {
-  const { canEditRemarks, editableFields, onFieldChange } = useDispatchEdit();
+  const { canEditRemarks, editableFields, onFieldChange, releasedFields } = useDispatchEdit();
 
   const dispatcherRemarks = editableFields.dispatcherRemarks ?? initialDispatcher;
   const fuelAutoRemarks = editableFields.autoRemarks ?? initialAuto;
+  const hlDispatcher = releasedFields?.includes('dispatcherRemarks') ?? false;
+  const hlAuto = releasedFields?.includes('autoRemarks') ?? false;
 
   return (
     <div className="border-t border-acars-border px-3 py-2.5">
       <div className="grid grid-cols-2 gap-3">
         {/* Left: Remarks */}
         <div className="space-y-3">
-          <div>
+          <div className={hlDispatcher ? 'border-l-2 border-amber-400 bg-amber-400/5 pl-1.5' : ''}>
             <label className="data-label block mb-1">Dispatcher Remarks</label>
             {canEditRemarks ? (
               <textarea
@@ -31,7 +33,7 @@ export function RemarksSection({ dispatcherRemarks: initialDispatcher = '', auto
               </div>
             )}
           </div>
-          <div>
+          <div className={hlAuto ? 'border-l-2 border-amber-400 bg-amber-400/5 pl-1.5' : ''}>
             <label className="data-label block mb-1">Fuel/Auto Remarks</label>
             {canEditRemarks ? (
               <textarea

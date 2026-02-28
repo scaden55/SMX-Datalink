@@ -15,14 +15,27 @@ interface FlightPlanPanelProps {
   ofp?: SimBriefOFP | null;
   formData?: FlightPlanFormData | null;
   ruleChips?: string[];
+  pilot?: { callsign: string; name: string };
+  flightNumber?: string;
 }
 
-export function FlightPlanPanel({ ofp, formData, ruleChips }: FlightPlanPanelProps) {
+export function FlightPlanPanel({ ofp, formData, ruleChips, pilot, flightNumber }: FlightPlanPanelProps) {
   const { aircraft } = useDispatchTelemetry();
-  const { canEdit, saving, lastSavedAt } = useDispatchEdit();
+  const { canEdit, saving, lastSavedAt, isOwnFlight } = useDispatchEdit();
 
   return (
     <div className="bg-acars-bg">
+      {/* Observing banner — shown when admin is viewing another pilot's flight */}
+      {!isOwnFlight && pilot && (
+        <div className="border-b border-amber-400/30 bg-amber-400/5 px-3 py-1.5 flex items-center gap-2">
+          <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+          <span className="text-[10px] font-semibold text-amber-400 uppercase tracking-wider">Observing</span>
+          <span className="text-[10px] text-acars-text">
+            {pilot.callsign} — {flightNumber}
+          </span>
+        </div>
+      )}
+
       {/* Flight Plan Details header */}
       <div className="border-b border-acars-border px-3 py-2 flex items-center justify-between">
         <h2 className="text-xs font-semibold text-acars-muted uppercase tracking-wider">

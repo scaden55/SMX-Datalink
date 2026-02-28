@@ -9,6 +9,8 @@ export interface DispatchFlight {
   pilot: { callsign: string; name: string };
   vatsimConnected: boolean;
   vatsimCallsign: string | null;
+  /** Field names changed during the last dispatcher release (null = no pending changes) */
+  releasedFields: string[] | null;
 }
 
 export interface DispatchFlightsResponse {

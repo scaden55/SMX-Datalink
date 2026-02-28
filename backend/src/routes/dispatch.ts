@@ -258,6 +258,9 @@ export function dispatchRouter(
         return;
       }
 
+      // Persist released fields so the pilot sees highlighted changes
+      dispatchService.setReleasedFields(bidId, changedFields);
+
       // Build a human-readable summary of changed fields
       const fieldSummary = changedFields.join(', ');
       const messageContent = `Dispatch update: ${fieldSummary} modified`;
@@ -283,6 +286,32 @@ export function dispatchRouter(
     } catch (err) {
       logger.error('Dispatch', 'Release dispatch error', err);
       res.status(500).json({ error: 'Failed to release dispatch' });
+    }
+  });
+
+  // POST /api/dispatch/flights/:bidId/acknowledge — pilot acknowledges released changes
+  router.post('/dispatch/flights/:bidId/acknowledge', authMiddleware, (req, res) => {
+    try {
+      const bidId = Number(req.params.bidId);
+      if (isNaN(bidId)) {
+        res.status(400).json({ error: 'Invalid bid ID' });
+        return;
+      }
+
+      // Verify ownership — pilot must own the bid (or admin)
+      if (req.user!.role !== 'admin') {
+        const bid = dispatchService.findBidOwner(bidId);
+        if (!bid || bid.userId !== req.user!.userId) {
+          res.status(404).json({ error: 'Bid not found' });
+          return;
+        }
+      }
+
+      dispatchService.acknowledgeRelease(bidId);
+      res.json({ ok: true });
+    } catch (err) {
+      logger.error('Dispatch', 'Acknowledge release error', err);
+      res.status(500).json({ error: 'Failed to acknowledge release' });
     }
   });
 

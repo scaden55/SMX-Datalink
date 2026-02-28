@@ -104,6 +104,7 @@ function FuelTableRow({
   indent,
   bold,
   warn,
+  highlighted,
 }: {
   label: string;
   time?: string;
@@ -115,9 +116,10 @@ function FuelTableRow({
   indent?: boolean;
   bold?: boolean;
   warn?: boolean;
+  highlighted?: boolean;
 }) {
   return (
-    <div className={`flex items-center py-1 ${indent ? 'pl-4' : ''} border-b border-acars-border/20 last:border-b-0`}>
+    <div className={`flex items-center py-1 ${indent ? 'pl-4' : ''} border-b border-acars-border/20 last:border-b-0 ${highlighted ? 'border-l-2 border-l-amber-400 bg-amber-400/5 pl-1' : ''}`}>
       <span className={`text-[11px] w-[130px] shrink-0 ${bold ? 'font-semibold text-acars-text/80' : 'text-acars-muted'}`}>
         {label}
       </span>
@@ -155,6 +157,7 @@ function WeightTableRow({
   fieldKey,
   onFieldChange,
   warn,
+  highlighted,
 }: {
   label: string;
   estimated: string;
@@ -164,9 +167,10 @@ function WeightTableRow({
   fieldKey?: string;
   onFieldChange?: (key: string, val: string) => void;
   warn?: boolean;
+  highlighted?: boolean;
 }) {
   return (
-    <div className="flex items-center py-1 border-b border-acars-border/20 last:border-b-0">
+    <div className={`flex items-center py-1 border-b border-acars-border/20 last:border-b-0 ${highlighted ? 'border-l-2 border-l-amber-400 bg-amber-400/5 pl-1' : ''}`}>
       <span className="text-[11px] text-acars-muted w-[90px] shrink-0">{label}</span>
       {editable && fieldKey && onFieldChange ? (
         <input
@@ -209,6 +213,7 @@ function EditableField({
   onFieldChange,
   placeholder,
   wide,
+  highlighted,
 }: {
   label: string;
   value: string;
@@ -217,9 +222,10 @@ function EditableField({
   onFieldChange: (key: string, val: string) => void;
   placeholder?: string;
   wide?: boolean;
+  highlighted?: boolean;
 }) {
   return (
-    <div className={wide ? 'col-span-2' : ''}>
+    <div className={`${wide ? 'col-span-2' : ''} ${highlighted ? 'border-l-2 border-amber-400 bg-amber-400/5 pl-1.5' : ''}`}>
       <span className={labelCls}>{label}</span>
       {canEdit ? (
         <input
@@ -249,8 +255,10 @@ function ReadOnlyField({ label, value, warn }: { label: string; value: string; w
 
 export function FlightDetailSections({ ofp, formData }: FlightDetailSectionsProps) {
   const { aircraft } = useDispatchTelemetry();
-  const { editableFields, canEdit, canEditFuel, canEditMEL, canEditRoute, onFieldChange } = useDispatchEdit();
+  const { editableFields, canEdit, canEditFuel, canEditMEL, canEditRoute, onFieldChange, releasedFields } = useDispatchEdit();
   const flightPlan = useFlightPlanStore((s) => s.flightPlan);
+
+  const hl = (key: string) => releasedFields?.includes(key) ?? false;
 
   const w = ofp?.weights;
   const f = ofp?.fuel;
@@ -327,6 +335,7 @@ export function FlightDetailSections({ ofp, formData }: FlightDetailSectionsProp
             canEdit={canEdit}
             onFieldChange={onFieldChange}
             placeholder="FL350"
+            highlighted={hl('cruiseFL')}
           />
           <EditableField
             label="Cost Index"
@@ -335,6 +344,7 @@ export function FlightDetailSections({ ofp, formData }: FlightDetailSectionsProp
             canEdit={canEdit}
             onFieldChange={onFieldChange}
             placeholder="0"
+            highlighted={hl('costIndex')}
           />
           <EditableField
             label="AOB FL"
@@ -343,6 +353,7 @@ export function FlightDetailSections({ ofp, formData }: FlightDetailSectionsProp
             canEdit={canEdit}
             onFieldChange={onFieldChange}
             placeholder="FL350"
+            highlighted={hl('aobFL')}
           />
           <EditableField
             label="Pilot in Command"
@@ -352,6 +363,7 @@ export function FlightDetailSections({ ofp, formData }: FlightDetailSectionsProp
             onFieldChange={onFieldChange}
             placeholder="PIC Name"
             wide
+            highlighted={hl('pic')}
           />
           <ReadOnlyField label="SimBrief Type" value={ofp?.aircraftType ?? '---'} />
         </FieldGrid>
@@ -360,7 +372,7 @@ export function FlightDetailSections({ ofp, formData }: FlightDetailSectionsProp
       {/* ── MEL & Restrictions ────────────────────────────────── */}
       <DetailRow title="MEL & Restrictions" summary={melSummary} hasData amber={hasMEL}>
         {canEditMEL ? (
-          <div>
+          <div className={hl('melRestrictions') ? 'border-l-2 border-amber-400 bg-amber-400/5 pl-1.5' : ''}>
             <label className={`${labelCls} block mb-1`}>MEL items (one per line)</label>
             <textarea
               value={editableFields.melRestrictions ?? formData?.melRestrictions ?? ''}
@@ -404,7 +416,7 @@ export function FlightDetailSections({ ofp, formData }: FlightDetailSectionsProp
             <ReadOnlyField label="Est Block" value={fmtTime(t?.estBlock)} />
           </div>
           {canEditRoute ? (
-            <div>
+            <div className={hl('route') ? 'border-l-2 border-amber-400 bg-amber-400/5 pl-1.5' : ''}>
               <label className={`${labelCls} block mb-1`}>Route</label>
               <textarea
                 value={route}
@@ -414,7 +426,7 @@ export function FlightDetailSections({ ofp, formData }: FlightDetailSectionsProp
               />
             </div>
           ) : (
-            <div>
+            <div className={hl('route') ? 'border-l-2 border-amber-400 bg-amber-400/5 pl-1.5' : ''}>
               <span className={`${labelCls} block mb-1`}>Route</span>
               <div className="font-mono text-[11px] text-acars-text leading-relaxed break-all">
                 {route || <span className="text-acars-muted italic">No route loaded</span>}
@@ -429,6 +441,7 @@ export function FlightDetailSections({ ofp, formData }: FlightDetailSectionsProp
               canEdit={canEdit}
               onFieldChange={onFieldChange}
               placeholder="ICAO"
+              highlighted={hl('alternate1')}
             />
             <EditableField
               label="Alternate 2"
@@ -437,6 +450,7 @@ export function FlightDetailSections({ ofp, formData }: FlightDetailSectionsProp
               canEdit={canEdit}
               onFieldChange={onFieldChange}
               placeholder="ICAO"
+              highlighted={hl('alternate2')}
             />
           </div>
         </div>
@@ -470,6 +484,7 @@ export function FlightDetailSections({ ofp, formData }: FlightDetailSectionsProp
             editable={canEditFuel}
             fieldKey="fuelBurn"
             onFieldChange={onFieldChange}
+            highlighted={hl('fuelBurn')}
           />
 
           {/* Contingency (CF) */}
@@ -480,6 +495,7 @@ export function FlightDetailSections({ ofp, formData }: FlightDetailSectionsProp
             fieldKey="fuelContingency"
             onFieldChange={onFieldChange}
             note={cfPct !== null ? `${cfPct}% of burn` : undefined}
+            highlighted={hl('fuelContingency')}
           />
 
           {/* FAR Reserve */}
@@ -490,6 +506,7 @@ export function FlightDetailSections({ ofp, formData }: FlightDetailSectionsProp
             fieldKey="fuelReserve"
             onFieldChange={onFieldChange}
             note="FAA reserve"
+            highlighted={hl('fuelReserve')}
           />
 
           {/* Alternates sub-section */}
@@ -517,6 +534,7 @@ export function FlightDetailSections({ ofp, formData }: FlightDetailSectionsProp
             editable={canEditFuel}
             fieldKey="fuelAlternate"
             onFieldChange={onFieldChange}
+            highlighted={hl('fuelAlternate')}
           />
 
           {/* Extra */}
@@ -527,6 +545,7 @@ export function FlightDetailSections({ ofp, formData }: FlightDetailSectionsProp
             fieldKey="fuelExtra"
             onFieldChange={onFieldChange}
             note="Pilot discretionary"
+            highlighted={hl('fuelExtra')}
           />
 
           {/* Plan T/O (computed) */}
@@ -544,6 +563,7 @@ export function FlightDetailSections({ ofp, formData }: FlightDetailSectionsProp
             editable={canEditFuel}
             fieldKey="fuelTaxi"
             onFieldChange={onFieldChange}
+            highlighted={hl('fuelTaxi')}
           />
 
           {/* Plan Gate (total) */}
@@ -555,6 +575,7 @@ export function FlightDetailSections({ ofp, formData }: FlightDetailSectionsProp
             fieldKey="fuelTotal"
             onFieldChange={onFieldChange}
             bold
+            highlighted={hl('fuelTotal')}
           />
         </div>
       </DetailRow>
@@ -578,6 +599,7 @@ export function FlightDetailSections({ ofp, formData }: FlightDetailSectionsProp
             editable={canEditFuel}
             fieldKey="estZfw"
             onFieldChange={onFieldChange}
+            highlighted={hl('estZfw')}
           />
           <WeightTableRow
             label="TOW"
@@ -588,6 +610,7 @@ export function FlightDetailSections({ ofp, formData }: FlightDetailSectionsProp
             editable={canEditFuel}
             fieldKey="estTow"
             onFieldChange={onFieldChange}
+            highlighted={hl('estTow')}
           />
           <WeightTableRow
             label="LDW"
@@ -598,6 +621,7 @@ export function FlightDetailSections({ ofp, formData }: FlightDetailSectionsProp
             editable={canEditFuel}
             fieldKey="estLdw"
             onFieldChange={onFieldChange}
+            highlighted={hl('estLdw')}
           />
 
           <div className="h-2" />
@@ -608,6 +632,7 @@ export function FlightDetailSections({ ofp, formData }: FlightDetailSectionsProp
             editable={canEditFuel}
             fieldKey="payload"
             onFieldChange={onFieldChange}
+            highlighted={hl('payload')}
           />
           <WeightTableRow
             label="Pax Count"
@@ -615,6 +640,7 @@ export function FlightDetailSections({ ofp, formData }: FlightDetailSectionsProp
             editable={canEditFuel}
             fieldKey="paxCount"
             onFieldChange={onFieldChange}
+            highlighted={hl('paxCount')}
           />
           <WeightTableRow
             label="Cargo"
@@ -622,6 +648,7 @@ export function FlightDetailSections({ ofp, formData }: FlightDetailSectionsProp
             editable={canEditFuel}
             fieldKey="cargoLbs"
             onFieldChange={onFieldChange}
+            highlighted={hl('cargoLbs')}
           />
         </div>
       </DetailRow>
