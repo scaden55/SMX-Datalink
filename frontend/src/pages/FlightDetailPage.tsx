@@ -24,7 +24,7 @@ import {
 } from '@phosphor-icons/react';
 import { api } from '../lib/api';
 import { VatsimBadge } from '../components/common/VatsimBadge';
-import type { LogbookEntry, LogbookStatus } from '@acars/shared';
+import type { LogbookEntry, LogbookStatus, FlightExceedance } from '@acars/shared';
 
 // ─── Helpers ────────────────────────────────────────────────────
 
@@ -194,6 +194,7 @@ export function FlightDetailPage() {
   const [entry, setEntry] = useState<LogbookEntry | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [exceedances, setExceedances] = useState<FlightExceedance[]>([]);
 
   useEffect(() => {
     if (!id) return;
@@ -203,6 +204,13 @@ export function FlightDetailPage() {
       .catch(err => setError(err?.message || 'Failed to load flight'))
       .finally(() => setLoading(false));
   }, [id]);
+
+  useEffect(() => {
+    if (!entry) return;
+    api.get<FlightExceedance[]>(`/api/logbook/${entry.id}/exceedances`)
+      .then(setExceedances)
+      .catch(() => {}); // non-critical
+  }, [entry]);
 
   if (loading) {
     return (
@@ -385,6 +393,59 @@ export function FlightDetailPage() {
             )}
           </div>
         </div>
+
+        {/* ── Events ───────────────────────────────────────── */}
+        {exceedances.length > 0 && (
+          <div className="panel rounded-md p-4 mb-4">
+            <h3 className="text-[11px] uppercase tracking-wider text-acars-muted font-medium mb-3 flex items-center gap-2">
+              <Warning className="w-3.5 h-3.5 text-amber-400" weight="fill" />
+              Events ({exceedances.length})
+            </h3>
+            <div className="space-y-2">
+              {exceedances.map((exc) => (
+                <div
+                  key={exc.id}
+                  className={`flex items-start justify-between text-xs p-3 rounded-md border ${
+                    exc.severity === 'critical'
+                      ? 'border-l-2 border-l-red-500 border-red-500/20 bg-red-500/5'
+                      : 'border-l-2 border-l-amber-500 border-amber-500/20 bg-amber-500/5'
+                  }`}
+                >
+                  <div className="space-y-0.5">
+                    <div className="font-medium text-acars-text">
+                      {exc.type.replace(/_/g, ' ')}
+                    </div>
+                    <div className="text-acars-muted">{exc.message}</div>
+                    <div className="text-acars-muted text-[10px]">
+                      Detected during {exc.phase} at{' '}
+                      {new Date(exc.detectedAt).toLocaleTimeString('en-US', {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        second: '2-digit',
+                        timeZone: 'UTC',
+                      })}{' '}
+                      UTC
+                    </div>
+                    {exc.type === 'HARD_LANDING' && (
+                      <div className="text-amber-400 text-[10px] mt-1">
+                        → Maintenance inspection scheduled
+                      </div>
+                    )}
+                  </div>
+                  <span
+                    className={`text-[10px] font-semibold uppercase px-1.5 py-0.5 rounded ${
+                      exc.severity === 'critical'
+                        ? 'bg-red-500/20 text-red-400'
+                        : 'bg-amber-500/20 text-amber-400'
+                    }`}
+                  >
+                    {exc.severity}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* ── Flight Details ──────────────────────────────────── */}
         <div className="grid grid-cols-2 gap-4 mb-4">
