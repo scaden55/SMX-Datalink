@@ -37,6 +37,12 @@ export interface LogbookEntry {
   vatsimConnected: boolean;
   vatsimCallsign: string | null;
   vatsimCid: number | null;
+  // OOOI timestamps (null for pre-OOOI entries)
+  oooiOut: string | null;
+  oooiOff: string | null;
+  oooiOn: string | null;
+  oooiIn: string | null;
+  blockTimeMin: number | null; // calculated: IN - OUT
   // Cargo manifest linkage
   cargoManifestId?: number;
   cargoWeightKg?: number;

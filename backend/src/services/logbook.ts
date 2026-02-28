@@ -36,6 +36,11 @@ interface LogbookRow {
   vatsim_connected: number;
   vatsim_callsign: string | null;
   vatsim_cid: number | null;
+  // OOOI timestamps
+  oooi_out: string | null;
+  oooi_off: string | null;
+  oooi_on: string | null;
+  oooi_in: string | null;
   // Joined fields
   pilot_callsign?: string;
   pilot_name?: string;
@@ -180,6 +185,13 @@ export class LogbookService {
       vatsimConnected: row.vatsim_connected === 1,
       vatsimCallsign: row.vatsim_callsign ?? null,
       vatsimCid: row.vatsim_cid ?? null,
+      oooiOut: row.oooi_out,
+      oooiOff: row.oooi_off,
+      oooiOn: row.oooi_on,
+      oooiIn: row.oooi_in,
+      blockTimeMin: (row.oooi_out && row.oooi_in)
+        ? Math.round((new Date(row.oooi_in).getTime() - new Date(row.oooi_out).getTime()) / 60000)
+        : null,
       pilotCallsign: row.pilot_callsign,
       pilotName: row.pilot_name,
       depName: row.dep_name,
