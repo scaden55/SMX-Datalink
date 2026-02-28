@@ -82,7 +82,7 @@ function StatusBadge({ status }: { status: LogbookStatus }) {
   );
 }
 
-type SortField = 'date' | 'flight' | 'route' | 'aircraft' | 'duration' | 'landing' | 'score';
+type SortField = 'date' | 'flight' | 'route' | 'aircraft' | 'duration' | 'block' | 'landing' | 'score';
 type SortDir = 'asc' | 'desc';
 
 // ─── LogbookPage ────────────────────────────────────────────────
@@ -140,6 +140,7 @@ export function LogbookPage() {
       case 'route': return dir * `${a.depIcao}${a.arrIcao}`.localeCompare(`${b.depIcao}${b.arrIcao}`);
       case 'aircraft': return dir * a.aircraftType.localeCompare(b.aircraftType);
       case 'duration': return dir * (a.flightTimeMin - b.flightTimeMin);
+      case 'block': return dir * ((a.blockTimeMin ?? a.flightTimeMin) - (b.blockTimeMin ?? b.flightTimeMin));
       case 'landing': return dir * ((a.landingRateFpm ?? 0) - (b.landingRateFpm ?? 0));
       case 'score': return dir * ((a.score ?? 0) - (b.score ?? 0));
       default: return 0;
@@ -302,7 +303,8 @@ export function LogbookPage() {
                 <th className="text-left px-3 py-2.5"><SortHeader field="flight" label="Flight" /></th>
                 <th className="text-left px-3 py-2.5"><SortHeader field="route" label="Path" /></th>
                 <th className="text-left px-3 py-2.5"><SortHeader field="aircraft" label="Aircraft" /></th>
-                <th className="text-left px-3 py-2.5"><SortHeader field="duration" label="Duration" /></th>
+                <th className="text-left px-3 py-2.5"><SortHeader field="duration" label="Flight" /></th>
+                <th className="text-left px-3 py-2.5"><SortHeader field="block" label="Block" /></th>
                 <th className="text-right px-3 py-2.5"><SortHeader field="landing" label="Landing" className="justify-end" /></th>
                 <th className="text-right px-3 py-2.5"><SortHeader field="score" label="Score" className="justify-end" /></th>
                 <th className="text-center px-3 py-2.5 text-[10px] uppercase tracking-wider font-medium text-acars-muted">Net</th>
@@ -340,6 +342,11 @@ export function LogbookPage() {
                   </td>
                   <td className="px-3 py-2.5">
                     <span className="text-acars-text font-mono">{formatDuration(entry.flightTimeMin)}</span>
+                  </td>
+                  <td className="px-3 py-2.5">
+                    <span className="text-acars-text font-mono">
+                      {entry.blockTimeMin != null ? formatDuration(entry.blockTimeMin) : '—'}
+                    </span>
                   </td>
                   <td className="text-right px-3 py-2.5">
                     <span className={`font-mono font-semibold ${landingRateColor(entry.landingRateFpm)}`}>
