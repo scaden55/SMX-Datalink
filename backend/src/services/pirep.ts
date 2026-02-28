@@ -95,12 +95,25 @@ export class PirepService {
     try { flightPlanData = bid.flight_plan_data ? JSON.parse(bid.flight_plan_data) : {}; } catch { /* skip */ }
     try { ofpData = bid.simbrief_ofp_json ? JSON.parse(bid.simbrief_ofp_json) : {}; } catch { /* skip */ }
 
-    // 4. Calculate flight time
+    // 4. Calculate flight time from OOOI (OFF → ON)
     const now = new Date();
+    const oooiOff = flightEvents.oooiOff ? new Date(flightEvents.oooiOff) : null;
+    const oooiOn = flightEvents.oooiOn ? new Date(flightEvents.oooiOn) : null;
     const takeoffTime = flightEvents.takeoffTime ? new Date(flightEvents.takeoffTime) : null;
-    const flightTimeMin = takeoffTime
-      ? Math.round((now.getTime() - takeoffTime.getTime()) / 60000)
-      : 0;
+
+    // Flight time: prefer OFF→ON, fall back to takeoff→now
+    const flightTimeMin = (oooiOff && oooiOn)
+      ? Math.round((oooiOn.getTime() - oooiOff.getTime()) / 60000)
+      : takeoffTime
+        ? Math.round((now.getTime() - takeoffTime.getTime()) / 60000)
+        : 0;
+
+    // actual_dep = OFF time (wheels up), actual_arr = ON time (touchdown)
+    const actualDep = flightEvents.oooiOff ?? flightEvents.takeoffTime ?? now.toISOString();
+    const actualArr = flightEvents.oooiOn ?? now.toISOString();
+
+    // IN time fallback: use submission time if pilot submits before parking
+    const oooiIn = flightEvents.oooiIn ?? now.toISOString();
 
     // 5. Calculate fuel used
     const takeoffFuel = flightEvents.takeoffFuelLbs ?? 0;
@@ -139,7 +152,8 @@ export class PirepService {
           pax_count, cargo_lbs,
           landing_rate_fpm, score,
           status, remarks,
-          vatsim_connected, vatsim_callsign, vatsim_cid
+          vatsim_connected, vatsim_callsign, vatsim_cid,
+          oooi_out, oooi_off, oooi_on, oooi_in
         ) VALUES (
           ?, ?, ?, ?,
           ?, ?,
@@ -151,7 +165,8 @@ export class PirepService {
           ?, ?,
           ?, ?,
           ?, ?,
-          ?, ?, ?
+          ?, ?, ?,
+          ?, ?, ?, ?
         )
       `).run(
         userId,
@@ -162,8 +177,8 @@ export class PirepService {
         aircraftReg,
         schedule.dep_time,
         schedule.arr_time,
-        flightEvents.takeoffTime ?? now.toISOString(),
-        now.toISOString(),
+        actualDep,
+        actualArr,
         flightTimeMin,
         schedule.distance_nm,
         fuelUsedLbs,
@@ -179,6 +194,10 @@ export class PirepService {
         bid.vatsim_connected,
         bid.vatsim_callsign,
         bid.vatsim_cid,
+        flightEvents.oooiOut,
+        flightEvents.oooiOff,
+        flightEvents.oooiOn,
+        oooiIn,
       );
 
       const logbookId = result.lastInsertRowid as number;

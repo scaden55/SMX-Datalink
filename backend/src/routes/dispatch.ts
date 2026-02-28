@@ -176,7 +176,8 @@ export function dispatchRouter(
       // Read flight events (landing rate, takeoff fuel/time)
       const flightEvents = flightEventTracker
         ? flightEventTracker.getEvents()
-        : { landingRateFpm: null, takeoffFuelLbs: null, takeoffTime: null };
+        : { landingRateFpm: null, takeoffFuelLbs: null, takeoffTime: null,
+            oooiOut: null, oooiOff: null, oooiOn: null, oooiIn: null };
 
       const result = pirepService.submit(
         bidId,
