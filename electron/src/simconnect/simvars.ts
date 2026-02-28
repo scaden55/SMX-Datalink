@@ -36,6 +36,8 @@ export const POSITION_VARS: SimVarDefinition[] = [
   { name: 'VERTICAL SPEED', units: 'feet per minute', dataType: SimConnectDataType.FLOAT64 },
   { name: 'PLANE PITCH DEGREES', units: 'degrees', dataType: SimConnectDataType.FLOAT64 },
   { name: 'PLANE BANK DEGREES', units: 'degrees', dataType: SimConnectDataType.FLOAT64 },
+  { name: 'PLANE ALT ABOVE GROUND', units: 'feet', dataType: SimConnectDataType.FLOAT64 },
+  { name: 'TOTAL WEIGHT', units: 'pounds', dataType: SimConnectDataType.FLOAT64 },
 ];
 
 /** Engine SimVars (per-engine, indexed with :1, :2, etc.) */

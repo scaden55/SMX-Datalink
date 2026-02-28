@@ -9,6 +9,8 @@ export interface AircraftPosition {
   verticalSpeed: number; // feet per minute
   pitch: number; // degrees
   bank: number; // degrees
+  altitudeAgl: number;   // feet above ground level (radar altimeter)
+  totalWeight: number;   // current gross weight in pounds
 }
 
 export interface AutopilotState {
