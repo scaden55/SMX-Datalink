@@ -6,6 +6,7 @@ import { AuditService } from './audit.js';
 import type { FlightEvents } from './flight-event-tracker.js';
 import type { LogbookEntry } from '@acars/shared';
 import { LogbookService } from './logbook.js';
+import { ExceedanceService } from './exceedance.js';
 
 // ── Score calculation ────────────────────────────────────────────
 
@@ -56,6 +57,7 @@ const financeService = new FinanceService();
 const notificationService = new NotificationService();
 const auditService = new AuditService();
 const logbookService = new LogbookService();
+const exceedanceService = new ExceedanceService();
 
 export class PirepService {
   /**
@@ -206,6 +208,9 @@ export class PirepService {
       db.prepare(
         "UPDATE active_bids SET flight_plan_phase = 'completed' WHERE id = ?",
       ).run(bidId);
+
+      // Link exceedances to the logbook entry
+      exceedanceService.linkToLogbook(bidId, logbookId);
 
       // Auto-approve: create finance entry
       if (autoApprove && flightTimeMin > 0) {

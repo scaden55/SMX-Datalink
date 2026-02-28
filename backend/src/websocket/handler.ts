@@ -1,6 +1,6 @@
 import type { Server as HttpServer } from 'http';
 import { Server as SocketServer, type Socket } from 'socket.io';
-import type { ServerToClientEvents, ClientToServerEvents, AuthPayload, VatsimDataSnapshot, VatsimFlightStatus, ActiveFlightHeartbeat, TelemetrySnapshot } from '@acars/shared';
+import type { ServerToClientEvents, ClientToServerEvents, AuthPayload, VatsimDataSnapshot, VatsimFlightStatus, ActiveFlightHeartbeat, TelemetrySnapshot, ExceedanceEvent } from '@acars/shared';
 import type { TelemetryService } from '../services/telemetry.js';
 import type { ISimConnectManager } from '../simconnect/types.js';
 import type { VatsimService } from '../services/vatsim.js';
@@ -9,6 +9,8 @@ import { AuthService } from '../services/auth.js';
 import { MessageService } from '../services/messages.js';
 import { TrackService } from '../services/track.js';
 import { VatsimTrackService } from '../services/vatsim-track.js';
+import { ExceedanceService } from '../services/exceedance.js';
+import { MaintenanceService } from '../services/maintenance.js';
 import { getDb } from '../db/index.js';
 import { config } from '../config.js';
 import { logger } from '../lib/logger.js';
@@ -50,6 +52,8 @@ export function setupWebSocket(
   const pilotSockets = new Map<number, string>();
   const trackService = new TrackService();
   const vatsimTrackService = new VatsimTrackService();
+  const exceedanceService = new ExceedanceService();
+  const maintenanceService = new MaintenanceService();
 
   // Cache the active bid query for track recording
   const findActiveBid = () =>
@@ -361,6 +365,49 @@ export function setupWebSocket(
       const flights = Array.from(activeFlights.values());
       for (const sid of livemapSubscribers) {
         io.to(sid).emit('flights:active', flights);
+      }
+    });
+
+    socket.on('flight:exceedance', (data: ExceedanceEvent) => {
+      if (!socket.user) return;
+      try {
+        const bid = findActiveBidByUser().get(socket.user.userId) as { id: number } | undefined;
+        if (!bid) return;
+        const exceedance = exceedanceService.insert(bid.id, socket.user.userId, data);
+
+        // Auto-create maintenance inspection for hard landings
+        if (data.type === 'HARD_LANDING') {
+          try {
+            const bidRow = getDb().prepare(
+              `SELECT sf.aircraft_type FROM active_bids ab
+               JOIN scheduled_flights sf ON sf.id = ab.schedule_id
+               WHERE ab.id = ?`,
+            ).get(bid.id) as { aircraft_type: string } | undefined;
+
+            if (bidRow) {
+              const aircraft = getDb().prepare(
+                `SELECT id, registration FROM fleet WHERE icao_type = ? AND status = 'active' LIMIT 1`,
+              ).get(bidRow.aircraft_type) as { id: number; registration: string } | undefined;
+
+              if (aircraft) {
+                maintenanceService.createLog({
+                  aircraftId: aircraft.id,
+                  checkType: 'UNSCHEDULED',
+                  title: `Hard landing inspection – ${aircraft.registration}`,
+                  description: `Hard landing inspection required\nLanding rate: ${data.value} fpm (limit: ${data.threshold} fpm)\nFlight by ${socket.user.callsign} at ${data.detectedAt}`,
+                }, socket.user.userId);
+                logger.info('Exceedance', `Auto-created maintenance inspection for hard landing on ${aircraft.registration}`);
+              }
+            }
+          } catch (err) {
+            logger.error('Exceedance', 'Failed to create maintenance entry', err);
+          }
+        }
+
+        // Broadcast to dispatch observers
+        io.to(`bid:${bid.id}`).emit('dispatch:exceedance', exceedance);
+      } catch (err) {
+        logger.error('Exceedance', 'Failed to handle exceedance event', err);
       }
     });
 
