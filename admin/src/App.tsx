@@ -5,6 +5,7 @@ import { ToastContainer } from '@/components/ToastContainer';
 import { AuthGuard } from '@/components/auth/AuthGuard';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { LoginPage } from '@/pages/LoginPage';
+import { DashboardPage } from '@/pages/DashboardPage';
 
 // Placeholder pages - will be replaced in later tasks
 function PageStub({ name }: { name: string }) {
@@ -14,8 +15,6 @@ function PageStub({ name }: { name: string }) {
     </div>
   );
 }
-
-const DashboardPage = () => <PageStub name="Dashboard" />;
 const DispatchBoardPage = () => <PageStub name="Dispatch Board" />;
 const UsersPage = () => <PageStub name="Users" />;
 const SchedulesPage = () => <PageStub name="Schedules" />;
