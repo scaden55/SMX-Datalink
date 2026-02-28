@@ -3,6 +3,8 @@ import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import { createServer } from 'http';
+import { dirname, join } from 'path';
+import { fileURLToPath } from 'url';
 import { config } from './config.js';
 import { NullSimConnectManager } from './simconnect/null-manager.js';
 import type { ISimConnectManager } from './simconnect/types.js';
@@ -158,6 +160,15 @@ app.use('/api', dispatchRouter(io, telemetry, flightEventTracker));
 
 // Register schedule router with io for bid:expired notifications
 app.use('/api', scheduleRouter(io));
+
+// Serve admin frontend static files
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const adminDistPath = join(__dirname, '../../admin-dist');
+app.use('/admin', express.static(adminDistPath));
+app.get('/admin/*', (_req, res) => {
+  res.sendFile(join(adminDistPath, 'index.html'));
+});
 
 // Bid expiration sweep (every 5 minutes)
 const bidExpiration = new BidExpirationService(io);
