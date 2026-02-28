@@ -14,17 +14,8 @@ import { FinancesPage } from '@/pages/FinancesPage';
 import { ReportsPage } from '@/pages/ReportsPage';
 import { NotificationsPage } from '@/pages/NotificationsPage';
 import { DispatchBoardPage } from '@/pages/DispatchBoardPage';
-
-// Placeholder pages - will be replaced in later tasks
-function PageStub({ name }: { name: string }) {
-  return (
-    <div className="flex items-center justify-center py-20">
-      <h1 className="text-xl font-semibold text-muted-foreground">{name}</h1>
-    </div>
-  );
-}
-const AuditPage = () => <PageStub name="Audit Log" />;
-const SettingsPage = () => <PageStub name="Settings" />;
+import { AuditPage } from '@/pages/AuditPage';
+import { SettingsPage } from '@/pages/SettingsPage';
 
 export function App() {
   const hydrate = useAuthStore((s) => s.hydrate);
