@@ -166,7 +166,7 @@ mv shared-package-new.json "$SHARED_DIR/package.json"
 npm install --omit=dev --silent
 
 echo "[deploy] Starting new process..."
-pm2 start dist/index.js --name sma-acars --kill-timeout 5000
+pm2 start dist/index.js --name sma-acars --cwd /opt/sma-acars --kill-timeout 5000
 pm2 save
 
 echo "[deploy] Waiting for server to be ready..."
