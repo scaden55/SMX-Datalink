@@ -1,0 +1,63 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    /* Backgrounds */
+    --background: 228 15% 7%;        /* #0f1117 */
+    --foreground: 220 10% 92%;       /* #e8eaed */
+    --card: 228 22% 14%;             /* #1a1d2e */
+    --card-foreground: 220 10% 92%;
+    --popover: 228 22% 14%;
+    --popover-foreground: 220 10% 92%;
+
+    /* Primary (blue accent) */
+    --primary: 217 91% 60%;          /* #3b82f6 */
+    --primary-foreground: 0 0% 100%;
+
+    /* Secondary */
+    --secondary: 228 18% 18%;        /* #232738 */
+    --secondary-foreground: 220 10% 92%;
+
+    /* Muted */
+    --muted: 228 18% 18%;
+    --muted-foreground: 228 8% 55%;  /* #8b8fa3 */
+
+    /* Accent */
+    --accent: 228 18% 18%;
+    --accent-foreground: 220 10% 92%;
+
+    /* Destructive */
+    --destructive: 0 84% 60%;        /* #ef4444 */
+    --destructive-foreground: 0 0% 100%;
+
+    /* Borders & Input */
+    --border: 228 16% 20%;           /* #2a2e3f */
+    --input: 228 18% 18%;            /* #232738 */
+    --ring: 217 91% 60%;             /* #3b82f6 */
+
+    /* Sidebar */
+    --sidebar-background: 228 18% 10%;  /* #151823 */
+    --sidebar-foreground: 228 8% 55%;
+    --sidebar-primary: 217 91% 60%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 228 18% 15%;
+    --sidebar-accent-foreground: 220 10% 92%;
+    --sidebar-border: 228 16% 20%;
+    --sidebar-ring: 217 91% 60%;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    min-height: 100vh;
+  }
+}
