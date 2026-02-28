@@ -5,6 +5,14 @@
 @layer base {
   :root {
     --radius: 0.5rem;
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
   }
 
   .dark {
@@ -42,14 +50,14 @@
     --ring: 217 91% 60%;             /* #3b82f6 */
 
     /* Sidebar */
-    --sidebar-background: 228 18% 10%;  /* #151823 */
-    --sidebar-foreground: 228 8% 55%;
-    --sidebar-primary: 217 91% 60%;
+    --sidebar-background: 240 5.9% 10%;  /* #151823 */
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 224.3 76.3% 48%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 228 18% 15%;
-    --sidebar-accent-foreground: 220 10% 92%;
-    --sidebar-border: 228 16% 20%;
-    --sidebar-ring: 217 91% 60%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
   }
 
   * {
