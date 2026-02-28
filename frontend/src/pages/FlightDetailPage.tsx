@@ -210,7 +210,7 @@ export function FlightDetailPage() {
     api.get<FlightExceedance[]>(`/api/logbook/${entry.id}/exceedances`)
       .then(setExceedances)
       .catch(() => {}); // non-critical
-  }, [entry]);
+  }, [entry?.id]);
 
   if (loading) {
     return (

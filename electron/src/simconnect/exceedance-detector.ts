@@ -152,7 +152,7 @@ export class ExceedanceDetector {
         threshold: limits.mlwLbs,
         unit: 'lbs',
         phase: current,
-        message: `Overweight landing: ${Math.round(this.lastAirborneTotalWeight).toLocaleString()} lbs (MLW: ${limits.mlwLbs.toLocaleString()} lbs)`,
+        message: `Overweight landing: ${Math.round(this.lastAirborneTotalWeight).toLocaleString('en-US')} lbs (MLW: ${limits.mlwLbs.toLocaleString('en-US')} lbs)`,
         detectedAt: now,
       });
     }

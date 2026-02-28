@@ -370,6 +370,14 @@ export function setupWebSocket(
 
     socket.on('flight:exceedance', (data: ExceedanceEvent) => {
       if (!socket.user) return;
+
+      // Validate incoming exceedance data
+      const validTypes = ['HARD_LANDING', 'OVERSPEED', 'OVERWEIGHT_LANDING', 'UNSTABLE_APPROACH', 'TAILSTRIKE'];
+      if (!validTypes.includes(data.type)) return;
+      if (data.severity !== 'warning' && data.severity !== 'critical') return;
+      if (!Number.isFinite(data.value) || !Number.isFinite(data.threshold)) return;
+      if (typeof data.unit !== 'string' || typeof data.phase !== 'string' || typeof data.message !== 'string') return;
+
       try {
         const bid = findActiveBidByUser().get(socket.user.userId) as { id: number } | undefined;
         if (!bid) return;
@@ -379,25 +387,19 @@ export function setupWebSocket(
         if (data.type === 'HARD_LANDING') {
           try {
             const bidRow = getDb().prepare(
-              `SELECT sf.aircraft_type FROM active_bids ab
-               JOIN scheduled_flights sf ON sf.id = ab.schedule_id
-               WHERE ab.id = ?`,
-            ).get(bid.id) as { aircraft_type: string } | undefined;
+              `SELECT ab.aircraft_id, f.registration FROM active_bids ab
+               JOIN fleet f ON f.id = ab.aircraft_id
+               WHERE ab.id = ? AND ab.aircraft_id IS NOT NULL`,
+            ).get(bid.id) as { aircraft_id: number; registration: string } | undefined;
 
             if (bidRow) {
-              const aircraft = getDb().prepare(
-                `SELECT id, registration FROM fleet WHERE icao_type = ? AND status = 'active' LIMIT 1`,
-              ).get(bidRow.aircraft_type) as { id: number; registration: string } | undefined;
-
-              if (aircraft) {
-                maintenanceService.createLog({
-                  aircraftId: aircraft.id,
-                  checkType: 'UNSCHEDULED',
-                  title: `Hard landing inspection – ${aircraft.registration}`,
-                  description: `Hard landing inspection required\nLanding rate: ${data.value} fpm (limit: ${data.threshold} fpm)\nFlight by ${socket.user.callsign} at ${data.detectedAt}`,
-                }, socket.user.userId);
-                logger.info('Exceedance', `Auto-created maintenance inspection for hard landing on ${aircraft.registration}`);
-              }
+              maintenanceService.createLog({
+                aircraftId: bidRow.aircraft_id,
+                checkType: 'UNSCHEDULED',
+                title: `Hard landing inspection – ${bidRow.registration}`,
+                description: `Hard landing inspection required\nLanding rate: ${data.value} fpm (limit: ${data.threshold} fpm)\nFlight by ${socket.user.callsign} at ${data.detectedAt}`,
+              }, socket.user.userId);
+              logger.info('Exceedance', `Auto-created maintenance inspection for hard landing on ${bidRow.registration}`);
             }
           } catch (err) {
             logger.error('Exceedance', 'Failed to create maintenance entry', err);

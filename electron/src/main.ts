@@ -495,8 +495,22 @@ app.whenReady().then(async () => {
         });
 
         // Detect exceedances from current telemetry
+        const exceedancePosition = {
+          latitude: position.latitude ?? 0,
+          longitude: position.longitude ?? 0,
+          altitude: position.altitude ?? 0,
+          heading: position.heading ?? 0,
+          airspeedIndicated: position.airspeedIndicated ?? 0,
+          airspeedTrue: position.airspeedTrue ?? 0,
+          groundSpeed: position.groundSpeed ?? 0,
+          verticalSpeed: position.verticalSpeed ?? 0,
+          pitch: position.pitch ?? 0,
+          bank: position.bank ?? 0,
+          altitudeAgl: position.altitudeAgl ?? 0,
+          totalWeight: position.totalWeight ?? 0,
+        };
         const exceedanceEvents = exceedanceDetector.check(
-          position as any,
+          exceedancePosition,
           phase,
           (flightState.simOnGround as boolean) ?? true,
         );
