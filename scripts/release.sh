@@ -113,6 +113,10 @@ step 6 "Deploying backend to VPS (${VPS_HOST})"
 # Upload new dist
 scp -r "$ROOT/backend/dist" "${VPS_USER}@${VPS_HOST}:${VPS_PATH}/dist-new" || fail "SCP dist failed"
 
+# Upload shared dist (backend imports @acars/shared at runtime)
+scp -r "$ROOT/shared/dist" "${VPS_USER}@${VPS_HOST}:${VPS_PATH}/shared-dist-new" || fail "SCP shared dist failed"
+scp "$ROOT/shared/package.json" "${VPS_USER}@${VPS_HOST}:${VPS_PATH}/shared-package-new.json" || fail "SCP shared package.json failed"
+
 # Create a VPS-specific package.json that strips optionalDependencies
 # (node-simconnect is Windows-only and fails to compile on Linux)
 cd "$ROOT"
@@ -151,6 +155,14 @@ echo "[deploy] Swapping dist..."
 rm -rf dist
 mv dist-new dist
 mv package-new.json package.json
+
+echo "[deploy] Updating @acars/shared..."
+SHARED_DIR="node_modules/@acars/shared"
+mkdir -p "$SHARED_DIR"
+rm -rf "$SHARED_DIR/dist"
+mv shared-dist-new "$SHARED_DIR/dist"
+mv shared-package-new.json "$SHARED_DIR/package.json"
+
 npm install --omit=dev --silent
 
 echo "[deploy] Starting new process..."
