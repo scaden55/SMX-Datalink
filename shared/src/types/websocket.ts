@@ -5,6 +5,7 @@ import type { FlightData, ConnectionStatus, ActiveFlightHeartbeat } from './flig
 import type { DispatchEditPayload } from './dispatch.js';
 import type { VatsimUpdateEvent, VatsimFlightStatus } from './vatsim.js';
 import type { TrackPoint } from './track.js';
+import type { ExceedanceEvent, FlightExceedance } from './exceedance.js';
 
 export interface TelemetrySnapshot {
   aircraft: AircraftData;
@@ -42,6 +43,7 @@ export interface ServerToClientEvents {
   'relay:stop': () => void;
   'flights:active': (flights: ActiveFlightHeartbeat[]) => void;
   'bid:expired': (data: { bidId: number; flightNumber: string; reason: 'expired' | 'admin_removed' }) => void;
+  'dispatch:exceedance': (data: FlightExceedance) => void;
 }
 
 export interface ClientToServerEvents {
@@ -55,6 +57,7 @@ export interface ClientToServerEvents {
   'flight:heartbeat': (data: ActiveFlightHeartbeat) => void;
   'flight:telemetry': (data: TelemetrySnapshot) => void;
   'flight:ended': () => void;
+  'flight:exceedance': (data: ExceedanceEvent) => void;
   'livemap:subscribe': () => void;
   'livemap:unsubscribe': () => void;
 }

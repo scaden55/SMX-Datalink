@@ -73,6 +73,12 @@ export type {
   LogbookFilters,
 } from './types/logbook.js';
 export type {
+  ExceedanceType,
+  ExceedanceSeverity,
+  ExceedanceEvent,
+  FlightExceedance,
+} from './types/exceedance.js';
+export type {
   ReportSummary,
   RevenueBreakdown,
   ExpenseBreakdown,
