@@ -5,6 +5,7 @@ import { IpcChannels } from './ipc-channels';
 import type { ISimConnectManager } from './simconnect/types';
 import { NullSimConnectManager } from './simconnect/null-manager';
 import { FlightPhaseService } from './simconnect/flight-phase';
+import { ExceedanceDetector } from './simconnect/exceedance-detector';
 import { VpsRelay } from './relay';
 
 // Set AppUserModelId early so Windows uses our icon, not Electron's default
@@ -451,6 +452,8 @@ app.whenReady().then(async () => {
   // Accumulate latest data from each SimConnect group
   const latestData: Record<string, unknown> = {};
   const phaseService = new FlightPhaseService();
+  const exceedanceDetector = new ExceedanceDetector();
+  let previousPhase = '';
 
   sim.on('positionUpdate', (data) => { latestData.position = data; });
   sim.on('engineUpdate', (data) => { latestData.engine = data; });
@@ -458,9 +461,12 @@ app.whenReady().then(async () => {
   sim.on('flightStateUpdate', (data) => { latestData.flightState = data; });
   sim.on('autopilotUpdate', (data) => { latestData.autopilot = data; });
   sim.on('radioUpdate', (data) => { latestData.radio = data; });
-  sim.on('aircraftInfoUpdate', (data) => { latestData.aircraftInfo = data; });
+  sim.on('aircraftInfoUpdate', (data) => {
+    latestData.aircraftInfo = data;
+    exceedanceDetector.setAircraftType(data.atcType || '');
+  });
 
-  sim.on('simStart', () => { phaseService.reset(); });
+  sim.on('simStart', () => { phaseService.reset(); exceedanceDetector.reset(); });
 
   // Broadcast composed snapshot to renderer at poll interval
   sim.on('connected', (status) => {
@@ -487,6 +493,26 @@ app.whenReady().then(async () => {
           engineN1: engines[0]?.n1 ?? 0,
           parkingBrake: (flightState.parkingBrake as boolean) ?? true,
         });
+
+        // Detect exceedances from current telemetry
+        const exceedanceEvents = exceedanceDetector.check(
+          position as any,
+          phase,
+          (flightState.simOnGround as boolean) ?? true,
+        );
+
+        // Detect landing-triggered exceedances on phase change
+        if (phase !== previousPhase) {
+          const phaseEvents = exceedanceDetector.onPhaseChange(previousPhase, phase);
+          exceedanceEvents.push(...phaseEvents);
+          previousPhase = phase;
+        }
+
+        // Emit exceedances to renderer and VPS relay
+        for (const evt of exceedanceEvents) {
+          mainWindow?.webContents.send(IpcChannels.SIM_EXCEEDANCE, evt);
+          vpsRelay?.emitExceedance(evt);
+        }
 
         const snapshot = {
           aircraft: {

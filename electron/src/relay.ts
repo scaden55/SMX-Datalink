@@ -72,6 +72,12 @@ export class VpsRelay {
     }
   }
 
+  emitExceedance(event: unknown): void {
+    if (this.socket?.connected) {
+      this.socket.emit('flight:exceedance', event as any);
+    }
+  }
+
   updateAuth(token: string): void {
     this.config.token = token;
     if (this.socket) {
