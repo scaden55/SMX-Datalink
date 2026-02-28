@@ -215,6 +215,8 @@ export { altitudeToColor } from './utils/altitudeColor.js';
 
 // Constants
 export { FlightPhase, PhaseThresholds } from './constants/flight-phases.js';
+export { AircraftLimits, DEFAULT_AIRCRAFT_LIMIT, ExceedanceThresholds } from './constants/aircraft-limits.js';
+export type { AircraftTypeLimit } from './constants/aircraft-limits.js';
 export {
   POSITION_VARS,
   ENGINE_VARS,
