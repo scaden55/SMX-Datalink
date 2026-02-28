@@ -2,27 +2,12 @@ import { useMemo } from 'react';
 import { Polyline } from 'react-leaflet';
 import { altitudeToColor } from '@acars/shared';
 import type { TrackPoint } from '@acars/shared';
+import { simplifyPath } from '../../lib/simplifyPath';
 
-// ── Downsampling ─────────────────────────────────────────────
+// ── Path simplification ──────────────────────────────────────
 
-const MAX_SEGMENTS = 500;
-
-/**
- * Downsample track points using Ramer-Douglas-Peucker-like approach:
- * keep every Nth point to stay under MAX_SEGMENTS.
- * Simple and fast — no need for full RDP since we want uniform density.
- */
-function downsample(points: TrackPoint[]): TrackPoint[] {
-  if (points.length <= MAX_SEGMENTS) return points;
-  const step = points.length / MAX_SEGMENTS;
-  const result: TrackPoint[] = [];
-  for (let i = 0; i < MAX_SEGMENTS; i++) {
-    result.push(points[Math.floor(i * step)]);
-  }
-  // Always include the last point
-  result.push(points[points.length - 1]);
-  return result;
-}
+/** ~33 meters tolerance — removes GPS jitter while preserving route shape */
+const RDP_EPSILON = 0.0003;
 
 // ── Component ───────────────────────────────────────────────
 
@@ -39,7 +24,7 @@ interface Props {
  */
 export function FlightTrackLine({ points }: Props) {
   const segments = useMemo(() => {
-    const sampled = downsample(points);
+    const sampled = simplifyPath(points, RDP_EPSILON);
     if (sampled.length < 2) return [];
 
     const result: { positions: [number, number][]; color: string }[] = [];

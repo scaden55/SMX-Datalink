@@ -12,32 +12,26 @@ const LOW_ZOOM_THRESHOLD = 5;
 // ── Icon factory ─────────────────────────────────────────────
 
 /**
- * Build a Leaflet DivIcon that renders the aircraft SVG as an <img>,
- * tinted via CSS filter, rotated to the pilot's heading.
- *
- * We use an <img> tag with the Vite-resolved SVG URL and apply
- * a CSS brightness/sepia/hue-rotate filter chain to tint it blue.
- * This keeps the SVG crisp at any size while allowing color control.
+ * Build a Leaflet DivIcon that renders the aircraft SVG inline
+ * with direct fill color for crisp, sharp rendering.
  */
-function buildIcon(svgUrl: string, size: number, heading: number): L.DivIcon {
-  // CSS filter to tint "currentColor" (black) SVGs to our pilot blue (#4a9eff)
-  // brightness(0) → black, then saturate + invert + sepia + hue-rotate → blue
-  const html = `<img
-    src="${svgUrl}"
-    width="${size}" height="${size}"
-    style="
-      transform: rotate(${heading}deg);
-      filter: drop-shadow(0 1px 2px rgba(0,0,0,0.5))
-              brightness(0) saturate(100%) invert(55%) sepia(70%) saturate(500%) hue-rotate(190deg) brightness(105%);
-      display: block;
-    "
-    draggable="false"
-    alt=""
-  />`;
+function buildIcon(svgRaw: string, size: number, heading: number): L.DivIcon {
+  // Replace currentColor with our blue and set explicit size + rotation
+  const colored = svgRaw
+    .replace(/fill="currentColor"/g, `fill="${PILOT_COLOR}"`)
+    .replace(/viewBox="0 0 64 64"/, `viewBox="0 0 64 64" width="${size}" height="${size}"`);
+
+  const html = `<div style="
+    transform: rotate(${heading}deg);
+    filter: drop-shadow(0 1px 3px rgba(0,0,0,0.6));
+    width: ${size}px;
+    height: ${size}px;
+    line-height: 0;
+  ">${colored}</div>`;
 
   return L.divIcon({
     html,
-    className: 'pilot-marker-icon',
+    className: '',
     iconSize: [size, size],
     iconAnchor: [size / 2, size / 2],
   });
@@ -57,7 +51,7 @@ function getCachedIcon(pilot: VatsimPilot): L.DivIcon {
 
   let icon = iconCache.get(key);
   if (!icon) {
-    icon = buildIcon(info.svgUrl, size, headingRound);
+    icon = buildIcon(info.svgRaw, size, headingRound);
     iconCache.set(key, icon);
   }
   return icon;

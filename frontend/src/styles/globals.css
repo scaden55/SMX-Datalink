@@ -486,6 +486,12 @@
   border-top-color: rgba(15, 18, 25, 0.92) !important;
 }
 
+/* ── Transparent tooltip arrow removal ────────────────────────── */
+.leaflet-tooltip.bg-transparent::before,
+.leaflet-tooltip.\!bg-transparent::before {
+  display: none !important;
+}
+
 /* ── Animations ───────────────────────────────────────────────── */
 @keyframes pulse-ring {
   0% { transform: scale(1); opacity: 1; }

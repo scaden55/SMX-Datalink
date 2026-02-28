@@ -40,7 +40,7 @@ export function RegisterPage() {
   };
 
   return (
-    <div className="relative flex items-center justify-center min-h-screen bg-acars-bg px-4">
+    <div className="relative flex items-center justify-center h-screen bg-acars-bg px-4 overflow-hidden">
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(88,166,255,0.04)_0%,transparent_70%)]" />
       <div className="panel max-w-sm w-full p-8 shadow-2xl shadow-blue-400/5 relative">
         {/* Logo */}

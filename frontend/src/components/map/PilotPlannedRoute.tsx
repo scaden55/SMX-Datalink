@@ -1,7 +1,19 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
-import { Polyline, CircleMarker, Tooltip } from 'react-leaflet';
+import { Polyline, Marker, Tooltip } from 'react-leaflet';
+import L from 'leaflet';
 import type { RouteFixResult } from '@acars/shared';
 import { api } from '../../lib/api';
+
+// ── Waypoint diamond icon ────────────────────────────────────
+
+const WP_COLOR = '#e8602c';
+
+const waypointIcon = L.divIcon({
+  html: `<svg viewBox="0 0 10 10" width="10" height="10"><polygon points="5,1 9,5 5,9 1,5" fill="${WP_COLOR}" stroke="${WP_COLOR}" stroke-width="0.5"/></svg>`,
+  className: '',
+  iconSize: [10, 10],
+  iconAnchor: [5, 5],
+});
 
 // ── Types ───────────────────────────────────────────────────
 
@@ -98,51 +110,33 @@ export function PilotPlannedRoute({ pilotLat, pilotLon, routeString, departure, 
       <Polyline
         positions={positions}
         pathOptions={{
-          color: '#79c0ff',
+          color: WP_COLOR,
           weight: 2,
-          opacity: 0.5,
+          opacity: 0.6,
           dashArray: '8 6',
         }}
       />
 
-      {/* Waypoint dots with labels */}
+      {/* Waypoint diamonds with permanent labels */}
       {remainingFixes.map((fix) => (
-        <CircleMarker
+        <Marker
           key={`${fix.ident}-${fix.lat}-${fix.lon}`}
-          center={[fix.lat, fix.lon]}
-          radius={3}
-          pathOptions={{
-            color: fixColor(fix.type),
-            fillColor: fixColor(fix.type),
-            fillOpacity: 0.9,
-            weight: 1,
-          }}
+          position={[fix.lat, fix.lon]}
+          icon={waypointIcon}
         >
           <Tooltip
-            direction="top"
-            offset={[0, -6]}
-            permanent={false}
-            className="planned-route-tooltip"
+            direction="right"
+            offset={[6, 0]}
+            permanent
+            className="!bg-transparent !border-none !shadow-none !p-0"
           >
-            <span className="font-mono text-[10px]">
+            <span style={{ fontSize: '10px', color: WP_COLOR, fontFamily: 'IBM Plex Mono, monospace', fontWeight: 500 }}>
               {fix.ident}
-              {fix.airway ? ` (${fix.airway})` : ''}
             </span>
           </Tooltip>
-        </CircleMarker>
+        </Marker>
       ))}
     </>
   );
 }
 
-// ── Helpers ──────────────────────────────────────────────────
-
-function fixColor(type: RouteFixResult['type']): string {
-  switch (type) {
-    case 'vor': return '#22d3ee';     // cyan
-    case 'ndb': return '#a78bfa';     // purple
-    case 'airport': return '#f59e0b'; // amber
-    case 'airway-fix': return '#6b7280'; // gray
-    default: return '#9ca3af';        // light gray
-  }
-}

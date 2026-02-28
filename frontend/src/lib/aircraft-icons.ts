@@ -9,19 +9,19 @@
  * that keeps wide-bodies visually larger than Cessnas on the map.
  */
 
-// ── SVG imports (Vite inlines these as data URIs) ────────────────
+// ── SVG imports (raw strings for inline embedding) ───────────────
 
-import narrowbodySvg from '../assets/aircraft/narrowbody.svg';
-import widebodySvg from '../assets/aircraft/widebody.svg';
-import heavySvg from '../assets/aircraft/heavy.svg';
-import regionalSvg from '../assets/aircraft/regional.svg';
-import turbopropSvg from '../assets/aircraft/turboprop.svg';
-import bizjetSvg from '../assets/aircraft/bizjet.svg';
-import gaSingleSvg from '../assets/aircraft/ga-single.svg';
-import gaTwinSvg from '../assets/aircraft/ga-twin.svg';
-import helicopterSvg from '../assets/aircraft/helicopter.svg';
-import fighterSvg from '../assets/aircraft/fighter.svg';
-import genericSvg from '../assets/aircraft/generic.svg';
+import narrowbodySvg from '../assets/aircraft/narrowbody.svg?raw';
+import widebodySvg from '../assets/aircraft/widebody.svg?raw';
+import heavySvg from '../assets/aircraft/heavy.svg?raw';
+import regionalSvg from '../assets/aircraft/regional.svg?raw';
+import turbopropSvg from '../assets/aircraft/turboprop.svg?raw';
+import bizjetSvg from '../assets/aircraft/bizjet.svg?raw';
+import gaSingleSvg from '../assets/aircraft/ga-single.svg?raw';
+import gaTwinSvg from '../assets/aircraft/ga-twin.svg?raw';
+import helicopterSvg from '../assets/aircraft/helicopter.svg?raw';
+import fighterSvg from '../assets/aircraft/fighter.svg?raw';
+import genericSvg from '../assets/aircraft/generic.svg?raw';
 
 // ── Types ────────────────────────────────────────────────────────
 
@@ -40,25 +40,26 @@ export type AircraftCategory =
 
 export interface AircraftIconInfo {
   category: AircraftCategory;
-  svgUrl: string;
+  /** Raw SVG markup string (uses fill="currentColor") */
+  svgRaw: string;
   /** Size coefficient — multiply by base (30) then clamp to [12, 38] */
   sizeCoef: number;
 }
 
 // ── Category definitions ─────────────────────────────────────────
 
-const CATEGORIES: Record<AircraftCategory, { svgUrl: string; sizeCoef: number }> = {
-  'heavy':      { svgUrl: heavySvg,      sizeCoef: 1.30 },
-  'widebody':   { svgUrl: widebodySvg,   sizeCoef: 1.00 },
-  'narrowbody': { svgUrl: narrowbodySvg, sizeCoef: 0.70 },
-  'regional':   { svgUrl: regionalSvg,   sizeCoef: 0.55 },
-  'bizjet':     { svgUrl: bizjetSvg,     sizeCoef: 0.50 },
-  'turboprop':  { svgUrl: turbopropSvg,  sizeCoef: 0.50 },
-  'ga-twin':    { svgUrl: gaTwinSvg,     sizeCoef: 0.30 },
-  'ga-single':  { svgUrl: gaSingleSvg,   sizeCoef: 0.22 },
-  'helicopter': { svgUrl: helicopterSvg, sizeCoef: 0.25 },
-  'fighter':    { svgUrl: fighterSvg,    sizeCoef: 0.35 },
-  'generic':    { svgUrl: genericSvg,    sizeCoef: 0.55 },
+const CATEGORIES: Record<AircraftCategory, { svgRaw: string; sizeCoef: number }> = {
+  'heavy':      { svgRaw: heavySvg,      sizeCoef: 1.30 },
+  'widebody':   { svgRaw: widebodySvg,   sizeCoef: 1.00 },
+  'narrowbody': { svgRaw: narrowbodySvg, sizeCoef: 0.70 },
+  'regional':   { svgRaw: regionalSvg,   sizeCoef: 0.55 },
+  'bizjet':     { svgRaw: bizjetSvg,     sizeCoef: 0.50 },
+  'turboprop':  { svgRaw: turbopropSvg,  sizeCoef: 0.50 },
+  'ga-twin':    { svgRaw: gaTwinSvg,     sizeCoef: 0.30 },
+  'ga-single':  { svgRaw: gaSingleSvg,   sizeCoef: 0.22 },
+  'helicopter': { svgRaw: helicopterSvg, sizeCoef: 0.25 },
+  'fighter':    { svgRaw: fighterSvg,    sizeCoef: 0.35 },
+  'generic':    { svgRaw: genericSvg,    sizeCoef: 0.55 },
 };
 
 // ── ICAO type code → category mapping ────────────────────────────

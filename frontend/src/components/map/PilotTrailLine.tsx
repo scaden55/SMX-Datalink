@@ -2,6 +2,9 @@ import { useMemo } from 'react';
 import { Polyline } from 'react-leaflet';
 import { altitudeToColor } from '@acars/shared';
 import type { VatsimTrailPoint } from '../../stores/vatsimStore';
+import { simplifyPath } from '../../lib/simplifyPath';
+
+const RDP_EPSILON = 0.0003;
 
 // ── Component ───────────────────────────────────────────────
 
@@ -17,15 +20,16 @@ interface Props {
  */
 export function PilotTrailLine({ track }: Props) {
   const segments = useMemo(() => {
-    if (track.length < 2) return [];
+    const simplified = simplifyPath(track, RDP_EPSILON);
+    if (simplified.length < 2) return [];
 
     const result: { positions: [number, number][]; color: string }[] = [];
     let currentColor = '';
     let currentPositions: [number, number][] = [];
 
-    for (let i = 0; i < track.length - 1; i++) {
-      const a = track[i];
-      const b = track[i + 1];
+    for (let i = 0; i < simplified.length - 1; i++) {
+      const a = simplified[i];
+      const b = simplified[i + 1];
       const avgAlt = (a.alt + b.alt) / 2;
       const color = altitudeToColor(avgAlt);
 

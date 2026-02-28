@@ -32,7 +32,7 @@ export function LoginPage() {
   };
 
   return (
-    <div className="relative flex items-center justify-center min-h-screen bg-acars-bg px-4 overflow-hidden">
+    <div className="relative flex items-center justify-center h-screen bg-acars-bg px-4 overflow-hidden">
       {/* Background glow */}
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(77,156,246,0.06)_0%,transparent_60%)]" />
       <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[600px] h-[600px] rounded-full bg-blue-500/[0.02] blur-3xl" />

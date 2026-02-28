@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
-import { Polyline, CircleMarker, Tooltip } from 'react-leaflet';
+import { Polyline, Marker, Tooltip } from 'react-leaflet';
+import L from 'leaflet';
 import type { SimBriefStep, TrackPoint } from '@acars/shared';
 
 // ── Helpers ──────────────────────────────────────────────────
@@ -15,6 +16,17 @@ function haversineNm(lat1: number, lon1: number, lat2: number, lon2: number): nu
       Math.sin(dLon / 2) ** 2;
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
+
+// ── Waypoint diamond icon ────────────────────────────────────
+
+const WP_COLOR = '#e8602c';
+
+const waypointIcon = L.divIcon({
+  html: `<svg viewBox="0 0 10 10" width="10" height="10"><polygon points="5,1 9,5 5,9 1,5" fill="${WP_COLOR}" stroke="${WP_COLOR}" stroke-width="0.5"/></svg>`,
+  className: '',
+  iconSize: [10, 10],
+  iconAnchor: [5, 5],
+});
 
 // ── Component ───────────────────────────────────────────────
 
@@ -91,37 +103,30 @@ export function PredictedPath({ currentPos, ofpSteps, arrivalCoords }: Props) {
           <Polyline
             positions={remainingPath.positions}
             pathOptions={{
-              color: '#f59e0b',
+              color: WP_COLOR,
               weight: 2,
-              opacity: 0.5,
+              opacity: 0.6,
               dashArray: '8 6',
             }}
           />
-          {/* Waypoint dots */}
+          {/* Waypoint diamonds with permanent labels */}
           {remainingPath.namedWaypoints.map((wp) => (
-            <CircleMarker
+            <Marker
               key={`wp-${wp.ident}-${wp.lat}`}
-              center={[wp.lat, wp.lon]}
-              radius={2.5}
-              pathOptions={{
-                color: '#f59e0b',
-                fillColor: '#f59e0b',
-                fillOpacity: 0.7,
-                weight: 1,
-                opacity: 0.6,
-              }}
+              position={[wp.lat, wp.lon]}
+              icon={waypointIcon}
             >
               <Tooltip
-                direction="top"
-                offset={[0, -4]}
-                className="waypoint-tooltip"
-                permanent={false}
+                direction="right"
+                offset={[6, 0]}
+                permanent
+                className="!bg-transparent !border-none !shadow-none !p-0"
               >
-                <span style={{ fontSize: '9px', color: '#f59e0b', fontFeatureSettings: '"tnum"' }}>
+                <span style={{ fontSize: '10px', color: WP_COLOR, fontFamily: 'IBM Plex Mono, monospace', fontWeight: 500 }}>
                   {wp.ident}
                 </span>
               </Tooltip>
-            </CircleMarker>
+            </Marker>
           ))}
         </>
       )}
