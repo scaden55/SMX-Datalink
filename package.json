@@ -6,7 +6,8 @@
     "shared",
     "backend",
     "frontend",
-    "electron"
+    "electron",
+    "admin"
   ],
   "scripts": {
     "dev:backend": "npm run dev -w backend",
