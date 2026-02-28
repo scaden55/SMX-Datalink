@@ -298,3 +298,24 @@ export interface MELJoinRow extends MELDeferralRow {
 export interface ComponentJoinRow extends AircraftComponentRow {
   registration: string;
 }
+
+// ─────────────────────────────────────────────────────────────
+// exceedance.ts
+// ─────────────────────────────────────────────────────────────
+
+/** flight_exceedances table — SELECT * shape */
+export interface ExceedanceRow {
+  id: number;
+  bid_id: number;
+  logbook_id: number | null;
+  pilot_id: number;
+  type: string;
+  severity: string;
+  value: number;
+  threshold: number;
+  unit: string;
+  phase: string;
+  message: string;
+  detected_at: string;
+  created_at: string;
+}
