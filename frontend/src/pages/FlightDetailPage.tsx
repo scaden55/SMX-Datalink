@@ -177,7 +177,7 @@ function OooiTimeline({ entry }: { entry: LogbookEntry }) {
           </div>
           <div className="text-center">
             <div className="text-[10px] uppercase tracking-wider text-acars-muted">Flight Time</div>
-            <div className="text-sm font-mono font-bold text-blue-400">{formatDuration(entry.flightTimeMin)}</div>
+            <div className="text-sm font-mono font-bold text-blue-400">{entry.flightTimeMin > 0 ? formatDuration(entry.flightTimeMin) : '—'}</div>
           </div>
         </div>
       )}
