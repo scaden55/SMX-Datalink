@@ -11,6 +11,7 @@ import { SchedulesPage } from '@/pages/SchedulesPage';
 import { PirepsPage } from '@/pages/PirepsPage';
 import { MaintenancePage } from '@/pages/MaintenancePage';
 import { FinancesPage } from '@/pages/FinancesPage';
+import { ReportsPage } from '@/pages/ReportsPage';
 
 // Placeholder pages - will be replaced in later tasks
 function PageStub({ name }: { name: string }) {
@@ -21,7 +22,6 @@ function PageStub({ name }: { name: string }) {
   );
 }
 const DispatchBoardPage = () => <PageStub name="Dispatch Board" />;
-const ReportsPage = () => <PageStub name="Reports" />;
 const NotificationsPage = () => <PageStub name="Notifications" />;
 const AuditPage = () => <PageStub name="Audit Log" />;
 const SettingsPage = () => <PageStub name="Settings" />;
