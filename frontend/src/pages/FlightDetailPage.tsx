@@ -46,6 +46,14 @@ function formatTime(iso: string): string {
   return d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }) + 'z';
 }
 
+function formatDurationBetween(startIso: string, endIso: string): string {
+  const ms = new Date(endIso).getTime() - new Date(startIso).getTime();
+  const totalMin = Math.round(ms / 60000);
+  const h = Math.floor(totalMin / 60);
+  const m = totalMin % 60;
+  return h > 0 ? `${h}h ${String(m).padStart(2, '0')}m` : `${m}m`;
+}
+
 function fmt(val: number | null | undefined, suffix = ''): string {
   if (val == null) return '—';
   return val.toLocaleString() + (suffix ? ` ${suffix}` : '');
@@ -91,6 +99,88 @@ function InfoRow({ label, value, icon: Icon, iconColor, valueClass = '' }: {
         <div className="text-[10px] uppercase tracking-wider text-acars-muted font-medium">{label}</div>
         <div className={`text-sm text-acars-text font-medium ${valueClass}`}>{value}</div>
       </div>
+    </div>
+  );
+}
+
+function OooiTimeline({ entry }: { entry: LogbookEntry }) {
+  if (!entry.oooiOut) return null;
+
+  const events = [
+    { key: 'OUT', time: entry.oooiOut, label: 'Gate Out' },
+    { key: 'OFF', time: entry.oooiOff, label: 'Wheels Off' },
+    { key: 'ON', time: entry.oooiOn, label: 'Touchdown' },
+    { key: 'IN', time: entry.oooiIn, label: 'Gate In' },
+  ];
+
+  const taxiOut = entry.oooiOut && entry.oooiOff
+    ? formatDurationBetween(entry.oooiOut, entry.oooiOff) : null;
+  const airborne = entry.oooiOff && entry.oooiOn
+    ? formatDurationBetween(entry.oooiOff, entry.oooiOn) : null;
+  const taxiIn = entry.oooiOn && entry.oooiIn
+    ? formatDurationBetween(entry.oooiOn, entry.oooiIn) : null;
+
+  return (
+    <div className="panel rounded-md p-4 mb-4">
+      <h3 className="text-[11px] uppercase tracking-wider text-acars-muted font-medium mb-4 flex items-center gap-2">
+        <Clock className="w-3.5 h-3.5 text-blue-400" />
+        OOOI Times
+      </h3>
+
+      {/* Timeline bar */}
+      <div className="flex items-center gap-0 mb-3">
+        <div className="flex flex-col items-center">
+          <div className="w-3 h-3 rounded-full bg-emerald-400 border-2 border-emerald-400/30" />
+        </div>
+        <div className="flex-1 flex flex-col items-center">
+          <div className="w-full h-0.5 border-t-2 border-dashed border-acars-border" />
+          {taxiOut && <div className="text-[10px] text-acars-muted mt-1">Taxi {taxiOut}</div>}
+        </div>
+        <div className="flex flex-col items-center">
+          <div className="w-3 h-3 rounded-full bg-blue-400 border-2 border-blue-400/30" />
+        </div>
+        <div className="flex-[3] flex flex-col items-center">
+          <div className="w-full h-0.5 bg-blue-400" />
+          {airborne && <div className="text-[10px] text-blue-400 font-semibold mt-1">Flight {airborne}</div>}
+        </div>
+        <div className="flex flex-col items-center">
+          <div className="w-3 h-3 rounded-full bg-blue-400 border-2 border-blue-400/30" />
+        </div>
+        <div className="flex-1 flex flex-col items-center">
+          <div className="w-full h-0.5 border-t-2 border-dashed border-acars-border" />
+          {taxiIn && <div className="text-[10px] text-acars-muted mt-1">Taxi {taxiIn}</div>}
+        </div>
+        <div className="flex flex-col items-center">
+          <div className="w-3 h-3 rounded-full bg-emerald-400 border-2 border-emerald-400/30" />
+        </div>
+      </div>
+
+      {/* Timestamps row */}
+      <div className="flex justify-between text-center">
+        {events.map(e => (
+          <div key={e.key} className="flex flex-col items-center">
+            <div className="text-[10px] uppercase tracking-wider text-acars-muted font-medium">{e.key}</div>
+            <div className="text-xs font-mono text-acars-text font-semibold">
+              {e.time ? formatTime(e.time) : '—'}
+            </div>
+            <div className="text-[10px] text-acars-muted">{e.label}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Block time summary */}
+      {entry.blockTimeMin != null && (
+        <div className="mt-3 pt-3 border-t border-acars-border flex items-center justify-center gap-6">
+          <div className="text-center">
+            <div className="text-[10px] uppercase tracking-wider text-acars-muted">Block Time</div>
+            <div className="text-sm font-mono font-bold text-acars-text">{formatDuration(entry.blockTimeMin)}</div>
+          </div>
+          <div className="text-center">
+            <div className="text-[10px] uppercase tracking-wider text-acars-muted">Flight Time</div>
+            <div className="text-sm font-mono font-bold text-blue-400">{formatDuration(entry.flightTimeMin)}</div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -216,6 +306,9 @@ export function FlightDetailPage() {
             </div>
           </div>
         </div>
+
+        {/* ── OOOI Timeline ──────────────────────────────────── */}
+        <OooiTimeline entry={entry} />
 
         {/* ── Performance + Score ─────────────────────────────── */}
         <div className="grid grid-cols-2 gap-4 mb-4">
