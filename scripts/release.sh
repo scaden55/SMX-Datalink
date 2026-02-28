@@ -5,8 +5,8 @@
 #
 # This script:
 #   1. Bumps version in electron/package.json
-#   2. Builds shared → backend → frontend → Electron installer
-#   3. Deploys backend to VPS (138.197.127.39)
+#   2. Builds shared → backend → frontend → admin → Electron installer
+#   3. Deploys backend + admin to VPS (138.197.127.39)
 #   4. Commits, tags, and pushes to GitHub
 #   5. Creates a GitHub Release with the installer attached
 # ───────────────────────────────────────────────────────────────
@@ -19,7 +19,7 @@ YELLOW='\033[1;33m'
 CYAN='\033[0;36m'
 NC='\033[0m'
 
-step() { echo -e "\n${CYAN}[$1/8]${NC} $2"; }
+step() { echo -e "\n${CYAN}[$1/10]${NC} $2"; }
 ok()   { echo -e "  ${GREEN}✓${NC} $1"; }
 fail() { echo -e "  ${RED}✗ $1${NC}"; exit 1; }
 warn() { echo -e "  ${YELLOW}! $1${NC}"; }
@@ -97,18 +97,25 @@ cd "$ROOT/frontend"
 npx vite build || fail "frontend build failed"
 ok "frontend built"
 
-# ── Step 5: Package Electron installer ─────────────────────────
+# ── Step 5: Build admin ──────────────────────────────────────────
 
-step 5 "Packaging Electron installer"
+step 5 "Building admin"
+cd "$ROOT"
+npm run build:admin || fail "Admin build failed"
+ok "Admin built"
+
+# ── Step 6: Package Electron installer ─────────────────────────
+
+step 6 "Packaging Electron installer"
 cd "$ROOT/electron"
 npx tsc || fail "electron type-check failed"
 cd "$ROOT/electron"
 npx electron-builder --win || fail "electron-builder failed"
 ok "Installer: ${INSTALLER}"
 
-# ── Step 6: Deploy backend to VPS ──────────────────────────────
+# ── Step 7: Deploy backend to VPS ──────────────────────────────
 
-step 6 "Deploying backend to VPS (${VPS_HOST})"
+step 7 "Deploying backend to VPS (${VPS_HOST})"
 
 # Upload new dist
 scp -r "$ROOT/backend/dist" "${VPS_USER}@${VPS_HOST}:${VPS_PATH}/dist-new" || fail "SCP dist failed"
@@ -184,9 +191,16 @@ DEPLOY_EOF
 
 ok "Backend deployed and restarted"
 
-# ── Step 7: Commit, tag, push ──────────────────────────────────
+# ── Step 8: Deploy admin to VPS ──────────────────────────────────
 
-step 7 "Committing and pushing v${VERSION}"
+step 8 "Deploying admin to VPS (${VPS_HOST})"
+scp -r "$ROOT/admin/dist/" "${VPS_USER}@${VPS_HOST}:${VPS_PATH}/admin-dist-new" || fail "SCP admin dist failed"
+ssh "${VPS_USER}@${VPS_HOST}" "rm -rf ${VPS_PATH}/admin-dist && mv ${VPS_PATH}/admin-dist-new ${VPS_PATH}/admin-dist"
+ok "Admin frontend deployed"
+
+# ── Step 9: Commit, tag, push ──────────────────────────────────
+
+step 9 "Committing and pushing v${VERSION}"
 cd "$ROOT"
 git add -A
 git commit -m "release: v${VERSION}
@@ -196,9 +210,9 @@ git tag -a "v${VERSION}" -m "Release v${VERSION}"
 git push origin main --tags || fail "Git push failed"
 ok "Pushed v${VERSION} with tag"
 
-# ── Step 8: Create GitHub Release ──────────────────────────────
+# ── Step 10: Create GitHub Release ─────────────────────────────
 
-step 8 "Creating GitHub Release"
+step 10 "Creating GitHub Release"
 gh release create "v${VERSION}" \
   "$ROOT/$INSTALLER" \
   "$ROOT/release/latest.yml" \
