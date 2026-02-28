@@ -43,6 +43,7 @@ function formatDateTime(iso: string): string {
 
 function formatTime(iso: string): string {
   const d = new Date(iso);
+  if (isNaN(d.getTime())) return iso; // HH:MM or other non-ISO format
   return d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }) + 'z';
 }
 
@@ -283,7 +284,7 @@ export function FlightDetailPage() {
 
             {/* Connection line */}
             <div className="flex flex-col items-center flex-1 max-w-xs">
-              <div className="text-xs text-acars-muted font-mono mb-1">{formatDuration(entry.flightTimeMin)}</div>
+              <div className="text-xs text-acars-muted font-mono mb-1">{entry.flightTimeMin > 0 ? formatDuration(entry.flightTimeMin) : '—'}</div>
               <div className="w-full flex items-center">
                 <div className="h-px flex-1 bg-acars-border" />
                 <ArrowRight className="w-4 h-4 text-sky-400/40 mx-2" />
@@ -352,18 +353,18 @@ export function FlightDetailPage() {
           <div className="panel rounded-md p-4">
             <h3 className="text-[11px] uppercase tracking-wider text-acars-muted font-medium mb-3 flex items-center gap-2">
               <GasPump className="w-3.5 h-3.5 text-amber-400" />
-              GasPump
+              Fuel
             </h3>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <div className="text-[10px] uppercase tracking-wider text-acars-muted mb-1">GasPump Used</div>
+                <div className="text-[10px] uppercase tracking-wider text-acars-muted mb-1">Fuel Used</div>
                 <div className="text-xl font-bold font-mono text-acars-text">
                   {entry.fuelUsedLbs != null ? entry.fuelUsedLbs.toLocaleString() : '—'}
                   {entry.fuelUsedLbs != null && <span className="text-xs font-normal text-acars-muted ml-1">lbs</span>}
                 </div>
               </div>
               <div>
-                <div className="text-[10px] uppercase tracking-wider text-acars-muted mb-1">GasPump Planned</div>
+                <div className="text-[10px] uppercase tracking-wider text-acars-muted mb-1">Fuel Planned</div>
                 <div className="text-xl font-bold font-mono text-acars-text">
                   {entry.fuelPlannedLbs != null ? entry.fuelPlannedLbs.toLocaleString() : '—'}
                   {entry.fuelPlannedLbs != null && <span className="text-xs font-normal text-acars-muted ml-1">lbs</span>}
@@ -407,7 +408,7 @@ export function FlightDetailPage() {
             </h3>
             <InfoRow label="Cruise Altitude" value={entry.cruiseAltitude ?? '—'} icon={Gauge} iconColor="text-blue-400" />
             <InfoRow label="Distance" value={fmt(entry.distanceNm, 'nm')} icon={Ruler} iconColor="text-sky-400" />
-            <InfoRow label="Flight Time" value={formatDuration(entry.flightTimeMin)} icon={Clock} iconColor="text-amber-400" />
+            <InfoRow label="Flight Time" value={entry.flightTimeMin > 0 ? formatDuration(entry.flightTimeMin) : '—'} icon={Clock} iconColor="text-amber-400" />
             <InfoRow
               label="Network"
               value={entry.vatsimConnected ? `VATSIM (${entry.vatsimCallsign ?? 'Connected'})` : 'Offline'}

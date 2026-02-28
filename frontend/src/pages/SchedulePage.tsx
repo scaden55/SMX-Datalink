@@ -16,9 +16,6 @@ import {
   AirplaneTakeoff,
   AirplaneLanding,
   Plus,
-  Package,
-  Users,
-  ArrowClockwise,
   Path,
   Warning,
   Warehouse,
@@ -36,11 +33,12 @@ import type {
   ScheduleListResponse,
   BidResponse,
   MyBidsResponse,
-  CharterType,
+  FlightType,
   CreateCharterResponse,
   FleetForBidItem,
   FleetForBidResponse,
 } from '@acars/shared';
+import { FLIGHT_TYPES } from '@acars/shared';
 import { toast } from '../stores/toastStore';
 
 // ─── Helpers ────────────────────────────────────────────────────
@@ -84,14 +82,6 @@ function DaysIndicator({ days }: { days: string }) {
     </div>
   );
 }
-
-// ─── Charter Types ──────────────────────────────────────────────
-
-const CHARTER_TYPES: { value: CharterType; label: string; icon: typeof AirplaneTilt; desc: string }[] = [
-  { value: 'cargo', label: 'Cargo Charter', icon: Package, desc: 'Freight / cargo operations' },
-  { value: 'reposition', label: 'Reposition', icon: ArrowClockwise, desc: 'Ferry flight — no payload' },
-  { value: 'passenger', label: 'Passenger Charter', icon: Users, desc: 'Pax charter service (non-scheduled)' },
-];
 
 // ─── Airport Search (server-side, worldwide) ────────────────────────────
 
@@ -223,7 +213,7 @@ interface CharterModalProps {
 }
 
 function CharterModal({ onClose, onCreated }: CharterModalProps) {
-  const [charterType, setCharterType] = useState<CharterType>('cargo');
+  const [flightType, setFlightType] = useState<FlightType>('F');
   const [depIcao, setDepIcao] = useState('');
   const [arrIcao, setArrIcao] = useState('');
   const [depTime, setDepTime] = useState('08:00');
@@ -256,7 +246,7 @@ function CharterModal({ onClose, onCreated }: CharterModalProps) {
     setError('');
     try {
       const res = await api.post<CreateCharterResponse>('/api/charters', {
-        charterType,
+        flightType,
         depIcao,
         arrIcao,
         depTime,
@@ -284,8 +274,8 @@ function CharterModal({ onClose, onCreated }: CharterModalProps) {
               <Plus className="w-4.5 h-4.5 text-blue-400" />
             </div>
             <div>
-              <h2 className="text-sm font-semibold text-acars-text">Create Charter Flight</h2>
-              <p className="text-[10px] text-acars-muted">Fly anywhere — your flight, your rules</p>
+              <h2 className="text-sm font-semibold text-acars-text">Create Flight</h2>
+              <p className="text-[10px] text-acars-muted">Create a new flight with any type</p>
             </div>
           </div>
           <button onClick={onClose} className="p-1.5 rounded-md hover:bg-acars-bg text-acars-muted hover:text-acars-text transition-colors">
@@ -295,30 +285,18 @@ function CharterModal({ onClose, onCreated }: CharterModalProps) {
 
         {/* Body */}
         <div className="px-5 py-4 space-y-4">
-          {/* Charter type */}
+          {/* Flight type */}
           <div>
-            <label className="text-[10px] uppercase tracking-wider text-acars-muted font-medium mb-2 block">Charter Type</label>
-            <div className="grid grid-cols-3 gap-2">
-              {CHARTER_TYPES.map(ct => {
-                const Icon = ct.icon;
-                const active = charterType === ct.value;
-                return (
-                  <button
-                    key={ct.value}
-                    onClick={() => setCharterType(ct.value)}
-                    className={`flex flex-col items-center gap-1.5 p-3 rounded-md border transition-all text-center ${
-                      active
-                        ? 'border-blue-400 bg-blue-500/10 text-blue-400'
-                        : 'border-acars-border bg-acars-bg text-acars-muted hover:border-acars-muted/50'
-                    }`}
-                  >
-                    <Icon className="w-5 h-5" />
-                    <span className="text-[11px] font-semibold">{ct.label}</span>
-                    <span className="text-[9px] opacity-70">{ct.desc}</span>
-                  </button>
-                );
-              })}
-            </div>
+            <label className="text-[10px] uppercase tracking-wider text-acars-muted font-medium mb-1.5 block">Flight Type</label>
+            <select
+              value={flightType}
+              onChange={e => setFlightType(e.target.value as FlightType)}
+              className="w-full h-9 rounded-md border border-acars-border bg-acars-bg text-xs text-acars-text px-2.5 outline-none focus:border-blue-400 transition-colors"
+            >
+              {(Object.entries(FLIGHT_TYPES) as [FlightType, string][]).map(([code, label]) => (
+                <option key={code} value={code}>{code} — {label}</option>
+              ))}
+            </select>
           </div>
 
           {/* Path */}
@@ -398,7 +376,7 @@ function CharterModal({ onClose, onCreated }: CharterModalProps) {
             className="btn-primary btn-md"
           >
             {submitting ? <SpinnerGap className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
-            Create Charter
+            Create
           </button>
         </div>
       </div>
@@ -760,7 +738,7 @@ export function SchedulePage() {
   const [depFilter, setDepFilter] = useState('');
   const [arrFilter, setArrFilter] = useState('');
   const [typeFilter, setTypeFilter] = useState('');
-  const [charterTypeFilter, setCharterTypeFilter] = useState('');
+  const [flightTypeFilter, setFlightTypeFilter] = useState('');
   const [searchInput, setSearchInput] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -796,7 +774,7 @@ export function SchedulePage() {
       if (depFilter) params.set('dep_icao', depFilter);
       if (arrFilter) params.set('arr_icao', arrFilter);
       if (typeFilter) params.set('aircraft_type', typeFilter);
-      if (charterTypeFilter) params.set('charter_type', charterTypeFilter);
+      if (flightTypeFilter) params.set('flight_type', flightTypeFilter);
       if (searchTerm) params.set('search', searchTerm);
 
       const qs = params.toString();
@@ -807,7 +785,7 @@ export function SchedulePage() {
     } finally {
       setLoading(false);
     }
-  }, [depFilter, arrFilter, typeFilter, charterTypeFilter, searchTerm]);
+  }, [depFilter, arrFilter, typeFilter, flightTypeFilter, searchTerm]);
 
   useEffect(() => { fetchSchedules(); }, [fetchSchedules]);
 
@@ -823,12 +801,12 @@ export function SchedulePage() {
     setDepFilter('');
     setArrFilter('');
     setTypeFilter('');
-    setCharterTypeFilter('');
+    setFlightTypeFilter('');
     setSearchInput('');
     setSearchTerm('');
   };
 
-  const hasFilters = depFilter || arrFilter || typeFilter || charterTypeFilter || searchTerm;
+  const hasFilters = depFilter || arrFilter || typeFilter || flightTypeFilter || searchTerm;
 
   // ── Bid / Unbid ───────────────────────────────────────────
   const handleBid = (schedule: ScheduleListItem) => {
@@ -847,11 +825,10 @@ export function SchedulePage() {
   const handleRemoveBid = async (bidId: number, scheduleId: number) => {
     setBidLoading(scheduleId);
 
-    // User-created charters (reposition/cargo/passenger) are deleted when unbid.
-    // Generated and event charters persist for other pilots.
+    // User-created flights (no expiresAt, has flightType) are deleted when unbid.
+    // Generated flights (with expiresAt) and event flights persist for other pilots.
     const schedule = schedules.find(s => s.id === scheduleId);
-    const isUserCharter = schedule?.charterType != null &&
-      ['reposition', 'cargo', 'passenger'].includes(schedule.charterType);
+    const isUserCharter = schedule?.flightType != null && schedule.expiresAt == null;
 
     // Optimistic: remove bid from sidebar, update or remove schedule
     if (isUserCharter) {
@@ -929,7 +906,7 @@ export function SchedulePage() {
               onClick={() => setCharterOpen(true)}
               className="btn-primary btn-sm"
             >
-              <Plus className="w-3.5 h-3.5" /> Create Charter
+              <Plus className="w-3.5 h-3.5" /> Create
             </button>
           </div>
           <div className="flex items-center gap-3 px-4 py-3">
@@ -969,16 +946,16 @@ export function SchedulePage() {
               ))}
             </select>
 
-            {/* Charter type */}
+            {/* Flight type */}
             <select
-              value={charterTypeFilter}
-              onChange={e => setCharterTypeFilter(e.target.value)}
+              value={flightTypeFilter}
+              onChange={e => setFlightTypeFilter(e.target.value)}
               className="select-field min-w-[140px]"
             >
-              <option value="">All Types</option>
-              <option value="generated">Monthly Charters</option>
-              <option value="event">Event Flights</option>
-              <option value="custom">Custom Charters</option>
+              <option value="">All Flight Types</option>
+              {(Object.entries(FLIGHT_TYPES) as [FlightType, string][]).map(([code, label]) => (
+                <option key={code} value={code}>{code} — {label}</option>
+              ))}
             </select>
 
             {/* MagnifyingGlass */}
@@ -1054,16 +1031,11 @@ export function SchedulePage() {
                             <div className="flex items-center gap-2">
                               <CaretDown className={`w-3.5 h-3.5 text-acars-muted/50 transition-transform duration-200 shrink-0 ${isExpanded ? 'rotate-0' : '-rotate-90'}`} />
                               <span className="font-mono font-medium text-acars-text">{s.flightNumber}</span>
-                              {s.charterType && s.charterType !== 'generated' && (
-                                <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-wide ${
-                                  s.charterType === 'reposition' ? 'bg-sky-500/10 text-sky-400 border border-sky-400/20' :
-                                  s.charterType === 'cargo' ? 'bg-amber-500/10 text-amber-400 border border-amber-400/20' :
-                                  s.charterType === 'event' ? 'bg-purple-500/10 text-purple-400 border border-purple-400/20' :
-                                  'bg-blue-500/10 text-blue-400 border border-blue-400/20'
-                                }`}>
-                                  {s.charterType === 'reposition' ? 'REPO' :
-                                   s.charterType === 'cargo' ? 'CARGO' :
-                                   s.charterType === 'event' ? 'EVENT' : 'PAX'}
+                              {s.flightType && (
+                                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-wide bg-blue-500/10 text-blue-400 border border-blue-400/20"
+                                  title={FLIGHT_TYPES[s.flightType] ?? s.flightType}
+                                >
+                                  {s.flightType}
                                 </span>
                               )}
                               {s.eventTag && (

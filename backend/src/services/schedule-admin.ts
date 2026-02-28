@@ -58,7 +58,7 @@ interface ScheduleRow {
   flight_time_min: number;
   days_of_week: string;
   is_active: number;
-  charter_type: string | null;
+  flight_type: string | null;
   dep_name?: string;
   arr_name?: string;
   bid_count?: number;
@@ -68,7 +68,7 @@ const auditService = new AuditService();
 
 export class ScheduleAdminService {
 
-  findAll(filters?: { depIcao?: string; arrIcao?: string; aircraftType?: string; search?: string; isActive?: boolean; charterType?: string }, page = 1, pageSize = 50): { schedules: any[]; total: number } {
+  findAll(filters?: { depIcao?: string; arrIcao?: string; aircraftType?: string; search?: string; isActive?: boolean; flightType?: string }, page = 1, pageSize = 50): { schedules: any[]; total: number } {
     const conditions: string[] = [];
     const params: unknown[] = [];
 
@@ -76,12 +76,12 @@ export class ScheduleAdminService {
     if (filters?.arrIcao) { conditions.push('sf.arr_icao = ?'); params.push(filters.arrIcao); }
     if (filters?.aircraftType) { conditions.push('sf.aircraft_type = ?'); params.push(filters.aircraftType); }
     if (filters?.isActive !== undefined) { conditions.push('sf.is_active = ?'); params.push(filters.isActive ? 1 : 0); }
-    if (filters?.charterType) {
-      if (filters.charterType === 'regular') {
-        conditions.push('sf.charter_type IS NULL');
+    if (filters?.flightType) {
+      if (filters.flightType === 'regular') {
+        conditions.push('sf.flight_type IS NULL');
       } else {
-        conditions.push('sf.charter_type = ?');
-        params.push(filters.charterType);
+        conditions.push('sf.flight_type = ?');
+        params.push(filters.flightType);
       }
     }
     if (filters?.search) {
@@ -124,7 +124,7 @@ export class ScheduleAdminService {
         flightTimeMin: r.flight_time_min,
         daysOfWeek: r.days_of_week,
         isActive: r.is_active === 1,
-        charterType: r.charter_type,
+        flightType: r.flight_type,
         depName: r.dep_name,
         arrName: r.arr_name,
         bidCount: r.bid_count ?? 0,
@@ -175,7 +175,7 @@ export class ScheduleAdminService {
       flightTimeMin: row.flight_time_min,
       daysOfWeek: row.days_of_week,
       isActive: row.is_active === 1,
-      charterType: row.charter_type,
+      flightType: row.flight_type,
       depName: row.dep_name,
       arrName: row.arr_name,
       bidCount: row.bid_count ?? 0,

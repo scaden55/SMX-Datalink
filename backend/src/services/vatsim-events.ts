@@ -151,7 +151,7 @@ export class VatsimEventsService {
     // Clean up old event charters (without active bids) before generating fresh ones
     db.prepare(`
       DELETE FROM scheduled_flights
-      WHERE charter_type = 'event'
+      WHERE vatsim_event_id IS NOT NULL
         AND expires_at IS NOT NULL
         AND expires_at < datetime('now')
         AND id NOT IN (SELECT schedule_id FROM active_bids)
@@ -181,8 +181,8 @@ export class VatsimEventsService {
 
     const insertStmt = db.prepare(`
       INSERT INTO scheduled_flights
-        (flight_number, dep_icao, arr_icao, aircraft_type, dep_time, arr_time, distance_nm, flight_time_min, days_of_week, is_active, charter_type, event_tag, vatsim_event_id, expires_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, '1234567', 1, 'event', ?, ?, ?)
+        (flight_number, dep_icao, arr_icao, aircraft_type, dep_time, arr_time, distance_nm, flight_time_min, days_of_week, is_active, flight_type, event_tag, vatsim_event_id, expires_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, '1234567', 1, 'J', ?, ?, ?)
     `);
 
     // Check for existing event charters to avoid duplicates

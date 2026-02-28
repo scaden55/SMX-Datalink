@@ -152,7 +152,34 @@ export interface SimBriefAircraftSearchResponse {
   cachedAt: string;
 }
 
-export type CharterType = 'reposition' | 'cargo' | 'passenger' | 'generated' | 'event';
+export type FlightType = 'J' | 'F' | 'C' | 'A' | 'E' | 'G' | 'H' | 'I' | 'K' | 'M' | 'O' | 'P' | 'T' | 'S' | 'B' | 'Q' | 'R' | 'L' | 'D' | 'N' | 'Y' | 'Z';
+
+export const FLIGHT_TYPES: Record<FlightType, string> = {
+  F: 'Scheduled Cargo',
+  J: 'Scheduled Passenger',
+  C: 'Charter Passenger',
+  A: 'Additional/Supplemental Cargo',
+  E: 'VIP',
+  G: 'Additional/Supplemental Passenger',
+  H: 'Charter Cargo',
+  I: 'Ambulance',
+  K: 'Training',
+  M: 'Mail Service',
+  O: 'Special Handling',
+  P: 'Positioning',
+  T: 'Technical Test',
+  S: 'Shuttle',
+  B: 'Additional/Supplemental Shuttle',
+  Q: 'Combination Cargo/Passenger',
+  R: 'Additional/Supplemental Combo',
+  L: 'Special Charter',
+  D: 'General Aviation',
+  N: 'Air Taxi/Business',
+  Y: 'Company-Specific',
+  Z: 'Other',
+};
+
+export const VALID_FLIGHT_TYPE_CODES = new Set<string>(Object.keys(FLIGHT_TYPES));
 
 export interface ScheduledFlight {
   id: number;
@@ -166,7 +193,7 @@ export interface ScheduledFlight {
   flightTimeMin: number;
   daysOfWeek: string;
   isActive: boolean;
-  charterType: CharterType | null;
+  flightType: FlightType | null;
   eventTag: string | null;
   expiresAt: string | null;
   depLat: number | null;
@@ -181,7 +208,7 @@ export interface ScheduledFlight {
 }
 
 export interface CreateCharterRequest {
-  charterType: CharterType;
+  flightType: FlightType;
   depIcao: string;
   arrIcao: string;
   depTime: string;
@@ -213,7 +240,7 @@ export interface BidWithDetails extends Bid {
   distanceNm: number;
   flightTimeMin: number;
   daysOfWeek: string;
-  charterType: CharterType | null;
+  flightType: FlightType | null;
   eventTag: string | null;
   aircraftRegistration: string | null;
   aircraftName: string | null;

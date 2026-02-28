@@ -18,6 +18,7 @@ import {
   ArrowsClockwise,
 } from '@phosphor-icons/react';
 import { api } from '../../lib/api';
+import { FLIGHT_TYPES, type FlightType } from '@acars/shared';
 import { AdminPageHeader } from '../../components/admin/AdminPageHeader';
 import { ConfirmDialog } from '../../components/admin/ConfirmDialog';
 import { ApprovedAirportsTab } from '../../components/admin/schedules/ApprovedAirportsTab';
@@ -39,7 +40,7 @@ interface ScheduleListItem {
   daysOfWeek: string;
   isActive: boolean;
   bidCount: number;
-  charterType?: string;
+  flightType?: string;
 }
 
 interface ScheduleListResponse {
@@ -59,7 +60,7 @@ interface ScheduleFormData {
   distanceNm: number | '';
   flightTimeMin: number | '';
   daysOfWeek: string;
-  charterType?: string;
+  flightType?: string;
 }
 
 interface CharterGenerationStatus {
@@ -79,7 +80,7 @@ const EMPTY_FORM: ScheduleFormData = {
   distanceNm: '',
   flightTimeMin: '',
   daysOfWeek: '1,2,3,4,5',
-  charterType: '',
+  flightType: '',
 };
 
 // ─── Constants ──────────────────────────────────────────────────
@@ -489,16 +490,19 @@ function ScheduleFormModal({
             />
           </div>
 
-          {/* Row 7: Charter type (optional) */}
+          {/* Row 7: Flight type (optional) */}
           <div>
-            <label className={LABEL_CLS}>Charter Type (optional)</label>
-            <input
-              type="text"
-              value={form.charterType ?? ''}
-              onChange={e => set('charterType', e.target.value)}
-              placeholder="e.g. cargo, passenger, medical"
+            <label className={LABEL_CLS}>Flight Type (optional)</label>
+            <select
+              value={form.flightType ?? ''}
+              onChange={e => set('flightType', e.target.value)}
               className="input-field text-xs"
-            />
+            >
+              <option value="">None</option>
+              {(Object.entries(FLIGHT_TYPES) as [string, string][]).map(([code, label]) => (
+                <option key={code} value={code}>{code} — {label}</option>
+              ))}
+            </select>
           </div>
 
           {error && (
@@ -639,7 +643,7 @@ export function AdminSchedulesPage() {
   const [searchInput, setSearchInput] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState('');
-  const [charterTypeFilter, setCharterTypeFilter] = useState('');
+  const [flightTypeFilter, setFlightTypeFilter] = useState('');
   const [activeFilter, setActiveFilter] = useState<'all' | 'active' | 'inactive'>('all');
   const [page, setPage] = useState(1);
   const [pageSize] = useState(50);
@@ -679,7 +683,7 @@ export function AdminSchedulesPage() {
     try {
       const params = new URLSearchParams();
       if (typeFilter) params.set('aircraftType', typeFilter);
-      if (charterTypeFilter) params.set('charterType', charterTypeFilter);
+      if (flightTypeFilter) params.set('flightType', flightTypeFilter);
       if (activeFilter === 'active') params.set('isActive', 'true');
       if (activeFilter === 'inactive') params.set('isActive', 'false');
       if (searchTerm) params.set('search', searchTerm);
@@ -695,7 +699,7 @@ export function AdminSchedulesPage() {
     } finally {
       setLoading(false);
     }
-  }, [typeFilter, charterTypeFilter, activeFilter, searchTerm, page, pageSize]);
+  }, [typeFilter, flightTypeFilter, activeFilter, searchTerm, page, pageSize]);
 
   useEffect(() => {
     fetchSchedules();
@@ -714,14 +718,14 @@ export function AdminSchedulesPage() {
   // ── Reset filters ─────────────────────────────────────────────
   const resetFilters = () => {
     setTypeFilter('');
-    setCharterTypeFilter('');
+    setFlightTypeFilter('');
     setActiveFilter('all');
     setSearchInput('');
     setSearchTerm('');
     setPage(1);
   };
 
-  const hasFilters = typeFilter || charterTypeFilter || activeFilter !== 'all' || searchTerm;
+  const hasFilters = typeFilter || flightTypeFilter || activeFilter !== 'all' || searchTerm;
 
   // ── Stats ─────────────────────────────────────────────────────
   const stats = useMemo(() => {
@@ -745,7 +749,7 @@ export function AdminSchedulesPage() {
         distanceNm: Number(data.distanceNm),
         flightTimeMin: Number(data.flightTimeMin),
         daysOfWeek: data.daysOfWeek,
-        ...(data.charterType ? { charterType: data.charterType } : {}),
+        ...(data.flightType ? { flightType: data.flightType } : {}),
       };
       await api.post('/api/admin/schedules', body);
       setCreateOpen(false);
@@ -774,7 +778,7 @@ export function AdminSchedulesPage() {
         distanceNm: Number(data.distanceNm),
         flightTimeMin: Number(data.flightTimeMin),
         daysOfWeek: data.daysOfWeek,
-        ...(data.charterType ? { charterType: data.charterType } : {}),
+        ...(data.flightType ? { flightType: data.flightType } : {}),
       };
       const updated = await api.patch<ScheduleListItem>(
         `/api/admin/schedules/${editTarget.id}`,
@@ -843,7 +847,7 @@ export function AdminSchedulesPage() {
       const status = await api.get<CharterGenerationStatus>('/api/admin/charters/status');
       setGenStatus(status);
       // Auto-filter to generated charters so the user sees the results
-      setCharterTypeFilter('generated');
+      setFlightTypeFilter('generated');
       setPage(1);
     } catch (err) {
       console.error('[Schedules] Generate charters error:', err);
@@ -859,7 +863,7 @@ export function AdminSchedulesPage() {
       const status = await api.get<CharterGenerationStatus>('/api/admin/charters/status');
       setGenStatus(status);
       // Auto-filter to event flights so the user sees the results
-      setCharterTypeFilter('event');
+      setFlightTypeFilter('event');
       setPage(1);
     } catch (err) {
       console.error('[Schedules] Refresh events error:', err);
@@ -1018,22 +1022,20 @@ export function AdminSchedulesPage() {
             ))}
           </select>
 
-          {/* Charter Type */}
+          {/* Flight Type */}
           <select
-            value={charterTypeFilter}
+            value={flightTypeFilter}
             onChange={e => {
-              setCharterTypeFilter(e.target.value);
+              setFlightTypeFilter(e.target.value);
               setPage(1);
             }}
             className="select-field h-8 min-w-[140px]"
           >
-            <option value="">All Categories</option>
-            <option value="regular">Regular Schedules</option>
-            <option value="generated">Monthly Charters</option>
-            <option value="event">Event Flights</option>
-            <option value="cargo">Cargo Charters</option>
-            <option value="reposition">Reposition</option>
-            <option value="passenger">Passenger Charters</option>
+            <option value="">All Types</option>
+            <option value="regular">Regular (no type)</option>
+            {(Object.entries(FLIGHT_TYPES) as [string, string][]).map(([code, label]) => (
+              <option key={code} value={code}>{code} — {label}</option>
+            ))}
           </select>
 
           {/* Active/Inactive/All Toggle */}
@@ -1123,15 +1125,12 @@ export function AdminSchedulesPage() {
                       <span className="font-mono font-semibold text-acars-text">
                         {s.flightNumber}
                       </span>
-                      {s.charterType && (
-                        <span className={`ml-1.5 text-[9px] uppercase font-bold tracking-wide px-1.5 py-0.5 rounded border ${
-                          s.charterType === 'generated' ? 'text-emerald-400 bg-emerald-500/10 border-emerald-400/20' :
-                          s.charterType === 'event' ? 'text-purple-400 bg-purple-500/10 border-purple-400/20' :
-                          'text-amber-400 bg-amber-500/10 border-amber-400/20'
-                        }`}>
-                          {s.charterType === 'generated' ? 'GEN' :
-                           s.charterType === 'event' ? 'EVENT' :
-                           s.charterType}
+                      {s.flightType && (
+                        <span
+                          className="ml-1.5 text-[9px] uppercase font-bold tracking-wide px-1.5 py-0.5 rounded border text-blue-400 bg-blue-500/10 border-blue-400/20"
+                          title={FLIGHT_TYPES[s.flightType as FlightType] ?? s.flightType}
+                        >
+                          {s.flightType}
                         </span>
                       )}
                     </td>
@@ -1318,7 +1317,7 @@ export function AdminSchedulesPage() {
             distanceNm: editTarget.distanceNm,
             flightTimeMin: editTarget.flightTimeMin,
             daysOfWeek: editTarget.daysOfWeek,
-            charterType: editTarget.charterType ?? '',
+            flightType: editTarget.flightType ?? '',
           }}
           aircraftTypes={aircraftTypes}
           submitting={modalSubmitting}

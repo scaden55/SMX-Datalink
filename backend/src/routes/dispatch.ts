@@ -166,18 +166,42 @@ export function dispatchRouter(
         }
       }
 
-      const { remarks } = req.body as { remarks?: string };
+      const { remarks, clientFlightEvents, clientFuelLbs } = req.body as {
+        remarks?: string;
+        clientFlightEvents?: {
+          landingRateFpm: number | null;
+          takeoffFuelLbs: number | null;
+          takeoffTime: string | null;
+          oooiOut: string | null;
+          oooiOff: string | null;
+          oooiOn: string | null;
+          oooiIn: string | null;
+        };
+        clientFuelLbs?: number;
+      };
 
-      // Read current fuel from telemetry
-      const currentFuelLbs = telemetry
-        ? telemetry.getFuelData().totalQuantityWeight
-        : 0;
+      // Read server-side flight events (available when SimConnect is local)
+      const serverEvents = flightEventTracker?.getEvents();
+      const hasServerData = serverEvents != null && (
+        serverEvents.landingRateFpm != null
+        || serverEvents.takeoffTime != null
+        || serverEvents.oooiOut != null
+      );
 
-      // Read flight events (landing rate, takeoff fuel/time)
-      const flightEvents = flightEventTracker
-        ? flightEventTracker.getEvents()
-        : { landingRateFpm: null, takeoffFuelLbs: null, takeoffTime: null,
-            oooiOut: null, oooiOff: null, oooiOn: null, oooiIn: null };
+      // Prefer server-side data; fall back to client-provided events (VPS path)
+      const nullEvents = { landingRateFpm: null, takeoffFuelLbs: null, takeoffTime: null,
+        oooiOut: null, oooiOff: null, oooiOn: null, oooiIn: null };
+      const flightEvents = hasServerData
+        ? serverEvents!
+        : (clientFlightEvents ?? nullEvents);
+
+      if (!hasServerData && clientFlightEvents) {
+        logger.info('Dispatch', 'Using client-provided flight events (no server SimConnect data)');
+      }
+
+      // Read current fuel: server telemetry > client snapshot > 0
+      const serverFuel = telemetry?.getFuelData().totalQuantityWeight ?? 0;
+      const currentFuelLbs = serverFuel > 0 ? serverFuel : (clientFuelLbs ?? 0);
 
       const result = pirepService.submit(
         bidId,

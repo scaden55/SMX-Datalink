@@ -91,7 +91,7 @@ export class RegulatoryService {
   classifyFlight(
     origin: string,
     dest: string,
-    charterType?: string,
+    flightType?: string,
   ): ClassificationResult {
     const o = origin.toUpperCase().trim();
     const d = dest.toUpperCase().trim();
@@ -99,8 +99,8 @@ export class RegulatoryService {
     const appliedRules: string[] = [];
 
     // Supplemental: charter/negotiated operations
-    if (charterType && charterType !== 'none') {
-      reasoning.push(`Charter type "${charterType}" — negotiated departure/arrival`);
+    if (flightType && flightType !== 'none') {
+      reasoning.push(`Flight type "${flightType}" — negotiated departure/arrival`);
       appliedRules.push('14 CFR 110.2 supplemental');
       return {
         classification: '121_supplemental',
@@ -452,7 +452,7 @@ export class RegulatoryService {
     dest: string;
     cruiseAlt?: number;
     aircraftId?: number;
-    charterType?: string;
+    flightType?: string;
     includeRelease?: boolean;
     originLat?: number;
     originLon?: number;
@@ -462,7 +462,7 @@ export class RegulatoryService {
     const cruiseAlt = params.cruiseAlt ?? 0;
 
     // 1. Classify flight
-    const classification = this.classifyFlight(params.origin, params.dest, params.charterType);
+    const classification = this.classifyFlight(params.origin, params.dest, params.flightType);
 
     // 2. Assess ETOPS
     const etops = this.assessEtops(

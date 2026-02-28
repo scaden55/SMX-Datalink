@@ -33,7 +33,7 @@ export type {
   WeatherCache,
 } from './types/flight-planning.js';
 export type {
-  CharterType,
+  FlightType,
   FleetStatus,
   Airport,
   FleetAircraft,
@@ -59,6 +59,7 @@ export type {
   FleetForBidItem,
   FleetForBidResponse,
 } from './types/schedule.js';
+export { FLIGHT_TYPES, VALID_FLIGHT_TYPE_CODES } from './types/schedule.js';
 export type {
   DispatchFlight,
   DispatchFlightsResponse,

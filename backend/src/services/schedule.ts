@@ -10,7 +10,7 @@ import type {
   BidWithDetails,
   ActiveBidEntry,
   DashboardStats,
-  CharterType,
+  FlightType,
   CreateCharterRequest,
   CreateCharterResponse,
 } from '@acars/shared';
@@ -78,7 +78,7 @@ interface ScheduleRow {
   flight_time_min: number;
   days_of_week: string;
   is_active: number;
-  charter_type: string | null;
+  flight_type: string | null;
   event_tag: string | null;
   expires_at: string | null;
   dep_name: string;
@@ -117,7 +117,7 @@ interface BidRow {
   distance_nm: number;
   flight_time_min: number;
   days_of_week: string;
-  charter_type: string | null;
+  flight_type: string | null;
   event_tag: string | null;
   aircraft_registration: string | null;
   aircraft_name: string | null;
@@ -136,7 +136,7 @@ export interface ScheduleFilters {
   arrIcao?: string;
   aircraftType?: string;
   search?: string;
-  charterType?: string;
+  flightType?: string;
 }
 
 // ── Service ──────────────────────────────────────────────────────
@@ -234,13 +234,9 @@ export class ScheduleService {
       conditions.push('sf.aircraft_type = ?');
       params.push(filters.aircraftType);
     }
-    if (filters.charterType) {
-      if (filters.charterType === 'custom') {
-        conditions.push("(sf.charter_type IN ('reposition','cargo','passenger'))");
-      } else {
-        conditions.push('sf.charter_type = ?');
-        params.push(filters.charterType);
-      }
+    if (filters.flightType) {
+      conditions.push('sf.flight_type = ?');
+      params.push(filters.flightType);
     }
     if (filters.search) {
       conditions.push('(sf.flight_number LIKE ? OR sf.dep_icao LIKE ? OR sf.arr_icao LIKE ? OR dep.city LIKE ? OR arr.city LIKE ? OR oa_dep.municipality LIKE ? OR oa_arr.municipality LIKE ?)');
@@ -317,9 +313,9 @@ export class ScheduleService {
 
     // 1. Validate schedule exists
     const schedule = db.prepare(`
-      SELECT sf.id, sf.dep_icao, sf.arr_icao, sf.distance_nm, sf.charter_type
+      SELECT sf.id, sf.dep_icao, sf.arr_icao, sf.distance_nm, sf.flight_type
       FROM scheduled_flights sf WHERE sf.id = ? AND sf.is_active = 1
-    `).get(scheduleId) as { id: number; dep_icao: string; arr_icao: string; distance_nm: number; charter_type: string | null } | undefined;
+    `).get(scheduleId) as { id: number; dep_icao: string; arr_icao: string; distance_nm: number; flight_type: string | null } | undefined;
     if (!schedule) return { error: 'Schedule not found or inactive' };
 
     // 2. Validate aircraft exists and is active
@@ -380,14 +376,16 @@ export class ScheduleService {
       warnings.push(`Runway warning: ${schedule.arr_icao} longest runway (${longestRunway.max_len} ft) may be short for ${aircraft.icao_type} (needs ${minRwy} ft)`);
     }
 
-    // Type mismatch: cargo aircraft on pax charter, or pax aircraft on cargo charter (skip for reposition)
-    if (schedule.charter_type && schedule.charter_type !== 'reposition') {
+    // Type mismatch: cargo aircraft on passenger flight or vice versa
+    const CARGO_FLIGHT_TYPES = new Set(['F', 'A', 'H', 'M', 'Q', 'R']);
+    const PAX_FLIGHT_TYPES = new Set(['J', 'C', 'G', 'E', 'S', 'B']);
+    if (schedule.flight_type) {
       const isCargo = aircraft.is_cargo === 1;
-      if (schedule.charter_type === 'cargo' && !isCargo) {
-        warnings.push(`Type mismatch: ${aircraft.registration} is a passenger aircraft on a cargo charter`);
+      if (CARGO_FLIGHT_TYPES.has(schedule.flight_type) && !isCargo) {
+        warnings.push(`Type mismatch: ${aircraft.registration} is a passenger aircraft on a cargo flight`);
       }
-      if (schedule.charter_type === 'passenger' && isCargo) {
-        warnings.push(`Type mismatch: ${aircraft.registration} is a cargo aircraft on a passenger charter`);
+      if (PAX_FLIGHT_TYPES.has(schedule.flight_type) && isCargo) {
+        warnings.push(`Type mismatch: ${aircraft.registration} is a cargo aircraft on a passenger flight`);
       }
     }
 
@@ -408,20 +406,18 @@ export class ScheduleService {
   removeBid(bidId: number, userId: number): boolean {
     const db = getDb();
 
-    // Check if this bid is for a charter — if so, delete the schedule too
     const bid = db.prepare(
-      'SELECT ab.schedule_id, sf.charter_type FROM active_bids ab JOIN scheduled_flights sf ON sf.id = ab.schedule_id WHERE ab.id = ? AND ab.user_id = ?'
-    ).get(bidId, userId) as { schedule_id: number; charter_type: string | null } | undefined;
+      'SELECT ab.schedule_id, sf.flight_type, sf.created_by, sf.expires_at FROM active_bids ab JOIN scheduled_flights sf ON sf.id = ab.schedule_id WHERE ab.id = ? AND ab.user_id = ?'
+    ).get(bidId, userId) as { schedule_id: number; flight_type: string | null; created_by: number | null; expires_at: string | null } | undefined;
 
     if (!bid) return false;
 
     const result = db.prepare('DELETE FROM active_bids WHERE id = ? AND user_id = ?').run(bidId, userId);
     if (result.changes === 0) return false;
 
-    // User-created charters are one-off — delete the schedule when the bid is removed.
-    // Generated and event charters persist for other pilots to bid on.
-    const userCreatedTypes = ['reposition', 'cargo', 'passenger'];
-    if (bid.charter_type && userCreatedTypes.includes(bid.charter_type)) {
+    // User-created flights are one-off — delete the schedule when the bid is removed.
+    // System-generated flights (with expires_at) persist for other pilots to bid on.
+    if (bid.created_by != null && bid.expires_at == null && bid.flight_type != null) {
       db.prepare('DELETE FROM scheduled_flights WHERE id = ?').run(bid.schedule_id);
     }
 
@@ -432,16 +428,15 @@ export class ScheduleService {
     const db = getDb();
 
     const bid = db.prepare(
-      'SELECT ab.user_id, ab.schedule_id, sf.flight_number, sf.charter_type FROM active_bids ab JOIN scheduled_flights sf ON sf.id = ab.schedule_id WHERE ab.id = ?'
-    ).get(bidId) as { user_id: number; schedule_id: number; flight_number: string; charter_type: string | null } | undefined;
+      'SELECT ab.user_id, ab.schedule_id, sf.flight_number, sf.flight_type, sf.created_by, sf.expires_at FROM active_bids ab JOIN scheduled_flights sf ON sf.id = ab.schedule_id WHERE ab.id = ?'
+    ).get(bidId) as { user_id: number; schedule_id: number; flight_number: string; flight_type: string | null; created_by: number | null; expires_at: string | null } | undefined;
 
     if (!bid) return null;
 
     db.prepare('DELETE FROM active_bids WHERE id = ?').run(bidId);
 
-    // User-created charters are one-off — delete the schedule when bid is removed
-    const userCreatedTypes = ['reposition', 'cargo', 'passenger'];
-    if (bid.charter_type && userCreatedTypes.includes(bid.charter_type)) {
+    // User-created flights are one-off — delete the schedule when bid is removed
+    if (bid.created_by != null && bid.expires_at == null && bid.flight_type != null) {
       db.prepare('DELETE FROM scheduled_flights WHERE id = ?').run(bid.schedule_id);
     }
 
@@ -454,7 +449,7 @@ export class ScheduleService {
         ab.id, ab.user_id, ab.schedule_id, ab.aircraft_id, ab.created_at, ab.expires_at,
         sf.flight_number, sf.dep_icao, sf.arr_icao, sf.aircraft_type,
         sf.dep_time, sf.arr_time, sf.distance_nm, sf.flight_time_min, sf.days_of_week,
-        sf.charter_type, sf.event_tag,
+        sf.flight_type, sf.event_tag,
         COALESCE(dep.name, oa_dep.name) AS dep_name,
         COALESCE(arr.name, oa_arr.name) AS arr_name,
         f.registration AS aircraft_registration,
@@ -479,7 +474,7 @@ export class ScheduleService {
         ab.id, ab.user_id, ab.schedule_id, ab.aircraft_id, ab.created_at, ab.expires_at,
         sf.flight_number, sf.dep_icao, sf.arr_icao, sf.aircraft_type,
         sf.dep_time, sf.arr_time, sf.distance_nm, sf.flight_time_min, sf.days_of_week,
-        sf.charter_type, sf.event_tag,
+        sf.flight_type, sf.event_tag,
         COALESCE(dep.name, oa_dep.name) AS dep_name,
         COALESCE(arr.name, oa_arr.name) AS arr_name,
         f.registration AS aircraft_registration,
@@ -534,7 +529,7 @@ export class ScheduleService {
 
     // Insert schedule (no auto-bid — pilot bids separately with aircraft selection)
     const insertSchedule = db.prepare(`
-      INSERT INTO scheduled_flights (flight_number, dep_icao, arr_icao, aircraft_type, dep_time, arr_time, distance_nm, flight_time_min, days_of_week, is_active, charter_type, created_by)
+      INSERT INTO scheduled_flights (flight_number, dep_icao, arr_icao, aircraft_type, dep_time, arr_time, distance_nm, flight_time_min, days_of_week, is_active, flight_type, created_by)
       VALUES (?, ?, ?, NULL, ?, ?, ?, ?, '1234567', 1, ?, ?)
     `);
 
@@ -546,7 +541,7 @@ export class ScheduleService {
       const result = insertSchedule.run(
         flightNumber, req.depIcao, req.arrIcao,
         req.depTime, arrTime, distanceNm, flightTimeMin,
-        req.charterType, userId
+        req.flightType, userId
       );
       return result.lastInsertRowid as number;
     });
@@ -566,7 +561,7 @@ export class ScheduleService {
         ab.id, ab.user_id, ab.schedule_id, ab.aircraft_id, ab.created_at, ab.expires_at,
         sf.flight_number, sf.dep_icao, sf.arr_icao, sf.aircraft_type,
         sf.dep_time, sf.arr_time, sf.distance_nm, sf.flight_time_min, sf.days_of_week,
-        sf.charter_type, sf.event_tag,
+        sf.flight_type, sf.event_tag,
         COALESCE(dep.name, oa_dep.name) AS dep_name,
         COALESCE(arr.name, oa_arr.name) AS arr_name,
         f.registration AS aircraft_registration,
@@ -655,7 +650,7 @@ export class ScheduleService {
       flightTimeMin: row.flight_time_min,
       daysOfWeek: row.days_of_week,
       isActive: row.is_active === 1,
-      charterType: row.charter_type as CharterType | null,
+      flightType: row.flight_type as FlightType | null,
       eventTag: row.event_tag,
       expiresAt: row.expires_at,
       depLat: row.dep_lat,
@@ -696,7 +691,7 @@ export class ScheduleService {
       distanceNm: row.distance_nm,
       flightTimeMin: row.flight_time_min,
       daysOfWeek: row.days_of_week,
-      charterType: row.charter_type as CharterType | null,
+      flightType: row.flight_type as FlightType | null,
       eventTag: row.event_tag,
       aircraftRegistration: row.aircraft_registration ?? null,
       aircraftName: row.aircraft_name ?? null,
@@ -722,7 +717,7 @@ export class ScheduleService {
       distanceNm: row.distance_nm,
       flightTimeMin: row.flight_time_min,
       daysOfWeek: row.days_of_week,
-      charterType: row.charter_type as CharterType | null,
+      flightType: row.flight_type as FlightType | null,
       eventTag: row.event_tag,
       aircraftRegistration: row.aircraft_registration ?? null,
       aircraftName: row.aircraft_name ?? null,

@@ -87,7 +87,7 @@ export class CharterGeneratorService {
     // Delete generated charters for this month that have no active bids
     db.prepare(`
       DELETE FROM scheduled_flights
-      WHERE charter_type = 'generated'
+      WHERE expires_at IS NOT NULL
         AND expires_at LIKE ?
         AND id NOT IN (SELECT schedule_id FROM active_bids)
     `).run(`${targetMonth}%`);
@@ -142,8 +142,8 @@ export class CharterGeneratorService {
 
     const insertStmt = db.prepare(`
       INSERT INTO scheduled_flights
-        (flight_number, dep_icao, arr_icao, aircraft_type, dep_time, arr_time, distance_nm, flight_time_min, days_of_week, is_active, charter_type, expires_at, origin_handler, dest_handler)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, '1234567', 1, 'generated', ?, ?, ?)
+        (flight_number, dep_icao, arr_icao, aircraft_type, dep_time, arr_time, distance_nm, flight_time_min, days_of_week, is_active, flight_type, expires_at, origin_handler, dest_handler)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, '1234567', 1, 'F', ?, ?, ?)
     `);
 
     // Build weighted aircraft selection
@@ -286,8 +286,7 @@ export class CharterGeneratorService {
   cleanupExpired(): number {
     const result = getDb().prepare(`
       DELETE FROM scheduled_flights
-      WHERE charter_type IN ('generated', 'event')
-        AND expires_at IS NOT NULL
+      WHERE expires_at IS NOT NULL
         AND expires_at < datetime('now')
         AND id NOT IN (SELECT schedule_id FROM active_bids)
     `).run();

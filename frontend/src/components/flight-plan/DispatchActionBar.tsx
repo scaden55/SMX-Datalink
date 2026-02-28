@@ -4,6 +4,8 @@ import { useDispatchEdit } from '../../contexts/DispatchEditContext';
 import { useDispatchTelemetry } from '../../hooks/useDispatchTelemetry';
 import { useFlightPlanStore } from '../../stores/flightPlanStore';
 import { useCargoStore } from '../../stores/cargoStore';
+import { useFlightEventStore } from '../../stores/flightEventStore';
+import { useTelemetryStore } from '../../stores/telemetryStore';
 import { api } from '../../lib/api';
 import type { LogbookEntry } from '@acars/shared';
 
@@ -43,10 +45,27 @@ export function DispatchActionBar() {
     setSubmitting(true);
     setError('');
     try {
+      // Gather client-side flight events as fallback for VPS (no SimConnect)
+      const events = useFlightEventStore.getState();
+      const snapshot = useTelemetryStore.getState().snapshot;
+
       const result = await api.post<{ logbookId: number; entry: LogbookEntry }>(
         `/api/dispatch/flights/${activeBidId}/complete`,
-        { remarks: remarks.trim() || undefined },
+        {
+          remarks: remarks.trim() || undefined,
+          clientFlightEvents: {
+            landingRateFpm: events.landingRateFpm,
+            takeoffFuelLbs: events.takeoffFuelLbs,
+            takeoffTime: events.takeoffTime,
+            oooiOut: events.oooiOut,
+            oooiOff: events.oooiOff,
+            oooiOn: events.oooiOn,
+            oooiIn: events.oooiIn,
+          },
+          clientFuelLbs: snapshot ? Math.round(snapshot.fuel.totalQuantityWeight) : 0,
+        },
       );
+      useFlightEventStore.getState().reset();
       clearActiveBid();
       setShowDialog(false);
       navigate(`/logbook/${result.logbookId}`);

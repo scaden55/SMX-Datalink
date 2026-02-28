@@ -6,6 +6,7 @@ import { MainShell } from './components/navigation/MainShell';
 import { AuthGuard } from './components/auth/AuthGuard';
 import { Toaster } from './components/ui/Toaster';
 import { useLocalSimConnect } from './hooks/useLocalSimConnect';
+import './stores/flightEventStore'; // activate client-side flight event tracking
 import { LoginPage } from './pages/LoginPage';
 import { RegisterPage } from './pages/RegisterPage';
 import { DispatchPage } from './pages/DispatchPage';

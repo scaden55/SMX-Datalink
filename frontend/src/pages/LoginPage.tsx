@@ -104,7 +104,7 @@ export function LoginPage() {
           </Link>
         </p>
       </div>
-      <p className="absolute bottom-4 left-0 right-0 text-center text-[9px] text-acars-muted/20 tracking-wider">SMX ACARS v1.0</p>
+      <p className="absolute bottom-4 left-0 right-0 text-center text-[9px] text-acars-muted/20 tracking-wider">SMX ACARS v{__APP_VERSION__}</p>
     </div>
   );
 }

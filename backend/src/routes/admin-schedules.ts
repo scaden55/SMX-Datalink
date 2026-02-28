@@ -36,7 +36,7 @@ export function adminSchedulesRouter(): Router {
         aircraftType: req.query.aircraftType as string | undefined,
         search: req.query.search as string | undefined,
         isActive: req.query.isActive !== undefined ? req.query.isActive === 'true' : undefined,
-        charterType: req.query.charterType as string | undefined,
+        flightType: req.query.flightType as string | undefined,
       };
       const page = Math.max(1, parseInt(req.query.page as string) || 1);
       const pageSize = Math.min(100, Math.max(1, parseInt(req.query.pageSize as string) || 50));

@@ -57,7 +57,7 @@ export function StatusBar() {
   return (
     <div className="flex items-center justify-between border-t border-acars-border bg-acars-panel px-4 h-7 text-[10px]">
       <div className="flex items-center gap-2.5">
-        <span className="text-acars-muted/40 font-medium tracking-wide">v1.0</span>
+        <span className="text-acars-muted/40 font-medium tracking-wide">v{__APP_VERSION__}</span>
         <span className="w-px h-3 bg-white/10" />
         <span className="flex items-center gap-1.5">
           <span

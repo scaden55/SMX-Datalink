@@ -2,7 +2,8 @@ import { Router } from 'express';
 import { ScheduleService } from '../services/schedule.js';
 import { authMiddleware, optionalAuthMiddleware, adminMiddleware } from '../middleware/auth.js';
 import type { ScheduleFilters } from '../services/schedule.js';
-import type { CreateCharterRequest, CharterType, ServerToClientEvents, ClientToServerEvents } from '@acars/shared';
+import type { CreateCharterRequest, ServerToClientEvents, ClientToServerEvents } from '@acars/shared';
+import { VALID_FLIGHT_TYPE_CODES } from '@acars/shared';
 import type { Server as SocketServer } from 'socket.io';
 import { logger } from '../lib/logger.js';
 import { randomFlightNumber } from '../services/charter-generator.js';
@@ -80,7 +81,7 @@ export function scheduleRouter(io?: SocketServer<ClientToServerEvents, ServerToC
         arrIcao: req.query.arr_icao as string | undefined,
         aircraftType: req.query.aircraft_type as string | undefined,
         search: req.query.search as string | undefined,
-        charterType: req.query.charter_type as string | undefined,
+        flightType: req.query.flight_type as string | undefined,
       };
 
       const userId = req.user?.userId;
@@ -235,14 +236,12 @@ export function scheduleRouter(io?: SocketServer<ClientToServerEvents, ServerToC
   });
 
   // POST /api/charters — auth required (create charter, no auto-bid)
-  const VALID_CHARTER_TYPES = new Set<CharterType>(['reposition', 'cargo', 'passenger']);
-
   router.post('/charters', authMiddleware, (req, res) => {
     try {
       const body = req.body as Partial<CreateCharterRequest>;
 
-      if (!body.charterType || !VALID_CHARTER_TYPES.has(body.charterType)) {
-        res.status(400).json({ error: 'charterType must be reposition, cargo, or passenger' });
+      if (!body.flightType || !VALID_FLIGHT_TYPE_CODES.has(body.flightType)) {
+        res.status(400).json({ error: 'flightType must be a valid IATA flight type code' });
         return;
       }
       if (!body.depIcao || !body.arrIcao || !body.depTime) {

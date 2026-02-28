@@ -1,5 +1,5 @@
 import { getDb } from '../db/index.js';
-import type { CharterType, DispatchFlight, FlightPlanPhase } from '@acars/shared';
+import type { FlightType, DispatchFlight, FlightPlanPhase } from '@acars/shared';
 
 interface DispatchBidRow {
   id: number;
@@ -18,7 +18,7 @@ interface DispatchBidRow {
   distance_nm: number;
   flight_time_min: number;
   days_of_week: string;
-  charter_type: string | null;
+  flight_type: string | null;
   event_tag: string | null;
   aircraft_registration: string | null;
   aircraft_name: string | null;
@@ -55,7 +55,7 @@ export class DispatchService {
         ab.id, ab.user_id, ab.schedule_id, ab.created_at,
         sf.flight_number, sf.dep_icao, sf.arr_icao, sf.aircraft_type,
         sf.dep_time, sf.arr_time, sf.distance_nm, sf.flight_time_min, sf.days_of_week,
-        sf.charter_type, sf.event_tag,
+        sf.flight_type, sf.event_tag,
         COALESCE(dep.name, oa_dep.name, sf.dep_icao) AS dep_name,
         COALESCE(arr.name, oa_arr.name, sf.arr_icao) AS arr_name,
         ab.aircraft_id,
@@ -114,7 +114,7 @@ export class DispatchService {
         distanceNm: row.distance_nm,
         flightTimeMin: row.flight_time_min,
         daysOfWeek: row.days_of_week,
-        charterType: row.charter_type as CharterType | null,
+        flightType: row.flight_type as FlightType | null,
         eventTag: row.event_tag ?? null,
         aircraftRegistration: row.aircraft_registration ?? null,
         aircraftName: row.aircraft_name ?? null,

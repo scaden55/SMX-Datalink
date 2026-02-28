@@ -341,7 +341,7 @@ export function LogbookPage() {
                     )}
                   </td>
                   <td className="px-3 py-2.5">
-                    <span className="text-acars-text font-mono">{formatDuration(entry.flightTimeMin)}</span>
+                    <span className="text-acars-text font-mono">{entry.flightTimeMin > 0 ? formatDuration(entry.flightTimeMin) : '—'}</span>
                   </td>
                   <td className="px-3 py-2.5">
                     <span className="text-acars-text font-mono">

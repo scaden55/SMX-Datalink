@@ -41,7 +41,8 @@
       "Bash(npx kill-port:*)",
       "Bash(wmic process:*)",
       "Skill(commit-commands:commit)",
-      "Bash(bash:*)"
+      "Bash(bash:*)",
+      "Bash(rm:*)"
     ],
     "deny": [
       "Bash(taskkill //F //IM explorer.exe:*)",

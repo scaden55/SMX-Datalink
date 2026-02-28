@@ -19,7 +19,7 @@ export function regulatoryRouter(): Router {
 
       const cruiseAlt = req.query.cruiseAlt ? Number(req.query.cruiseAlt) : undefined;
       const aircraftId = req.query.aircraftId ? Number(req.query.aircraftId) : undefined;
-      const charterType = req.query.charterType as string | undefined;
+      const flightType = req.query.flightType as string | undefined;
       const includeRelease = req.query.includeRelease === 'true';
 
       // Optional coordinates for haversine distance
@@ -33,7 +33,7 @@ export function regulatoryRouter(): Router {
         dest,
         cruiseAlt,
         aircraftId,
-        charterType,
+        flightType,
         includeRelease,
         originLat,
         originLon,
@@ -58,8 +58,8 @@ export function regulatoryRouter(): Router {
         return;
       }
 
-      const charterType = req.query.charterType as string | undefined;
-      const result = service.classifyFlight(origin, dest, charterType);
+      const flightType = req.query.flightType as string | undefined;
+      const result = service.classifyFlight(origin, dest, flightType);
       res.json(result);
     } catch (err) {
       logger.error('Regulatory', 'Classify error', err);

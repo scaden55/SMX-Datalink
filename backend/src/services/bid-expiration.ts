@@ -34,7 +34,7 @@ export class BidExpirationService {
 
     const expiredBids = db.prepare(`
       SELECT ab.id, ab.user_id, ab.schedule_id, ab.aircraft_id,
-             sf.flight_number, sf.charter_type, ab.flight_plan_phase
+             sf.flight_number, sf.flight_type, sf.created_by, sf.expires_at, ab.flight_plan_phase
       FROM active_bids ab
       JOIN scheduled_flights sf ON sf.id = ab.schedule_id
       WHERE ab.expires_at IS NOT NULL
@@ -46,18 +46,18 @@ export class BidExpirationService {
       schedule_id: number;
       aircraft_id: number | null;
       flight_number: string;
-      charter_type: string | null;
+      flight_type: string | null;
+      created_by: number | null;
+      expires_at: string | null;
       flight_plan_phase: string | null;
     }[];
 
     if (expiredBids.length === 0) return;
 
-    const userCreatedTypes = ['reposition', 'cargo', 'passenger'];
-
     for (const bid of expiredBids) {
       db.prepare('DELETE FROM active_bids WHERE id = ?').run(bid.id);
 
-      if (bid.charter_type && userCreatedTypes.includes(bid.charter_type)) {
+      if (bid.created_by != null && bid.expires_at == null && bid.flight_type != null) {
         db.prepare('DELETE FROM scheduled_flights WHERE id = ?').run(bid.schedule_id);
       }
 
