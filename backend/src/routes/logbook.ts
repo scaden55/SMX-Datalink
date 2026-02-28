@@ -3,10 +3,12 @@ import { LogbookService } from '../services/logbook.js';
 import { authMiddleware } from '../middleware/auth.js';
 import type { LogbookFilters, LogbookStatus } from '@acars/shared';
 import { logger } from '../lib/logger.js';
+import { ExceedanceService } from '../services/exceedance.js';
 
 export function logbookRouter(): Router {
   const router = Router();
   const service = new LogbookService();
+  const exceedanceService = new ExceedanceService();
 
   // GET /api/logbook — paginated list (auth required)
   // Pilots can only see their own entries; admins/dispatchers can see all
@@ -66,6 +68,35 @@ export function logbookRouter(): Router {
     } catch (err) {
       logger.error('Logbook', 'Detail error', err);
       res.status(500).json({ error: 'Failed to fetch logbook entry' });
+    }
+  });
+
+  // GET /api/logbook/:id/exceedances — exceedance events for a flight
+  router.get('/logbook/:id/exceedances', authMiddleware, (req, res) => {
+    try {
+      const id = parseInt(req.params.id as string, 10);
+      if (isNaN(id)) {
+        res.status(400).json({ error: 'Invalid logbook entry ID' });
+        return;
+      }
+
+      const entry = service.findById(id);
+      if (!entry) {
+        res.status(404).json({ error: 'Logbook entry not found' });
+        return;
+      }
+
+      const isPrivileged = req.user!.role === 'admin' || req.user!.role === 'dispatcher';
+      if (!isPrivileged && entry.userId !== req.user!.userId) {
+        res.status(404).json({ error: 'Logbook entry not found' });
+        return;
+      }
+
+      const exceedances = exceedanceService.findByLogbookId(id);
+      res.json(exceedances);
+    } catch (err) {
+      logger.error('Logbook', 'Exceedances fetch error', err);
+      res.status(500).json({ error: 'Failed to fetch exceedances' });
     }
   });
 
