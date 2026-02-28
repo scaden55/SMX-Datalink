@@ -22,6 +22,7 @@ export class TelemetryService {
     latitude: 0, longitude: 0, altitude: 0, heading: 0,
     airspeedIndicated: 0, airspeedTrue: 0, groundSpeed: 0,
     verticalSpeed: 0, pitch: 0, bank: 0,
+    altitudeAgl: 0, totalWeight: 0,
   };
 
   private autopilot: AutopilotState = {
