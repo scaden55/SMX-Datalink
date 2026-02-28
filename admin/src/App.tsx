@@ -8,6 +8,7 @@ import { LoginPage } from '@/pages/LoginPage';
 import { DashboardPage } from '@/pages/DashboardPage';
 import { UsersPage } from '@/pages/UsersPage';
 import { SchedulesPage } from '@/pages/SchedulesPage';
+import { PirepsPage } from '@/pages/PirepsPage';
 
 // Placeholder pages - will be replaced in later tasks
 function PageStub({ name }: { name: string }) {
@@ -18,7 +19,6 @@ function PageStub({ name }: { name: string }) {
   );
 }
 const DispatchBoardPage = () => <PageStub name="Dispatch Board" />;
-const PirepsPage = () => <PageStub name="PIREPs" />;
 const MaintenancePage = () => <PageStub name="Maintenance" />;
 const FinancesPage = () => <PageStub name="Finances" />;
 const ReportsPage = () => <PageStub name="Reports" />;
