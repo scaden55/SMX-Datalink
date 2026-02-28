@@ -6,6 +6,7 @@ import { AuthGuard } from '@/components/auth/AuthGuard';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { LoginPage } from '@/pages/LoginPage';
 import { DashboardPage } from '@/pages/DashboardPage';
+import { UsersPage } from '@/pages/UsersPage';
 
 // Placeholder pages - will be replaced in later tasks
 function PageStub({ name }: { name: string }) {
@@ -16,7 +17,6 @@ function PageStub({ name }: { name: string }) {
   );
 }
 const DispatchBoardPage = () => <PageStub name="Dispatch Board" />;
-const UsersPage = () => <PageStub name="Users" />;
 const SchedulesPage = () => <PageStub name="Schedules" />;
 const PirepsPage = () => <PageStub name="PIREPs" />;
 const MaintenancePage = () => <PageStub name="Maintenance" />;
