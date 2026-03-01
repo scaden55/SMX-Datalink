@@ -1,17 +1,15 @@
 import { useEffect, useState } from 'react';
-import {
-  Airplane,
-  ClipboardText,
-  Heartbeat,
-  CurrencyDollar,
-} from '@phosphor-icons/react';
+import type { ActiveFlightHeartbeat } from '@acars/shared';
 import { api } from '@/lib/api';
+import { useAuthStore } from '@/stores/authStore';
+import { useSocketStore } from '@/stores/socketStore';
+import { useSocket } from '@/hooks/useSocket';
 import { Skeleton } from '@/components/ui/skeleton';
-import { StatCard } from '@/components/widgets/StatCard';
-import { RecentFlightsWidget } from '@/components/widgets/RecentFlightsWidget';
-import { FinancialOverviewWidget } from '@/components/widgets/FinancialOverviewWidget';
-import { MaintenanceAlertsWidget } from '@/components/widgets/MaintenanceAlertsWidget';
-import { PilotActivityWidget } from '@/components/widgets/PilotActivityWidget';
+import { DashboardMap } from '@/components/dashboard/DashboardMap';
+import { OperationsPanel } from '@/components/dashboard/OperationsPanel';
+import { FinancePanel } from '@/components/dashboard/FinancePanel';
+import { FleetPanel } from '@/components/dashboard/FleetPanel';
+import { PilotsPanel } from '@/components/dashboard/PilotsPanel';
 
 interface DashboardData {
   activeFlights: number;
@@ -48,34 +46,16 @@ interface DashboardData {
   };
 }
 
-function formatRevenue(value: number): string {
-  if (value >= 1_000_000) {
-    return `$${(value / 1_000_000).toFixed(1)}M`;
-  }
-  if (value >= 1_000) {
-    return `$${(value / 1_000).toFixed(1)}k`;
-  }
-  return `$${value.toLocaleString()}`;
-}
-
 function DashboardSkeleton() {
   return (
-    <div className="space-y-6">
-      {/* Stat cards skeleton */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <Skeleton key={i} className="h-[110px] rounded-xl" />
-        ))}
-      </div>
-      {/* Row 2 skeleton */}
+    <div className="absolute inset-0 z-10 p-6 space-y-4">
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <Skeleton className="h-[350px] rounded-xl lg:col-span-2" />
-        <Skeleton className="h-[350px] rounded-xl" />
+        <Skeleton className="h-[320px] rounded-md lg:col-span-2 bg-[#1c2033]/60" />
+        <Skeleton className="h-[320px] rounded-md bg-[#1c2033]/60" />
       </div>
-      {/* Row 3 skeleton */}
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <Skeleton className="h-[300px] rounded-xl" />
-        <Skeleton className="h-[300px] rounded-xl" />
+        <Skeleton className="h-[280px] rounded-md bg-[#1c2033]/60" />
+        <Skeleton className="h-[280px] rounded-md bg-[#1c2033]/60" />
       </div>
     </div>
   );
@@ -85,7 +65,12 @@ export function DashboardPage() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [flights, setFlights] = useState<ActiveFlightHeartbeat[]>([]);
 
+  const accessToken = useAuthStore((s) => s.accessToken);
+  const { connect, connected } = useSocketStore();
+
+  // Fetch dashboard data
   useEffect(() => {
     let cancelled = false;
 
@@ -106,69 +91,70 @@ export function DashboardPage() {
     };
   }, []);
 
-  if (loading) {
-    return (
-      <div className="p-6">
-        <h1 className="text-2xl font-semibold mb-6">Dashboard</h1>
-        <DashboardSkeleton />
-      </div>
-    );
-  }
+  // Connect socket for live map
+  useEffect(() => {
+    if (accessToken && !connected) {
+      connect(accessToken);
+    }
+  }, [accessToken, connected, connect]);
 
-  if (error || !data) {
-    return (
-      <div className="p-6">
-        <h1 className="text-2xl font-semibold mb-6">Dashboard</h1>
-        <div className="flex items-center justify-center py-20 text-muted-foreground">
-          <p>{error ?? 'Unable to load dashboard data'}</p>
-        </div>
-      </div>
-    );
-  }
+  // Subscribe to live flights
+  useSocket<ActiveFlightHeartbeat[]>('flights:active', (data) => {
+    setFlights(data);
+  }, {
+    subscribeEvent: 'livemap:subscribe',
+    unsubscribeEvent: 'livemap:unsubscribe',
+  });
 
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-semibold mb-6">Dashboard</h1>
+    <div className="absolute inset-0">
+      {/* Map layer */}
+      <div className="absolute inset-0 z-0">
+        <DashboardMap flights={flights} />
+      </div>
 
-      <div className="space-y-6">
-        {/* Row 1: Stat Cards */}
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <StatCard
-            title="Active Flights"
-            value={data.activeFlights}
-            icon={<Airplane size={22} weight="duotone" />}
-          />
-          <StatCard
-            title="Pending PIREPs"
-            value={data.pendingPireps}
-            icon={<ClipboardText size={22} weight="duotone" />}
-          />
-          <StatCard
-            title="Fleet Health"
-            value={`${data.fleetHealthPct}%`}
-            icon={<Heartbeat size={22} weight="duotone" />}
-          />
-          <StatCard
-            title="Monthly Revenue"
-            value={formatRevenue(data.monthlyRevenue)}
-            icon={<CurrencyDollar size={22} weight="duotone" />}
-          />
-        </div>
+      {/* Widget overlay */}
+      <div className="absolute inset-0 z-10 pointer-events-none overflow-y-auto">
+        <div className="p-6 space-y-4 pointer-events-none">
+          {loading ? (
+            <DashboardSkeleton />
+          ) : error || !data ? (
+            <div className="pointer-events-auto rounded-md bg-[#1c2033]/90 border border-border/50 p-8 text-center text-muted-foreground">
+              {error ?? 'Unable to load dashboard data'}
+            </div>
+          ) : (
+            <>
+              {/* Row 1: Operations (2/3) + Finance (1/3) */}
+              <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+                <div className="lg:col-span-2 pointer-events-auto">
+                  <OperationsPanel
+                    activeFlights={data.activeFlights}
+                    pendingPireps={data.pendingPireps}
+                    recentFlights={data.recentFlights}
+                  />
+                </div>
+                <div className="pointer-events-auto">
+                  <FinancePanel
+                    monthlyRevenue={data.monthlyRevenue}
+                    financialSummary={data.financialSummary}
+                  />
+                </div>
+              </div>
 
-        {/* Row 2: Recent Flights + Financial Overview */}
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-          <div className="lg:col-span-2">
-            <RecentFlightsWidget flights={data.recentFlights} />
-          </div>
-          <div>
-            <FinancialOverviewWidget data={data.financialSummary} />
-          </div>
-        </div>
-
-        {/* Row 3: Maintenance Alerts + Pilot Activity */}
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <MaintenanceAlertsWidget alerts={data.maintenanceAlerts} />
-          <PilotActivityWidget data={data.pilotActivity} />
+              {/* Row 2: Fleet (1/2) + Pilots (1/2) */}
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div className="pointer-events-auto">
+                  <FleetPanel
+                    fleetHealthPct={data.fleetHealthPct}
+                    maintenanceAlerts={data.maintenanceAlerts}
+                  />
+                </div>
+                <div className="pointer-events-auto">
+                  <PilotsPanel pilotActivity={data.pilotActivity} />
+                </div>
+              </div>
+            </>
+          )}
         </div>
       </div>
     </div>
