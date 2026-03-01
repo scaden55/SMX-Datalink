@@ -98,3 +98,4 @@ electron/dist/
 .backend-standalone/
 *.blockmap
 *.snap
+.worktrees/
