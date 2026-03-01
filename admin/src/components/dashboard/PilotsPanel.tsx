@@ -21,7 +21,7 @@ interface PilotsPanelProps {
 }
 
 export function PilotsPanel({ pilotActivity }: PilotsPanelProps) {
-  const chartData = pilotActivity.map((p) => ({
+  const chartData = pilotActivity.slice(0, 10).map((p) => ({
     name: p.callsign || `${p.firstName} ${p.lastName}`,
     hours: p.hoursThisMonth,
   }));
