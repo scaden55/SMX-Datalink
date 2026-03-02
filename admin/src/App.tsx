@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'sonner';
 import { useAuthStore } from '@/stores/authStore';
+import { CommandPalette } from '@/components/shared/CommandPalette';
 import { AuthGuard } from '@/components/auth/AuthGuard';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { LoginPage } from '@/pages/LoginPage';
@@ -33,6 +34,7 @@ export function App() {
         }}
         richColors
       />
+      <CommandPalette />
       <Routes>
         <Route path="/login" element={<LoginPage />} />
         <Route element={<AuthGuard><DashboardLayout /></AuthGuard>}>
