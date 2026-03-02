@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import {
   SquaresFour,
@@ -27,6 +28,7 @@ import {
 } from '@/components/ui/sidebar';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useAuthStore } from '@/stores/authStore';
+import { api } from '@/lib/api';
 
 const navGroups = [
   {
@@ -84,9 +86,21 @@ function roleBadgeClass(role: string): string {
 
 export function AppSidebar() {
   const user = useAuthStore((s) => s.user);
+  const [pendingPireps, setPendingPireps] = useState(0);
+
+  useEffect(() => {
+    let cancelled = false;
+    api
+      .get<{ total: number }>('/api/admin/pireps?status=pending&pageSize=1')
+      .then((res) => {
+        if (!cancelled) setPendingPireps(res.total);
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
 
   return (
-    <Sidebar collapsible="icon" variant="sidebar">
+    <Sidebar collapsible="icon" variant="sidebar" className="bg-[#0f1219] border-r-border/30">
       {/* Header / Logo */}
       <SidebarHeader className="border-b border-sidebar-border">
         <div className="flex items-center gap-2 px-1 py-1">
@@ -102,7 +116,7 @@ export function AppSidebar() {
       {/* Navigation */}
       <SidebarContent>
         {navGroups.map((group) => (
-          <SidebarGroup key={group.label}>
+          <SidebarGroup key={group.label} className="py-1">
             <SidebarGroupLabel>{group.label}</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
@@ -113,7 +127,9 @@ export function AppSidebar() {
                         to={item.path}
                         end={item.path === '/'}
                         className={({ isActive }) =>
-                          isActive ? '[&]:bg-sidebar-accent [&]:text-sidebar-accent-foreground [&]:font-medium' : ''
+                          isActive
+                            ? '[&]:bg-blue-500/10 [&]:text-sidebar-accent-foreground [&]:font-medium [&]:border-l-2 [&]:border-l-blue-500'
+                            : ''
                         }
                       >
                         {({ isActive }) => (
@@ -122,7 +138,12 @@ export function AppSidebar() {
                               size={18}
                               weight={isActive ? 'fill' : 'regular'}
                             />
-                            <span>{item.title}</span>
+                            <span className="flex-1">{item.title}</span>
+                            {item.title === 'PIREPs' && pendingPireps > 0 && (
+                              <span className="ml-auto inline-flex h-5 min-w-5 items-center justify-center rounded-md bg-blue-500/20 px-1.5 text-[10px] font-semibold text-blue-400 group-data-[collapsible=icon]:hidden">
+                                {pendingPireps}
+                              </span>
+                            )}
                           </>
                         )}
                       </NavLink>
