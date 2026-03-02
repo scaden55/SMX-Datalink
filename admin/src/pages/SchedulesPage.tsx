@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { type ColumnDef } from '@tanstack/react-table';
 import {
   AirplaneTilt,
   Package,
@@ -55,6 +56,10 @@ import {
 } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScheduleFormSheet, type ScheduleFormData } from '@/components/dialogs/ScheduleFormSheet';
+import { DataTable } from '@/components/shared/DataTable';
+import { DataTableColumnHeader } from '@/components/shared/DataTableColumnHeader';
+import { DetailPanel } from '@/components/shared/DetailPanel';
+import { PageShell } from '@/components/shared/PageShell';
 
 // ── Types ───────────────────────────────────────────────────────
 
@@ -178,6 +183,15 @@ function formatDistance(nm: number): string {
   return `${nm.toLocaleString()} nm`;
 }
 
+function DetailRow({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="flex items-start justify-between gap-4 py-1.5">
+      <span className="text-sm text-muted-foreground shrink-0">{label}</span>
+      <span className="text-sm text-right">{children}</span>
+    </div>
+  );
+}
+
 // ── Skeleton ────────────────────────────────────────────────────
 
 function SchedulesPageSkeleton() {
@@ -218,6 +232,10 @@ function FlightsTab() {
   const [cloneDialogSchedule, setCloneDialogSchedule] = useState<Schedule | null>(null);
   const [cloneFlightNumber, setCloneFlightNumber] = useState('');
   const [cloneLoading, setCloneLoading] = useState(false);
+
+  // Detail panel
+  const [detailSchedule, setDetailSchedule] = useState<Schedule | null>(null);
+  const [detailOpen, setDetailOpen] = useState(false);
 
   // ── Fetch ──────────────────────────────────────────────────
 
@@ -349,9 +367,112 @@ function FlightsTab() {
     };
   }
 
-  // ── Render ─────────────────────────────────────────────────
+  function handleRowClick(schedule: Schedule) {
+    if (detailSchedule?.id === schedule.id) {
+      setDetailOpen(false);
+      setDetailSchedule(null);
+    } else {
+      setDetailSchedule(schedule);
+      setDetailOpen(true);
+    }
+  }
 
-  if (loading) return <SchedulesPageSkeleton />;
+  // ── Columns ─────────────────────────────────────────────────
+
+  const columns: ColumnDef<Schedule, unknown>[] = useMemo(() => [
+    {
+      accessorKey: 'flightNumber',
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Flight #" />,
+      cell: ({ row }) => <span className="font-mono font-medium">{row.original.flightNumber}</span>,
+      size: 110,
+    },
+    {
+      id: 'route',
+      header: 'Route',
+      cell: ({ row }) => (
+        <span className="font-mono text-sm">
+          {row.original.depIcao}<span className="text-muted-foreground mx-1">&rarr;</span>{row.original.arrIcao}
+        </span>
+      ),
+      enableSorting: false,
+      size: 130,
+    },
+    {
+      accessorKey: 'aircraftType',
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Aircraft" />,
+      cell: ({ row }) => <span className="font-mono text-muted-foreground">{row.original.aircraftType}</span>,
+      size: 100,
+    },
+    {
+      id: 'times',
+      header: 'Dep / Arr',
+      cell: ({ row }) => (
+        <span className="text-sm text-muted-foreground">
+          {row.original.depTime} - {row.original.arrTime}
+        </span>
+      ),
+      enableSorting: false,
+      size: 120,
+    },
+    {
+      accessorKey: 'daysOfWeek',
+      header: 'Days',
+      cell: ({ row }) => <span className="text-xs text-muted-foreground">{row.original.daysOfWeek}</span>,
+      enableSorting: false,
+      size: 100,
+    },
+    {
+      id: 'type',
+      header: 'Type',
+      cell: ({ row }) => typeBadge(row.original.aircraftType, row.original.flightType),
+      enableSorting: false,
+      size: 90,
+    },
+    {
+      id: 'status',
+      header: 'Status',
+      cell: ({ row }) => activeBadge(row.original.isActive),
+      enableSorting: false,
+      size: 90,
+    },
+    {
+      id: 'actions',
+      enableHiding: false,
+      enableSorting: false,
+      size: 50,
+      cell: ({ row }) => {
+        const schedule = row.original;
+        return (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => e.stopPropagation()}>
+                <DotsThreeVertical size={16} weight="bold" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => handleEdit(schedule)}>
+                <PencilSimple size={14} /> Edit
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleClone(schedule)}>
+                <Copy size={14} /> Clone
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => handleToggle(schedule)}>
+                <ToggleLeft size={14} /> {schedule.isActive ? 'Deactivate' : 'Activate'}
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem className="text-red-400 focus:text-red-400" onClick={() => setDeleteSchedule(schedule)}>
+                <Trash size={14} /> Delete
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        );
+      },
+    },
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  ], []);
+
+  // ── Render ─────────────────────────────────────────────────
 
   if (error) {
     return (
@@ -430,91 +551,51 @@ function FlightsTab() {
         </Button>
       </div>
 
-      {/* Table */}
-      <div className="rounded-md border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-[100px]">Flight #</TableHead>
-              <TableHead className="w-[90px]">Type</TableHead>
-              <TableHead className="w-[80px]">Dep</TableHead>
-              <TableHead className="w-[80px]">Arr</TableHead>
-              <TableHead className="w-[100px]">Distance</TableHead>
-              <TableHead className="w-[100px]">Flight Time</TableHead>
-              <TableHead className="w-[90px]">Status</TableHead>
-              <TableHead className="w-[60px]" />
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filteredSchedules.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={8} className="text-center py-10 text-muted-foreground">
-                  No schedules found
-                </TableCell>
-              </TableRow>
-            ) : (
-              filteredSchedules.map((schedule) => (
-                <TableRow key={schedule.id}>
-                  <TableCell className="font-mono font-medium">
-                    {schedule.flightNumber}
-                  </TableCell>
-                  <TableCell>{typeBadge(schedule.aircraftType, schedule.flightType)}</TableCell>
-                  <TableCell>
-                    <span className="font-mono font-medium">{schedule.depIcao}</span>
-                    {schedule.depName && (
-                      <p className="text-xs text-muted-foreground truncate max-w-[120px]">{schedule.depName}</p>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <span className="font-mono font-medium">{schedule.arrIcao}</span>
-                    {schedule.arrName && (
-                      <p className="text-xs text-muted-foreground truncate max-w-[120px]">{schedule.arrName}</p>
-                    )}
-                  </TableCell>
-                  <TableCell className="font-mono text-muted-foreground">
-                    {formatDistance(schedule.distanceNm)}
-                  </TableCell>
-                  <TableCell className="font-mono text-muted-foreground">
-                    {formatFlightTime(schedule.flightTimeMin)}
-                  </TableCell>
-                  <TableCell>{activeBadge(schedule.isActive)}</TableCell>
-                  <TableCell>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                          <DotsThreeVertical size={16} weight="bold" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => handleEdit(schedule)}>
-                          <PencilSimple size={14} />
-                          Edit
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleClone(schedule)}>
-                          <Copy size={14} />
-                          Clone
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={() => handleToggle(schedule)}>
-                          <ToggleLeft size={14} />
-                          {schedule.isActive ? 'Deactivate' : 'Activate'}
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem
-                          className="text-red-400 focus:text-red-400"
-                          onClick={() => setDeleteSchedule(schedule)}
-                        >
-                          <Trash size={14} />
-                          Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
+      {/* Split view: table + detail */}
+      <div className="flex flex-1 gap-0 overflow-hidden rounded-md border border-border/50">
+        <div className={`${detailOpen ? 'w-[55%]' : 'w-full'} flex flex-col transition-all duration-200`}>
+          <DataTable
+            columns={columns}
+            data={filteredSchedules}
+            onRowClick={handleRowClick}
+            selectedRowId={detailSchedule?.id}
+            loading={loading}
+            emptyMessage="No schedules found"
+            getRowId={(row) => String(row.id)}
+          />
+        </div>
+        {detailOpen && detailSchedule && (
+          <DetailPanel
+            open={detailOpen}
+            onClose={() => { setDetailOpen(false); setDetailSchedule(null); }}
+            title={detailSchedule.flightNumber}
+            subtitle={`${detailSchedule.depIcao} \u2192 ${detailSchedule.arrIcao}`}
+            actions={
+              <>
+                <Button size="sm" variant="outline" onClick={() => handleEdit(detailSchedule)}>
+                  <PencilSimple size={14} /> Edit
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => handleToggle(detailSchedule)}>
+                  <ToggleLeft size={14} /> {detailSchedule.isActive ? 'Deactivate' : 'Activate'}
+                </Button>
+              </>
+            }
+          >
+            <div className="space-y-4">
+              <DetailRow label="Route"><span className="font-mono">{detailSchedule.depIcao} &rarr; {detailSchedule.arrIcao}</span></DetailRow>
+              {detailSchedule.depName && <DetailRow label="Departure">{detailSchedule.depName}</DetailRow>}
+              {detailSchedule.arrName && <DetailRow label="Arrival">{detailSchedule.arrName}</DetailRow>}
+              <DetailRow label="Aircraft Type"><span className="font-mono">{detailSchedule.aircraftType}</span></DetailRow>
+              <DetailRow label="Schedule">{detailSchedule.depTime} - {detailSchedule.arrTime}</DetailRow>
+              <DetailRow label="Days">{detailSchedule.daysOfWeek}</DetailRow>
+              <DetailRow label="Flight Time">{formatFlightTime(detailSchedule.flightTimeMin)}</DetailRow>
+              <DetailRow label="Distance">{formatDistance(detailSchedule.distanceNm)}</DetailRow>
+              <DetailRow label="Type">{typeBadge(detailSchedule.aircraftType, detailSchedule.flightType)}</DetailRow>
+              <DetailRow label="Status">{activeBadge(detailSchedule.isActive)}</DetailRow>
+              <DetailRow label="Active Bids"><span className="font-mono">{detailSchedule.bidCount}</span></DetailRow>
+            </div>
+          </DetailPanel>
+        )}
       </div>
 
       {/* Schedule Form Sheet */}
@@ -1132,8 +1213,10 @@ function ChartersTab() {
 
 export function SchedulesPage() {
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-semibold mb-6">Schedules</h1>
+    <PageShell
+      title="Schedules"
+      subtitle="Flight schedules, airports, and charters"
+    >
       <Tabs defaultValue="flights" className="space-y-6">
         <TabsList>
           <TabsTrigger value="flights">Flights</TabsTrigger>
@@ -1153,6 +1236,6 @@ export function SchedulesPage() {
           <ChartersTab />
         </TabsContent>
       </Tabs>
-    </div>
+    </PageShell>
   );
 }
