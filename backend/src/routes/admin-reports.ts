@@ -7,6 +7,8 @@ import {
   getFuelEfficiency,
   getOnTimePerformance,
   getRoutePopularity,
+  getRouteProfitability,
+  getFleetUtilization,
 } from '../services/admin-reports.js';
 import { logger } from '../lib/logger.js';
 
@@ -126,6 +128,44 @@ export function adminReportsRouter(): Router {
       } catch (err) {
         logger.error('AdminReports', 'Failed to fetch route popularity', err);
         res.status(500).json({ error: 'Failed to fetch route popularity' });
+      }
+    },
+  );
+
+  // GET /api/admin/reports/route-profitability?from=&to=
+  router.get(
+    '/admin/reports/route-profitability',
+    authMiddleware,
+    dispatcherMiddleware,
+    (req, res) => {
+      try {
+        const { from, to } = parseDateRange(
+          req.query as { from?: string; to?: string },
+        );
+        const data = getRouteProfitability(getDb(), from, to);
+        res.json(data);
+      } catch (err) {
+        logger.error('AdminReports', 'Failed to fetch route profitability', err);
+        res.status(500).json({ error: 'Failed to fetch route profitability' });
+      }
+    },
+  );
+
+  // GET /api/admin/reports/fleet-utilization?from=&to=
+  router.get(
+    '/admin/reports/fleet-utilization',
+    authMiddleware,
+    dispatcherMiddleware,
+    (req, res) => {
+      try {
+        const { from, to } = parseDateRange(
+          req.query as { from?: string; to?: string },
+        );
+        const data = getFleetUtilization(getDb(), from, to);
+        res.json(data);
+      } catch (err) {
+        logger.error('AdminReports', 'Failed to fetch fleet utilization', err);
+        res.status(500).json({ error: 'Failed to fetch fleet utilization' });
       }
     },
   );

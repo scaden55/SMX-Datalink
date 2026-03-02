@@ -38,6 +38,24 @@ export interface RoutePopularityEntry {
   avgLandingRate: number;
 }
 
+export interface RouteProfitabilityEntry {
+  route: string;
+  depIcao: string;
+  arrIcao: string;
+  flights: number;
+  revenue: number;
+  costs: number;
+  profit: number;
+  margin: number;
+}
+
+export interface FleetUtilizationEntry {
+  registration: string;
+  aircraftType: string;
+  months: Array<{ month: string; hours: number }>;
+  totalHours: number;
+}
+
 // ── DB row types (query-specific) ───────────────────────────────
 
 interface FlightHoursRow {
@@ -67,6 +85,21 @@ interface RoutePopularityRow {
   arr_icao: string;
   cnt: number;
   avg_landing_rate: number | null;
+}
+
+interface RouteProfitRow {
+  dep_icao: string;
+  arr_icao: string;
+  flights: number;
+  revenue: number;
+  costs: number;
+}
+
+interface FleetUtilRow {
+  registration: string;
+  icao_type: string;
+  month: string;
+  hours: number;
 }
 
 // ── On-time threshold (minutes) ─────────────────────────────────
@@ -304,4 +337,93 @@ export function getRoutePopularity(
       ? Math.round(r.avg_landing_rate)
       : 0,
   }));
+}
+
+/**
+ * Route profitability — revenue minus costs per route for approved flights.
+ * Revenue comes from finances with type='income' linked to PIREPs.
+ * Costs come from finances with type='pay' linked to PIREPs.
+ * Returns top 15 routes by profit.
+ */
+export function getRouteProfitability(
+  db: Database.Database,
+  from: string,
+  to: string,
+): RouteProfitabilityEntry[] {
+  const rows = db.prepare(`
+    SELECT
+      l.dep_icao,
+      l.arr_icao,
+      COUNT(DISTINCT l.id) AS flights,
+      COALESCE(SUM(CASE WHEN f.type = 'income' THEN f.amount ELSE 0 END), 0) AS revenue,
+      COALESCE(SUM(CASE WHEN f.type = 'pay' THEN f.amount ELSE 0 END), 0) AS costs
+    FROM logbook l
+    LEFT JOIN finances f ON f.pirep_id = l.id
+    WHERE l.status = 'approved'
+      AND l.created_at >= ?
+      AND l.created_at < ?
+    GROUP BY l.dep_icao, l.arr_icao
+    HAVING flights > 0
+    ORDER BY (revenue - costs) DESC
+    LIMIT 15
+  `).all(from, to) as RouteProfitRow[];
+
+  return rows.map(r => {
+    const profit = r.revenue - r.costs;
+    const margin = r.revenue > 0 ? Math.round((profit / r.revenue) * 1000) / 10 : 0;
+    return {
+      route: `${r.dep_icao}-${r.arr_icao}`,
+      depIcao: r.dep_icao,
+      arrIcao: r.arr_icao,
+      flights: r.flights,
+      revenue: Math.round(r.revenue * 100) / 100,
+      costs: Math.round(r.costs * 100) / 100,
+      profit: Math.round(profit * 100) / 100,
+      margin,
+    };
+  });
+}
+
+/**
+ * Fleet utilization — hours per aircraft per month for approved flights.
+ */
+export function getFleetUtilization(
+  db: Database.Database,
+  from: string,
+  to: string,
+): FleetUtilizationEntry[] {
+  const rows = db.prepare(`
+    SELECT
+      l.aircraft_registration AS registration,
+      l.aircraft_type AS icao_type,
+      strftime('%Y-%m', l.created_at) AS month,
+      SUM(l.flight_time_min) / 60.0 AS hours
+    FROM logbook l
+    WHERE l.status = 'approved'
+      AND l.aircraft_registration IS NOT NULL
+      AND l.created_at >= ?
+      AND l.created_at < ?
+    GROUP BY l.aircraft_registration, month
+    ORDER BY l.aircraft_registration, month
+  `).all(from, to) as FleetUtilRow[];
+
+  // Group by aircraft
+  const aircraftMap = new Map<string, { type: string; months: Map<string, number> }>();
+  for (const row of rows) {
+    if (!aircraftMap.has(row.registration)) {
+      aircraftMap.set(row.registration, { type: row.icao_type, months: new Map() });
+    }
+    aircraftMap.get(row.registration)!.months.set(row.month, Math.round(row.hours * 10) / 10);
+  }
+
+  return Array.from(aircraftMap.entries()).map(([reg, data]) => {
+    const months = Array.from(data.months.entries()).map(([month, hours]) => ({ month, hours }));
+    const totalHours = months.reduce((sum, m) => sum + m.hours, 0);
+    return {
+      registration: reg,
+      aircraftType: data.type,
+      months,
+      totalHours: Math.round(totalHours * 10) / 10,
+    };
+  }).sort((a, b) => b.totalHours - a.totalHours);
 }
