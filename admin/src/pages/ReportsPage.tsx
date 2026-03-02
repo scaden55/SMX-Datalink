@@ -3,6 +3,7 @@ import {
   CalendarBlank,
   ArrowCounterClockwise,
   DownloadSimple,
+  Printer,
 } from '@phosphor-icons/react';
 import {
   BarChart,
@@ -16,6 +17,7 @@ import {
   PieChart,
   Pie,
   Legend,
+  ReferenceLine,
 } from 'recharts';
 import { api, ApiError } from '@/lib/api';
 import { toast } from '@/stores/toastStore';
@@ -63,6 +65,24 @@ interface RoutePopularityEntry {
   avgLandingRate: number;
 }
 
+interface RouteProfitabilityEntry {
+  route: string;
+  depIcao: string;
+  arrIcao: string;
+  flights: number;
+  revenue: number;
+  costs: number;
+  profit: number;
+  margin: number;
+}
+
+interface FleetUtilizationEntry {
+  registration: string;
+  aircraftType: string;
+  months: Array<{ month: string; hours: number }>;
+  totalHours: number;
+}
+
 // ── Tooltip style constant ──────────────────────────────────────
 
 const TOOLTIP_STYLE = {
@@ -100,6 +120,13 @@ function getOnTimeColor(pct: number): string {
   return '#ef4444';
 }
 
+// Fleet utilization color palette — distinct colors for each aircraft
+const FLEET_COLORS = [
+  '#3b82f6', '#22c55e', '#f59e0b', '#ef4444', '#06b6d4',
+  '#ec4899', '#84cc16', '#f97316', '#14b8a6', '#facc15',
+  '#38bdf8', '#fb923c', '#4ade80', '#f43f5e', '#0ea5e9',
+];
+
 // ── Skeleton ────────────────────────────────────────────────────
 
 function ReportsPageSkeleton() {
@@ -109,7 +136,7 @@ function ReportsPageSkeleton() {
       <Skeleton className="h-12 w-full rounded-md" />
       {/* Chart grid skeleton */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        {Array.from({ length: 5 }).map((_, i) => (
+        {Array.from({ length: 7 }).map((_, i) => (
           <Skeleton key={i} className="h-[360px] rounded-md" />
         ))}
       </div>
@@ -537,6 +564,256 @@ function RoutePopularityChart({ data }: { data: RoutePopularityEntry[] }) {
   );
 }
 
+// ── Route Profitability Chart ────────────────────────────────────
+
+function RouteProfitabilityChart({ data }: { data: RouteProfitabilityEntry[] }) {
+  const chartData = useMemo(
+    () =>
+      data.slice(0, 15).map((d) => ({
+        route: `${d.depIcao}-${d.arrIcao}`,
+        profit: Math.round(d.profit),
+        revenue: Math.round(d.revenue),
+        costs: Math.round(d.costs),
+        flights: d.flights,
+        margin: d.margin,
+      })),
+    [data],
+  );
+
+  if (chartData.length === 0) {
+    return (
+      <p className="text-sm text-muted-foreground py-10 text-center">
+        No data for this period
+      </p>
+    );
+  }
+
+  const chartHeight = Math.max(260, chartData.length * 32);
+
+  return (
+    <ResponsiveContainer width="100%" height={chartHeight}>
+      <BarChart
+        data={chartData}
+        layout="vertical"
+        margin={{ top: 5, right: 20, left: 10, bottom: 5 }}
+      >
+        <CartesianGrid strokeDasharray="3 3" stroke="#2a2e3f" horizontal={false} />
+        <XAxis
+          type="number"
+          tick={{ fill: '#8b8fa3', fontSize: 12 }}
+          tickLine={false}
+          axisLine={{ stroke: '#2a2e3f' }}
+          tickFormatter={(v: number) =>
+            v >= 1000 || v <= -1000 ? `$${(v / 1000).toFixed(0)}k` : `$${v}`
+          }
+          label={{
+            value: 'Profit ($)',
+            position: 'insideBottomRight',
+            offset: -5,
+            fill: '#8b8fa3',
+            fontSize: 11,
+          }}
+        />
+        <YAxis
+          type="category"
+          dataKey="route"
+          tick={{ fill: '#e8eaed', fontSize: 12 }}
+          tickLine={false}
+          axisLine={false}
+          width={90}
+        />
+        <ReferenceLine x={0} stroke="#8b8fa3" strokeDasharray="3 3" />
+        <Tooltip
+          contentStyle={TOOLTIP_STYLE}
+          labelStyle={{ color: '#8b8fa3' }}
+          cursor={{ fill: 'rgba(59,130,246,0.08)' }}
+          content={({ active, payload, label }) => {
+            if (!active || !payload?.length) return null;
+            const d = payload[0].payload as {
+              revenue: number;
+              costs: number;
+              profit: number;
+              flights: number;
+              margin: number;
+            };
+            return (
+              <div style={TOOLTIP_STYLE} className="px-3 py-2">
+                <p className="font-medium text-[#e8eaed] mb-1">{label}</p>
+                <p className="text-[#8b8fa3]">
+                  Flights: <span className="font-mono text-[#e8eaed]">{d.flights}</span>
+                </p>
+                <p className="text-[#8b8fa3]">
+                  Revenue: <span className="font-mono text-emerald-400">${d.revenue.toLocaleString()}</span>
+                </p>
+                <p className="text-[#8b8fa3]">
+                  Costs: <span className="font-mono text-red-400">${d.costs.toLocaleString()}</span>
+                </p>
+                <p className="text-[#8b8fa3]">
+                  Profit: <span className="font-mono text-[#e8eaed]">${d.profit.toLocaleString()}</span>
+                </p>
+                <p className="text-[#8b8fa3]">
+                  Margin: <span className="font-mono text-[#e8eaed]">{d.margin}%</span>
+                </p>
+              </div>
+            );
+          }}
+        />
+        <Bar dataKey="profit" radius={[0, 4, 4, 0]} maxBarSize={28}>
+          {chartData.map((entry, idx) => (
+            <Cell key={idx} fill={entry.profit >= 0 ? '#22c55e' : '#ef4444'} />
+          ))}
+        </Bar>
+      </BarChart>
+    </ResponsiveContainer>
+  );
+}
+
+// ── Fleet Utilization Chart ─────────────────────────────────────
+
+function FleetUtilizationChart({ data }: { data: FleetUtilizationEntry[] }) {
+  // Transform data: X axis = month, each aircraft = a bar in the group
+  const { chartData, aircraft } = useMemo(() => {
+    // Collect all unique months across all aircraft, sorted chronologically
+    const monthSet = new Set<string>();
+    for (const ac of data) {
+      for (const m of ac.months) {
+        monthSet.add(m.month);
+      }
+    }
+    const months = Array.from(monthSet).sort();
+
+    // Build rows: one row per month, with a key per aircraft registration
+    const rows = months.map((month) => {
+      const row: Record<string, string | number> = { month };
+      for (const ac of data) {
+        const found = ac.months.find((m) => m.month === month);
+        row[ac.registration] = found ? found.hours : 0;
+      }
+      return row;
+    });
+
+    // List of aircraft (sorted by total hours desc, take top 10 to avoid clutter)
+    const acList = data
+      .sort((a, b) => b.totalHours - a.totalHours)
+      .slice(0, 10)
+      .map((ac) => ac.registration);
+
+    return { chartData: rows, aircraft: acList };
+  }, [data]);
+
+  if (chartData.length === 0 || aircraft.length === 0) {
+    return (
+      <p className="text-sm text-muted-foreground py-10 text-center">
+        No data for this period
+      </p>
+    );
+  }
+
+  return (
+    <ResponsiveContainer width="100%" height={340}>
+      <BarChart data={chartData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
+        <CartesianGrid strokeDasharray="3 3" stroke="#2a2e3f" />
+        <XAxis
+          dataKey="month"
+          tick={{ fill: '#8b8fa3', fontSize: 11 }}
+          tickLine={false}
+          axisLine={{ stroke: '#2a2e3f' }}
+        />
+        <YAxis
+          tick={{ fill: '#8b8fa3', fontSize: 12 }}
+          tickLine={false}
+          axisLine={false}
+          label={{
+            value: 'Hours',
+            angle: -90,
+            position: 'insideLeft',
+            fill: '#8b8fa3',
+            fontSize: 11,
+          }}
+        />
+        <Tooltip
+          contentStyle={TOOLTIP_STYLE}
+          labelStyle={{ color: '#8b8fa3' }}
+          cursor={{ fill: 'rgba(59,130,246,0.08)' }}
+          formatter={(value: number | string | undefined, name?: string) => [
+            `${value ?? 0} hrs`,
+            name ?? '',
+          ]}
+        />
+        <Legend wrapperStyle={{ fontSize: 12, color: '#8b8fa3' }} />
+        {aircraft.map((reg, idx) => (
+          <Bar
+            key={reg}
+            dataKey={reg}
+            name={reg}
+            fill={FLEET_COLORS[idx % FLEET_COLORS.length]}
+            radius={[4, 4, 0, 0]}
+            maxBarSize={20}
+          />
+        ))}
+      </BarChart>
+    </ResponsiveContainer>
+  );
+}
+
+// ── Print Styles ─────────────────────────────────────────────────
+
+const PRINT_STYLES = `
+@media print {
+  /* Hide sidebar and navigation */
+  [data-sidebar],
+  nav,
+  header,
+  [data-topbar],
+  .no-print {
+    display: none !important;
+  }
+
+  /* Full width content */
+  [data-sidebar-inset],
+  main,
+  .flex-1 {
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  /* White background for print */
+  body,
+  html,
+  * {
+    background: white !important;
+    color: black !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* Keep chart colors */
+  .recharts-bar-rectangle,
+  .recharts-pie-sector,
+  .recharts-cell {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Card borders for print */
+  [class*="Card"],
+  [class*="card"] {
+    border: 1px solid #ccc !important;
+    page-break-inside: avoid;
+    break-inside: avoid;
+    margin-bottom: 16px !important;
+  }
+
+  /* Page breaks between chart sections */
+  .print-break-before {
+    page-break-before: always;
+    break-before: page;
+  }
+}
+`;
+
 // ── CSV Export ───────────────────────────────────────────────────
 
 function buildCsv(
@@ -545,6 +822,8 @@ function buildCsv(
   fuelEfficiency: FuelEfficiencyEntry[],
   onTime: OnTimeData | null,
   routePopularity: RoutePopularityEntry[],
+  routeProfitability: RouteProfitabilityEntry[],
+  fleetUtilization: FleetUtilizationEntry[],
 ): string {
   const lines: string[] = [];
 
@@ -596,6 +875,24 @@ function buildCsv(
       `${r.depIcao}-${r.arrIcao},${r.depIcao},${r.arrIcao},${r.count},${Math.round(r.avgLandingRate)}`,
     );
   }
+  lines.push('');
+
+  // Route Profitability
+  lines.push('=== Route Profitability ===');
+  lines.push('Route,Departure,Arrival,Flights,Revenue,Costs,Profit,Margin %');
+  for (const r of routeProfitability) {
+    lines.push(
+      `${r.depIcao}-${r.arrIcao},${r.depIcao},${r.arrIcao},${r.flights},${r.revenue},${r.costs},${r.profit},${r.margin}`,
+    );
+  }
+  lines.push('');
+
+  // Fleet Utilization
+  lines.push('=== Fleet Utilization ===');
+  lines.push('Registration,Aircraft Type,Total Hours');
+  for (const r of fleetUtilization) {
+    lines.push(`${r.registration},${r.aircraftType},${r.totalHours}`);
+  }
 
   return lines.join('\n');
 }
@@ -625,24 +922,30 @@ export function ReportsPage() {
   const [fuelEfficiency, setFuelEfficiency] = useState<FuelEfficiencyEntry[]>([]);
   const [onTime, setOnTime] = useState<OnTimeData | null>(null);
   const [routePopularity, setRoutePopularity] = useState<RoutePopularityEntry[]>([]);
+  const [routeProfitability, setRouteProfitability] = useState<RouteProfitabilityEntry[]>([]);
+  const [fleetUtilization, setFleetUtilization] = useState<FleetUtilizationEntry[]>([]);
 
   const fetchReports = useCallback(async (from: string, to: string) => {
     setLoading(true);
     setError(null);
     try {
       const qs = `from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`;
-      const [fh, lr, fe, ot, rp] = await Promise.all([
+      const [fh, lr, fe, ot, rp, rpf, fu] = await Promise.all([
         api.get<FlightHoursEntry[]>(`/api/admin/reports/flight-hours?${qs}`),
         api.get<LandingRateData>(`/api/admin/reports/landing-rates?${qs}`),
         api.get<FuelEfficiencyEntry[]>(`/api/admin/reports/fuel-efficiency?${qs}`),
         api.get<OnTimeData>(`/api/admin/reports/on-time?${qs}`),
         api.get<RoutePopularityEntry[]>(`/api/admin/reports/route-popularity?${qs}`),
+        api.get<RouteProfitabilityEntry[]>(`/api/admin/reports/route-profitability?${qs}`),
+        api.get<FleetUtilizationEntry[]>(`/api/admin/reports/fleet-utilization?${qs}`),
       ]);
       setFlightHours(Array.isArray(fh) ? fh : []);
       setLandingRates(lr);
       setFuelEfficiency(Array.isArray(fe) ? fe : []);
       setOnTime(ot);
       setRoutePopularity(Array.isArray(rp) ? rp : []);
+      setRouteProfitability(Array.isArray(rpf) ? rpf : []);
+      setFleetUtilization(Array.isArray(fu) ? fu : []);
     } catch (err) {
       const message = err instanceof ApiError ? err.message : 'Failed to load reports';
       setError(message);
@@ -678,10 +981,22 @@ export function ReportsPage() {
   }
 
   function handleExportCsv() {
-    const csv = buildCsv(flightHours, landingRates, fuelEfficiency, onTime, routePopularity);
+    const csv = buildCsv(
+      flightHours,
+      landingRates,
+      fuelEfficiency,
+      onTime,
+      routePopularity,
+      routeProfitability,
+      fleetUtilization,
+    );
     const filename = `sma-reports_${dateFrom}_${dateTo}.csv`;
     downloadCsv(csv, filename);
     toast.success('CSV exported');
+  }
+
+  function handlePrint() {
+    window.print();
   }
 
   if (loading) {
@@ -706,16 +1021,25 @@ export function ReportsPage() {
 
   return (
     <div className="p-6">
+      {/* Inject print styles */}
+      <style dangerouslySetInnerHTML={{ __html: PRINT_STYLES }} />
+
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6">
         <h1 className="text-2xl font-semibold">Reports</h1>
-        <Button variant="outline" onClick={handleExportCsv} className="gap-2">
-          <DownloadSimple size={16} weight="bold" />
-          Export CSV
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={handlePrint} className="gap-2 no-print">
+            <Printer size={16} weight="bold" />
+            Print Report
+          </Button>
+          <Button variant="outline" onClick={handleExportCsv} className="gap-2 no-print">
+            <DownloadSimple size={16} weight="bold" />
+            Export CSV
+          </Button>
+        </div>
       </div>
 
       {/* Date Range Picker */}
-      <Card className="border-border/50 mb-6">
+      <Card className="border-border/50 mb-6 no-print">
         <CardContent className="py-4">
           <div className="flex flex-wrap items-center gap-3">
             <CalendarBlank size={18} className="text-muted-foreground" />
@@ -743,6 +1067,11 @@ export function ReportsPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Print-only date range header */}
+      <div className="hidden print:block mb-4 text-sm text-muted-foreground">
+        Report period: {dateFrom} to {dateTo}
+      </div>
 
       {/* Chart Grid */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
@@ -805,6 +1134,26 @@ export function ReportsPage() {
           </CardHeader>
           <CardContent>
             <RoutePopularityChart data={routePopularity} />
+          </CardContent>
+        </Card>
+
+        {/* 6. Route Profitability — full width */}
+        <Card className="border-border/50 lg:col-span-2 print-break-before">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">Route Profitability</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <RouteProfitabilityChart data={routeProfitability} />
+          </CardContent>
+        </Card>
+
+        {/* 7. Fleet Utilization — full width */}
+        <Card className="border-border/50 lg:col-span-2">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">Fleet Utilization</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <FleetUtilizationChart data={fleetUtilization} />
           </CardContent>
         </Card>
       </div>
