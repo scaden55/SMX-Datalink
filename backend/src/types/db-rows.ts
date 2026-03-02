@@ -33,6 +33,42 @@ export interface FinanceSummaryQueryRow {
   total_income: number;
 }
 
+/** finance.ts getRouteProfitability() — revenue vs costs per route */
+export interface RouteProfitabilityRow {
+  dep_icao: string;
+  arr_icao: string;
+  flights: number;
+  revenue: number;
+  costs: number;
+}
+
+/** finance.ts getPilotPaySummary() — per-pilot pay breakdown */
+export interface PilotPaySummaryRow {
+  pilot_id: number;
+  callsign: string;
+  pilot_name: string;
+  hours: number;
+  flights: number;
+  base_pay: number;
+  bonuses: number;
+  deductions: number;
+}
+
+/** finance.ts getRevenueByFlight() — per-flight revenue detail */
+export interface RevenueByFlightRow {
+  finance_id: number;
+  pirep_id: number;
+  flight_number: string;
+  dep_icao: string;
+  arr_icao: string;
+  aircraft_type: string;
+  cargo_lbs: number;
+  revenue: number;
+  pilot_callsign: string;
+  pilot_name: string;
+  flight_date: string;
+}
+
 // ─────────────────────────────────────────────────────────────
 // leaderboard.ts
 // ─────────────────────────────────────────────────────────────

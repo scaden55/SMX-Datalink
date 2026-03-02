@@ -56,6 +56,68 @@ export function adminFinancesRouter(): Router {
     }
   });
 
+  // GET /api/admin/finances/revenue — revenue by flight (paginated)
+  router.get('/admin/finances/revenue', authMiddleware, adminMiddleware, (req, res) => {
+    try {
+      const filters = {
+        pilotId: req.query.pilotId ? parseInt(req.query.pilotId as string) : undefined,
+        dateFrom: req.query.dateFrom as string | undefined,
+        dateTo: req.query.dateTo as string | undefined,
+      };
+      const page = Math.max(1, parseInt(req.query.page as string) || 1);
+      const pageSize = Math.min(100, Math.max(1, parseInt(req.query.pageSize as string) || 50));
+      const result = financeService.getRevenueByFlight(filters, page, pageSize);
+      res.json({ ...result, page, pageSize });
+    } catch (err) {
+      logger.error('Admin', 'Revenue by flight error', err);
+      res.status(500).json({ error: 'Failed to get revenue by flight' });
+    }
+  });
+
+  // GET /api/admin/finances/route-profit — route profitability ranking
+  router.get('/admin/finances/route-profit', authMiddleware, adminMiddleware, (req, res) => {
+    try {
+      const data = financeService.getRouteProfitability(
+        req.query.dateFrom as string | undefined,
+        req.query.dateTo as string | undefined,
+      );
+      res.json({ routes: data });
+    } catch (err) {
+      logger.error('Admin', 'Route profitability error', err);
+      res.status(500).json({ error: 'Failed to get route profitability' });
+    }
+  });
+
+  // GET /api/admin/finances/pilot-pay — pilot pay summary
+  router.get('/admin/finances/pilot-pay', authMiddleware, adminMiddleware, (req, res) => {
+    try {
+      const data = financeService.getPilotPaySummary(
+        req.query.dateFrom as string | undefined,
+        req.query.dateTo as string | undefined,
+      );
+      res.json({ pilots: data });
+    } catch (err) {
+      logger.error('Admin', 'Pilot pay summary error', err);
+      res.status(500).json({ error: 'Failed to get pilot pay summary' });
+    }
+  });
+
+  // POST /api/admin/finances/:id/void — void a finance entry
+  router.post('/admin/finances/:id/void', authMiddleware, adminMiddleware, (req, res) => {
+    try {
+      const reversalId = financeService.voidEntry(parseInt(req.params.id as string), req.user!.userId);
+      if (reversalId === null) {
+        res.status(404).json({ error: 'Finance entry not found' });
+        return;
+      }
+      auditService.log({ actorId: req.user!.userId, action: 'finance.void', targetType: 'finance', targetId: parseInt(req.params.id as string) });
+      res.json({ reversalId });
+    } catch (err) {
+      logger.error('Admin', 'Void finance entry error', err);
+      res.status(500).json({ error: 'Failed to void finance entry' });
+    }
+  });
+
   // DELETE /api/admin/finances/:id
   router.delete('/admin/finances/:id', authMiddleware, adminMiddleware, (req, res) => {
     try {
