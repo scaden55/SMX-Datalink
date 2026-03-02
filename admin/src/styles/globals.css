@@ -19,11 +19,11 @@
 
   .dark {
     /* Backgrounds */
-    --background: 228 15% 7%;        /* #0f1117 */
+    --background: 222 23% 10%;       /* #141820 — content area */
     --foreground: 220 10% 92%;       /* #e8eaed */
-    --card: 228 22% 14%;             /* #1a1d2e */
+    --card: 230 29% 15%;             /* #1c2033 */
     --card-foreground: 220 10% 92%;
-    --popover: 228 22% 14%;
+    --popover: 230 29% 15%;
     --popover-foreground: 220 10% 92%;
 
     /* Primary (blue accent) */
@@ -35,7 +35,7 @@
     --secondary-foreground: 220 10% 92%;
 
     /* Muted */
-    --muted: 228 18% 18%;
+    --muted: 226 23% 18%;            /* #232838 */
     --muted-foreground: 228 8% 55%;  /* #8b8fa3 */
 
     /* Accent */
@@ -52,7 +52,7 @@
     --ring: 217 91% 60%;             /* #3b82f6 */
 
     /* Sidebar */
-    --sidebar-background: 240 5.9% 10%;  /* #151823 */
+    --sidebar-background: 222 25% 8%;    /* #0f1219 — darker than content */
     --sidebar-foreground: 240 4.8% 95.9%;
     --sidebar-primary: 224.3 76.3% 48%;
     --sidebar-primary-foreground: 0 0% 100%;
@@ -98,4 +98,12 @@
 
 .leaflet-control-zoom a:hover {
   background: hsl(228 18% 18%) !important;
+}
+
+/* Data table row stripes */
+.table-row-stripe:nth-child(even) {
+  background-color: hsl(224 18% 11%);
+}
+.table-row-stripe:hover {
+  background-color: hsl(224 18% 14%);
 }
