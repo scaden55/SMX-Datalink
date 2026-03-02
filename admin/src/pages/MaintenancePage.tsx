@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { type ColumnDef } from '@tanstack/react-table';
 import {
   Airplane,
   Wrench,
@@ -18,7 +19,11 @@ import {
 import { api, ApiError } from '@/lib/api';
 import { toast } from '@/stores/toastStore';
 import { Skeleton } from '@/components/ui/skeleton';
-import { StatCard } from '@/components/widgets/StatCard';
+import { PageShell } from '@/components/shared/PageShell';
+import { DataTable } from '@/components/shared/DataTable';
+import { DataTableColumnHeader } from '@/components/shared/DataTableColumnHeader';
+import { DataTablePagination } from '@/components/shared/DataTablePagination';
+import { DetailPanel } from '@/components/shared/DetailPanel';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -267,6 +272,22 @@ function componentStatusBadge(status: ComponentStatus) {
   }
 }
 
+// ── Detail helper ────────────────────────────────────────────
+
+function DetailRow({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="flex items-start justify-between gap-4 py-1.5">
+      <span className="text-sm text-muted-foreground shrink-0">{label}</span>
+      <span className="text-sm text-right">{children}</span>
+    </div>
+  );
+}
+
+function formatCurrency(v: number | null): string {
+  if (v === null || v === undefined) return '--';
+  return `$${v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
 // ── Skeleton ─────────────────────────────────────────────────
 
 function TabSkeleton() {
@@ -291,6 +312,10 @@ function FleetStatusTab() {
   const [fleet, setFleet] = useState<FleetMaintenanceStatus[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+
+  // Detail panel
+  const [detailAircraft, setDetailAircraft] = useState<FleetMaintenanceStatus | null>(null);
+  const [detailOpen, setDetailOpen] = useState(false);
 
   // Adjust hours dialog
   const [adjustTarget, setAdjustTarget] = useState<FleetMaintenanceStatus | null>(null);
@@ -322,14 +347,6 @@ function FleetStatusTab() {
         a.name.toLowerCase().includes(q),
     );
   }, [fleet, search]);
-
-  const stats = useMemo(() => {
-    const total = fleet.length;
-    const active = fleet.filter((a) => a.status === 'active').length;
-    const inMaint = fleet.filter((a) => a.status === 'maintenance').length;
-    const overdue = fleet.filter((a) => a.hasOverdueChecks || a.hasOverdueADs || a.hasExpiredMEL).length;
-    return { total, active, inMaint, overdue };
-  }, [fleet]);
 
   async function handleAdjustHours() {
     if (!adjustTarget || !adjustReason.trim()) return;
@@ -371,16 +388,21 @@ function FleetStatusTab() {
 
   if (loading) return <TabSkeleton />;
 
+  function getCardBorderColor(aircraft: FleetMaintenanceStatus): string {
+    if (aircraft.hasOverdueChecks || aircraft.hasOverdueADs || aircraft.hasExpiredMEL)
+      return 'border-l-[3px] border-l-red-500';
+    if (aircraft.checksDue.some((c) => c.isInOverflight))
+      return 'border-l-[3px] border-l-amber-500';
+    return 'border-l-[3px] border-l-emerald-500';
+  }
+
+  function handleCardClick(aircraft: FleetMaintenanceStatus) {
+    setDetailAircraft(aircraft);
+    setDetailOpen(true);
+  }
+
   return (
     <div className="space-y-6">
-      {/* Stats */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard title="Total Aircraft" value={stats.total} icon={<Airplane size={22} weight="duotone" />} />
-        <StatCard title="Active" value={stats.active} icon={<CheckCircle size={22} weight="duotone" />} />
-        <StatCard title="In Maintenance" value={stats.inMaint} icon={<Wrench size={22} weight="duotone" />} />
-        <StatCard title="Overdue Items" value={stats.overdue} icon={<Warning size={22} weight="duotone" />} />
-      </div>
-
       {/* Search */}
       <div className="relative max-w-sm">
         <MagnifyingGlass size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
@@ -392,97 +414,169 @@ function FleetStatusTab() {
         />
       </div>
 
-      {/* Fleet Cards */}
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-        {filtered.length === 0 ? (
-          <p className="col-span-full text-center py-10 text-muted-foreground">No aircraft found</p>
-        ) : (
-          filtered.map((aircraft) => (
-            <Card key={aircraft.aircraftId} className="border-border/50">
-              <CardHeader className="pb-3">
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-base font-mono">{aircraft.registration}</CardTitle>
-                  <div className="flex items-center gap-2">
-                    {(aircraft.hasOverdueChecks || aircraft.hasOverdueADs || aircraft.hasExpiredMEL) && (
-                      <Warning size={16} weight="fill" className="text-red-400" />
-                    )}
-                    {fleetStatusBadge(aircraft.status)}
-                  </div>
-                </div>
-                <p className="text-sm text-muted-foreground">{aircraft.name} ({aircraft.icaoType})</p>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="grid grid-cols-2 gap-2 text-sm">
-                  <div>
-                    <p className="text-muted-foreground">Total Hours</p>
-                    <p className="font-mono font-medium">{formatHours(aircraft.totalHours)}</p>
-                  </div>
-                  <div>
-                    <p className="text-muted-foreground">Total Cycles</p>
-                    <p className="font-mono font-medium">{aircraft.totalCycles.toLocaleString()}</p>
-                  </div>
-                </div>
-
-                {/* Check status indicators */}
-                {aircraft.checksDue.length > 0 && (
-                  <div className="space-y-1">
-                    {aircraft.checksDue.map((check) => (
-                      <div key={check.checkType} className="flex items-center justify-between text-xs">
-                        <span className="font-medium">{check.checkType}-Check</span>
-                        <span className={
-                          check.isOverdue
-                            ? 'text-red-400 font-medium'
-                            : check.isInOverflight
-                            ? 'text-amber-400'
-                            : 'text-muted-foreground'
-                        }>
-                          {check.isOverdue
-                            ? 'OVERDUE'
-                            : check.remainingHours !== null
-                            ? `${formatHours(check.remainingHours)} hrs remaining`
-                            : '--'}
-                        </span>
+      <div className="flex gap-0 overflow-hidden">
+        {/* Fleet Cards */}
+        <div className={`${detailOpen ? 'w-[60%]' : 'w-full'} transition-all duration-200`}>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {filtered.length === 0 ? (
+              <p className="col-span-full text-center py-10 text-muted-foreground">No aircraft found</p>
+            ) : (
+              filtered.map((aircraft) => (
+                <Card
+                  key={aircraft.aircraftId}
+                  className={`border-border/50 cursor-pointer hover:bg-[#1f2538] transition-colors ${getCardBorderColor(aircraft)} ${
+                    detailAircraft?.aircraftId === aircraft.aircraftId ? 'bg-blue-500/10 ring-1 ring-blue-500/30' : ''
+                  }`}
+                  onClick={() => handleCardClick(aircraft)}
+                >
+                  <CardHeader className="pb-3">
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-base font-mono">{aircraft.registration}</CardTitle>
+                      <div className="flex items-center gap-2">
+                        {(aircraft.hasOverdueChecks || aircraft.hasOverdueADs || aircraft.hasExpiredMEL) && (
+                          <Warning size={16} weight="fill" className="text-red-400" />
+                        )}
+                        {fleetStatusBadge(aircraft.status)}
                       </div>
-                    ))}
-                  </div>
-                )}
+                    </div>
+                    <p className="text-sm text-muted-foreground">{aircraft.name} ({aircraft.icaoType})</p>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="grid grid-cols-2 gap-2 text-sm">
+                      <div>
+                        <p className="text-muted-foreground">Total Hours</p>
+                        <p className="font-mono font-medium">{formatHours(aircraft.totalHours)}</p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground">Total Cycles</p>
+                        <p className="font-mono font-medium">{aircraft.totalCycles.toLocaleString()}</p>
+                      </div>
+                    </div>
 
-                {aircraft.nextCheckType && (
-                  <p className="text-xs text-muted-foreground">
-                    Next: {aircraft.nextCheckType}-Check in {formatHours(aircraft.nextCheckDueIn)} hrs
-                  </p>
-                )}
+                    {/* Check status indicators */}
+                    {aircraft.checksDue.length > 0 && (
+                      <div className="space-y-1">
+                        {aircraft.checksDue.map((check) => (
+                          <div key={check.checkType} className="flex items-center justify-between text-xs">
+                            <span className="font-medium">{check.checkType}-Check</span>
+                            <span className={
+                              check.isOverdue
+                                ? 'text-red-400 font-medium'
+                                : check.isInOverflight
+                                ? 'text-amber-400'
+                                : 'text-muted-foreground'
+                            }>
+                              {check.isOverdue
+                                ? 'OVERDUE'
+                                : check.remainingHours !== null
+                                ? `${formatHours(check.remainingHours)} hrs remaining`
+                                : '--'}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
 
-                {/* Actions */}
-                <div className="flex gap-2 pt-1">
+                    {aircraft.nextCheckType && (
+                      <p className="text-xs text-muted-foreground">
+                        Next: {aircraft.nextCheckType}-Check in {formatHours(aircraft.nextCheckDueIn)} hrs
+                      </p>
+                    )}
+                  </CardContent>
+                </Card>
+              ))
+            )}
+          </div>
+        </div>
+
+        {/* Detail Panel */}
+        {detailOpen && detailAircraft && (
+          <DetailPanel
+            open={detailOpen}
+            onClose={() => { setDetailOpen(false); setDetailAircraft(null); }}
+            title={detailAircraft.registration}
+            subtitle={`${detailAircraft.name} (${detailAircraft.icaoType})`}
+            actions={
+              <>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-7 text-xs"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setAdjustTarget(detailAircraft);
+                    setAdjustHours(detailAircraft.totalHours.toString());
+                    setAdjustCycles(detailAircraft.totalCycles.toString());
+                  }}
+                >
+                  <PencilSimple size={12} /> Adjust Hours
+                </Button>
+                {detailAircraft.status === 'maintenance' && (
                   <Button
                     variant="outline"
                     size="sm"
-                    className="text-xs"
-                    onClick={() => {
-                      setAdjustTarget(aircraft);
-                      setAdjustHours(aircraft.totalHours.toString());
-                      setAdjustCycles(aircraft.totalCycles.toString());
-                    }}
+                    className="h-7 text-xs"
+                    onClick={() => handleReturnToService(detailAircraft)}
                   >
-                    <PencilSimple size={12} />
-                    Adjust Hours
+                    <ArrowClockwise size={12} /> Return to Service
                   </Button>
-                  {aircraft.status === 'maintenance' && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="text-xs"
-                      onClick={() => handleReturnToService(aircraft)}
-                    >
-                      <ArrowClockwise size={12} />
-                      Return to Service
-                    </Button>
-                  )}
+                )}
+              </>
+            }
+          >
+            <div className="space-y-4">
+              <div className="space-y-1">
+                <DetailRow label="Status">{fleetStatusBadge(detailAircraft.status)}</DetailRow>
+                <DetailRow label="Total Hours"><span className="font-mono">{formatHours(detailAircraft.totalHours)}</span></DetailRow>
+                <DetailRow label="Total Cycles"><span className="font-mono">{detailAircraft.totalCycles.toLocaleString()}</span></DetailRow>
+              </div>
+
+              {detailAircraft.checksDue.length > 0 && (
+                <div>
+                  <h3 className="text-xs uppercase tracking-wider text-muted-foreground mb-2">Checks Due</h3>
+                  <div className="space-y-2">
+                    {detailAircraft.checksDue.map((check) => (
+                      <div key={check.checkType} className="rounded-md bg-[#141820] p-2.5 border border-border/30">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-sm font-medium">{check.checkType}-Check</span>
+                          {check.isOverdue ? (
+                            <Badge className="bg-red-500/15 text-red-400 border-red-500/30">Overdue</Badge>
+                          ) : check.isInOverflight ? (
+                            <Badge className="bg-amber-500/15 text-amber-400 border-amber-500/30">Overflight</Badge>
+                          ) : (
+                            <Badge className="bg-emerald-500/15 text-emerald-400 border-emerald-500/30">OK</Badge>
+                          )}
+                        </div>
+                        <div className="grid grid-cols-2 gap-1 text-xs text-muted-foreground">
+                          {check.remainingHours !== null && (
+                            <span>Hrs remaining: <span className="font-mono text-foreground">{formatHours(check.remainingHours)}</span></span>
+                          )}
+                          {check.remainingCycles !== null && (
+                            <span>Cycles remaining: <span className="font-mono text-foreground">{check.remainingCycles}</span></span>
+                          )}
+                          {check.dueAtDate && (
+                            <span>Due by: <span className="text-foreground">{formatDate(check.dueAtDate)}</span></span>
+                          )}
+                          <span>Overflight: <span className="font-mono text-foreground">{check.overflightPct}%</span></span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              </CardContent>
-            </Card>
-          ))
+              )}
+
+              {detailAircraft.hasOverdueADs && (
+                <div className="rounded-md bg-red-500/10 border border-red-500/30 p-2.5">
+                  <p className="text-xs text-red-400 font-medium">Overdue ADs on this aircraft</p>
+                </div>
+              )}
+              {detailAircraft.hasExpiredMEL && (
+                <div className="rounded-md bg-red-500/10 border border-red-500/30 p-2.5">
+                  <p className="text-xs text-red-400 font-medium">Expired MEL items on this aircraft</p>
+                </div>
+              )}
+            </div>
+          </DetailPanel>
         )}
       </div>
 
@@ -537,12 +631,16 @@ function MaintenanceLogTab() {
   const [loading, setLoading] = useState(true);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
-  const pageSize = 50;
+  const [pageSize, setPageSize] = useState(50);
 
   // Filters
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
+
+  // Detail panel
+  const [detailEntry, setDetailEntry] = useState<MaintenanceLogEntry | null>(null);
+  const [detailOpen, setDetailOpen] = useState(false);
 
   // Dialogs
   const [createOpen, setCreateOpen] = useState(false);
@@ -686,15 +784,103 @@ function MaintenanceLogTab() {
     }
   }
 
-  const totalPages = Math.max(1, Math.ceil(total / pageSize));
-
-  if (loading) return <TabSkeleton />;
-
   const logTypes: MaintenanceLogType[] = ['A', 'B', 'C', 'D', 'LINE', 'UNSCHEDULED', 'AD', 'MEL', 'SFP'];
   const logStatuses: MaintenanceLogStatus[] = ['scheduled', 'in_progress', 'completed', 'deferred'];
 
+  // Keep detail panel in sync
+  useEffect(() => {
+    if (detailEntry) {
+      const updated = filtered.find((e) => e.id === detailEntry.id);
+      if (updated) setDetailEntry(updated);
+      else { setDetailEntry(null); setDetailOpen(false); }
+    }
+  }, [filtered]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const logColumns: ColumnDef<MaintenanceLogEntry, unknown>[] = useMemo(() => [
+    {
+      accessorKey: 'createdAt',
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Date" />,
+      cell: ({ row }) => <span className="text-muted-foreground">{formatDate(row.original.createdAt)}</span>,
+      size: 100,
+    },
+    {
+      accessorKey: 'aircraftRegistration',
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Aircraft" />,
+      cell: ({ row }) => <span className="font-mono">{row.original.aircraftRegistration ?? `#${row.original.aircraftId}`}</span>,
+      size: 100,
+    },
+    {
+      accessorKey: 'checkType',
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Type" />,
+      cell: ({ row }) => <Badge variant="secondary" className="text-xs">{row.original.checkType}</Badge>,
+      size: 90,
+    },
+    {
+      accessorKey: 'title',
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Title" />,
+      cell: ({ row }) => <span className="max-w-[200px] truncate block">{row.original.title}</span>,
+    },
+    {
+      accessorKey: 'performedBy',
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Performed By" />,
+      cell: ({ row }) => <span className="text-muted-foreground">{row.original.performedBy ?? '--'}</span>,
+      size: 120,
+    },
+    {
+      accessorKey: 'cost',
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Cost" />,
+      cell: ({ row }) => <span className="font-mono">{formatCurrency(row.original.cost)}</span>,
+      size: 90,
+    },
+    {
+      accessorKey: 'status',
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Status" />,
+      cell: ({ row }) => logStatusBadge(row.original.status),
+      size: 110,
+    },
+    {
+      id: 'actions',
+      enableHiding: false,
+      enableSorting: false,
+      size: 50,
+      cell: ({ row }) => {
+        const entry = row.original;
+        return (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => e.stopPropagation()}>
+                <DotsThreeVertical size={16} weight="bold" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => openEdit(entry)}>
+                <PencilSimple size={14} /> Edit
+              </DropdownMenuItem>
+              {entry.status !== 'completed' && (
+                <DropdownMenuItem onClick={() => handleComplete(entry)}>
+                  <CheckCircle size={14} className="text-emerald-400" /> Complete
+                </DropdownMenuItem>
+              )}
+              <DropdownMenuSeparator />
+              <DropdownMenuItem className="text-red-400 focus:text-red-400" onClick={() => setDeleteEntry(entry)}>
+                <Trash size={14} /> Delete
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        );
+      },
+    },
+  ], []);
+
+  function handleLogRowClick(entry: MaintenanceLogEntry) {
+    setDetailEntry(entry);
+    setDetailOpen(true);
+  }
+
+  if (loading) return <TabSkeleton />;
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Toolbar */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-1 items-center gap-3">
@@ -731,85 +917,78 @@ function MaintenanceLogTab() {
         </Button>
       </div>
 
-      {/* Table */}
-      <div className="rounded-md border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-[100px]">Date</TableHead>
-              <TableHead className="w-[100px]">Aircraft</TableHead>
-              <TableHead className="w-[100px]">Type</TableHead>
-              <TableHead>Title</TableHead>
-              <TableHead className="w-[110px]">Status</TableHead>
-              <TableHead className="w-[120px]">Performed By</TableHead>
-              <TableHead className="w-[50px]" />
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filtered.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={7} className="text-center py-10 text-muted-foreground">
-                  No log entries found
-                </TableCell>
-              </TableRow>
-            ) : (
-              filtered.map((entry) => (
-                <TableRow key={entry.id}>
-                  <TableCell className="text-sm text-muted-foreground">{formatDate(entry.createdAt)}</TableCell>
-                  <TableCell className="font-mono text-sm">{entry.aircraftRegistration ?? `#${entry.aircraftId}`}</TableCell>
-                  <TableCell>
-                    <Badge variant="secondary" className="text-xs">{entry.checkType}</Badge>
-                  </TableCell>
-                  <TableCell className="max-w-[200px] truncate">{entry.title}</TableCell>
-                  <TableCell>{logStatusBadge(entry.status)}</TableCell>
-                  <TableCell className="text-sm text-muted-foreground">{entry.performedBy ?? '--'}</TableCell>
-                  <TableCell>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                          <DotsThreeVertical size={16} weight="bold" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => openEdit(entry)}>
-                          <PencilSimple size={14} /> Edit
-                        </DropdownMenuItem>
-                        {entry.status !== 'completed' && (
-                          <DropdownMenuItem onClick={() => handleComplete(entry)}>
-                            <CheckCircle size={14} className="text-emerald-400" /> Complete
-                          </DropdownMenuItem>
-                        )}
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem className="text-red-400 focus:text-red-400" onClick={() => setDeleteEntry(entry)}>
-                          <Trash size={14} /> Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
+      {/* Split view: DataTable + detail panel */}
+      <div className="flex flex-1 gap-0 overflow-hidden rounded-md border border-border/50">
+        <div className={`${detailOpen ? 'w-[55%]' : 'w-full'} flex flex-col transition-all duration-200`}>
+          <DataTable
+            columns={logColumns}
+            data={filtered}
+            onRowClick={handleLogRowClick}
+            selectedRowId={detailEntry?.id}
+            loading={false}
+            emptyMessage="No log entries found"
+            getRowId={(row) => String(row.id)}
+          />
+        </div>
+        {detailOpen && detailEntry && (
+          <DetailPanel
+            open={detailOpen}
+            onClose={() => { setDetailOpen(false); setDetailEntry(null); }}
+            title={detailEntry.title}
+            subtitle={`${detailEntry.checkType} -- ${detailEntry.aircraftRegistration ?? `#${detailEntry.aircraftId}`}`}
+            actions={
+              <>
+                <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => openEdit(detailEntry)}>
+                  <PencilSimple size={12} /> Edit
+                </Button>
+                {detailEntry.status !== 'completed' && (
+                  <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => handleComplete(detailEntry)}>
+                    <CheckCircle size={12} className="text-emerald-400" /> Complete
+                  </Button>
+                )}
+              </>
+            }
+          >
+            <div className="space-y-4">
+              <div className="space-y-1">
+                <DetailRow label="Status">{logStatusBadge(detailEntry.status)}</DetailRow>
+                <DetailRow label="Type"><Badge variant="secondary" className="text-xs">{detailEntry.checkType}</Badge></DetailRow>
+                <DetailRow label="Aircraft"><span className="font-mono">{detailEntry.aircraftRegistration ?? `#${detailEntry.aircraftId}`}</span></DetailRow>
+                <DetailRow label="Date">{formatDate(detailEntry.createdAt)}</DetailRow>
+                <DetailRow label="Performed By">{detailEntry.performedBy ?? '--'}</DetailRow>
+                <DetailRow label="Cost"><span className="font-mono">{formatCurrency(detailEntry.cost)}</span></DetailRow>
+                {detailEntry.hoursAtCheck !== null && (
+                  <DetailRow label="Hours at Check"><span className="font-mono">{formatHours(detailEntry.hoursAtCheck)}</span></DetailRow>
+                )}
+                {detailEntry.cyclesAtCheck !== null && (
+                  <DetailRow label="Cycles at Check"><span className="font-mono">{detailEntry.cyclesAtCheck}</span></DetailRow>
+                )}
+              </div>
+              {detailEntry.description && (
+                <div>
+                  <h3 className="text-xs uppercase tracking-wider text-muted-foreground mb-1">Description</h3>
+                  <p className="text-sm whitespace-pre-wrap">{detailEntry.description}</p>
+                </div>
+              )}
+              {detailEntry.sfpDestination && (
+                <div className="space-y-1">
+                  <DetailRow label="SFP Destination">{detailEntry.sfpDestination}</DetailRow>
+                  <DetailRow label="SFP Expiry">{formatDate(detailEntry.sfpExpiry)}</DetailRow>
+                </div>
+              )}
+            </div>
+          </DetailPanel>
+        )}
       </div>
 
       {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between">
-          <p className="text-sm text-muted-foreground">
-            Showing {(page - 1) * pageSize + 1}-{Math.min(page * pageSize, total)} of {total}
-          </p>
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page <= 1}>
-              Previous
-            </Button>
-            <div className="flex items-center gap-1 text-sm text-muted-foreground">Page {page} of {totalPages}</div>
-            <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page >= totalPages}>
-              Next
-            </Button>
-          </div>
-        </div>
-      )}
+      <DataTablePagination
+        page={page}
+        pageSize={pageSize}
+        total={total}
+        onPageChange={setPage}
+        onPageSizeChange={setPageSize}
+      />
 
       {/* Create / Edit Dialog */}
       <Dialog
@@ -1040,10 +1219,77 @@ function CheckSchedulesTab() {
 
   const checkTypes: MaintenanceCheckType[] = ['A', 'B', 'C', 'D'];
 
+  const scheduleColumns: ColumnDef<MaintenanceCheckSchedule, unknown>[] = useMemo(() => [
+    {
+      accessorKey: 'icaoType',
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Aircraft Type" />,
+      cell: ({ row }) => <span className="font-mono font-medium">{row.original.icaoType}</span>,
+      size: 110,
+    },
+    {
+      accessorKey: 'checkType',
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Check Type" />,
+      cell: ({ row }) => <Badge variant="secondary">{row.original.checkType}-Check</Badge>,
+      size: 110,
+    },
+    {
+      accessorKey: 'intervalHours',
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Interval Hours" />,
+      cell: ({ row }) => <span className="font-mono">{formatHours(row.original.intervalHours)}</span>,
+    },
+    {
+      accessorKey: 'intervalCycles',
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Interval Cycles" />,
+      cell: ({ row }) => <span className="font-mono">{row.original.intervalCycles?.toLocaleString() ?? '--'}</span>,
+    },
+    {
+      accessorKey: 'intervalMonths',
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Interval Months" />,
+      cell: ({ row }) => <span className="font-mono">{row.original.intervalMonths ?? '--'}</span>,
+    },
+    {
+      accessorKey: 'overflightPct',
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Overflight %" />,
+      cell: ({ row }) => <span className="font-mono">{row.original.overflightPct}%</span>,
+    },
+    {
+      accessorKey: 'description',
+      header: 'Description',
+      cell: ({ row }) => <span className="text-muted-foreground max-w-[200px] truncate block">{row.original.description ?? '--'}</span>,
+    },
+    {
+      id: 'actions',
+      enableHiding: false,
+      enableSorting: false,
+      size: 50,
+      cell: ({ row }) => {
+        const s = row.original;
+        return (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => e.stopPropagation()}>
+                <DotsThreeVertical size={16} weight="bold" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => openEdit(s)}>
+                <PencilSimple size={14} /> Edit
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem className="text-red-400 focus:text-red-400" onClick={() => setDeleteSchedule(s)}>
+                <Trash size={14} /> Delete
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        );
+      },
+    },
+  ], []);
+
   if (loading) return <TabSkeleton />;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="relative max-w-sm flex-1">
           <MagnifyingGlass size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
@@ -1054,61 +1300,13 @@ function CheckSchedulesTab() {
         </Button>
       </div>
 
-      <div className="rounded-md border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-[100px]">ICAO Type</TableHead>
-              <TableHead className="w-[100px]">Check Type</TableHead>
-              <TableHead>Interval (hrs)</TableHead>
-              <TableHead>Interval (cycles)</TableHead>
-              <TableHead>Interval (months)</TableHead>
-              <TableHead>Overflight %</TableHead>
-              <TableHead>Est. Duration</TableHead>
-              <TableHead className="w-[50px]" />
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filtered.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={8} className="text-center py-10 text-muted-foreground">
-                  No check schedules found
-                </TableCell>
-              </TableRow>
-            ) : (
-              filtered.map((s) => (
-                <TableRow key={s.id}>
-                  <TableCell className="font-mono font-medium">{s.icaoType}</TableCell>
-                  <TableCell><Badge variant="secondary">{s.checkType}-Check</Badge></TableCell>
-                  <TableCell className="font-mono text-sm">{formatHours(s.intervalHours)}</TableCell>
-                  <TableCell className="font-mono text-sm">{s.intervalCycles?.toLocaleString() ?? '--'}</TableCell>
-                  <TableCell className="font-mono text-sm">{s.intervalMonths ?? '--'}</TableCell>
-                  <TableCell className="font-mono text-sm">{s.overflightPct}%</TableCell>
-                  <TableCell className="font-mono text-sm">{s.estimatedDurationHours ? `${s.estimatedDurationHours}h` : '--'}</TableCell>
-                  <TableCell>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                          <DotsThreeVertical size={16} weight="bold" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => openEdit(s)}>
-                          <PencilSimple size={14} /> Edit
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem className="text-red-400 focus:text-red-400" onClick={() => setDeleteSchedule(s)}>
-                          <Trash size={14} /> Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </div>
+      <DataTable
+        columns={scheduleColumns}
+        data={filtered}
+        loading={false}
+        emptyMessage="No check schedules found"
+        getRowId={(row) => String(row.id)}
+      />
 
       {/* Create / Edit Dialog */}
       <Dialog
@@ -1215,7 +1413,7 @@ function AirworthinessDirectivesTab() {
   const [loading, setLoading] = useState(true);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
-  const pageSize = 50;
+  const [pageSize, setPageSize] = useState(50);
 
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -1366,13 +1564,77 @@ function AirworthinessDirectivesTab() {
     }
   }
 
-  const totalPages = Math.max(1, Math.ceil(total / pageSize));
   const adStatuses: ADComplianceStatus[] = ['open', 'complied', 'recurring', 'not_applicable'];
+
+  const adColumns: ColumnDef<AirworthinessDirective, unknown>[] = useMemo(() => [
+    {
+      accessorKey: 'adNumber',
+      header: ({ column }) => <DataTableColumnHeader column={column} title="AD Number" />,
+      cell: ({ row }) => <span className="font-mono font-medium">{row.original.adNumber}</span>,
+      size: 120,
+    },
+    {
+      accessorKey: 'aircraftRegistration',
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Aircraft" />,
+      cell: ({ row }) => <span className="font-mono">{row.original.aircraftRegistration ?? `#${row.original.aircraftId}`}</span>,
+      size: 100,
+    },
+    {
+      accessorKey: 'title',
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Title" />,
+      cell: ({ row }) => <span className="max-w-[200px] truncate block">{row.original.title}</span>,
+    },
+    {
+      accessorKey: 'complianceStatus',
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Status" />,
+      cell: ({ row }) => adStatusBadge(row.original.complianceStatus),
+      size: 110,
+    },
+    {
+      accessorKey: 'complianceDate',
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Compliance Date" />,
+      cell: ({ row }) => <span className="text-muted-foreground">{formatDate(row.original.complianceDate)}</span>,
+      size: 120,
+    },
+    {
+      accessorKey: 'nextDueDate',
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Next Due" />,
+      cell: ({ row }) => <span className="text-muted-foreground">{formatDate(row.original.nextDueDate)}</span>,
+      size: 100,
+    },
+    {
+      id: 'actions',
+      enableHiding: false,
+      enableSorting: false,
+      size: 50,
+      cell: ({ row }) => {
+        const ad = row.original;
+        return (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => e.stopPropagation()}>
+                <DotsThreeVertical size={16} weight="bold" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => openEdit(ad)}>
+                <PencilSimple size={14} /> Edit
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem className="text-red-400 focus:text-red-400" onClick={() => setDeleteAD(ad)}>
+                <Trash size={14} /> Delete
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        );
+      },
+    },
+  ], []);
 
   if (loading) return <TabSkeleton />;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-1 items-center gap-3">
           <div className="relative max-w-sm flex-1">
@@ -1396,72 +1658,21 @@ function AirworthinessDirectivesTab() {
         </Button>
       </div>
 
-      <div className="rounded-md border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-[120px]">AD Number</TableHead>
-              <TableHead>Title</TableHead>
-              <TableHead className="w-[100px]">Aircraft</TableHead>
-              <TableHead className="w-[110px]">Status</TableHead>
-              <TableHead className="w-[100px]">Due Date</TableHead>
-              <TableHead className="w-[100px]">Due Hours</TableHead>
-              <TableHead className="w-[50px]" />
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filtered.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={7} className="text-center py-10 text-muted-foreground">
-                  No airworthiness directives found
-                </TableCell>
-              </TableRow>
-            ) : (
-              filtered.map((ad) => (
-                <TableRow key={ad.id}>
-                  <TableCell className="font-mono font-medium text-sm">{ad.adNumber}</TableCell>
-                  <TableCell className="max-w-[200px] truncate">{ad.title}</TableCell>
-                  <TableCell className="font-mono text-sm">{ad.aircraftRegistration ?? `#${ad.aircraftId}`}</TableCell>
-                  <TableCell>{adStatusBadge(ad.complianceStatus)}</TableCell>
-                  <TableCell className="text-sm text-muted-foreground">{formatDate(ad.nextDueDate)}</TableCell>
-                  <TableCell className="font-mono text-sm">{formatHours(ad.nextDueHours)}</TableCell>
-                  <TableCell>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                          <DotsThreeVertical size={16} weight="bold" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => openEdit(ad)}>
-                          <PencilSimple size={14} /> Edit
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem className="text-red-400 focus:text-red-400" onClick={() => setDeleteAD(ad)}>
-                          <Trash size={14} /> Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </div>
+      <DataTable
+        columns={adColumns}
+        data={filtered}
+        loading={false}
+        emptyMessage="No airworthiness directives found"
+        getRowId={(row) => String(row.id)}
+      />
 
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between">
-          <p className="text-sm text-muted-foreground">
-            Showing {(page - 1) * pageSize + 1}-{Math.min(page * pageSize, total)} of {total}
-          </p>
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page <= 1}>Previous</Button>
-            <div className="flex items-center gap-1 text-sm text-muted-foreground">Page {page} of {totalPages}</div>
-            <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page >= totalPages}>Next</Button>
-          </div>
-        </div>
-      )}
+      <DataTablePagination
+        page={page}
+        pageSize={pageSize}
+        total={total}
+        onPageChange={setPage}
+        onPageSizeChange={setPageSize}
+      />
 
       {/* Create / Edit Dialog */}
       <Dialog
@@ -1573,7 +1784,7 @@ function MELDeferralsTab() {
   const [loading, setLoading] = useState(true);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
-  const pageSize = 50;
+  const [pageSize, setPageSize] = useState(50);
 
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -1732,14 +1943,89 @@ function MELDeferralsTab() {
     }
   }
 
-  const totalPages = Math.max(1, Math.ceil(total / pageSize));
   const melCategories: MELCategory[] = ['A', 'B', 'C', 'D'];
   const melStatuses: MELStatus[] = ['open', 'rectified', 'expired'];
+
+  const melColumns: ColumnDef<MELDeferral, unknown>[] = useMemo(() => [
+    {
+      accessorKey: 'itemNumber',
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Item #" />,
+      cell: ({ row }) => <span className="font-mono font-medium">{row.original.itemNumber}</span>,
+      size: 100,
+    },
+    {
+      accessorKey: 'aircraftRegistration',
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Aircraft" />,
+      cell: ({ row }) => <span className="font-mono">{row.original.aircraftRegistration ?? `#${row.original.aircraftId}`}</span>,
+      size: 100,
+    },
+    {
+      accessorKey: 'title',
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Title" />,
+      cell: ({ row }) => <span className="max-w-[200px] truncate block">{row.original.title}</span>,
+    },
+    {
+      accessorKey: 'category',
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Category" />,
+      cell: ({ row }) => <Badge variant="secondary">Cat {row.original.category}</Badge>,
+      size: 90,
+    },
+    {
+      accessorKey: 'deferralDate',
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Deferral Date" />,
+      cell: ({ row }) => <span className="text-muted-foreground">{formatDate(row.original.deferralDate)}</span>,
+      size: 110,
+    },
+    {
+      accessorKey: 'expiryDate',
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Expiry Date" />,
+      cell: ({ row }) => <span className="text-muted-foreground">{formatDate(row.original.expiryDate)}</span>,
+      size: 110,
+    },
+    {
+      accessorKey: 'status',
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Status" />,
+      cell: ({ row }) => melStatusBadge(row.original.status),
+      size: 100,
+    },
+    {
+      id: 'actions',
+      enableHiding: false,
+      enableSorting: false,
+      size: 50,
+      cell: ({ row }) => {
+        const mel = row.original;
+        return (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => e.stopPropagation()}>
+                <DotsThreeVertical size={16} weight="bold" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => openEdit(mel)}>
+                <PencilSimple size={14} /> Edit
+              </DropdownMenuItem>
+              {mel.status === 'open' && (
+                <DropdownMenuItem onClick={() => handleRectify(mel)}>
+                  <CheckCircle size={14} className="text-emerald-400" /> Rectify
+                </DropdownMenuItem>
+              )}
+              <DropdownMenuSeparator />
+              <DropdownMenuItem className="text-red-400 focus:text-red-400" onClick={() => setDeleteMEL(mel)}>
+                <Trash size={14} /> Delete
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        );
+      },
+    },
+  ], []);
 
   if (loading) return <TabSkeleton />;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-1 items-center gap-3">
           <div className="relative max-w-sm flex-1">
@@ -1774,79 +2060,21 @@ function MELDeferralsTab() {
         </Button>
       </div>
 
-      <div className="rounded-md border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-[100px]">Item</TableHead>
-              <TableHead>Title</TableHead>
-              <TableHead className="w-[100px]">Aircraft</TableHead>
-              <TableHead className="w-[80px]">Category</TableHead>
-              <TableHead className="w-[100px]">Deferred</TableHead>
-              <TableHead className="w-[100px]">Expiry</TableHead>
-              <TableHead className="w-[100px]">Status</TableHead>
-              <TableHead className="w-[50px]" />
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filtered.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={8} className="text-center py-10 text-muted-foreground">
-                  No MEL deferrals found
-                </TableCell>
-              </TableRow>
-            ) : (
-              filtered.map((mel) => (
-                <TableRow key={mel.id}>
-                  <TableCell className="font-mono text-sm font-medium">{mel.itemNumber}</TableCell>
-                  <TableCell className="max-w-[200px] truncate">{mel.title}</TableCell>
-                  <TableCell className="font-mono text-sm">{mel.aircraftRegistration ?? `#${mel.aircraftId}`}</TableCell>
-                  <TableCell><Badge variant="secondary">Cat {mel.category}</Badge></TableCell>
-                  <TableCell className="text-sm text-muted-foreground">{formatDate(mel.deferralDate)}</TableCell>
-                  <TableCell className="text-sm text-muted-foreground">{formatDate(mel.expiryDate)}</TableCell>
-                  <TableCell>{melStatusBadge(mel.status)}</TableCell>
-                  <TableCell>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                          <DotsThreeVertical size={16} weight="bold" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => openEdit(mel)}>
-                          <PencilSimple size={14} /> Edit
-                        </DropdownMenuItem>
-                        {mel.status === 'open' && (
-                          <DropdownMenuItem onClick={() => handleRectify(mel)}>
-                            <CheckCircle size={14} className="text-emerald-400" /> Rectify
-                          </DropdownMenuItem>
-                        )}
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem className="text-red-400 focus:text-red-400" onClick={() => setDeleteMEL(mel)}>
-                          <Trash size={14} /> Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </div>
+      <DataTable
+        columns={melColumns}
+        data={filtered}
+        loading={false}
+        emptyMessage="No MEL deferrals found"
+        getRowId={(row) => String(row.id)}
+      />
 
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between">
-          <p className="text-sm text-muted-foreground">
-            Showing {(page - 1) * pageSize + 1}-{Math.min(page * pageSize, total)} of {total}
-          </p>
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page <= 1}>Previous</Button>
-            <div className="flex items-center gap-1 text-sm text-muted-foreground">Page {page} of {totalPages}</div>
-            <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page >= totalPages}>Next</Button>
-          </div>
-        </div>
-      )}
+      <DataTablePagination
+        page={page}
+        pageSize={pageSize}
+        total={total}
+        onPageChange={setPage}
+        onPageSizeChange={setPageSize}
+      />
 
       {/* Create / Edit Dialog */}
       <Dialog
@@ -2384,9 +2612,10 @@ export function MaintenancePage() {
   }
 
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-semibold mb-6">Maintenance</h1>
-
+    <PageShell
+      title="Maintenance"
+      subtitle="Fleet maintenance and compliance"
+    >
       <Tabs value={activeTab} onValueChange={handleTabChange}>
         <TabsList className="mb-6 flex-wrap h-auto gap-1">
           <TabsTrigger value="fleet" className="gap-1.5">
@@ -2428,6 +2657,6 @@ export function MaintenancePage() {
           {visited.has('components') && <ComponentsTab />}
         </TabsContent>
       </Tabs>
-    </div>
+    </PageShell>
   );
 }
