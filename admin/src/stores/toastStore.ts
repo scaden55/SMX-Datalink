@@ -1,31 +1,10 @@
-import { create } from 'zustand';
+import { toast as sonnerToast } from 'sonner';
 
-interface Toast {
-  id: string;
-  type: 'success' | 'error' | 'warning' | 'info';
-  message: string;
-  duration: number;
-}
-
-interface ToastState {
-  toasts: Toast[];
-  addToast: (toast: Omit<Toast, 'id'>) => void;
-  removeToast: (id: string) => void;
-}
-
-export const useToastStore = create<ToastState>((set) => ({
-  toasts: [],
-  addToast: (t) => {
-    const id = Math.random().toString(36).slice(2);
-    set((s) => ({ toasts: [...s.toasts, { ...t, id }] }));
-    setTimeout(() => set((s) => ({ toasts: s.toasts.filter((x) => x.id !== id) })), t.duration);
-  },
-  removeToast: (id) => set((s) => ({ toasts: s.toasts.filter((x) => x.id !== id) })),
-}));
-
+// Thin wrapper preserving the existing toast.success/error/warning/info API.
+// All pages import { toast } from '@/stores/toastStore' — no changes needed.
 export const toast = {
-  success: (message: string) => useToastStore.getState().addToast({ type: 'success', message, duration: 5000 }),
-  error: (message: string) => useToastStore.getState().addToast({ type: 'error', message, duration: 7000 }),
-  warning: (message: string) => useToastStore.getState().addToast({ type: 'warning', message, duration: 6000 }),
-  info: (message: string) => useToastStore.getState().addToast({ type: 'info', message, duration: 5000 }),
+  success: (message: string) => sonnerToast.success(message),
+  error: (message: string) => sonnerToast.error(message),
+  warning: (message: string) => sonnerToast.warning(message),
+  info: (message: string) => sonnerToast.info(message),
 };

@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { Toaster } from 'sonner';
 import { useAuthStore } from '@/stores/authStore';
-import { ToastContainer } from '@/components/ToastContainer';
 import { AuthGuard } from '@/components/auth/AuthGuard';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { LoginPage } from '@/pages/LoginPage';
@@ -26,7 +26,13 @@ export function App() {
 
   return (
     <BrowserRouter basename="/admin">
-      <ToastContainer />
+      <Toaster
+        position="bottom-right"
+        toastOptions={{
+          style: { background: '#1c2033', border: '1px solid #2a2e3f', color: '#e8eaed' },
+        }}
+        richColors
+      />
       <Routes>
         <Route path="/login" element={<LoginPage />} />
         <Route element={<AuthGuard><DashboardLayout /></AuthGuard>}>
