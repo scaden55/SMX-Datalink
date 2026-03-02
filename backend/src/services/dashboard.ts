@@ -1,11 +1,17 @@
 import type Database from 'better-sqlite3';
 
 // ── Return type ─────────────────────────────────────────────────
+export interface FlightsPerDay {
+  day: number;
+  count: number;
+}
+
 export interface DashboardData {
   activeFlights: number;
   pendingPireps: number;
   fleetHealthPct: number;
   monthlyRevenue: number;
+  flightsPerDay: FlightsPerDay[];
   recentFlights: RecentFlight[];
   maintenanceAlerts: MaintenanceAlert[];
   pilotActivity: PilotActivity[];
@@ -145,7 +151,22 @@ export function getDashboardData(db: Database.Database): DashboardData {
     createdAt: r.created_at,
   }));
 
-  // 6. Maintenance alerts — open MEL deferrals + scheduled/in-progress maintenance
+  // 6. Flights per day — current month, zero-filled
+  const now = new Date();
+  const daysInMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 0)).getUTCDate();
+  const flightDayRows = db.prepare(`
+    SELECT CAST(strftime('%d', created_at) AS INTEGER) AS day, COUNT(*) AS cnt
+    FROM logbook
+    WHERE created_at >= ?
+    GROUP BY day
+  `).all(mStart) as Array<{ day: number; cnt: number }>;
+  const dayMap = new Map(flightDayRows.map(r => [r.day, r.cnt]));
+  const flightsPerDay: FlightsPerDay[] = [];
+  for (let d = 1; d <= daysInMonth; d++) {
+    flightsPerDay.push({ day: d, count: dayMap.get(d) ?? 0 });
+  }
+
+  // 7. Maintenance alerts — open MEL deferrals + scheduled/in-progress maintenance
   const maintenanceAlerts: MaintenanceAlert[] = [];
   try {
     const melRows = db.prepare(`
@@ -242,6 +263,7 @@ export function getDashboardData(db: Database.Database): DashboardData {
     pendingPireps,
     fleetHealthPct,
     monthlyRevenue,
+    flightsPerDay,
     recentFlights,
     maintenanceAlerts,
     pilotActivity,

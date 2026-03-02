@@ -1,13 +1,4 @@
-import { Airplane, ClipboardText } from '@phosphor-icons/react';
-import { Badge } from '@/components/ui/badge';
-import {
-  Table,
-  TableHeader,
-  TableHead,
-  TableBody,
-  TableRow,
-  TableCell,
-} from '@/components/ui/table';
+import { Airplane, ClipboardText, ArrowRight } from '@phosphor-icons/react';
 
 interface RecentFlight {
   id: number;
@@ -26,31 +17,39 @@ interface OperationsPanelProps {
   recentFlights: RecentFlight[];
 }
 
+function formatDate(iso: string): string {
+  const d = new Date(iso);
+  const month = d.toLocaleString('en', { month: 'short' });
+  const day = d.getDate();
+  const time = d.toLocaleString('en', { hour: 'numeric', minute: '2-digit', hour12: true });
+  return `${month} ${day}, ${time}`;
+}
+
 function statusBadge(status: string) {
   switch (status) {
     case 'approved':
       return (
-        <Badge className="bg-emerald-500/15 text-emerald-500 border-emerald-500/25 hover:bg-emerald-500/20">
+        <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-emerald-500/15 text-emerald-400 ring-1 ring-emerald-500/25">
           Approved
-        </Badge>
+        </span>
       );
     case 'pending':
       return (
-        <Badge className="bg-amber-500/15 text-amber-500 border-amber-500/25 hover:bg-amber-500/20">
+        <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-500/15 text-amber-400 ring-1 ring-amber-500/25">
           Pending
-        </Badge>
+        </span>
       );
     case 'rejected':
       return (
-        <Badge className="bg-red-500/15 text-red-500 border-red-500/25 hover:bg-red-500/20">
+        <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-red-500/15 text-red-400 ring-1 ring-red-500/25">
           Rejected
-        </Badge>
+        </span>
       );
     default:
       return (
-        <Badge variant="secondary">
-          {status.charAt(0).toUpperCase() + status.slice(1)}
-        </Badge>
+        <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-white/10 text-muted-foreground ring-1 ring-white/10">
+          {status}
+        </span>
       );
   }
 }
@@ -59,61 +58,51 @@ export function OperationsPanel({ activeFlights, pendingPireps, recentFlights }:
   return (
     <div className="rounded-md bg-[#1c2033]/90 border border-border/50 shadow-inner">
       {/* Header */}
-      <div className="flex items-center justify-between p-4 pb-3">
-        <h2 className="text-sm font-semibold">Operations</h2>
+      <div className="flex items-center justify-between p-3 pb-2">
+        <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Recent Flights</h2>
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            <Airplane size={14} weight="duotone" />
+          <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+            <Airplane size={12} weight="duotone" className="text-blue-400" />
             <span className="font-mono font-medium text-foreground">{activeFlights}</span>
-            <span>active</span>
           </div>
-          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            <ClipboardText size={14} weight="duotone" />
+          <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+            <ClipboardText size={12} weight="duotone" className="text-amber-400" />
             <span className="font-mono font-medium text-foreground">{pendingPireps}</span>
-            <span>pending</span>
           </div>
         </div>
       </div>
 
-      {/* Content */}
-      <div className="px-4 pb-4">
+      {/* Divider */}
+      <div className="mx-3 border-t border-border/30" />
+
+      {/* Flight cards */}
+      <div className="p-3 space-y-1.5">
         {recentFlights.length === 0 ? (
-          <p className="text-sm text-muted-foreground py-4 text-center">
+          <p className="text-xs text-muted-foreground py-3 text-center">
             No recent flights
           </p>
         ) : (
-          <Table>
-            <TableHeader>
-              <TableRow className="hover:bg-transparent border-border/50">
-                <TableHead className="text-xs">Flight</TableHead>
-                <TableHead className="text-xs">Route</TableHead>
-                <TableHead className="text-xs">Pilot</TableHead>
-                <TableHead className="text-xs text-right">Ldg Rate</TableHead>
-                <TableHead className="text-xs text-right">Status</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {recentFlights.map((f) => (
-                <TableRow key={f.id} className="border-border/30">
-                  <TableCell className="font-mono font-medium text-xs py-2">
-                    {f.flightNumber}
-                  </TableCell>
-                  <TableCell className="text-xs py-2">
-                    <span className="font-mono">{f.depIcao}</span>
-                    <span className="text-muted-foreground mx-1">&rarr;</span>
-                    <span className="font-mono">{f.arrIcao}</span>
-                  </TableCell>
-                  <TableCell className="text-xs py-2">{f.pilotCallsign}</TableCell>
-                  <TableCell className="text-right font-mono text-xs py-2">
-                    {f.landingRate !== null ? `${f.landingRate} fpm` : '--'}
-                  </TableCell>
-                  <TableCell className="text-right py-2">
-                    {statusBadge(f.status)}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+          recentFlights.slice(0, 3).map((f) => (
+            <div
+              key={f.id}
+              className="flex items-center gap-2.5 rounded bg-white/[0.04] border border-white/[0.06] px-2.5 py-2"
+            >
+              {/* Route */}
+              <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                <span className="text-xs font-mono font-semibold text-foreground">{f.depIcao}</span>
+                <ArrowRight size={10} className="text-muted-foreground shrink-0" />
+                <span className="text-xs font-mono font-semibold text-foreground">{f.arrIcao}</span>
+              </div>
+
+              {/* Flight number */}
+              <span className="text-[10px] font-mono text-muted-foreground shrink-0">{f.flightNumber}</span>
+
+              {/* Status badge */}
+              <div className="shrink-0">
+                {statusBadge(f.status)}
+              </div>
+            </div>
+          ))
         )}
       </div>
     </div>
