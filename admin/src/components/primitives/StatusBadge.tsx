@@ -23,6 +23,18 @@ const statusConfig: Record<string, { bg: string; text: string; ring: string; lab
   warning: { bg: 'bg-[var(--accent-amber-bg)]', text: 'text-[var(--accent-amber)]', ring: 'ring-[var(--accent-amber-ring)]', label: 'Warning' },
   success: { bg: 'bg-[var(--accent-emerald-bg)]', text: 'text-[var(--accent-emerald)]', ring: 'ring-[var(--accent-emerald-ring)]', label: 'Success' },
   error: { bg: 'bg-[var(--accent-red-bg)]', text: 'text-[var(--accent-red)]', ring: 'ring-[var(--accent-red-ring)]', label: 'Error' },
+  // Flight phases — airborne (emerald)
+  climb: { bg: 'bg-[var(--accent-emerald-bg)]', text: 'text-[var(--accent-emerald)]', ring: 'ring-[var(--accent-emerald-ring)]', label: 'Climb' },
+  cruise: { bg: 'bg-[var(--accent-emerald-bg)]', text: 'text-[var(--accent-emerald)]', ring: 'ring-[var(--accent-emerald-ring)]', label: 'Cruise' },
+  descent: { bg: 'bg-[var(--accent-emerald-bg)]', text: 'text-[var(--accent-emerald)]', ring: 'ring-[var(--accent-emerald-ring)]', label: 'Descent' },
+  approach: { bg: 'bg-[var(--accent-emerald-bg)]', text: 'text-[var(--accent-emerald)]', ring: 'ring-[var(--accent-emerald-ring)]', label: 'Approach' },
+  takeoff: { bg: 'bg-[var(--accent-emerald-bg)]', text: 'text-[var(--accent-emerald)]', ring: 'ring-[var(--accent-emerald-ring)]', label: 'Takeoff' },
+  landing: { bg: 'bg-[var(--accent-emerald-bg)]', text: 'text-[var(--accent-emerald)]', ring: 'ring-[var(--accent-emerald-ring)]', label: 'Landing' },
+  // Flight phases — ground (blue)
+  preflight: { bg: 'bg-[var(--accent-blue-bg)]', text: 'text-[var(--accent-blue)]', ring: 'ring-[var(--accent-blue-ring)]', label: 'Preflight' },
+  taxi_out: { bg: 'bg-[var(--accent-blue-bg)]', text: 'text-[var(--accent-blue)]', ring: 'ring-[var(--accent-blue-ring)]', label: 'Taxi Out' },
+  taxi_in: { bg: 'bg-[var(--accent-blue-bg)]', text: 'text-[var(--accent-blue)]', ring: 'ring-[var(--accent-blue-ring)]', label: 'Taxi In' },
+  parked: { bg: 'bg-[var(--accent-blue-bg)]', text: 'text-[var(--accent-blue)]', ring: 'ring-[var(--accent-blue-ring)]', label: 'Parked' },
 };
 
 const fallback = { bg: 'bg-[var(--accent-blue-bg)]', text: 'text-[var(--accent-blue)]', ring: 'ring-[var(--accent-blue-ring)]', label: '' };

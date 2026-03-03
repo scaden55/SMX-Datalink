@@ -1,10 +1,8 @@
 import { useState, useEffect, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { motion } from 'motion/react';
 import { useAuthStore } from '@/stores/authStore';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Button } from '@/components/ui/button';
+import { Surface } from '@/components/primitives';
 import { ApiError } from '@/lib/api';
 
 export function LoginPage() {
@@ -47,27 +45,50 @@ export function LoginPage() {
   // Don't render while hydrating
   if (isHydrating) {
     return (
-      <div className="flex h-screen items-center justify-center bg-background">
-        <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary border-t-transparent" />
+      <div className="flex h-screen items-center justify-center bg-[var(--surface-0)]">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-[var(--accent-blue)] border-t-transparent" />
       </div>
     );
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
-      <Card className="w-full max-w-sm">
-        <CardHeader className="items-center space-y-2 pb-2">
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">
-            SMA ACARS
-          </h1>
-          <p className="text-sm text-muted-foreground">Administration</p>
-        </CardHeader>
+    <div className="flex min-h-screen items-center justify-center bg-[var(--surface-0)] px-4">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, ease: 'easeOut' }}
+        className="w-full max-w-sm"
+      >
+        <Surface elevation={2} padding="spacious">
+          {/* Logo */}
+          <div className="flex justify-center mb-6">
+            <img
+              src="/admin/logos/smx-login-logo.png"
+              alt="Special Missions Air"
+              className="h-24 object-contain"
+            />
+          </div>
 
-        <CardContent>
+          {/* Title / Subtitle */}
+          <div className="text-center mb-6">
+            <h1 className="text-xl font-semibold text-[var(--text-primary)]">
+              Admin Portal
+            </h1>
+            <p className="mt-1 text-sm text-[var(--text-secondary)]">
+              Sign in to manage SMA Virtual
+            </p>
+          </div>
+
+          {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
+            <div className="space-y-1.5">
+              <label
+                htmlFor="email"
+                className="block text-xs font-medium text-[var(--text-tertiary)] uppercase tracking-wider"
+              >
+                Email
+              </label>
+              <input
                 id="email"
                 type="email"
                 placeholder="admin@smavirtual.com"
@@ -76,12 +97,18 @@ export function LoginPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 disabled={loading}
+                className="w-full rounded-md bg-[var(--surface-3)] border border-[var(--border-secondary)] px-3 py-2 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-quaternary)] focus:outline-none focus:ring-2 focus:ring-[var(--accent-blue)] focus:border-transparent transition-colors disabled:opacity-50"
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <Input
+            <div className="space-y-1.5">
+              <label
+                htmlFor="password"
+                className="block text-xs font-medium text-[var(--text-tertiary)] uppercase tracking-wider"
+              >
+                Password
+              </label>
+              <input
                 id="password"
                 type="password"
                 placeholder="Enter your password"
@@ -90,25 +117,26 @@ export function LoginPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 disabled={loading}
+                className="w-full rounded-md bg-[var(--surface-3)] border border-[var(--border-secondary)] px-3 py-2 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-quaternary)] focus:outline-none focus:ring-2 focus:ring-[var(--accent-blue)] focus:border-transparent transition-colors disabled:opacity-50"
               />
             </div>
 
             {error && (
-              <div className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+              <div className="rounded-md border border-[var(--accent-red)]/30 bg-[var(--accent-red-bg)] px-3 py-2 text-sm text-[var(--accent-red)]">
                 {error}
               </div>
             )}
 
-            <Button
+            <button
               type="submit"
-              className="w-full"
               disabled={loading}
+              className="w-full rounded-md bg-[var(--accent-blue)] px-4 py-2 text-sm font-medium text-white hover:brightness-110 focus:outline-none focus:ring-2 focus:ring-[var(--accent-blue-ring)] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? 'Signing in...' : 'Sign in'}
-            </Button>
+            </button>
           </form>
-        </CardContent>
-      </Card>
+        </Surface>
+      </motion.div>
     </div>
   );
 }
