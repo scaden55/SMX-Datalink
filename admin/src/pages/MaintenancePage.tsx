@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { type ColumnDef } from '@tanstack/react-table';
 import {
   Airplane,
@@ -24,9 +24,9 @@ import { DataTable } from '@/components/shared/DataTable';
 import { DataTableColumnHeader } from '@/components/shared/DataTableColumnHeader';
 import { DataTablePagination } from '@/components/shared/DataTablePagination';
 import { DetailPanel } from '@/components/shared/DetailPanel';
+import { StatusBadge, SectionHeader, DataRow, Surface } from '@/components/primitives';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import {
@@ -60,7 +60,6 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 // ── Types (mirroring @acars/shared) ──────────────────────────
 
@@ -208,80 +207,30 @@ function formatHours(h: number | null): string {
 // ── Badge helpers ────────────────────────────────────────────
 
 function fleetStatusBadge(status: string) {
-  switch (status) {
-    case 'active':
-      return <Badge className="bg-emerald-500/15 text-emerald-400 border-emerald-500/30">Active</Badge>;
-    case 'maintenance':
-      return <Badge className="bg-amber-500/15 text-amber-400 border-amber-500/30">Maintenance</Badge>;
-    case 'stored':
-      return <Badge variant="outline" className="text-muted-foreground">Stored</Badge>;
-    case 'retired':
-      return <Badge className="bg-red-500/15 text-red-400 border-red-500/30">Retired</Badge>;
-    default:
-      return <Badge variant="secondary">{status}</Badge>;
-  }
+  return <StatusBadge status={status} />;
 }
 
 function logStatusBadge(status: MaintenanceLogStatus) {
-  switch (status) {
-    case 'completed':
-      return <Badge className="bg-emerald-500/15 text-emerald-400 border-emerald-500/30">Completed</Badge>;
-    case 'in_progress':
-      return <Badge className="bg-blue-500/15 text-blue-400 border-blue-500/30">In Progress</Badge>;
-    case 'scheduled':
-      return <Badge className="bg-amber-500/15 text-amber-400 border-amber-500/30">Scheduled</Badge>;
-    case 'deferred':
-      return <Badge variant="outline" className="text-muted-foreground">Deferred</Badge>;
-  }
+  return <StatusBadge status={status} />;
 }
 
 function adStatusBadge(status: ADComplianceStatus) {
-  switch (status) {
-    case 'complied':
-      return <Badge className="bg-emerald-500/15 text-emerald-400 border-emerald-500/30">Complied</Badge>;
-    case 'open':
-      return <Badge className="bg-amber-500/15 text-amber-400 border-amber-500/30">Open</Badge>;
-    case 'recurring':
-      return <Badge className="bg-blue-500/15 text-blue-400 border-blue-500/30">Recurring</Badge>;
-    case 'not_applicable':
-      return <Badge variant="outline" className="text-muted-foreground">N/A</Badge>;
-  }
+  return <StatusBadge status={status} />;
 }
 
 function melStatusBadge(status: MELStatus) {
-  switch (status) {
-    case 'open':
-      return <Badge className="bg-amber-500/15 text-amber-400 border-amber-500/30">Open</Badge>;
-    case 'rectified':
-      return <Badge className="bg-emerald-500/15 text-emerald-400 border-emerald-500/30">Rectified</Badge>;
-    case 'expired':
-      return <Badge className="bg-red-500/15 text-red-400 border-red-500/30">Expired</Badge>;
-  }
+  return <StatusBadge status={status} />;
 }
 
 function componentStatusBadge(status: ComponentStatus) {
-  switch (status) {
-    case 'installed':
-      return <Badge className="bg-emerald-500/15 text-emerald-400 border-emerald-500/30">Installed</Badge>;
-    case 'removed':
-      return <Badge className="bg-amber-500/15 text-amber-400 border-amber-500/30">Removed</Badge>;
-    case 'in_shop':
-      return <Badge className="bg-blue-500/15 text-blue-400 border-blue-500/30">In Shop</Badge>;
-    case 'scrapped':
-      return <Badge className="bg-red-500/15 text-red-400 border-red-500/30">Scrapped</Badge>;
-  }
+  return <StatusBadge status={status} />;
 }
 
 // ── Detail helper ────────────────────────────────────────────
-
-function DetailRow({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div className="flex items-start justify-between gap-4 py-1.5">
-      <span className="text-sm text-muted-foreground shrink-0">{label}</span>
-      <span className="text-sm text-right">{children}</span>
-    </div>
-  );
-}
+// Using DataRow from primitives; local alias for backward compat
+const DetailRow = ({ label, children }: { label: string; children: React.ReactNode }) => (
+  <DataRow label={label} value={children} />
+);
 
 function formatCurrency(v: number | null): string {
   if (v === null || v === undefined) return '--';
@@ -388,12 +337,12 @@ function FleetStatusTab() {
 
   if (loading) return <TabSkeleton />;
 
-  function getCardBorderColor(aircraft: FleetMaintenanceStatus): string {
+  function getCardAccent(aircraft: FleetMaintenanceStatus): 'red' | 'amber' | 'emerald' {
     if (aircraft.hasOverdueChecks || aircraft.hasOverdueADs || aircraft.hasExpiredMEL)
-      return 'border-l-[3px] border-l-red-500';
+      return 'red';
     if (aircraft.checksDue.some((c) => c.isInOverflight))
-      return 'border-l-[3px] border-l-amber-500';
-    return 'border-l-[3px] border-l-emerald-500';
+      return 'amber';
+    return 'emerald';
   }
 
   function handleCardClick(aircraft: FleetMaintenanceStatus) {
@@ -405,7 +354,7 @@ function FleetStatusTab() {
     <div className="space-y-6">
       {/* Search */}
       <div className="relative max-w-sm">
-        <MagnifyingGlass size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+        <MagnifyingGlass size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-tertiary)]" />
         <Input
           placeholder="Search registration, type..."
           value={search}
@@ -419,37 +368,40 @@ function FleetStatusTab() {
         <div className={`${detailOpen ? 'w-[60%]' : 'w-full'} transition-all duration-200`}>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
             {filtered.length === 0 ? (
-              <p className="col-span-full text-center py-10 text-muted-foreground">No aircraft found</p>
+              <p className="col-span-full text-center py-10 text-[var(--text-tertiary)]">No aircraft found</p>
             ) : (
               filtered.map((aircraft) => (
-                <Card
+                <Surface
                   key={aircraft.aircraftId}
-                  className={`border-border/50 cursor-pointer hover:bg-[#1f2538] transition-colors ${getCardBorderColor(aircraft)} ${
-                    detailAircraft?.aircraftId === aircraft.aircraftId ? 'bg-blue-500/10 ring-1 ring-blue-500/30' : ''
+                  elevation={1}
+                  accent={getCardAccent(aircraft)}
+                  padding="none"
+                  className={`cursor-pointer hover:bg-[var(--surface-3)] transition-colors ${
+                    detailAircraft?.aircraftId === aircraft.aircraftId ? 'bg-[var(--accent-blue-bg)] ring-1 ring-[var(--accent-blue-ring)]' : ''
                   }`}
                   onClick={() => handleCardClick(aircraft)}
                 >
-                  <CardHeader className="pb-3">
+                  <div className="p-4 pb-3">
                     <div className="flex items-center justify-between">
-                      <CardTitle className="text-base font-mono">{aircraft.registration}</CardTitle>
+                      <span className="text-base font-mono font-semibold text-[var(--text-primary)]">{aircraft.registration}</span>
                       <div className="flex items-center gap-2">
                         {(aircraft.hasOverdueChecks || aircraft.hasOverdueADs || aircraft.hasExpiredMEL) && (
-                          <Warning size={16} weight="fill" className="text-red-400" />
+                          <Warning size={16} weight="fill" className="text-[var(--accent-red)]" />
                         )}
                         {fleetStatusBadge(aircraft.status)}
                       </div>
                     </div>
-                    <p className="text-sm text-muted-foreground">{aircraft.name} ({aircraft.icaoType})</p>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
+                    <p className="text-sm text-[var(--text-tertiary)]">{aircraft.name} ({aircraft.icaoType})</p>
+                  </div>
+                  <div className="px-4 pb-4 space-y-3">
                     <div className="grid grid-cols-2 gap-2 text-sm">
                       <div>
-                        <p className="text-muted-foreground">Total Hours</p>
-                        <p className="font-mono font-medium">{formatHours(aircraft.totalHours)}</p>
+                        <p className="text-[var(--text-tertiary)]">Total Hours</p>
+                        <p className="font-mono font-medium text-[var(--text-primary)]">{formatHours(aircraft.totalHours)}</p>
                       </div>
                       <div>
-                        <p className="text-muted-foreground">Total Cycles</p>
-                        <p className="font-mono font-medium">{aircraft.totalCycles.toLocaleString()}</p>
+                        <p className="text-[var(--text-tertiary)]">Total Cycles</p>
+                        <p className="font-mono font-medium text-[var(--text-primary)]">{aircraft.totalCycles.toLocaleString()}</p>
                       </div>
                     </div>
 
@@ -458,13 +410,13 @@ function FleetStatusTab() {
                       <div className="space-y-1">
                         {aircraft.checksDue.map((check) => (
                           <div key={check.checkType} className="flex items-center justify-between text-xs">
-                            <span className="font-medium">{check.checkType}-Check</span>
+                            <span className="font-medium text-[var(--text-secondary)]">{check.checkType}-Check</span>
                             <span className={
                               check.isOverdue
-                                ? 'text-red-400 font-medium'
+                                ? 'text-[var(--accent-red)] font-medium'
                                 : check.isInOverflight
-                                ? 'text-amber-400'
-                                : 'text-muted-foreground'
+                                ? 'text-[var(--accent-amber)]'
+                                : 'text-[var(--text-tertiary)]'
                             }>
                               {check.isOverdue
                                 ? 'OVERDUE'
@@ -478,12 +430,12 @@ function FleetStatusTab() {
                     )}
 
                     {aircraft.nextCheckType && (
-                      <p className="text-xs text-muted-foreground">
+                      <p className="text-xs text-[var(--text-tertiary)]">
                         Next: {aircraft.nextCheckType}-Check in {formatHours(aircraft.nextCheckDueIn)} hrs
                       </p>
                     )}
-                  </CardContent>
-                </Card>
+                  </div>
+                </Surface>
               ))
             )}
           </div>
@@ -533,31 +485,31 @@ function FleetStatusTab() {
 
               {detailAircraft.checksDue.length > 0 && (
                 <div>
-                  <h3 className="text-xs uppercase tracking-wider text-muted-foreground mb-2">Checks Due</h3>
+                  <SectionHeader title="Checks Due" />
                   <div className="space-y-2">
                     {detailAircraft.checksDue.map((check) => (
-                      <div key={check.checkType} className="rounded-md bg-[#141820] p-2.5 border border-border/30">
+                      <div key={check.checkType} className="rounded-md bg-[var(--surface-1)] p-2.5 border border-[var(--border-secondary)]">
                         <div className="flex items-center justify-between mb-1">
                           <span className="text-sm font-medium">{check.checkType}-Check</span>
                           {check.isOverdue ? (
-                            <Badge className="bg-red-500/15 text-red-400 border-red-500/30">Overdue</Badge>
+                            <StatusBadge status="overdue" />
                           ) : check.isInOverflight ? (
-                            <Badge className="bg-amber-500/15 text-amber-400 border-amber-500/30">Overflight</Badge>
+                            <StatusBadge status="overflight" />
                           ) : (
-                            <Badge className="bg-emerald-500/15 text-emerald-400 border-emerald-500/30">OK</Badge>
+                            <StatusBadge status="ok" />
                           )}
                         </div>
-                        <div className="grid grid-cols-2 gap-1 text-xs text-muted-foreground">
+                        <div className="grid grid-cols-2 gap-1 text-xs text-[var(--text-tertiary)]">
                           {check.remainingHours !== null && (
-                            <span>Hrs remaining: <span className="font-mono text-foreground">{formatHours(check.remainingHours)}</span></span>
+                            <span>Hrs remaining: <span className="font-mono text-[var(--text-primary)]">{formatHours(check.remainingHours)}</span></span>
                           )}
                           {check.remainingCycles !== null && (
-                            <span>Cycles remaining: <span className="font-mono text-foreground">{check.remainingCycles}</span></span>
+                            <span>Cycles remaining: <span className="font-mono text-[var(--text-primary)]">{check.remainingCycles}</span></span>
                           )}
                           {check.dueAtDate && (
-                            <span>Due by: <span className="text-foreground">{formatDate(check.dueAtDate)}</span></span>
+                            <span>Due by: <span className="text-[var(--text-primary)]">{formatDate(check.dueAtDate)}</span></span>
                           )}
-                          <span>Overflight: <span className="font-mono text-foreground">{check.overflightPct}%</span></span>
+                          <span>Overflight: <span className="font-mono text-[var(--text-primary)]">{check.overflightPct}%</span></span>
                         </div>
                       </div>
                     ))}
@@ -566,13 +518,13 @@ function FleetStatusTab() {
               )}
 
               {detailAircraft.hasOverdueADs && (
-                <div className="rounded-md bg-red-500/10 border border-red-500/30 p-2.5">
-                  <p className="text-xs text-red-400 font-medium">Overdue ADs on this aircraft</p>
+                <div className="rounded-md bg-[var(--accent-red-bg)] border border-[var(--accent-red-ring)] p-2.5">
+                  <p className="text-xs text-[var(--accent-red)] font-medium">Overdue ADs on this aircraft</p>
                 </div>
               )}
               {detailAircraft.hasExpiredMEL && (
-                <div className="rounded-md bg-red-500/10 border border-red-500/30 p-2.5">
-                  <p className="text-xs text-red-400 font-medium">Expired MEL items on this aircraft</p>
+                <div className="rounded-md bg-[var(--accent-red-bg)] border border-[var(--accent-red-ring)] p-2.5">
+                  <p className="text-xs text-[var(--accent-red)] font-medium">Expired MEL items on this aircraft</p>
                 </div>
               )}
             </div>
@@ -800,7 +752,7 @@ function MaintenanceLogTab() {
     {
       accessorKey: 'createdAt',
       header: ({ column }) => <DataTableColumnHeader column={column} title="Date" />,
-      cell: ({ row }) => <span className="text-muted-foreground">{formatDate(row.original.createdAt)}</span>,
+      cell: ({ row }) => <span className="text-[var(--text-tertiary)]">{formatDate(row.original.createdAt)}</span>,
       size: 100,
     },
     {
@@ -812,7 +764,10 @@ function MaintenanceLogTab() {
     {
       accessorKey: 'checkType',
       header: ({ column }) => <DataTableColumnHeader column={column} title="Type" />,
-      cell: ({ row }) => <Badge variant="secondary" className="text-xs">{row.original.checkType}</Badge>,
+      cell: ({ row }) => {
+        const type = row.original.checkType;
+        return <StatusBadge status={type === 'A' || type === 'B' || type === 'LINE' || type === 'UNSCHEDULED' ? 'warning' : 'info'} label={type} />;
+      },
       size: 90,
     },
     {
@@ -823,7 +778,7 @@ function MaintenanceLogTab() {
     {
       accessorKey: 'performedBy',
       header: ({ column }) => <DataTableColumnHeader column={column} title="Performed By" />,
-      cell: ({ row }) => <span className="text-muted-foreground">{row.original.performedBy ?? '--'}</span>,
+      cell: ({ row }) => <span className="text-[var(--text-tertiary)]">{row.original.performedBy ?? '--'}</span>,
       size: 120,
     },
     {
@@ -858,11 +813,11 @@ function MaintenanceLogTab() {
               </DropdownMenuItem>
               {entry.status !== 'completed' && (
                 <DropdownMenuItem onClick={() => handleComplete(entry)}>
-                  <CheckCircle size={14} className="text-emerald-400" /> Complete
+                  <CheckCircle size={14} className="text-[var(--accent-emerald)]" /> Complete
                 </DropdownMenuItem>
               )}
               <DropdownMenuSeparator />
-              <DropdownMenuItem className="text-red-400 focus:text-red-400" onClick={() => setDeleteEntry(entry)}>
+              <DropdownMenuItem className="text-[var(--accent-red)] focus:text-[var(--accent-red)]" onClick={() => setDeleteEntry(entry)}>
                 <Trash size={14} /> Delete
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -885,7 +840,7 @@ function MaintenanceLogTab() {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-1 items-center gap-3">
           <div className="relative max-w-sm flex-1">
-            <MagnifyingGlass size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            <MagnifyingGlass size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-tertiary)]" />
             <Input placeholder="Search entries..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
           </div>
           <Select value={typeFilter} onValueChange={(v) => { setTypeFilter(v); setPage(1); }}>
@@ -918,7 +873,7 @@ function MaintenanceLogTab() {
       </div>
 
       {/* Split view: DataTable + detail panel */}
-      <div className="flex flex-1 gap-0 overflow-hidden rounded-md border border-border/50">
+      <div className="flex flex-1 gap-0 overflow-hidden rounded-md border border-[var(--border-primary)]">
         <div className={`${detailOpen ? 'w-[55%]' : 'w-full'} flex flex-col transition-all duration-200`}>
           <DataTable
             columns={logColumns}
@@ -943,7 +898,7 @@ function MaintenanceLogTab() {
                 </Button>
                 {detailEntry.status !== 'completed' && (
                   <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => handleComplete(detailEntry)}>
-                    <CheckCircle size={12} className="text-emerald-400" /> Complete
+                    <CheckCircle size={12} className="text-[var(--accent-emerald)]" /> Complete
                   </Button>
                 )}
               </>
@@ -952,7 +907,7 @@ function MaintenanceLogTab() {
             <div className="space-y-4">
               <div className="space-y-1">
                 <DetailRow label="Status">{logStatusBadge(detailEntry.status)}</DetailRow>
-                <DetailRow label="Type"><Badge variant="secondary" className="text-xs">{detailEntry.checkType}</Badge></DetailRow>
+                <DetailRow label="Type"><StatusBadge status={detailEntry.checkType === 'A' || detailEntry.checkType === 'B' || detailEntry.checkType === 'LINE' || detailEntry.checkType === 'UNSCHEDULED' ? 'warning' : 'info'} label={detailEntry.checkType} /></DetailRow>
                 <DetailRow label="Aircraft"><span className="font-mono">{detailEntry.aircraftRegistration ?? `#${detailEntry.aircraftId}`}</span></DetailRow>
                 <DetailRow label="Date">{formatDate(detailEntry.createdAt)}</DetailRow>
                 <DetailRow label="Performed By">{detailEntry.performedBy ?? '--'}</DetailRow>
@@ -966,7 +921,7 @@ function MaintenanceLogTab() {
               </div>
               {detailEntry.description && (
                 <div>
-                  <h3 className="text-xs uppercase tracking-wider text-muted-foreground mb-1">Description</h3>
+                  <SectionHeader title="Description" />
                   <p className="text-sm whitespace-pre-wrap">{detailEntry.description}</p>
                 </div>
               )}
@@ -1229,7 +1184,10 @@ function CheckSchedulesTab() {
     {
       accessorKey: 'checkType',
       header: ({ column }) => <DataTableColumnHeader column={column} title="Check Type" />,
-      cell: ({ row }) => <Badge variant="secondary">{row.original.checkType}-Check</Badge>,
+      cell: ({ row }) => {
+        const type = row.original.checkType;
+        return <StatusBadge status={type === 'A' || type === 'B' ? 'warning' : 'info'} label={`${type}-Check`} />;
+      },
       size: 110,
     },
     {
@@ -1255,7 +1213,7 @@ function CheckSchedulesTab() {
     {
       accessorKey: 'description',
       header: 'Description',
-      cell: ({ row }) => <span className="text-muted-foreground max-w-[200px] truncate block">{row.original.description ?? '--'}</span>,
+      cell: ({ row }) => <span className="text-[var(--text-tertiary)] max-w-[200px] truncate block">{row.original.description ?? '--'}</span>,
     },
     {
       id: 'actions',
@@ -1276,7 +1234,7 @@ function CheckSchedulesTab() {
                 <PencilSimple size={14} /> Edit
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem className="text-red-400 focus:text-red-400" onClick={() => setDeleteSchedule(s)}>
+              <DropdownMenuItem className="text-[var(--accent-red)] focus:text-[var(--accent-red)]" onClick={() => setDeleteSchedule(s)}>
                 <Trash size={14} /> Delete
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -1292,7 +1250,7 @@ function CheckSchedulesTab() {
     <div className="space-y-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="relative max-w-sm flex-1">
-          <MagnifyingGlass size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+          <MagnifyingGlass size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-tertiary)]" />
           <Input placeholder="Search by ICAO type or check type..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
         </div>
         <Button onClick={() => { resetForm(); setCreateOpen(true); }}>
@@ -1593,13 +1551,13 @@ function AirworthinessDirectivesTab() {
     {
       accessorKey: 'complianceDate',
       header: ({ column }) => <DataTableColumnHeader column={column} title="Compliance Date" />,
-      cell: ({ row }) => <span className="text-muted-foreground">{formatDate(row.original.complianceDate)}</span>,
+      cell: ({ row }) => <span className="text-[var(--text-tertiary)]">{formatDate(row.original.complianceDate)}</span>,
       size: 120,
     },
     {
       accessorKey: 'nextDueDate',
       header: ({ column }) => <DataTableColumnHeader column={column} title="Next Due" />,
-      cell: ({ row }) => <span className="text-muted-foreground">{formatDate(row.original.nextDueDate)}</span>,
+      cell: ({ row }) => <span className="text-[var(--text-tertiary)]">{formatDate(row.original.nextDueDate)}</span>,
       size: 100,
     },
     {
@@ -1621,7 +1579,7 @@ function AirworthinessDirectivesTab() {
                 <PencilSimple size={14} /> Edit
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem className="text-red-400 focus:text-red-400" onClick={() => setDeleteAD(ad)}>
+              <DropdownMenuItem className="text-[var(--accent-red)] focus:text-[var(--accent-red)]" onClick={() => setDeleteAD(ad)}>
                 <Trash size={14} /> Delete
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -1638,7 +1596,7 @@ function AirworthinessDirectivesTab() {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-1 items-center gap-3">
           <div className="relative max-w-sm flex-1">
-            <MagnifyingGlass size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            <MagnifyingGlass size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-tertiary)]" />
             <Input placeholder="Search AD number, title, aircraft..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
           </div>
           <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setPage(1); }}>
@@ -1967,19 +1925,22 @@ function MELDeferralsTab() {
     {
       accessorKey: 'category',
       header: ({ column }) => <DataTableColumnHeader column={column} title="Category" />,
-      cell: ({ row }) => <Badge variant="secondary">Cat {row.original.category}</Badge>,
+      cell: ({ row }) => {
+        const cat = row.original.category;
+        return <StatusBadge status={cat === 'A' ? 'critical' : cat === 'B' ? 'warning' : 'info'} label={`Cat ${cat}`} />;
+      },
       size: 90,
     },
     {
       accessorKey: 'deferralDate',
       header: ({ column }) => <DataTableColumnHeader column={column} title="Deferral Date" />,
-      cell: ({ row }) => <span className="text-muted-foreground">{formatDate(row.original.deferralDate)}</span>,
+      cell: ({ row }) => <span className="text-[var(--text-tertiary)]">{formatDate(row.original.deferralDate)}</span>,
       size: 110,
     },
     {
       accessorKey: 'expiryDate',
       header: ({ column }) => <DataTableColumnHeader column={column} title="Expiry Date" />,
-      cell: ({ row }) => <span className="text-muted-foreground">{formatDate(row.original.expiryDate)}</span>,
+      cell: ({ row }) => <span className="text-[var(--text-tertiary)]">{formatDate(row.original.expiryDate)}</span>,
       size: 110,
     },
     {
@@ -2008,11 +1969,11 @@ function MELDeferralsTab() {
               </DropdownMenuItem>
               {mel.status === 'open' && (
                 <DropdownMenuItem onClick={() => handleRectify(mel)}>
-                  <CheckCircle size={14} className="text-emerald-400" /> Rectify
+                  <CheckCircle size={14} className="text-[var(--accent-emerald)]" /> Rectify
                 </DropdownMenuItem>
               )}
               <DropdownMenuSeparator />
-              <DropdownMenuItem className="text-red-400 focus:text-red-400" onClick={() => setDeleteMEL(mel)}>
+              <DropdownMenuItem className="text-[var(--accent-red)] focus:text-[var(--accent-red)]" onClick={() => setDeleteMEL(mel)}>
                 <Trash size={14} /> Delete
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -2029,7 +1990,7 @@ function MELDeferralsTab() {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-1 items-center gap-3">
           <div className="relative max-w-sm flex-1">
-            <MagnifyingGlass size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            <MagnifyingGlass size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-tertiary)]" />
             <Input placeholder="Search item, title, aircraft..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
           </div>
           <Select value={categoryFilter} onValueChange={(v) => { setCategoryFilter(v); setPage(1); }}>
@@ -2435,7 +2396,7 @@ function ComponentsTab() {
     {
       accessorKey: 'componentType',
       header: ({ column }) => <DataTableColumnHeader column={column} title="Type" />,
-      cell: ({ row }) => <Badge variant="secondary" className="text-xs">{row.original.componentType.replace('_', ' ')}</Badge>,
+      cell: ({ row }) => <StatusBadge status="info" label={row.original.componentType.replace('_', ' ')} />,
       size: 120,
     },
     {
@@ -2448,7 +2409,7 @@ function ComponentsTab() {
     {
       accessorKey: 'position',
       header: ({ column }) => <DataTableColumnHeader column={column} title="Position" />,
-      cell: ({ row }) => <span className="text-muted-foreground">{row.original.position ?? '--'}</span>,
+      cell: ({ row }) => <span className="text-[var(--text-tertiary)]">{row.original.position ?? '--'}</span>,
     },
     {
       id: 'hso',
@@ -2463,14 +2424,14 @@ function ComponentsTab() {
       header: ({ column }) => <DataTableColumnHeader column={column} title="Remaining" />,
       cell: ({ row }) => {
         const remaining = remainingHoursValue(row.original);
-        if (remaining === null) return <span className="font-mono text-muted-foreground">--</span>;
+        if (remaining === null) return <span className="font-mono text-[var(--text-tertiary)]">--</span>;
         const color = remaining < 0
-          ? 'text-red-400'
+          ? 'text-[var(--accent-red)]'
           : remaining < 100
-          ? 'text-red-400'
+          ? 'text-[var(--accent-red)]'
           : remaining < 500
-          ? 'text-amber-400'
-          : 'text-emerald-400';
+          ? 'text-[var(--accent-amber)]'
+          : 'text-[var(--accent-emerald)]';
         return <span className={`font-mono ${color}`}>{formatHours(remaining)}</span>;
       },
       size: 100,
@@ -2500,10 +2461,10 @@ function ComponentsTab() {
                 <PencilSimple size={14} /> Edit
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => handleOverhaul(comp)}>
-                <ArrowClockwise size={14} className="text-blue-400" /> Overhaul
+                <ArrowClockwise size={14} className="text-[var(--accent-blue)]" /> Overhaul
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem className="text-red-400 focus:text-red-400" onClick={() => setDeleteComp(comp)}>
+              <DropdownMenuItem className="text-[var(--accent-red)] focus:text-[var(--accent-red)]" onClick={() => setDeleteComp(comp)}>
                 <Trash size={14} /> Delete
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -2520,7 +2481,7 @@ function ComponentsTab() {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-1 items-center gap-3">
           <div className="relative max-w-sm flex-1">
-            <MagnifyingGlass size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            <MagnifyingGlass size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-tertiary)]" />
             <Input placeholder="Search part, serial, aircraft..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
           </div>
           <Select value={typeFilter} onValueChange={setTypeFilter}>
@@ -2552,7 +2513,7 @@ function ComponentsTab() {
       </div>
 
       {/* Split view: DataTable + detail panel */}
-      <div className="flex flex-1 gap-0 overflow-hidden rounded-md border border-border/50">
+      <div className="flex flex-1 gap-0 overflow-hidden rounded-md border border-[var(--border-primary)]">
         <div className={`${detailOpen ? 'w-[55%]' : 'w-full'} flex flex-col transition-all duration-200`}>
           <DataTable
             columns={componentColumns}
@@ -2576,10 +2537,10 @@ function ComponentsTab() {
                   <PencilSimple size={12} /> Edit
                 </Button>
                 <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => handleOverhaul(selectedComp)}>
-                  <ArrowClockwise size={12} className="text-blue-400" /> Overhaul
+                  <ArrowClockwise size={12} className="text-[var(--accent-blue)]" /> Overhaul
                 </Button>
                 {selectedComp.status === 'installed' && (
-                  <Button variant="outline" size="sm" className="h-7 text-xs text-red-400 hover:text-red-300" onClick={() => handleRemoveComponent(selectedComp)}>
+                  <Button variant="outline" size="sm" className="h-7 text-xs text-[var(--accent-red)] hover:text-[var(--accent-red)]" onClick={() => handleRemoveComponent(selectedComp)}>
                     <Trash size={12} /> Remove
                   </Button>
                 )}
@@ -2589,9 +2550,9 @@ function ComponentsTab() {
             <div className="space-y-4">
               {/* Identity */}
               <div>
-                <h3 className="text-xs uppercase tracking-wider text-muted-foreground mb-2">Identity</h3>
+                <SectionHeader title="Identity" />
                 <div className="space-y-1">
-                  <DetailRow label="Type"><Badge variant="secondary" className="text-xs">{selectedComp.componentType.replace('_', ' ')}</Badge></DetailRow>
+                  <DetailRow label="Type"><StatusBadge status="info" label={selectedComp.componentType.replace('_', ' ')} /></DetailRow>
                   <DetailRow label="Part #"><span className="font-mono">{selectedComp.partNumber ?? '--'}</span></DetailRow>
                   <DetailRow label="Serial #"><span className="font-mono">{selectedComp.serialNumber ?? '--'}</span></DetailRow>
                   <DetailRow label="Position">{selectedComp.position ?? '--'}</DetailRow>
@@ -2600,7 +2561,7 @@ function ComponentsTab() {
 
               {/* Aircraft */}
               <div>
-                <h3 className="text-xs uppercase tracking-wider text-muted-foreground mb-2">Aircraft</h3>
+                <SectionHeader title="Aircraft" />
                 <div className="space-y-1">
                   <DetailRow label="Registration"><span className="font-mono">{selectedComp.aircraftRegistration ?? '--'}</span></DetailRow>
                   <DetailRow label="Aircraft ID"><span className="font-mono">{selectedComp.aircraftId}</span></DetailRow>
@@ -2609,7 +2570,7 @@ function ComponentsTab() {
 
               {/* Hours / Cycles */}
               <div>
-                <h3 className="text-xs uppercase tracking-wider text-muted-foreground mb-2">Hours / Cycles</h3>
+                <SectionHeader title="Hours / Cycles" />
                 <div className="space-y-1">
                   <DetailRow label="HSN"><span className="font-mono">{formatHours(selectedComp.hoursSinceNew)}</span></DetailRow>
                   <DetailRow label="CSN"><span className="font-mono">{selectedComp.cyclesSinceNew.toLocaleString()}</span></DetailRow>
@@ -2620,14 +2581,14 @@ function ComponentsTab() {
 
               {/* Overhaul */}
               <div>
-                <h3 className="text-xs uppercase tracking-wider text-muted-foreground mb-2">Overhaul</h3>
+                <SectionHeader title="Overhaul" />
                 <div className="space-y-1">
                   <DetailRow label="Interval"><span className="font-mono">{selectedComp.overhaulIntervalHours ? `${formatHours(selectedComp.overhaulIntervalHours)} hrs` : '--'}</span></DetailRow>
                   <DetailRow label="Remaining">
                     {(() => {
                       const remaining = remainingHoursValue(selectedComp);
-                      if (remaining === null) return <span className="text-muted-foreground">--</span>;
-                      const color = remaining < 0 ? 'text-red-400' : remaining < 100 ? 'text-red-400' : remaining < 500 ? 'text-amber-400' : 'text-emerald-400';
+                      if (remaining === null) return <span className="text-[var(--text-tertiary)]">--</span>;
+                      const color = remaining < 0 ? 'text-[var(--accent-red)]' : remaining < 100 ? 'text-[var(--accent-red)]' : remaining < 500 ? 'text-[var(--accent-amber)]' : 'text-[var(--accent-emerald)]';
                       return <span className={`font-mono ${color}`}>{formatHours(remaining)} hrs</span>;
                     })()}
                   </DetailRow>
@@ -2636,14 +2597,14 @@ function ComponentsTab() {
                 {(() => {
                   const pct = overhaulUsedPct(selectedComp);
                   if (pct === null) return null;
-                  const barColor = pct > 90 ? 'bg-red-500' : pct > 70 ? 'bg-amber-500' : 'bg-emerald-500';
+                  const barColor = pct > 90 ? 'bg-[var(--accent-red)]' : pct > 70 ? 'bg-[var(--accent-amber)]' : 'bg-[var(--accent-emerald)]';
                   return (
                     <div className="mt-2">
-                      <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+                      <div className="flex items-center justify-between text-xs text-[var(--text-tertiary)] mb-1">
                         <span>Overhaul usage</span>
                         <span className="font-mono">{pct.toFixed(1)}%</span>
                       </div>
-                      <div className="h-2 rounded-sm bg-[#0f1219] overflow-hidden">
+                      <div className="h-2 rounded-sm bg-[var(--surface-1)] overflow-hidden">
                         <div
                           className={`h-full rounded-sm transition-all ${barColor}`}
                           style={{ width: `${Math.min(pct, 100)}%` }}
@@ -2656,14 +2617,14 @@ function ComponentsTab() {
 
               {/* Status */}
               <div>
-                <h3 className="text-xs uppercase tracking-wider text-muted-foreground mb-2">Status</h3>
+                <SectionHeader title="Status" />
                 <div className="space-y-1">
                   <DetailRow label="Status">{componentStatusBadge(selectedComp.status)}</DetailRow>
                   <DetailRow label="Installed">{formatDate(selectedComp.installedDate)}</DetailRow>
                 </div>
                 {selectedComp.remarks && (
                   <div className="mt-2">
-                    <p className="text-xs text-muted-foreground mb-1">Remarks</p>
+                    <p className="text-xs text-[var(--text-tertiary)] mb-1">Remarks</p>
                     <p className="text-sm whitespace-pre-wrap">{selectedComp.remarks}</p>
                   </div>
                 )}

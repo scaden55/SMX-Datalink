@@ -33,14 +33,11 @@ import {
 } from 'recharts';
 import { api, ApiError } from '@/lib/api';
 import { toast } from '@/stores/toastStore';
-import { Skeleton } from '@/components/ui/skeleton';
+import { StatusBadge, SectionHeader, DataRow, Surface } from '@/components/primitives';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
 import {
   Select,
   SelectContent,
@@ -172,41 +169,6 @@ function formatAmount(amount: number): string {
   return fmt.format(amount);
 }
 
-function typeBadge(type: FinanceType) {
-  switch (type) {
-    case 'income':
-      return (
-        <Badge className="bg-emerald-500/15 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20">
-          Income
-        </Badge>
-      );
-    case 'pay':
-      return (
-        <Badge className="bg-emerald-500/15 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20">
-          Pay
-        </Badge>
-      );
-    case 'expense':
-      return (
-        <Badge className="bg-red-500/15 text-red-400 border-red-500/30 hover:bg-red-500/20">
-          Expense
-        </Badge>
-      );
-    case 'deduction':
-      return (
-        <Badge className="bg-amber-500/15 text-amber-400 border-amber-500/30 hover:bg-amber-500/20">
-          Deduction
-        </Badge>
-      );
-    case 'bonus':
-      return (
-        <Badge className="bg-blue-500/15 text-blue-400 border-blue-500/30 hover:bg-blue-500/20">
-          Bonus
-        </Badge>
-      );
-  }
-}
-
 function isPositiveType(type: FinanceType): boolean {
   return type === 'income' || type === 'pay' || type === 'bonus';
 }
@@ -245,30 +207,21 @@ function formatNumber(n: number): string {
   return n.toLocaleString('en-US');
 }
 
-// ── Detail Row ──────────────────────────────────────────────────
-
-function DetailRow({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div className="flex items-start justify-between gap-4 py-1.5">
-      <span className="text-sm text-muted-foreground shrink-0">{label}</span>
-      <span className="text-sm text-right">{children}</span>
-    </div>
-  );
-}
-
 // ── Chart Styling ───────────────────────────────────────────────
 
 const CHART_COLORS = {
-  income: '#22c55e',
-  expense: '#ef4444',
-  profit: '#3b82f6',
+  blue: '#3b82f6',
+  emerald: '#10b981',
+  amber: '#f59e0b',
+  red: '#ef4444',
+  cyan: '#06b6d4',
 };
 
 const TOOLTIP_STYLE = {
-  backgroundColor: '#1a1d2e',
-  border: '1px solid #2a2e3f',
+  backgroundColor: 'var(--surface-2)',
+  border: '1px solid var(--border-primary)',
   borderRadius: '6px',
-  color: '#e8eaed',
+  color: 'var(--text-primary)',
   fontSize: 12,
 };
 
@@ -437,9 +390,9 @@ function VoidTransactionDialog({ entry, open, onOpenChange, onVoided }: VoidTran
           <DialogTitle>Void Transaction</DialogTitle>
           <DialogDescription>
             Are you sure you want to void this{' '}
-            <span className="font-semibold text-foreground">{entry?.type}</span>{' '}
+            <span className="font-semibold text-[var(--text-primary)]">{entry?.type}</span>{' '}
             transaction of{' '}
-            <span className="font-mono font-semibold text-foreground">
+            <span className="font-mono font-semibold text-[var(--text-primary)]">
               {entry ? formatAmount(entry.amount) : ''}
             </span>
             {entry?.pilotCallsign ? ` for ${entry.pilotCallsign}` : ''}?
@@ -540,10 +493,10 @@ function OverviewTab({ summary }: OverviewTabProps) {
       <div className="space-y-6">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {Array.from({ length: 4 }).map((_, i) => (
-            <Skeleton key={i} className="h-[100px] rounded-md" />
+            <div key={i} className="h-[100px] rounded-lg bg-[var(--surface-2)] animate-pulse" />
           ))}
         </div>
-        <Skeleton className="h-[300px] rounded-md" />
+        <div className="h-[300px] rounded-lg bg-[var(--surface-2)] animate-pulse" />
       </div>
     );
   }
@@ -552,14 +505,14 @@ function OverviewTab({ summary }: OverviewTabProps) {
     <div className="space-y-6">
       {/* Date Range Filter */}
       <div className="flex flex-wrap items-center gap-3">
-        <Label className="text-muted-foreground">Period:</Label>
+        <Label className="text-[var(--text-tertiary)]">Period:</Label>
         <Input
           type="date"
           value={dateFrom}
           onChange={(e) => setDateFrom(e.target.value)}
           className="w-[160px]"
         />
-        <span className="text-muted-foreground">to</span>
+        <span className="text-[var(--text-tertiary)]">to</span>
         <Input
           type="date"
           value={dateTo}
@@ -579,56 +532,48 @@ function OverviewTab({ summary }: OverviewTabProps) {
 
       {/* Stat Cards */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Card className="border-border/50 bg-[#1c2033]">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2 text-muted-foreground mb-1">
-              <TrendUp size={16} weight="duotone" className="text-emerald-500" />
-              <span className="text-xs uppercase tracking-wider">Revenue</span>
-            </div>
-            <p className="text-xl font-mono font-bold text-emerald-400">{formatAmount(totalRevenue)}</p>
-          </CardContent>
-        </Card>
-        <Card className="border-border/50 bg-[#1c2033]">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2 text-muted-foreground mb-1">
-              <TrendDown size={16} weight="duotone" className="text-red-500" />
-              <span className="text-xs uppercase tracking-wider">Expenses</span>
-            </div>
-            <p className="text-xl font-mono font-bold text-red-400">{formatAmount(totalExpenses)}</p>
-          </CardContent>
-        </Card>
-        <Card className="border-border/50 bg-[#1c2033]">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2 text-muted-foreground mb-1">
-              <CurrencyDollar size={16} weight="duotone" className="text-blue-500" />
-              <span className="text-xs uppercase tracking-wider">Net Profit</span>
-            </div>
-            <p className={`text-xl font-mono font-bold ${netProfit >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-              {formatAmount(netProfit)}
-            </p>
-          </CardContent>
-        </Card>
-        <Card className="border-border/50 bg-[#1c2033]">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2 text-muted-foreground mb-1">
-              <ChartBar size={16} weight="duotone" className="text-blue-500" />
-              <span className="text-xs uppercase tracking-wider">Profit Margin</span>
-            </div>
-            <p className={`text-xl font-mono font-bold ${profitMargin >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-              {formatMargin(profitMargin)}
-            </p>
-          </CardContent>
-        </Card>
+        <Surface elevation={1} padding="default">
+          <div className="flex items-center gap-2 text-[var(--text-tertiary)] mb-1">
+            <TrendUp size={16} weight="duotone" className="text-[var(--accent-emerald)]" />
+            <span className="text-xs uppercase tracking-wider">Revenue</span>
+          </div>
+          <p className="text-xl font-mono font-bold text-[var(--accent-emerald)]">{formatAmount(totalRevenue)}</p>
+        </Surface>
+        <Surface elevation={1} padding="default">
+          <div className="flex items-center gap-2 text-[var(--text-tertiary)] mb-1">
+            <TrendDown size={16} weight="duotone" className="text-[var(--accent-red)]" />
+            <span className="text-xs uppercase tracking-wider">Expenses</span>
+          </div>
+          <p className="text-xl font-mono font-bold text-[var(--accent-red)]">{formatAmount(totalExpenses)}</p>
+        </Surface>
+        <Surface elevation={1} padding="default">
+          <div className="flex items-center gap-2 text-[var(--text-tertiary)] mb-1">
+            <CurrencyDollar size={16} weight="duotone" className="text-[var(--accent-blue)]" />
+            <span className="text-xs uppercase tracking-wider">Net Profit</span>
+          </div>
+          <p className={`text-xl font-mono font-bold ${netProfit >= 0 ? 'text-[var(--accent-emerald)]' : 'text-[var(--accent-red)]'}`}>
+            {formatAmount(netProfit)}
+          </p>
+        </Surface>
+        <Surface elevation={1} padding="default">
+          <div className="flex items-center gap-2 text-[var(--text-tertiary)] mb-1">
+            <ChartBar size={16} weight="duotone" className="text-[var(--accent-blue)]" />
+            <span className="text-xs uppercase tracking-wider">Profit Margin</span>
+          </div>
+          <p className={`text-xl font-mono font-bold ${profitMargin >= 0 ? 'text-[var(--accent-emerald)]' : 'text-[var(--accent-red)]'}`}>
+            {formatMargin(profitMargin)}
+          </p>
+        </Surface>
       </div>
 
       {/* Area Chart: 6-Month P&L */}
-      <Card className="border-border/50 bg-[#1c2033]">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base">Monthly Profit & Loss</CardTitle>
-        </CardHeader>
-        <CardContent>
+      <Surface elevation={1} padding="none">
+        <div className="p-4 pb-0">
+          <SectionHeader title="Monthly Profit & Loss" />
+        </div>
+        <div className="p-4">
           {monthlyData.length === 0 ? (
-            <p className="text-sm text-muted-foreground py-8 text-center">
+            <p className="text-sm text-[var(--text-tertiary)] py-8 text-center">
               No data for the selected period
             </p>
           ) : (
@@ -636,24 +581,24 @@ function OverviewTab({ summary }: OverviewTabProps) {
               <AreaChart data={monthlyData} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
                 <defs>
                   <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor={CHART_COLORS.income} stopOpacity={0.3} />
-                    <stop offset="95%" stopColor={CHART_COLORS.income} stopOpacity={0} />
+                    <stop offset="5%" stopColor={CHART_COLORS.emerald} stopOpacity={0.3} />
+                    <stop offset="95%" stopColor={CHART_COLORS.emerald} stopOpacity={0} />
                   </linearGradient>
                   <linearGradient id="colorExpenses" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor={CHART_COLORS.expense} stopOpacity={0.3} />
-                    <stop offset="95%" stopColor={CHART_COLORS.expense} stopOpacity={0} />
+                    <stop offset="5%" stopColor={CHART_COLORS.red} stopOpacity={0.3} />
+                    <stop offset="95%" stopColor={CHART_COLORS.red} stopOpacity={0} />
                   </linearGradient>
                   <linearGradient id="colorProfit" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor={CHART_COLORS.profit} stopOpacity={0.3} />
-                    <stop offset="95%" stopColor={CHART_COLORS.profit} stopOpacity={0} />
+                    <stop offset="5%" stopColor={CHART_COLORS.blue} stopOpacity={0.3} />
+                    <stop offset="95%" stopColor={CHART_COLORS.blue} stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#2a2e3f" />
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--border-primary)" />
                 <XAxis
                   dataKey="month"
                   tick={AXIS_TICK}
                   tickLine={false}
-                  axisLine={{ stroke: '#2a2e3f' }}
+                  axisLine={{ stroke: 'var(--border-primary)' }}
                 />
                 <YAxis
                   tick={AXIS_TICK}
@@ -675,7 +620,7 @@ function OverviewTab({ summary }: OverviewTabProps) {
                   type="monotone"
                   dataKey="revenue"
                   name="Revenue"
-                  stroke={CHART_COLORS.income}
+                  stroke={CHART_COLORS.emerald}
                   fillOpacity={1}
                   fill="url(#colorRevenue)"
                   strokeWidth={2}
@@ -684,7 +629,7 @@ function OverviewTab({ summary }: OverviewTabProps) {
                   type="monotone"
                   dataKey="expenses"
                   name="Expenses"
-                  stroke={CHART_COLORS.expense}
+                  stroke={CHART_COLORS.red}
                   fillOpacity={1}
                   fill="url(#colorExpenses)"
                   strokeWidth={2}
@@ -693,7 +638,7 @@ function OverviewTab({ summary }: OverviewTabProps) {
                   type="monotone"
                   dataKey="profit"
                   name="Profit"
-                  stroke={CHART_COLORS.profit}
+                  stroke={CHART_COLORS.blue}
                   fillOpacity={1}
                   fill="url(#colorProfit)"
                   strokeWidth={2}
@@ -701,22 +646,22 @@ function OverviewTab({ summary }: OverviewTabProps) {
               </AreaChart>
             </ResponsiveContainer>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </Surface>
 
       {/* Top Routes + Breakdown */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         {/* Top Routes */}
-        <Card className="border-border/50 bg-[#1c2033]">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base flex items-center gap-2">
-              <MapPin size={16} weight="duotone" />
-              Top Routes by Profit
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
+        <Surface elevation={1} padding="none">
+          <div className="p-4 pb-0">
+            <SectionHeader
+              title="Top Routes by Profit"
+              action={<MapPin size={14} weight="duotone" className="text-[var(--text-tertiary)]" />}
+            />
+          </div>
+          <div className="p-4">
             {topRoutes.length === 0 ? (
-              <p className="text-sm text-muted-foreground py-4 text-center">
+              <p className="text-sm text-[var(--text-tertiary)] py-4 text-center">
                 No route data available
               </p>
             ) : (
@@ -724,24 +669,24 @@ function OverviewTab({ summary }: OverviewTabProps) {
                 {topRoutes.map((route, idx) => (
                   <div
                     key={route.route}
-                    className="flex items-center justify-between py-2 border-b border-border/30 last:border-0"
+                    className="flex items-center justify-between py-2 border-b border-[var(--border-secondary)] last:border-0"
                   >
                     <div className="flex items-center gap-3">
-                      <span className="text-xs font-mono text-muted-foreground w-4">{idx + 1}</span>
+                      <span className="text-xs font-mono text-[var(--text-quaternary)] w-4">{idx + 1}</span>
                       <div>
-                        <span className="font-mono font-medium text-sm">
-                          {route.depIcao} <span className="text-muted-foreground">&rarr;</span> {route.arrIcao}
+                        <span className="font-mono font-medium text-sm text-[var(--text-primary)]">
+                          {route.depIcao} <span className="text-[var(--text-quaternary)]">&rarr;</span> {route.arrIcao}
                         </span>
-                        <div className="text-xs text-muted-foreground">
+                        <div className="text-xs text-[var(--text-tertiary)]">
                           {route.flights} flight{route.flights !== 1 ? 's' : ''}
                         </div>
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className={`font-mono font-medium text-sm ${route.profit >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                      <p className={`font-mono font-medium text-sm ${route.profit >= 0 ? 'text-[var(--accent-emerald)]' : 'text-[var(--accent-red)]'}`}>
                         {formatAmount(route.profit)}
                       </p>
-                      <p className="text-xs text-muted-foreground">
+                      <p className="text-xs text-[var(--text-tertiary)]">
                         {formatMargin(route.margin)} margin
                       </p>
                     </div>
@@ -749,64 +694,64 @@ function OverviewTab({ summary }: OverviewTabProps) {
                 ))}
               </div>
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </Surface>
 
         {/* Detailed Breakdown */}
-        <Card className="border-border/50 bg-[#1c2033]">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base">Breakdown by Type</CardTitle>
-          </CardHeader>
-          <CardContent>
+        <Surface elevation={1} padding="none">
+          <div className="p-4 pb-0">
+            <SectionHeader title="Breakdown by Type" />
+          </div>
+          <div className="p-4">
             <div className="space-y-3">
-              <div className="flex items-center justify-between py-2 border-b border-border/30">
+              <div className="flex items-center justify-between py-2 border-b border-[var(--border-secondary)]">
                 <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-sm bg-emerald-500" />
-                  <span className="text-sm">Income</span>
+                  <div className="w-3 h-3 rounded-sm bg-[var(--accent-emerald)]" />
+                  <span className="text-sm text-[var(--text-primary)]">Income</span>
                 </div>
-                <span className="font-mono text-emerald-400">{formatAmount(periodSummary.totalIncome)}</span>
+                <span className="font-mono text-[var(--accent-emerald)]">{formatAmount(periodSummary.totalIncome)}</span>
               </div>
-              <div className="flex items-center justify-between py-2 border-b border-border/30">
+              <div className="flex items-center justify-between py-2 border-b border-[var(--border-secondary)]">
                 <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-sm bg-blue-500" />
-                  <span className="text-sm">Pilot Pay</span>
+                  <div className="w-3 h-3 rounded-sm bg-[var(--accent-blue)]" />
+                  <span className="text-sm text-[var(--text-primary)]">Pilot Pay</span>
                 </div>
-                <span className="font-mono text-blue-400">{formatAmount(periodSummary.totalPay)}</span>
+                <span className="font-mono text-[var(--accent-blue)]">{formatAmount(periodSummary.totalPay)}</span>
               </div>
-              <div className="flex items-center justify-between py-2 border-b border-border/30">
+              <div className="flex items-center justify-between py-2 border-b border-[var(--border-secondary)]">
                 <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-sm bg-blue-400" />
-                  <span className="text-sm">Bonuses</span>
+                  <div className="w-3 h-3 rounded-sm bg-[var(--accent-cyan)]" />
+                  <span className="text-sm text-[var(--text-primary)]">Bonuses</span>
                 </div>
-                <span className="font-mono text-blue-400">{formatAmount(periodSummary.totalBonuses)}</span>
+                <span className="font-mono text-[var(--accent-cyan)]">{formatAmount(periodSummary.totalBonuses)}</span>
               </div>
-              <div className="flex items-center justify-between py-2 border-b border-border/30">
+              <div className="flex items-center justify-between py-2 border-b border-[var(--border-secondary)]">
                 <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-sm bg-red-500" />
-                  <span className="text-sm">Expenses</span>
+                  <div className="w-3 h-3 rounded-sm bg-[var(--accent-red)]" />
+                  <span className="text-sm text-[var(--text-primary)]">Expenses</span>
                 </div>
-                <span className="font-mono text-red-400">{formatAmount(periodSummary.totalExpenses)}</span>
+                <span className="font-mono text-[var(--accent-red)]">{formatAmount(periodSummary.totalExpenses)}</span>
               </div>
-              <div className="flex items-center justify-between py-2 border-b border-border/30">
+              <div className="flex items-center justify-between py-2 border-b border-[var(--border-secondary)]">
                 <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-sm bg-amber-500" />
-                  <span className="text-sm">Deductions</span>
+                  <div className="w-3 h-3 rounded-sm bg-[var(--accent-amber)]" />
+                  <span className="text-sm text-[var(--text-primary)]">Deductions</span>
                 </div>
-                <span className="font-mono text-amber-400">{formatAmount(periodSummary.totalDeductions)}</span>
+                <span className="font-mono text-[var(--accent-amber)]">{formatAmount(periodSummary.totalDeductions)}</span>
               </div>
               <div className="flex items-center justify-between py-2 pt-3">
-                <span className="text-sm font-semibold">Net Total</span>
+                <span className="text-sm font-semibold text-[var(--text-primary)]">Net Total</span>
                 <span
                   className={`font-mono font-bold text-lg ${
-                    periodSummary.netTotal >= 0 ? 'text-emerald-400' : 'text-red-400'
+                    periodSummary.netTotal >= 0 ? 'text-[var(--accent-emerald)]' : 'text-[var(--accent-red)]'
                   }`}
                 >
                   {formatAmount(periodSummary.netTotal)}
                 </span>
               </div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </Surface>
       </div>
     </div>
   );
@@ -887,7 +832,7 @@ function RevenueTab() {
         accessorKey: 'flightDate',
         header: ({ column }) => <DataTableColumnHeader column={column} title="Date" />,
         cell: ({ row }) => (
-          <span className="text-muted-foreground text-sm">
+          <span className="text-[var(--text-tertiary)] text-sm">
             {formatDate(row.original.flightDate)}
           </span>
         ),
@@ -907,7 +852,7 @@ function RevenueTab() {
         cell: ({ row }) => (
           <span className="font-mono text-sm">
             {row.original.depIcao}
-            <span className="text-muted-foreground mx-1">&rarr;</span>
+            <span className="text-[var(--text-quaternary)] mx-1">&rarr;</span>
             {row.original.arrIcao}
           </span>
         ),
@@ -918,7 +863,7 @@ function RevenueTab() {
         accessorKey: 'aircraftType',
         header: 'Aircraft',
         cell: ({ row }) => (
-          <span className="text-sm text-muted-foreground">{row.original.aircraftType}</span>
+          <span className="text-sm text-[var(--text-tertiary)]">{row.original.aircraftType}</span>
         ),
         size: 110,
       },
@@ -934,7 +879,7 @@ function RevenueTab() {
         accessorKey: 'revenue',
         header: ({ column }) => <DataTableColumnHeader column={column} title="Revenue" />,
         cell: ({ row }) => (
-          <span className="font-mono font-medium text-emerald-400">
+          <span className="font-mono font-medium text-[var(--accent-emerald)]">
             {formatAmount(row.original.revenue)}
           </span>
         ),
@@ -944,7 +889,7 @@ function RevenueTab() {
         accessorKey: 'pilotCallsign',
         header: 'Pilot',
         cell: ({ row }) => (
-          <span className="font-mono text-sm text-muted-foreground">
+          <span className="font-mono text-sm text-[var(--text-tertiary)]">
             {row.original.pilotCallsign}
           </span>
         ),
@@ -960,39 +905,37 @@ function RevenueTab() {
       {topRoutes.length > 0 && (
         <div className="grid grid-cols-1 sm:grid-cols-5 gap-3">
           {topRoutes.map((route, idx) => (
-            <Card key={route.route} className="border-border/50 bg-[#1c2033]">
-              <CardContent className="p-3">
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-xs text-muted-foreground">#{idx + 1} Route</span>
-                  <Badge variant="outline" className="text-[10px] px-1.5 py-0">
-                    {route.flights} flights
-                  </Badge>
-                </div>
-                <p className="font-mono font-medium text-sm">
-                  {route.depIcao} <span className="text-muted-foreground">&rarr;</span> {route.arrIcao}
-                </p>
-                <div className="flex items-center justify-between mt-1">
-                  <span className={`font-mono text-sm font-medium ${route.profit >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                    {formatAmount(route.profit)}
-                  </span>
-                  <span className="text-xs text-muted-foreground">{formatMargin(route.margin)}</span>
-                </div>
-              </CardContent>
-            </Card>
+            <Surface key={route.route} elevation={1} padding="compact">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-xs text-[var(--text-tertiary)]">#{idx + 1} Route</span>
+                <span className="inline-flex items-center px-1.5 py-0 rounded-md text-[10px] font-semibold ring-1 ring-[var(--border-primary)] text-[var(--text-tertiary)] bg-[var(--surface-3)]">
+                  {route.flights} flights
+                </span>
+              </div>
+              <p className="font-mono font-medium text-sm text-[var(--text-primary)]">
+                {route.depIcao} <span className="text-[var(--text-quaternary)]">&rarr;</span> {route.arrIcao}
+              </p>
+              <div className="flex items-center justify-between mt-1">
+                <span className={`font-mono text-sm font-medium ${route.profit >= 0 ? 'text-[var(--accent-emerald)]' : 'text-[var(--accent-red)]'}`}>
+                  {formatAmount(route.profit)}
+                </span>
+                <span className="text-xs text-[var(--text-tertiary)]">{formatMargin(route.margin)}</span>
+              </div>
+            </Surface>
           ))}
         </div>
       )}
 
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-3">
-        <Label className="text-muted-foreground">Period:</Label>
+        <Label className="text-[var(--text-tertiary)]">Period:</Label>
         <Input
           type="date"
           value={dateFrom}
           onChange={(e) => setDateFrom(e.target.value)}
           className="w-[150px]"
         />
-        <span className="text-muted-foreground">to</span>
+        <span className="text-[var(--text-tertiary)]">to</span>
         <Input
           type="date"
           value={dateTo}
@@ -1007,7 +950,7 @@ function RevenueTab() {
       </div>
 
       {/* Split view: table + detail */}
-      <div className="flex flex-1 gap-0 overflow-hidden rounded-md border border-border/50">
+      <div className="flex flex-1 gap-0 overflow-hidden rounded-md border border-[var(--border-primary)]">
         <div className={`${detailOpen ? 'w-[55%]' : 'w-full'} flex flex-col transition-all duration-200`}>
           <DataTable
             columns={columns}
@@ -1037,51 +980,37 @@ function RevenueTab() {
             <div className="space-y-6">
               {/* Flight Info */}
               <section>
-                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-2">
-                  <AirplaneTilt size={14} weight="duotone" />
-                  Flight Info
-                </h3>
+                <SectionHeader title="Flight Info" action={<AirplaneTilt size={14} weight="duotone" className="text-[var(--text-tertiary)]" />} />
                 <div className="space-y-0.5">
-                  <DetailRow label="Flight #">
-                    <span className="font-mono font-medium">{detailEntry.flightNumber}</span>
-                  </DetailRow>
-                  <DetailRow label="Route">
+                  <DataRow label="Flight #" value={<span className="font-mono font-medium">{detailEntry.flightNumber}</span>} />
+                  <DataRow label="Route" value={
                     <span className="font-mono">
-                      {detailEntry.depIcao} <span className="text-muted-foreground">&rarr;</span> {detailEntry.arrIcao}
+                      {detailEntry.depIcao} <span className="text-[var(--text-quaternary)]">&rarr;</span> {detailEntry.arrIcao}
                     </span>
-                  </DetailRow>
-                  <DetailRow label="Aircraft">
-                    <span className="font-mono">{detailEntry.aircraftType}</span>
-                  </DetailRow>
-                  <DetailRow label="Date">{formatDate(detailEntry.flightDate)}</DetailRow>
-                  <DetailRow label="Pilot">
-                    <span className="font-mono">{detailEntry.pilotCallsign}</span>
-                    <span className="text-muted-foreground ml-1">({detailEntry.pilotName})</span>
-                  </DetailRow>
+                  } />
+                  <DataRow label="Aircraft" value={<span className="font-mono">{detailEntry.aircraftType}</span>} />
+                  <DataRow label="Date" value={formatDate(detailEntry.flightDate)} />
+                  <DataRow label="Pilot" value={
+                    <>
+                      <span className="font-mono">{detailEntry.pilotCallsign}</span>
+                      <span className="text-[var(--text-tertiary)] ml-1">({detailEntry.pilotName})</span>
+                    </>
+                  } />
                 </div>
               </section>
 
-              <Separator />
-
               {/* Revenue Breakdown */}
               <section>
-                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-2">
-                  <Package size={14} weight="duotone" />
-                  Cargo & Revenue
-                </h3>
+                <SectionHeader title="Cargo & Revenue" action={<Package size={14} weight="duotone" className="text-[var(--text-tertiary)]" />} />
                 <div className="space-y-0.5">
-                  <DetailRow label="Cargo Weight">
-                    <span className="font-mono">{formatNumber(detailEntry.cargoLbs)} lbs</span>
-                  </DetailRow>
-                  <DetailRow label="Revenue">
-                    <span className="font-mono font-medium text-emerald-400">
+                  <DataRow label="Cargo Weight" value={<span className="font-mono">{formatNumber(detailEntry.cargoLbs)} lbs</span>} mono />
+                  <DataRow label="Revenue" value={
+                    <span className="font-mono font-medium text-[var(--accent-emerald)]">
                       {formatAmount(detailEntry.revenue)}
                     </span>
-                  </DetailRow>
+                  } />
                   {detailEntry.pirepId && (
-                    <DetailRow label="PIREP ID">
-                      <span className="font-mono text-muted-foreground">#{detailEntry.pirepId}</span>
-                    </DetailRow>
+                    <DataRow label="PIREP ID" value={<span className="font-mono text-[var(--text-tertiary)]">#{detailEntry.pirepId}</span>} />
                   )}
                 </div>
               </section>
@@ -1169,7 +1098,7 @@ function PilotPayTab({ pilots, onRefresh }: PilotPayTabProps) {
         cell: ({ row }) => (
           <div>
             <span className="font-mono font-medium">{row.original.callsign}</span>
-            <p className="text-xs text-muted-foreground">{row.original.pilotName}</p>
+            <p className="text-xs text-[var(--text-tertiary)]">{row.original.pilotName}</p>
           </div>
         ),
         size: 140,
@@ -1178,7 +1107,7 @@ function PilotPayTab({ pilots, onRefresh }: PilotPayTabProps) {
         accessorKey: 'hours',
         header: ({ column }) => <DataTableColumnHeader column={column} title="Hours" />,
         cell: ({ row }) => (
-          <span className="font-mono text-muted-foreground">{row.original.hours.toFixed(1)}h</span>
+          <span className="font-mono text-[var(--text-tertiary)]">{row.original.hours.toFixed(1)}h</span>
         ),
         size: 80,
       },
@@ -1186,7 +1115,7 @@ function PilotPayTab({ pilots, onRefresh }: PilotPayTabProps) {
         accessorKey: 'flights',
         header: ({ column }) => <DataTableColumnHeader column={column} title="Flights" />,
         cell: ({ row }) => (
-          <span className="font-mono text-muted-foreground">{row.original.flights}</span>
+          <span className="font-mono text-[var(--text-tertiary)]">{row.original.flights}</span>
         ),
         size: 80,
       },
@@ -1194,7 +1123,7 @@ function PilotPayTab({ pilots, onRefresh }: PilotPayTabProps) {
         accessorKey: 'basePay',
         header: ({ column }) => <DataTableColumnHeader column={column} title="Base Pay" />,
         cell: ({ row }) => (
-          <span className="font-mono text-emerald-400">{formatAmount(row.original.basePay)}</span>
+          <span className="font-mono text-[var(--accent-emerald)]">{formatAmount(row.original.basePay)}</span>
         ),
         size: 110,
       },
@@ -1202,7 +1131,7 @@ function PilotPayTab({ pilots, onRefresh }: PilotPayTabProps) {
         accessorKey: 'bonuses',
         header: ({ column }) => <DataTableColumnHeader column={column} title="Bonuses" />,
         cell: ({ row }) => (
-          <span className="font-mono text-blue-400">{formatAmount(row.original.bonuses)}</span>
+          <span className="font-mono text-[var(--accent-cyan)]">{formatAmount(row.original.bonuses)}</span>
         ),
         size: 110,
       },
@@ -1210,7 +1139,7 @@ function PilotPayTab({ pilots, onRefresh }: PilotPayTabProps) {
         accessorKey: 'deductions',
         header: ({ column }) => <DataTableColumnHeader column={column} title="Deductions" />,
         cell: ({ row }) => (
-          <span className="font-mono text-amber-400">{formatAmount(row.original.deductions)}</span>
+          <span className="font-mono text-[var(--accent-amber)]">{formatAmount(row.original.deductions)}</span>
         ),
         size: 110,
       },
@@ -1218,7 +1147,7 @@ function PilotPayTab({ pilots, onRefresh }: PilotPayTabProps) {
         accessorKey: 'netPay',
         header: ({ column }) => <DataTableColumnHeader column={column} title="Net Pay" />,
         cell: ({ row }) => (
-          <span className={`font-mono font-medium ${row.original.netPay >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+          <span className={`font-mono font-medium ${row.original.netPay >= 0 ? 'text-[var(--accent-emerald)]' : 'text-[var(--accent-red)]'}`}>
             {formatAmount(row.original.netPay)}
           </span>
         ),
@@ -1232,37 +1161,37 @@ function PilotPayTab({ pilots, onRefresh }: PilotPayTabProps) {
     <div className="space-y-4">
       {/* Summary bar */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div className="rounded-md bg-[#1c2033] border border-border/50 p-3">
-          <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Total Base Pay</span>
-          <p className="text-lg font-mono font-bold text-emerald-400 mt-1">{formatAmount(totals.basePay)}</p>
-        </div>
-        <div className="rounded-md bg-[#1c2033] border border-border/50 p-3">
-          <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Total Bonuses</span>
-          <p className="text-lg font-mono font-bold text-blue-400 mt-1">{formatAmount(totals.bonuses)}</p>
-        </div>
-        <div className="rounded-md bg-[#1c2033] border border-border/50 p-3">
-          <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Total Deductions</span>
-          <p className="text-lg font-mono font-bold text-amber-400 mt-1">{formatAmount(totals.deductions)}</p>
-        </div>
-        <div className="rounded-md bg-[#1c2033] border border-border/50 p-3">
-          <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Total Net Pay</span>
-          <p className={`text-lg font-mono font-bold mt-1 ${totals.netPay >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+        <Surface elevation={1} padding="compact">
+          <span className="text-[10px] uppercase tracking-wider text-[var(--text-tertiary)]">Total Base Pay</span>
+          <p className="text-lg font-mono font-bold text-[var(--accent-emerald)] mt-1">{formatAmount(totals.basePay)}</p>
+        </Surface>
+        <Surface elevation={1} padding="compact">
+          <span className="text-[10px] uppercase tracking-wider text-[var(--text-tertiary)]">Total Bonuses</span>
+          <p className="text-lg font-mono font-bold text-[var(--accent-cyan)] mt-1">{formatAmount(totals.bonuses)}</p>
+        </Surface>
+        <Surface elevation={1} padding="compact">
+          <span className="text-[10px] uppercase tracking-wider text-[var(--text-tertiary)]">Total Deductions</span>
+          <p className="text-lg font-mono font-bold text-[var(--accent-amber)] mt-1">{formatAmount(totals.deductions)}</p>
+        </Surface>
+        <Surface elevation={1} padding="compact">
+          <span className="text-[10px] uppercase tracking-wider text-[var(--text-tertiary)]">Total Net Pay</span>
+          <p className={`text-lg font-mono font-bold mt-1 ${totals.netPay >= 0 ? 'text-[var(--accent-emerald)]' : 'text-[var(--accent-red)]'}`}>
             {formatAmount(totals.netPay)}
           </p>
-        </div>
+        </Surface>
       </div>
 
       {/* Toolbar */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-wrap items-center gap-3">
-          <Label className="text-muted-foreground">Period:</Label>
+          <Label className="text-[var(--text-tertiary)]">Period:</Label>
           <Input
             type="date"
             value={dateFrom}
             onChange={(e) => setDateFrom(e.target.value)}
             className="w-[150px]"
           />
-          <span className="text-muted-foreground">to</span>
+          <span className="text-[var(--text-tertiary)]">to</span>
           <Input
             type="date"
             value={dateTo}
@@ -1282,7 +1211,7 @@ function PilotPayTab({ pilots, onRefresh }: PilotPayTabProps) {
       </div>
 
       {/* Split view: table + detail */}
-      <div className="flex flex-1 gap-0 overflow-hidden rounded-md border border-border/50">
+      <div className="flex flex-1 gap-0 overflow-hidden rounded-md border border-[var(--border-primary)]">
         <div className={`${detailOpen ? 'w-[55%]' : 'w-full'} flex flex-col transition-all duration-200`}>
           <DataTable
             columns={columns}
@@ -1305,59 +1234,39 @@ function PilotPayTab({ pilots, onRefresh }: PilotPayTabProps) {
             <div className="space-y-6">
               {/* Activity */}
               <section>
-                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-2">
-                  <UsersIcon size={14} weight="duotone" />
-                  Activity
-                </h3>
+                <SectionHeader title="Activity" action={<UsersIcon size={14} weight="duotone" className="text-[var(--text-tertiary)]" />} />
                 <div className="space-y-0.5">
-                  <DetailRow label="Flights">
-                    <span className="font-mono">{detailEntry.flights}</span>
-                  </DetailRow>
-                  <DetailRow label="Hours">
-                    <span className="font-mono">{detailEntry.hours.toFixed(1)}h</span>
-                  </DetailRow>
+                  <DataRow label="Flights" value={<span className="font-mono">{detailEntry.flights}</span>} />
+                  <DataRow label="Hours" value={<span className="font-mono">{detailEntry.hours.toFixed(1)}h</span>} />
                 </div>
               </section>
-
-              <Separator />
 
               {/* Pay Breakdown */}
               <section>
-                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-2">
-                  <Wallet size={14} weight="duotone" />
-                  Pay Breakdown
-                </h3>
+                <SectionHeader title="Pay Breakdown" action={<Wallet size={14} weight="duotone" className="text-[var(--text-tertiary)]" />} />
                 <div className="space-y-0.5">
-                  <DetailRow label="Base Pay">
-                    <span className="font-mono text-emerald-400">{formatAmount(detailEntry.basePay)}</span>
-                  </DetailRow>
-                  <DetailRow label="Bonuses">
-                    <span className="font-mono text-blue-400">{formatAmount(detailEntry.bonuses)}</span>
-                  </DetailRow>
-                  <DetailRow label="Deductions">
-                    <span className="font-mono text-amber-400">-{formatAmount(detailEntry.deductions)}</span>
-                  </DetailRow>
+                  <DataRow label="Base Pay" value={<span className="font-mono text-[var(--accent-emerald)]">{formatAmount(detailEntry.basePay)}</span>} />
+                  <DataRow label="Bonuses" value={<span className="font-mono text-[var(--accent-cyan)]">{formatAmount(detailEntry.bonuses)}</span>} />
+                  <DataRow label="Deductions" value={<span className="font-mono text-[var(--accent-amber)]">-{formatAmount(detailEntry.deductions)}</span>} />
                 </div>
               </section>
 
-              <Separator />
-
               {/* Net Pay */}
-              <div className="flex items-center justify-between pt-2">
-                <span className="text-sm font-semibold">Net Pay</span>
-                <span className={`font-mono font-bold text-lg ${detailEntry.netPay >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+              <div className="flex items-center justify-between pt-2 border-t border-[var(--border-primary)]">
+                <span className="text-sm font-semibold text-[var(--text-primary)]">Net Pay</span>
+                <span className={`font-mono font-bold text-lg ${detailEntry.netPay >= 0 ? 'text-[var(--accent-emerald)]' : 'text-[var(--accent-red)]'}`}>
                   {formatAmount(detailEntry.netPay)}
                 </span>
               </div>
 
               {/* Per-flight average */}
               {detailEntry.flights > 0 && (
-                <div className="rounded-md bg-[#0f1219] border border-border/30 p-3 mt-4">
-                  <span className="text-xs text-muted-foreground">Average per flight</span>
-                  <p className="font-mono font-medium text-sm mt-0.5">
+                <Surface elevation={0} padding="compact" className="bg-[var(--surface-1)] border border-[var(--border-secondary)]">
+                  <span className="text-xs text-[var(--text-tertiary)]">Average per flight</span>
+                  <p className="font-mono font-medium text-sm mt-0.5 text-[var(--text-primary)]">
                     {formatAmount(detailEntry.netPay / detailEntry.flights)}
                   </p>
-                </div>
+                </Surface>
               )}
             </div>
           </DetailPanel>
@@ -1472,7 +1381,7 @@ function LedgerTab({ pilots, onRefresh }: LedgerTabProps) {
         cell: ({ row }) => {
           const voided = isVoided(row.original);
           return (
-            <span className={`text-muted-foreground text-sm ${voided ? 'line-through opacity-50' : ''}`}>
+            <span className={`text-[var(--text-tertiary)] text-sm ${voided ? 'line-through opacity-50' : ''}`}>
               {formatDateTime(row.original.createdAt)}
             </span>
           );
@@ -1486,11 +1395,9 @@ function LedgerTab({ pilots, onRefresh }: LedgerTabProps) {
           const voided = isVoided(row.original);
           return (
             <div className={voided ? 'opacity-50' : ''}>
-              {typeBadge(row.original.type)}
+              <StatusBadge status={row.original.type} />
               {voided && (
-                <Badge variant="outline" className="ml-1 text-[10px] text-muted-foreground">
-                  Voided
-                </Badge>
+                <StatusBadge status="voided" className="ml-1" />
               )}
             </div>
           );
@@ -1505,7 +1412,7 @@ function LedgerTab({ pilots, onRefresh }: LedgerTabProps) {
           const voided = isVoided(row.original);
           return (
             <span className={`max-w-[250px] truncate block ${voided ? 'line-through opacity-50' : ''}`}>
-              {row.original.description || <span className="text-muted-foreground italic">No description</span>}
+              {row.original.description || <span className="text-[var(--text-quaternary)] italic">No description</span>}
             </span>
           );
         },
@@ -1521,10 +1428,10 @@ function LedgerTab({ pilots, onRefresh }: LedgerTabProps) {
             <span
               className={`font-mono font-medium text-right block ${
                 voided
-                  ? 'line-through opacity-50 text-muted-foreground'
+                  ? 'line-through opacity-50 text-[var(--text-quaternary)]'
                   : positive
-                    ? 'text-emerald-400'
-                    : 'text-red-400'
+                    ? 'text-[var(--accent-emerald)]'
+                    : 'text-[var(--accent-red)]'
               }`}
             >
               {positive ? '+' : '-'}
@@ -1571,7 +1478,7 @@ function LedgerTab({ pilots, onRefresh }: LedgerTabProps) {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuItem
-                  className="text-red-400 focus:text-red-400"
+                  className="text-[var(--accent-red)] focus:text-[var(--accent-red)]"
                   onClick={(e) => { e.stopPropagation(); setVoidEntry(entry); }}
                 >
                   <Prohibit size={14} />
@@ -1595,7 +1502,7 @@ function LedgerTab({ pilots, onRefresh }: LedgerTabProps) {
           <div className="relative max-w-xs flex-1 min-w-[200px]">
             <MagnifyingGlass
               size={16}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-quaternary)]"
             />
             <Input
               placeholder="Search transactions..."
@@ -1639,7 +1546,7 @@ function LedgerTab({ pilots, onRefresh }: LedgerTabProps) {
       </div>
 
       {/* Split view: table + detail */}
-      <div className="flex flex-1 gap-0 overflow-hidden rounded-md border border-border/50">
+      <div className="flex flex-1 gap-0 overflow-hidden rounded-md border border-[var(--border-primary)]">
         <div className={`${detailOpen ? 'w-[55%]' : 'w-full'} flex flex-col transition-all duration-200`}>
           <DataTable
             columns={columns}
@@ -1680,42 +1587,33 @@ function LedgerTab({ pilots, onRefresh }: LedgerTabProps) {
           >
             <div className="space-y-6">
               {isVoided(detailEntry) && (
-                <Badge variant="outline" className="text-red-400 border-red-500/30">
-                  Voided
-                </Badge>
+                <StatusBadge status="voided" className="text-[var(--accent-red)]" />
               )}
 
               <section>
-                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-2">
-                  <Receipt size={14} weight="duotone" />
-                  Details
-                </h3>
+                <SectionHeader title="Details" action={<Receipt size={14} weight="duotone" className="text-[var(--text-tertiary)]" />} />
                 <div className="space-y-0.5">
-                  <DetailRow label="Type">{typeBadge(detailEntry.type)}</DetailRow>
-                  <DetailRow label="Amount">
-                    <span className={`font-mono font-medium ${isPositiveType(detailEntry.type) ? 'text-emerald-400' : 'text-red-400'}`}>
+                  <DataRow label="Type" value={<StatusBadge status={detailEntry.type} />} />
+                  <DataRow label="Amount" value={
+                    <span className={`font-mono font-medium ${isPositiveType(detailEntry.type) ? 'text-[var(--accent-emerald)]' : 'text-[var(--accent-red)]'}`}>
                       {isPositiveType(detailEntry.type) ? '+' : '-'}{formatAmount(detailEntry.amount)}
                     </span>
-                  </DetailRow>
-                  <DetailRow label="Pilot">
-                    <span className="font-mono">{detailEntry.pilotCallsign}</span>
-                    <span className="text-muted-foreground ml-1">({detailEntry.pilotName})</span>
-                  </DetailRow>
-                  <DetailRow label="Date">{formatDateTime(detailEntry.createdAt)}</DetailRow>
+                  } />
+                  <DataRow label="Pilot" value={
+                    <>
+                      <span className="font-mono">{detailEntry.pilotCallsign}</span>
+                      <span className="text-[var(--text-tertiary)] ml-1">({detailEntry.pilotName})</span>
+                    </>
+                  } />
+                  <DataRow label="Date" value={formatDateTime(detailEntry.createdAt)} />
                   {detailEntry.description && (
-                    <DetailRow label="Description">
-                      <span className="text-sm">{detailEntry.description}</span>
-                    </DetailRow>
+                    <DataRow label="Description" value={<span className="text-sm">{detailEntry.description}</span>} />
                   )}
                   {detailEntry.pirepId && (
-                    <DetailRow label="PIREP">
-                      <span className="font-mono text-muted-foreground">#{detailEntry.pirepId}</span>
-                    </DetailRow>
+                    <DataRow label="PIREP" value={<span className="font-mono text-[var(--text-tertiary)]">#{detailEntry.pirepId}</span>} />
                   )}
                   {detailEntry.creatorCallsign && (
-                    <DetailRow label="Created By">
-                      <span className="font-mono text-muted-foreground">{detailEntry.creatorCallsign}</span>
-                    </DetailRow>
+                    <DataRow label="Created By" value={<span className="font-mono text-[var(--text-tertiary)]">{detailEntry.creatorCallsign}</span>} />
                   )}
                 </div>
               </section>
@@ -1785,11 +1683,11 @@ export function FinancesPage() {
         <div className="space-y-6">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {Array.from({ length: 4 }).map((_, i) => (
-              <Skeleton key={i} className="h-[60px] rounded-md" />
+              <div key={i} className="h-[60px] rounded-lg bg-[var(--surface-2)] animate-pulse" />
             ))}
           </div>
-          <Skeleton className="h-10 w-full rounded-md" />
-          <Skeleton className="h-[400px] rounded-md" />
+          <div className="h-10 w-full rounded-lg bg-[var(--surface-2)] animate-pulse" />
+          <div className="h-[400px] rounded-lg bg-[var(--surface-2)] animate-pulse" />
         </div>
       </PageShell>
     );
@@ -1798,7 +1696,7 @@ export function FinancesPage() {
   if (error) {
     return (
       <PageShell title="Finances" subtitle="Revenue, payroll, and accounting">
-        <div className="flex items-center justify-center py-20 text-muted-foreground">
+        <div className="flex items-center justify-center py-20 text-[var(--text-tertiary)]">
           <p>{error}</p>
         </div>
       </PageShell>
