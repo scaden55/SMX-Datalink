@@ -1,0 +1,98 @@
+/* ═══════════════════════════════════════════════════════════
+   SMA ACARS Admin — Design Tokens
+   Single source of truth for all visual constants.
+   ═══════════════════════════════════════════════════════════ */
+
+:root {
+  /* ── Surface Colors (4-tier depth system) ─────────────── */
+  --surface-0: #0a0d14;
+  --surface-1: #0f1219;
+  --surface-2: #151a24;
+  --surface-3: #1c2230;
+
+  /* ── Text Hierarchy ───────────────────────────────────── */
+  --text-primary: #f0f1f3;
+  --text-secondary: #c4c7ce;
+  --text-tertiary: #7a7f8e;
+  --text-quaternary: #4a4f5e;
+
+  /* ── Semantic Accent Colors ───────────────────────────── */
+  --accent-blue: #3b82f6;
+  --accent-blue-bg: rgba(59, 130, 246, 0.12);
+  --accent-blue-ring: rgba(59, 130, 246, 0.25);
+
+  --accent-emerald: #10b981;
+  --accent-emerald-bg: rgba(16, 185, 129, 0.12);
+  --accent-emerald-ring: rgba(16, 185, 129, 0.25);
+
+  --accent-amber: #f59e0b;
+  --accent-amber-bg: rgba(245, 158, 11, 0.12);
+  --accent-amber-ring: rgba(245, 158, 11, 0.25);
+
+  --accent-red: #ef4444;
+  --accent-red-bg: rgba(239, 68, 68, 0.12);
+  --accent-red-ring: rgba(239, 68, 68, 0.25);
+
+  --accent-cyan: #06b6d4;
+  --accent-cyan-bg: rgba(6, 182, 212, 0.12);
+  --accent-cyan-ring: rgba(6, 182, 212, 0.25);
+
+  /* ── Border System ────────────────────────────────────── */
+  --border-primary: #1e2535;
+  --border-secondary: #2a3040;
+  --border-hover: #3a4050;
+
+  /* ── Elevation (Shadows) ──────────────────────────────── */
+  --elevation-0: none;
+  --elevation-1: 0 1px 3px rgba(0, 0, 0, 0.3), 0 1px 2px rgba(0, 0, 0, 0.2);
+  --elevation-2: 0 4px 12px rgba(0, 0, 0, 0.4);
+  --elevation-3: 0 8px 24px rgba(0, 0, 0, 0.5);
+
+  /* ── Typography ───────────────────────────────────────── */
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-mono: 'IBM Plex Mono', 'Menlo', monospace;
+
+  --text-display-size: 24px;
+  --text-heading-size: 16px;
+  --text-subheading-size: 11px;
+  --text-body-size: 13px;
+  --text-caption-size: 11px;
+  --text-data-size: 13px;
+  --text-data-sm-size: 11px;
+  --text-data-lg-size: 20px;
+
+  /* ── Spacing Scale ────────────────────────────────────── */
+  --space-1: 4px;
+  --space-1-5: 6px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+
+  /* ── Border Radius ────────────────────────────────────── */
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
+  --radius-full: 9999px;
+
+  /* ── Animation ────────────────────────────────────────── */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out: cubic-bezier(0.45, 0, 0.55, 1);
+  --duration-fast: 120ms;
+  --duration-normal: 200ms;
+  --duration-slow: 350ms;
+
+  /* ── Z-Index Scale ────────────────────────────────────── */
+  --z-base: 0;
+  --z-dropdown: 50;
+  --z-sticky: 100;
+  --z-overlay: 200;
+  --z-modal: 300;
+  --z-toast: 400;
+}

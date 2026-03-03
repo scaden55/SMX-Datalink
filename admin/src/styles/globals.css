@@ -1,3 +1,4 @@
+@import './tokens.css';
 @import 'leaflet/dist/leaflet.css';
 
 @tailwind base;
@@ -18,48 +19,42 @@
   }
 
   .dark {
-    /* Backgrounds */
-    --background: 222 23% 10%;       /* #141820 — content area */
-    --foreground: 220 10% 92%;       /* #e8eaed */
-    --card: 230 29% 15%;             /* #1c2033 */
-    --card-foreground: 220 10% 92%;
-    --popover: 230 29% 15%;
-    --popover-foreground: 220 10% 92%;
+    /* Map shadcn HSL variables for component compatibility */
+    --background: 222 30% 7%;
+    --foreground: 220 10% 95%;
+    --card: 220 24% 11%;
+    --card-foreground: 220 10% 95%;
+    --popover: 220 24% 11%;
+    --popover-foreground: 220 10% 95%;
 
-    /* Primary (blue accent) */
-    --primary: 217 91% 60%;          /* #3b82f6 */
+    --primary: 217 91% 60%;
     --primary-foreground: 0 0% 100%;
 
-    /* Secondary */
-    --secondary: 228 18% 18%;        /* #232738 */
-    --secondary-foreground: 220 10% 92%;
+    --secondary: 220 18% 13%;
+    --secondary-foreground: 220 10% 95%;
 
-    /* Muted */
-    --muted: 226 23% 18%;            /* #232838 */
-    --muted-foreground: 228 8% 55%;  /* #8b8fa3 */
+    --muted: 220 16% 14%;
+    --muted-foreground: 225 8% 50%;
 
-    /* Accent */
-    --accent: 228 18% 18%;
-    --accent-foreground: 220 10% 92%;
+    --accent: 220 18% 13%;
+    --accent-foreground: 220 10% 95%;
 
-    /* Destructive */
-    --destructive: 0 84% 60%;        /* #ef4444 */
+    --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    /* Borders & Input */
-    --border: 228 16% 20%;           /* #2a2e3f */
-    --input: 228 18% 18%;            /* #232738 */
-    --ring: 217 91% 60%;             /* #3b82f6 */
+    --border: 220 16% 16%;
+    --input: 220 18% 13%;
+    --ring: 217 91% 60%;
 
     /* Sidebar */
-    --sidebar-background: 222 25% 8%;    /* #0f1219 — darker than content */
+    --sidebar-background: 222 30% 5%;
     --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary: 217 91% 60%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent: 220 16% 14%;
     --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-border: 220 16% 14%;
+    --sidebar-ring: 217 91% 60%;
   }
 
   * {
@@ -69,41 +64,47 @@
   body {
     @apply bg-background text-foreground font-sans antialiased;
     min-height: 100vh;
+    background-color: var(--surface-1);
+    color: var(--text-primary);
   }
 }
 
-/* Leaflet tooltip overrides for dark theme */
+/* ── Leaflet dark theme overrides ────────────────────── */
 .aircraft-tooltip {
-  background: rgba(15, 17, 23, 0.9) !important;
-  border: 1px solid hsl(228 16% 20%) !important;
-  color: hsl(220 10% 92%) !important;
-  font-family: 'IBM Plex Mono', monospace;
-  font-size: 11px;
+  background: var(--surface-0) !important;
+  border: 1px solid var(--border-primary) !important;
+  color: var(--text-primary) !important;
+  font-family: var(--font-mono);
+  font-size: var(--text-data-sm-size);
   font-weight: 600;
   padding: 2px 6px !important;
-  border-radius: 4px !important;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5) !important;
+  border-radius: var(--radius-sm) !important;
+  box-shadow: var(--elevation-2) !important;
 }
-
 .aircraft-tooltip::before {
-  border-top-color: rgba(15, 17, 23, 0.9) !important;
+  border-top-color: var(--surface-0) !important;
 }
-
-/* Fix Leaflet controls in dark theme */
 .leaflet-control-zoom a {
-  background: hsl(228 22% 14%) !important;
-  color: hsl(220 10% 92%) !important;
-  border-color: hsl(228 16% 20%) !important;
+  background: var(--surface-2) !important;
+  color: var(--text-primary) !important;
+  border-color: var(--border-primary) !important;
 }
-
 .leaflet-control-zoom a:hover {
-  background: hsl(228 18% 18%) !important;
+  background: var(--surface-3) !important;
 }
 
-/* Data table row stripes */
-.table-row-stripe:nth-child(even) {
-  background-color: hsl(224 18% 11%);
+/* ── Scrollbar styling ──────────────────────────────── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
 }
-.table-row-stripe:hover {
-  background-color: hsl(224 18% 14%);
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-secondary);
+  border-radius: var(--radius-full);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--border-hover);
 }
