@@ -2201,6 +2201,10 @@ function ComponentsTab() {
   const [typeFilter, setTypeFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
 
+  // Detail panel
+  const [selectedComp, setSelectedComp] = useState<AircraftComponent | null>(null);
+  const [detailOpen, setDetailOpen] = useState(false);
+
   // Dialogs
   const [createOpen, setCreateOpen] = useState(false);
   const [editComp, setEditComp] = useState<AircraftComponent | null>(null);
@@ -2254,6 +2258,15 @@ function ComponentsTab() {
         (c.position?.toLowerCase().includes(q) ?? false),
     );
   }, [components, search]);
+
+  // Keep detail panel in sync with filtered data
+  useEffect(() => {
+    if (selectedComp) {
+      const updated = filtered.find((c) => c.id === selectedComp.id);
+      if (updated) setSelectedComp(updated);
+      else { setSelectedComp(null); setDetailOpen(false); }
+    }
+  }, [filtered]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function resetForm() {
     setFormAircraftId('');
@@ -2362,19 +2375,148 @@ function ComponentsTab() {
     }
   }
 
+  async function handleOverhaul(comp: AircraftComponent) {
+    try {
+      await api.patch(`/api/admin/maintenance/components/${comp.id}`, {
+        hoursSinceOverhaul: 0,
+        cyclesSinceOverhaul: 0,
+        status: 'installed',
+      });
+      toast.success('Component overhauled');
+      fetchComponents();
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : 'Failed to overhaul component');
+    }
+  }
+
+  async function handleRemoveComponent(comp: AircraftComponent) {
+    try {
+      await api.patch(`/api/admin/maintenance/components/${comp.id}`, {
+        status: 'removed',
+      });
+      toast.success('Component removed');
+      fetchComponents();
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : 'Failed to remove component');
+    }
+  }
+
   const componentTypes: ComponentType[] = ['ENGINE', 'APU', 'LANDING_GEAR', 'PROP', 'AVIONICS', 'OTHER'];
   const componentStatuses: ComponentStatus[] = ['installed', 'removed', 'in_shop', 'scrapped'];
 
-  function remainingHours(c: AircraftComponent): string {
-    if (!c.overhaulIntervalHours) return '--';
-    const remaining = c.overhaulIntervalHours - c.hoursSinceOverhaul;
-    return formatHours(remaining);
+  function remainingHoursValue(c: AircraftComponent): number | null {
+    if (!c.overhaulIntervalHours) return null;
+    return c.overhaulIntervalHours - c.hoursSinceOverhaul;
   }
+
+  function overhaulUsedPct(c: AircraftComponent): number | null {
+    if (!c.overhaulIntervalHours || c.overhaulIntervalHours <= 0) return null;
+    return Math.min((c.hoursSinceOverhaul / c.overhaulIntervalHours) * 100, 100);
+  }
+
+  function handleCompRowClick(comp: AircraftComponent) {
+    setSelectedComp(comp);
+    setDetailOpen(true);
+  }
+
+  const componentColumns: ColumnDef<AircraftComponent, unknown>[] = useMemo(() => [
+    {
+      accessorKey: 'partNumber',
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Part #" />,
+      cell: ({ row }) => <span className="font-mono font-medium">{row.original.partNumber ?? '--'}</span>,
+      size: 100,
+    },
+    {
+      accessorKey: 'serialNumber',
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Serial #" />,
+      cell: ({ row }) => <span className="font-mono">{row.original.serialNumber ?? '--'}</span>,
+      size: 100,
+    },
+    {
+      accessorKey: 'componentType',
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Type" />,
+      cell: ({ row }) => <Badge variant="secondary" className="text-xs">{row.original.componentType.replace('_', ' ')}</Badge>,
+      size: 120,
+    },
+    {
+      id: 'aircraft',
+      accessorFn: (row) => row.aircraftRegistration ?? `#${row.aircraftId}`,
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Aircraft" />,
+      cell: ({ row }) => <span className="font-mono">{row.original.aircraftRegistration ?? `#${row.original.aircraftId}`}</span>,
+      size: 100,
+    },
+    {
+      accessorKey: 'position',
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Position" />,
+      cell: ({ row }) => <span className="text-muted-foreground">{row.original.position ?? '--'}</span>,
+    },
+    {
+      id: 'hso',
+      accessorFn: (row) => row.hoursSinceOverhaul,
+      header: ({ column }) => <DataTableColumnHeader column={column} title="HSO" />,
+      cell: ({ row }) => <span className="font-mono">{formatHours(row.original.hoursSinceOverhaul)}</span>,
+      size: 100,
+    },
+    {
+      id: 'remaining',
+      accessorFn: (row) => remainingHoursValue(row),
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Remaining" />,
+      cell: ({ row }) => {
+        const remaining = remainingHoursValue(row.original);
+        if (remaining === null) return <span className="font-mono text-muted-foreground">--</span>;
+        const color = remaining < 0
+          ? 'text-red-400'
+          : remaining < 100
+          ? 'text-red-400'
+          : remaining < 500
+          ? 'text-amber-400'
+          : 'text-emerald-400';
+        return <span className={`font-mono ${color}`}>{formatHours(remaining)}</span>;
+      },
+      size: 100,
+    },
+    {
+      accessorKey: 'status',
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Status" />,
+      cell: ({ row }) => componentStatusBadge(row.original.status),
+      size: 100,
+    },
+    {
+      id: 'actions',
+      enableHiding: false,
+      enableSorting: false,
+      size: 50,
+      cell: ({ row }) => {
+        const comp = row.original;
+        return (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => e.stopPropagation()}>
+                <DotsThreeVertical size={16} weight="bold" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => openEdit(comp)}>
+                <PencilSimple size={14} /> Edit
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleOverhaul(comp)}>
+                <ArrowClockwise size={14} className="text-blue-400" /> Overhaul
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem className="text-red-400 focus:text-red-400" onClick={() => setDeleteComp(comp)}>
+                <Trash size={14} /> Delete
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        );
+      },
+    },
+  ], []);
 
   if (loading) return <TabSkeleton />;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-1 items-center gap-3">
           <div className="relative max-w-sm flex-1">
@@ -2409,62 +2551,126 @@ function ComponentsTab() {
         </Button>
       </div>
 
-      <div className="rounded-md border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-[100px]">Part #</TableHead>
-              <TableHead className="w-[100px]">Serial #</TableHead>
-              <TableHead className="w-[120px]">Type</TableHead>
-              <TableHead className="w-[100px]">Aircraft</TableHead>
-              <TableHead>Position</TableHead>
-              <TableHead className="w-[100px]">HSO</TableHead>
-              <TableHead className="w-[100px]">Remaining</TableHead>
-              <TableHead className="w-[100px]">Status</TableHead>
-              <TableHead className="w-[50px]" />
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filtered.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={9} className="text-center py-10 text-muted-foreground">
-                  No components found
-                </TableCell>
-              </TableRow>
-            ) : (
-              filtered.map((comp) => (
-                <TableRow key={comp.id}>
-                  <TableCell className="font-mono text-sm">{comp.partNumber ?? '--'}</TableCell>
-                  <TableCell className="font-mono text-sm">{comp.serialNumber ?? '--'}</TableCell>
-                  <TableCell><Badge variant="secondary" className="text-xs">{comp.componentType.replace('_', ' ')}</Badge></TableCell>
-                  <TableCell className="font-mono text-sm">{comp.aircraftRegistration ?? `#${comp.aircraftId}`}</TableCell>
-                  <TableCell className="text-sm text-muted-foreground">{comp.position ?? '--'}</TableCell>
-                  <TableCell className="font-mono text-sm">{formatHours(comp.hoursSinceOverhaul)}</TableCell>
-                  <TableCell className="font-mono text-sm">{remainingHours(comp)}</TableCell>
-                  <TableCell>{componentStatusBadge(comp.status)}</TableCell>
-                  <TableCell>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                          <DotsThreeVertical size={16} weight="bold" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => openEdit(comp)}>
-                          <PencilSimple size={14} /> Edit
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem className="text-red-400 focus:text-red-400" onClick={() => setDeleteComp(comp)}>
-                          <Trash size={14} /> Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
+      {/* Split view: DataTable + detail panel */}
+      <div className="flex flex-1 gap-0 overflow-hidden rounded-md border border-border/50">
+        <div className={`${detailOpen ? 'w-[55%]' : 'w-full'} flex flex-col transition-all duration-200`}>
+          <DataTable
+            columns={componentColumns}
+            data={filtered}
+            onRowClick={handleCompRowClick}
+            selectedRowId={selectedComp?.id}
+            loading={false}
+            emptyMessage="No components found"
+            getRowId={(row) => String(row.id)}
+          />
+        </div>
+        {detailOpen && selectedComp && (
+          <DetailPanel
+            open={detailOpen}
+            onClose={() => { setDetailOpen(false); setSelectedComp(null); }}
+            title={selectedComp.partNumber ?? selectedComp.serialNumber ?? `Component #${selectedComp.id}`}
+            subtitle={`${selectedComp.componentType.replace('_', ' ')} -- ${selectedComp.aircraftRegistration ?? `Aircraft #${selectedComp.aircraftId}`}`}
+            actions={
+              <>
+                <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => openEdit(selectedComp)}>
+                  <PencilSimple size={12} /> Edit
+                </Button>
+                <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => handleOverhaul(selectedComp)}>
+                  <ArrowClockwise size={12} className="text-blue-400" /> Overhaul
+                </Button>
+                {selectedComp.status === 'installed' && (
+                  <Button variant="outline" size="sm" className="h-7 text-xs text-red-400 hover:text-red-300" onClick={() => handleRemoveComponent(selectedComp)}>
+                    <Trash size={12} /> Remove
+                  </Button>
+                )}
+              </>
+            }
+          >
+            <div className="space-y-4">
+              {/* Identity */}
+              <div>
+                <h3 className="text-xs uppercase tracking-wider text-muted-foreground mb-2">Identity</h3>
+                <div className="space-y-1">
+                  <DetailRow label="Type"><Badge variant="secondary" className="text-xs">{selectedComp.componentType.replace('_', ' ')}</Badge></DetailRow>
+                  <DetailRow label="Part #"><span className="font-mono">{selectedComp.partNumber ?? '--'}</span></DetailRow>
+                  <DetailRow label="Serial #"><span className="font-mono">{selectedComp.serialNumber ?? '--'}</span></DetailRow>
+                  <DetailRow label="Position">{selectedComp.position ?? '--'}</DetailRow>
+                </div>
+              </div>
+
+              {/* Aircraft */}
+              <div>
+                <h3 className="text-xs uppercase tracking-wider text-muted-foreground mb-2">Aircraft</h3>
+                <div className="space-y-1">
+                  <DetailRow label="Registration"><span className="font-mono">{selectedComp.aircraftRegistration ?? '--'}</span></DetailRow>
+                  <DetailRow label="Aircraft ID"><span className="font-mono">{selectedComp.aircraftId}</span></DetailRow>
+                </div>
+              </div>
+
+              {/* Hours / Cycles */}
+              <div>
+                <h3 className="text-xs uppercase tracking-wider text-muted-foreground mb-2">Hours / Cycles</h3>
+                <div className="space-y-1">
+                  <DetailRow label="HSN"><span className="font-mono">{formatHours(selectedComp.hoursSinceNew)}</span></DetailRow>
+                  <DetailRow label="CSN"><span className="font-mono">{selectedComp.cyclesSinceNew.toLocaleString()}</span></DetailRow>
+                  <DetailRow label="HSO"><span className="font-mono">{formatHours(selectedComp.hoursSinceOverhaul)}</span></DetailRow>
+                  <DetailRow label="CSO"><span className="font-mono">{selectedComp.cyclesSinceOverhaul.toLocaleString()}</span></DetailRow>
+                </div>
+              </div>
+
+              {/* Overhaul */}
+              <div>
+                <h3 className="text-xs uppercase tracking-wider text-muted-foreground mb-2">Overhaul</h3>
+                <div className="space-y-1">
+                  <DetailRow label="Interval"><span className="font-mono">{selectedComp.overhaulIntervalHours ? `${formatHours(selectedComp.overhaulIntervalHours)} hrs` : '--'}</span></DetailRow>
+                  <DetailRow label="Remaining">
+                    {(() => {
+                      const remaining = remainingHoursValue(selectedComp);
+                      if (remaining === null) return <span className="text-muted-foreground">--</span>;
+                      const color = remaining < 0 ? 'text-red-400' : remaining < 100 ? 'text-red-400' : remaining < 500 ? 'text-amber-400' : 'text-emerald-400';
+                      return <span className={`font-mono ${color}`}>{formatHours(remaining)} hrs</span>;
+                    })()}
+                  </DetailRow>
+                </div>
+                {/* Progress bar */}
+                {(() => {
+                  const pct = overhaulUsedPct(selectedComp);
+                  if (pct === null) return null;
+                  const barColor = pct > 90 ? 'bg-red-500' : pct > 70 ? 'bg-amber-500' : 'bg-emerald-500';
+                  return (
+                    <div className="mt-2">
+                      <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+                        <span>Overhaul usage</span>
+                        <span className="font-mono">{pct.toFixed(1)}%</span>
+                      </div>
+                      <div className="h-2 rounded-sm bg-[#0f1219] overflow-hidden">
+                        <div
+                          className={`h-full rounded-sm transition-all ${barColor}`}
+                          style={{ width: `${Math.min(pct, 100)}%` }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+
+              {/* Status */}
+              <div>
+                <h3 className="text-xs uppercase tracking-wider text-muted-foreground mb-2">Status</h3>
+                <div className="space-y-1">
+                  <DetailRow label="Status">{componentStatusBadge(selectedComp.status)}</DetailRow>
+                  <DetailRow label="Installed">{formatDate(selectedComp.installedDate)}</DetailRow>
+                </div>
+                {selectedComp.remarks && (
+                  <div className="mt-2">
+                    <p className="text-xs text-muted-foreground mb-1">Remarks</p>
+                    <p className="text-sm whitespace-pre-wrap">{selectedComp.remarks}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </DetailPanel>
+        )}
       </div>
 
       {/* Create / Edit Dialog */}
