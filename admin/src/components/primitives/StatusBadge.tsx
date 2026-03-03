@@ -1,0 +1,45 @@
+import { cn } from '@/lib/utils';
+
+interface StatusBadgeProps {
+  status: string;
+  label?: string;
+  className?: string;
+}
+
+const statusConfig: Record<string, { bg: string; text: string; ring: string; label: string }> = {
+  approved: { bg: 'bg-[var(--accent-emerald-bg)]', text: 'text-[var(--accent-emerald)]', ring: 'ring-[var(--accent-emerald-ring)]', label: 'Approved' },
+  active: { bg: 'bg-[var(--accent-emerald-bg)]', text: 'text-[var(--accent-emerald)]', ring: 'ring-[var(--accent-emerald-ring)]', label: 'Active' },
+  completed: { bg: 'bg-[var(--accent-blue-bg)]', text: 'text-[var(--accent-blue)]', ring: 'ring-[var(--accent-blue-ring)]', label: 'Completed' },
+  published: { bg: 'bg-[var(--accent-blue-bg)]', text: 'text-[var(--accent-blue)]', ring: 'ring-[var(--accent-blue-ring)]', label: 'Published' },
+  pending: { bg: 'bg-[var(--accent-amber-bg)]', text: 'text-[var(--accent-amber)]', ring: 'ring-[var(--accent-amber-ring)]', label: 'Pending' },
+  scheduled: { bg: 'bg-[var(--accent-amber-bg)]', text: 'text-[var(--accent-amber)]', ring: 'ring-[var(--accent-amber-ring)]', label: 'Scheduled' },
+  in_progress: { bg: 'bg-[var(--accent-cyan-bg)]', text: 'text-[var(--accent-cyan)]', ring: 'ring-[var(--accent-cyan-ring)]', label: 'In Progress' },
+  rejected: { bg: 'bg-[var(--accent-red-bg)]', text: 'text-[var(--accent-red)]', ring: 'ring-[var(--accent-red-ring)]', label: 'Rejected' },
+  suspended: { bg: 'bg-[var(--accent-red-bg)]', text: 'text-[var(--accent-red)]', ring: 'ring-[var(--accent-red-ring)]', label: 'Suspended' },
+  overdue: { bg: 'bg-[var(--accent-red-bg)]', text: 'text-[var(--accent-red)]', ring: 'ring-[var(--accent-red-ring)]', label: 'Overdue' },
+  critical: { bg: 'bg-[var(--accent-red-bg)]', text: 'text-[var(--accent-red)]', ring: 'ring-[var(--accent-red-ring)]', label: 'Critical' },
+  info: { bg: 'bg-[var(--accent-cyan-bg)]', text: 'text-[var(--accent-cyan)]', ring: 'ring-[var(--accent-cyan-ring)]', label: 'Info' },
+  filed: { bg: 'bg-[var(--accent-blue-bg)]', text: 'text-[var(--accent-blue)]', ring: 'ring-[var(--accent-blue-ring)]', label: 'Filed' },
+  warning: { bg: 'bg-[var(--accent-amber-bg)]', text: 'text-[var(--accent-amber)]', ring: 'ring-[var(--accent-amber-ring)]', label: 'Warning' },
+  success: { bg: 'bg-[var(--accent-emerald-bg)]', text: 'text-[var(--accent-emerald)]', ring: 'ring-[var(--accent-emerald-ring)]', label: 'Success' },
+  error: { bg: 'bg-[var(--accent-red-bg)]', text: 'text-[var(--accent-red)]', ring: 'ring-[var(--accent-red-ring)]', label: 'Error' },
+};
+
+const fallback = { bg: 'bg-[var(--accent-blue-bg)]', text: 'text-[var(--accent-blue)]', ring: 'ring-[var(--accent-blue-ring)]', label: '' };
+
+export function StatusBadge({ status, label, className }: StatusBadgeProps) {
+  const config = statusConfig[status] ?? fallback;
+  const displayLabel = label ?? (config.label || status.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()));
+
+  return (
+    <span
+      className={cn(
+        'inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold ring-1',
+        config.bg, config.text, config.ring,
+        className,
+      )}
+    >
+      {displayLabel}
+    </span>
+  );
+}
