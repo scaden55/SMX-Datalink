@@ -18,7 +18,7 @@ import {
 } from '@phosphor-icons/react';
 import { api, ApiError } from '@/lib/api';
 import { toast } from '@/stores/toastStore';
-import { Skeleton } from '@/components/ui/skeleton';
+
 import { PageShell } from '@/components/shared/PageShell';
 import { DataTable } from '@/components/shared/DataTable';
 import { DataTableColumnHeader } from '@/components/shared/DataTableColumnHeader';
@@ -244,11 +244,11 @@ function TabSkeleton() {
     <div className="space-y-4">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {Array.from({ length: 4 }).map((_, i) => (
-          <Skeleton key={i} className="h-[110px] rounded-md" />
+          <div key={i} className="h-[110px] rounded-md bg-[var(--surface-2)] animate-pulse" />
         ))}
       </div>
-      <Skeleton className="h-10 w-full rounded-md" />
-      <Skeleton className="h-[400px] rounded-md" />
+      <div className="h-10 w-full rounded-md bg-[var(--surface-2)] animate-pulse" />
+      <div className="h-[400px] rounded-md bg-[var(--surface-2)] animate-pulse" />
     </div>
   );
 }
