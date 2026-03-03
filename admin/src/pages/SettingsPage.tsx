@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { api, ApiError } from '@/lib/api';
 import { toast } from '@/stores/toastStore';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Surface, SectionHeader } from '@/components/primitives';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
@@ -92,7 +91,7 @@ function SettingsPageSkeleton() {
   return (
     <div className="space-y-6 max-w-3xl">
       {Array.from({ length: 4 }).map((_, i) => (
-        <Skeleton key={i} className="h-[200px] rounded-md" />
+        <div key={i} className="h-[200px] rounded-md bg-[var(--surface-2)] animate-pulse" />
       ))}
     </div>
   );
@@ -148,21 +147,19 @@ function SectionCard({ section, values, onSave }: SectionCardProps) {
   );
 
   return (
-    <Card className="rounded-md">
-      <CardHeader>
-        <CardTitle className="text-lg">{section.title}</CardTitle>
-        <CardDescription>{section.description}</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-5">
+    <Surface elevation={1}>
+      <SectionHeader title={section.title} />
+      <p className="text-[var(--text-tertiary)] text-xs mb-4">{section.description}</p>
+      <div className="space-y-5">
         {section.fields.map((field) => {
           if (field.type === 'boolean') {
             const checked = localValues[field.key] === 'true';
             return (
               <div key={field.key} className="flex items-center justify-between gap-4">
                 <div className="space-y-0.5">
-                  <Label htmlFor={field.key}>{field.label}</Label>
+                  <Label htmlFor={field.key} className="text-[var(--text-secondary)]">{field.label}</Label>
                   {field.description && (
-                    <p className="text-sm text-muted-foreground">{field.description}</p>
+                    <p className="text-sm text-[var(--text-tertiary)]">{field.description}</p>
                   )}
                 </div>
                 <Switch
@@ -176,9 +173,9 @@ function SectionCard({ section, values, onSave }: SectionCardProps) {
 
           return (
             <div key={field.key} className="space-y-2">
-              <Label htmlFor={field.key}>{field.label}</Label>
+              <Label htmlFor={field.key} className="text-[var(--text-secondary)]">{field.label}</Label>
               {field.description && (
-                <p className="text-sm text-muted-foreground">{field.description}</p>
+                <p className="text-sm text-[var(--text-tertiary)]">{field.description}</p>
               )}
               <Input
                 id={field.key}
@@ -187,14 +184,19 @@ function SectionCard({ section, values, onSave }: SectionCardProps) {
                 placeholder={field.placeholder}
                 value={localValues[field.key] ?? ''}
                 onChange={(e) => handleChange(field.key, e.target.value)}
-                className="max-w-sm"
+                className="max-w-sm bg-[var(--surface-3)] border-[var(--border-secondary)] text-[var(--text-primary)]"
               />
             </div>
           );
         })}
 
         <div className="flex items-center gap-3 pt-2">
-          <Button onClick={handleSave} disabled={saving || !hasChanges} size="sm">
+          <Button
+            onClick={handleSave}
+            disabled={saving || !hasChanges}
+            size="sm"
+            className="bg-[var(--accent-blue)] hover:bg-[var(--accent-blue)]/80"
+          >
             {saving ? (
               <>
                 <SpinnerGap size={16} className="animate-spin" />
@@ -208,11 +210,11 @@ function SectionCard({ section, values, onSave }: SectionCardProps) {
             )}
           </Button>
           {!hasChanges && (
-            <span className="text-sm text-muted-foreground">No changes</span>
+            <span className="text-sm text-[var(--text-tertiary)]">No changes</span>
           )}
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </Surface>
   );
 }
 
@@ -275,7 +277,7 @@ export function SettingsPage() {
   if (loading) {
     return (
       <div className="p-6">
-        <h1 className="text-2xl font-semibold mb-6">Settings</h1>
+        <h1 className="text-2xl font-semibold text-[var(--text-primary)] mb-6">Settings</h1>
         <SettingsPageSkeleton />
       </div>
     );
@@ -284,8 +286,8 @@ export function SettingsPage() {
   if (error) {
     return (
       <div className="p-6">
-        <h1 className="text-2xl font-semibold mb-6">Settings</h1>
-        <div className="flex items-center justify-center py-20 text-muted-foreground">
+        <h1 className="text-2xl font-semibold text-[var(--text-primary)] mb-6">Settings</h1>
+        <div className="flex items-center justify-center py-20 text-[var(--text-tertiary)]">
           <p>{error}</p>
         </div>
       </div>
@@ -294,7 +296,7 @@ export function SettingsPage() {
 
   return (
     <div className="p-6">
-      <h1 className="text-2xl font-semibold mb-6">Settings</h1>
+      <h1 className="text-2xl font-semibold text-[var(--text-primary)] mb-6">Settings</h1>
       <div className="space-y-6 max-w-3xl">
         {SECTIONS.map((section) => (
           <SectionCard

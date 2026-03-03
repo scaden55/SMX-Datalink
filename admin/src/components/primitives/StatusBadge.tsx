@@ -46,6 +46,14 @@ const statusConfig: Record<string, { bg: string; text: string; ring: string; lab
   deleted: { bg: 'bg-[var(--surface-3)]', text: 'text-[var(--text-quaternary)]', ring: 'ring-[var(--border-secondary)]', label: 'Deleted' },
   diverted: { bg: 'bg-[var(--accent-blue-bg)]', text: 'text-[var(--accent-blue)]', ring: 'ring-[var(--accent-blue-ring)]', label: 'Diverted' },
   cancelled: { bg: 'bg-[var(--surface-3)]', text: 'text-[var(--text-quaternary)]', ring: 'ring-[var(--border-secondary)]', label: 'Cancelled' },
+  // Audit action types
+  create: { bg: 'bg-[var(--accent-emerald-bg)]', text: 'text-[var(--accent-emerald)]', ring: 'ring-[var(--accent-emerald-ring)]', label: 'Create' },
+  update: { bg: 'bg-[var(--accent-blue-bg)]', text: 'text-[var(--accent-blue)]', ring: 'ring-[var(--accent-blue-ring)]', label: 'Update' },
+  delete: { bg: 'bg-[var(--accent-red-bg)]', text: 'text-[var(--accent-red)]', ring: 'ring-[var(--accent-red-ring)]', label: 'Delete' },
+  login: { bg: 'bg-[var(--accent-cyan-bg)]', text: 'text-[var(--accent-cyan)]', ring: 'ring-[var(--accent-cyan-ring)]', label: 'Login' },
+  toggle: { bg: 'bg-[var(--accent-blue-bg)]', text: 'text-[var(--accent-blue)]', ring: 'ring-[var(--accent-blue-ring)]', label: 'Toggle' },
+  clone: { bg: 'bg-[var(--accent-emerald-bg)]', text: 'text-[var(--accent-emerald)]', ring: 'ring-[var(--accent-emerald-ring)]', label: 'Clone' },
+  impersonate: { bg: 'bg-[var(--accent-amber-bg)]', text: 'text-[var(--accent-amber)]', ring: 'ring-[var(--accent-amber-ring)]', label: 'Impersonate' },
   // Maintenance-specific statuses
   open: { bg: 'bg-[var(--accent-amber-bg)]', text: 'text-[var(--accent-amber)]', ring: 'ring-[var(--accent-amber-ring)]', label: 'Open' },
   complied: { bg: 'bg-[var(--accent-emerald-bg)]', text: 'text-[var(--accent-emerald)]', ring: 'ring-[var(--accent-emerald-ring)]', label: 'Complied' },

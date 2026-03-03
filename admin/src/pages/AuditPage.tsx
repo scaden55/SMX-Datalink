@@ -9,10 +9,9 @@ import {
 } from '@phosphor-icons/react';
 import { api, ApiError } from '@/lib/api';
 import { toast } from '@/stores/toastStore';
-import { Skeleton } from '@/components/ui/skeleton';
+import { StatusBadge } from '@/components/primitives';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import {
   Select,
   SelectContent,
@@ -105,65 +104,19 @@ function extractVerb(action: string): string {
   return parts[parts.length - 1];
 }
 
-function actionBadge(action: string) {
+/** Map an action verb to a StatusBadge status key */
+function actionToStatus(action: string): string {
   const verb = extractVerb(action);
 
-  if (['create', 'filed', 'clone'].includes(verb)) {
-    return (
-      <Badge className="bg-emerald-500/15 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20 text-xs">
-        {action}
-      </Badge>
-    );
-  }
-  if (['update', 'toggle', 'toggleHub', 'adjust_hours', 'return_to_service', 'complete_check'].includes(verb)) {
-    return (
-      <Badge className="bg-blue-500/15 text-blue-400 border-blue-500/30 hover:bg-blue-500/20 text-xs">
-        {action}
-      </Badge>
-    );
-  }
-  if (['delete'].includes(verb)) {
-    return (
-      <Badge className="bg-red-500/15 text-red-400 border-red-500/30 hover:bg-red-500/20 text-xs">
-        {action}
-      </Badge>
-    );
-  }
-  if (['approved'].includes(verb)) {
-    return (
-      <Badge className="bg-emerald-500/15 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20 text-xs">
-        {action}
-      </Badge>
-    );
-  }
-  if (['rejected'].includes(verb)) {
-    return (
-      <Badge className="bg-red-500/15 text-red-400 border-red-500/30 hover:bg-red-500/20 text-xs">
-        {action}
-      </Badge>
-    );
-  }
-  if (['impersonate'].includes(verb)) {
-    return (
-      <Badge className="bg-amber-500/15 text-amber-400 border-amber-500/30 hover:bg-amber-500/20 text-xs">
-        {action}
-      </Badge>
-    );
-  }
+  if (['create', 'filed', 'clone'].includes(verb)) return 'create';
+  if (['update', 'toggle', 'toggleHub', 'adjust_hours', 'return_to_service', 'complete_check'].includes(verb)) return 'update';
+  if (['delete'].includes(verb)) return 'delete';
+  if (['approved'].includes(verb)) return 'approved';
+  if (['rejected'].includes(verb)) return 'rejected';
+  if (['impersonate'].includes(verb)) return 'impersonate';
+  if (['login'].includes(verb)) return 'login';
 
-  return (
-    <Badge variant="secondary" className="text-xs">
-      {action}
-    </Badge>
-  );
-}
-
-function targetTypeBadge(targetType: string) {
-  return (
-    <Badge variant="outline" className="text-xs text-muted-foreground">
-      {targetType}
-    </Badge>
-  );
+  return 'info'; // fallback
 }
 
 function JsonViewer({ label, data }: { label: string; data: Record<string, unknown> | null }) {
@@ -171,8 +124,8 @@ function JsonViewer({ label, data }: { label: string; data: Record<string, unkno
 
   return (
     <div className="space-y-1">
-      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{label}</p>
-      <pre className="rounded-md bg-[#0d1117] border border-border/50 p-3 text-xs font-mono text-slate-300 overflow-x-auto max-h-[300px] overflow-y-auto whitespace-pre-wrap break-words">
+      <p className="text-xs font-medium text-[var(--text-tertiary)] uppercase tracking-wider">{label}</p>
+      <pre className="rounded-md bg-[var(--surface-0)] border border-[var(--border-primary)] p-3 text-xs font-mono text-[var(--text-secondary)] overflow-x-auto max-h-[300px] overflow-y-auto whitespace-pre-wrap break-words">
         {JSON.stringify(data, null, 2)}
       </pre>
     </div>
@@ -184,8 +137,8 @@ function JsonViewer({ label, data }: { label: string; data: Record<string, unkno
 function AuditPageSkeleton() {
   return (
     <div className="space-y-6">
-      <Skeleton className="h-10 w-full rounded-md" />
-      <Skeleton className="h-[500px] rounded-md" />
+      <div className="h-10 w-full rounded-md bg-[var(--surface-2)] animate-pulse" />
+      <div className="h-[500px] rounded-md bg-[var(--surface-2)] animate-pulse" />
     </div>
   );
 }
@@ -324,7 +277,7 @@ export function AuditPage() {
   if (loading) {
     return (
       <div className="p-6">
-        <h1 className="text-2xl font-semibold mb-6">Audit Log</h1>
+        <h1 className="text-2xl font-semibold text-[var(--text-primary)] mb-6">Audit Log</h1>
         <AuditPageSkeleton />
       </div>
     );
@@ -333,8 +286,8 @@ export function AuditPage() {
   if (error && entries.length === 0) {
     return (
       <div className="p-6">
-        <h1 className="text-2xl font-semibold mb-6">Audit Log</h1>
-        <div className="flex items-center justify-center py-20 text-muted-foreground">
+        <h1 className="text-2xl font-semibold text-[var(--text-primary)] mb-6">Audit Log</h1>
+        <div className="flex items-center justify-center py-20 text-[var(--text-tertiary)]">
           <p>{error}</p>
         </div>
       </div>
@@ -344,8 +297,8 @@ export function AuditPage() {
   return (
     <div className="p-6">
       <div className="flex items-center gap-3 mb-6">
-        <ClockCounterClockwise size={28} weight="duotone" className="text-muted-foreground" />
-        <h1 className="text-2xl font-semibold">Audit Log</h1>
+        <ClockCounterClockwise size={28} weight="duotone" className="text-[var(--text-tertiary)]" />
+        <h1 className="text-2xl font-semibold text-[var(--text-primary)]">Audit Log</h1>
       </div>
 
       <div className="space-y-6">
@@ -354,13 +307,13 @@ export function AuditPage() {
           <div className="relative max-w-xs flex-1 min-w-[200px]">
             <MagnifyingGlass
               size={16}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-tertiary)]"
             />
             <Input
               placeholder="Search by callsign or name..."
               value={actorSearch}
               onChange={(e) => setActorSearch(e.target.value)}
-              className="pl-9"
+              className="pl-9 bg-[var(--surface-3)] border-[var(--border-secondary)] text-[var(--text-primary)]"
             />
           </div>
           <Select value={actionFilter} onValueChange={setActionFilter}>
@@ -388,25 +341,25 @@ export function AuditPage() {
             </SelectContent>
           </Select>
           <div className="flex items-center gap-2">
-            <CalendarBlank size={16} className="text-muted-foreground shrink-0" />
+            <CalendarBlank size={16} className="text-[var(--text-tertiary)] shrink-0" />
             <Input
               type="date"
               value={dateFrom}
               onChange={(e) => setDateFrom(e.target.value)}
-              className="w-[140px]"
+              className="w-[140px] bg-[var(--surface-3)] border-[var(--border-secondary)] text-[var(--text-primary)]"
               placeholder="From"
             />
-            <span className="text-muted-foreground text-sm">-</span>
+            <span className="text-[var(--text-tertiary)] text-sm">-</span>
             <Input
               type="date"
               value={dateTo}
               onChange={(e) => setDateTo(e.target.value)}
-              className="w-[140px]"
+              className="w-[140px] bg-[var(--surface-3)] border-[var(--border-secondary)] text-[var(--text-primary)]"
               placeholder="To"
             />
           </div>
           {hasActiveFilters && (
-            <Button variant="ghost" size="sm" onClick={clearFilters} className="gap-1.5">
+            <Button variant="ghost" size="sm" onClick={clearFilters} className="gap-1.5 text-[var(--text-secondary)]">
               <Funnel size={14} />
               Clear Filters
             </Button>
@@ -414,23 +367,23 @@ export function AuditPage() {
         </div>
 
         {/* Table */}
-        <div className="rounded-md border">
+        <div className="rounded-md border border-[var(--border-primary)]">
           <Table>
             <TableHeader>
-              <TableRow>
-                <TableHead className="w-[40px]" />
-                <TableHead className="w-[170px]">Date / Time</TableHead>
-                <TableHead className="w-[120px]">Actor</TableHead>
-                <TableHead className="w-[180px]">Action</TableHead>
-                <TableHead className="w-[150px]">Target Type</TableHead>
-                <TableHead className="w-[90px]">Target ID</TableHead>
-                <TableHead className="w-[110px]">IP Address</TableHead>
+              <TableRow className="border-b border-[var(--border-primary)] hover:bg-transparent">
+                <TableHead className="w-[40px] text-[var(--text-tertiary)]" />
+                <TableHead className="w-[170px] text-[var(--text-tertiary)]">Date / Time</TableHead>
+                <TableHead className="w-[120px] text-[var(--text-tertiary)]">Actor</TableHead>
+                <TableHead className="w-[180px] text-[var(--text-tertiary)]">Action</TableHead>
+                <TableHead className="w-[150px] text-[var(--text-tertiary)]">Target Type</TableHead>
+                <TableHead className="w-[90px] text-[var(--text-tertiary)]">Target ID</TableHead>
+                <TableHead className="w-[110px] text-[var(--text-tertiary)]">IP Address</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {entries.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-16 text-muted-foreground">
+                  <TableCell colSpan={7} className="text-center py-16 text-[var(--text-tertiary)]">
                     <div className="flex flex-col items-center gap-2">
                       <ClockCounterClockwise size={32} weight="duotone" className="opacity-40" />
                       <p>No audit log entries found</p>
@@ -463,7 +416,7 @@ export function AuditPage() {
         {/* Pagination */}
         {totalPages > 1 && (
           <div className="flex items-center justify-between">
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm text-[var(--text-tertiary)]">
               Showing {((page - 1) * pageSize) + 1}-{Math.min(page * pageSize, total)} of {total} entries
             </p>
             <div className="flex gap-2">
@@ -472,10 +425,11 @@ export function AuditPage() {
                 size="sm"
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
                 disabled={page <= 1}
+                className="border-[var(--border-secondary)]"
               >
                 Previous
               </Button>
-              <div className="flex items-center gap-1 text-sm text-muted-foreground">
+              <div className="flex items-center gap-1 text-sm text-[var(--text-tertiary)]">
                 Page {page} of {totalPages}
               </div>
               <Button
@@ -483,6 +437,7 @@ export function AuditPage() {
                 size="sm"
                 onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                 disabled={page >= totalPages}
+                className="border-[var(--border-secondary)]"
               >
                 Next
               </Button>
@@ -510,7 +465,7 @@ function ExpandableRow({
   return (
     <>
       <TableRow
-        className={hasDetails ? 'cursor-pointer hover:bg-muted/50' : ''}
+        className={hasDetails ? 'cursor-pointer hover:bg-[var(--surface-3)] border-b border-[var(--border-primary)]' : 'border-b border-[var(--border-primary)]'}
         onClick={hasDetails ? onToggle : undefined}
       >
         <TableCell className="px-2">
@@ -523,35 +478,39 @@ function ExpandableRow({
             </Button>
           )}
         </TableCell>
-        <TableCell className="font-mono text-xs text-muted-foreground">
+        <TableCell className="font-mono text-xs text-[var(--text-tertiary)]">
           {formatDateTime(entry.createdAt)}
         </TableCell>
         <TableCell>
           {entry.actorCallsign ? (
-            <span className="font-mono font-medium text-sm">{entry.actorCallsign}</span>
+            <span className="font-mono font-medium text-sm text-[var(--text-primary)]">{entry.actorCallsign}</span>
           ) : (
-            <span className="text-muted-foreground text-sm italic">System</span>
+            <span className="text-[var(--text-tertiary)] text-sm italic">System</span>
           )}
         </TableCell>
-        <TableCell>{actionBadge(entry.action)}</TableCell>
-        <TableCell>{targetTypeBadge(entry.targetType)}</TableCell>
-        <TableCell className="font-mono text-sm text-muted-foreground">
+        <TableCell>
+          <StatusBadge status={actionToStatus(entry.action)} label={entry.action} />
+        </TableCell>
+        <TableCell>
+          <StatusBadge status="info" label={entry.targetType} className="bg-[var(--surface-3)] text-[var(--text-tertiary)] ring-[var(--border-secondary)]" />
+        </TableCell>
+        <TableCell className="font-mono text-sm text-[var(--text-tertiary)]">
           {entry.targetId ?? '-'}
         </TableCell>
-        <TableCell className="font-mono text-xs text-muted-foreground">
+        <TableCell className="font-mono text-xs text-[var(--text-tertiary)]">
           {entry.ipAddress ?? '-'}
         </TableCell>
       </TableRow>
       {isExpanded && hasDetails && (
-        <TableRow className="bg-muted/20 hover:bg-muted/20">
+        <TableRow className="bg-[var(--surface-1)] hover:bg-[var(--surface-1)] border-b border-[var(--border-primary)]">
           <TableCell colSpan={7} className="p-0">
-            <div className="px-6 py-4 space-y-3 border-l-2 border-blue-500/30 ml-4">
+            <div className="px-6 py-4 space-y-3 border-l-2 border-[var(--accent-blue-ring)] ml-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <JsonViewer label="Before" data={entry.beforeData} />
                 <JsonViewer label="After" data={entry.afterData} />
               </div>
               {entry.actorName && (
-                <p className="text-xs text-muted-foreground">
+                <p className="text-xs text-[var(--text-tertiary)]">
                   Actor: {entry.actorName} {entry.actorCallsign && `(${entry.actorCallsign})`}
                 </p>
               )}

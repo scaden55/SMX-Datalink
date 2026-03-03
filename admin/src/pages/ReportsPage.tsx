@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { type CSSProperties, useCallback, useEffect, useMemo, useState } from 'react';
 import {
   CalendarBlank,
   ArrowCounterClockwise,
@@ -21,11 +21,9 @@ import {
 } from 'recharts';
 import { api, ApiError } from '@/lib/api';
 import { toast } from '@/stores/toastStore';
-import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Surface, SectionHeader } from '@/components/primitives';
 
 // ── Types ───────────────────────────────────────────────────────
 
@@ -85,11 +83,11 @@ interface FleetUtilizationEntry {
 
 // ── Tooltip style constant ──────────────────────────────────────
 
-const TOOLTIP_STYLE = {
-  backgroundColor: '#1a1d2e',
-  border: '1px solid #2a2e3f',
+const TOOLTIP_STYLE: CSSProperties = {
+  backgroundColor: 'var(--surface-2)',
+  border: '1px solid var(--border-primary)',
   borderRadius: '6px',
-  color: '#e8eaed',
+  color: 'var(--text-primary)',
   fontSize: 12,
 };
 
@@ -133,11 +131,11 @@ function ReportsPageSkeleton() {
   return (
     <div className="space-y-6">
       {/* Date range bar skeleton */}
-      <Skeleton className="h-12 w-full rounded-md" />
+      <div className="h-12 w-full bg-[var(--surface-2)] rounded-md animate-pulse" />
       {/* Chart grid skeleton */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         {Array.from({ length: 7 }).map((_, i) => (
-          <Skeleton key={i} className="h-[360px] rounded-md" />
+          <div key={i} className="h-[360px] bg-[var(--surface-2)] rounded-md animate-pulse" />
         ))}
       </div>
     </div>
@@ -162,7 +160,7 @@ function FlightHoursChart({ data }: { data: FlightHoursEntry[] }) {
 
   if (chartData.length === 0) {
     return (
-      <p className="text-sm text-muted-foreground py-10 text-center">
+      <p className="text-sm text-[var(--text-tertiary)] py-10 text-center">
         No data for this period
       </p>
     );
@@ -177,43 +175,43 @@ function FlightHoursChart({ data }: { data: FlightHoursEntry[] }) {
         layout="vertical"
         margin={{ top: 5, right: 20, left: 10, bottom: 5 }}
       >
-        <CartesianGrid strokeDasharray="3 3" stroke="#2a2e3f" horizontal={false} />
+        <CartesianGrid strokeDasharray="3 3" stroke="var(--border-primary)" horizontal={false} />
         <XAxis
           type="number"
-          tick={{ fill: '#8b8fa3', fontSize: 12 }}
+          tick={{ fill: 'var(--text-tertiary)', fontSize: 12 }}
           tickLine={false}
-          axisLine={{ stroke: '#2a2e3f' }}
+          axisLine={{ stroke: 'var(--border-primary)' }}
           label={{
             value: 'Hours',
             position: 'insideBottomRight',
             offset: -5,
-            fill: '#8b8fa3',
+            fill: 'var(--text-tertiary)',
             fontSize: 11,
           }}
         />
         <YAxis
           type="category"
           dataKey="name"
-          tick={{ fill: '#e8eaed', fontSize: 12 }}
+          tick={{ fill: 'var(--text-primary)', fontSize: 12 }}
           tickLine={false}
           axisLine={false}
           width={90}
         />
         <Tooltip
           contentStyle={TOOLTIP_STYLE}
-          labelStyle={{ color: '#8b8fa3' }}
+          labelStyle={{ color: 'var(--text-tertiary)' }}
           cursor={{ fill: 'rgba(59,130,246,0.08)' }}
           content={({ active, payload, label }) => {
             if (!active || !payload?.length) return null;
             const d = payload[0].payload as { hours: number; flights: number };
             return (
               <div style={TOOLTIP_STYLE} className="px-3 py-2">
-                <p className="font-medium text-[#e8eaed] mb-1">{label}</p>
-                <p className="text-[#8b8fa3]">
-                  Hours: <span className="font-mono text-[#e8eaed]">{d.hours.toFixed(1)}</span>
+                <p className="font-medium text-[var(--text-primary)] mb-1">{label}</p>
+                <p className="text-[var(--text-tertiary)]">
+                  Hours: <span className="font-mono text-[var(--text-primary)]">{d.hours.toFixed(1)}</span>
                 </p>
-                <p className="text-[#8b8fa3]">
-                  Flights: <span className="font-mono text-[#e8eaed]">{d.flights}</span>
+                <p className="text-[var(--text-tertiary)]">
+                  Flights: <span className="font-mono text-[var(--text-primary)]">{d.flights}</span>
                 </p>
               </div>
             );
@@ -235,7 +233,7 @@ function LandingRateChart({ data }: { data: LandingRateData }) {
 
   if (chartData.length === 0) {
     return (
-      <p className="text-sm text-muted-foreground py-10 text-center">
+      <p className="text-sm text-[var(--text-tertiary)] py-10 text-center">
         No data for this period
       </p>
     );
@@ -245,22 +243,22 @@ function LandingRateChart({ data }: { data: LandingRateData }) {
     <div>
       <ResponsiveContainer width="100%" height={260}>
         <BarChart data={chartData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#2a2e3f" />
+          <CartesianGrid strokeDasharray="3 3" stroke="var(--border-primary)" />
           <XAxis
             dataKey="range"
-            tick={{ fill: '#8b8fa3', fontSize: 11 }}
+            tick={{ fill: 'var(--text-tertiary)', fontSize: 11 }}
             tickLine={false}
-            axisLine={{ stroke: '#2a2e3f' }}
+            axisLine={{ stroke: 'var(--border-primary)' }}
             label={{
               value: 'ft/min',
               position: 'insideBottomRight',
               offset: -5,
-              fill: '#8b8fa3',
+              fill: 'var(--text-tertiary)',
               fontSize: 11,
             }}
           />
           <YAxis
-            tick={{ fill: '#8b8fa3', fontSize: 12 }}
+            tick={{ fill: 'var(--text-tertiary)', fontSize: 12 }}
             tickLine={false}
             axisLine={false}
             allowDecimals={false}
@@ -268,14 +266,14 @@ function LandingRateChart({ data }: { data: LandingRateData }) {
               value: 'Landings',
               angle: -90,
               position: 'insideLeft',
-              fill: '#8b8fa3',
+              fill: 'var(--text-tertiary)',
               fontSize: 11,
             }}
           />
           <Tooltip
             contentStyle={TOOLTIP_STYLE}
             formatter={(value: number | string | undefined) => [`${value ?? 0} landings`, 'Count']}
-            labelStyle={{ color: '#8b8fa3' }}
+            labelStyle={{ color: 'var(--text-tertiary)' }}
             cursor={{ fill: 'rgba(59,130,246,0.08)' }}
           />
           <Bar dataKey="count" radius={[4, 4, 0, 0]} maxBarSize={40}>
@@ -286,22 +284,22 @@ function LandingRateChart({ data }: { data: LandingRateData }) {
         </BarChart>
       </ResponsiveContainer>
       {/* Stats row */}
-      <div className="grid grid-cols-3 gap-4 mt-4 pt-4 border-t border-border/50">
+      <div className="grid grid-cols-3 gap-4 mt-4 pt-4 border-t border-[var(--border-primary)]">
         <div className="text-center">
-          <p className="text-xs text-muted-foreground mb-1">Average</p>
-          <p className="font-mono text-sm font-semibold text-[#e8eaed]">
+          <p className="text-xs text-[var(--text-tertiary)] mb-1">Average</p>
+          <p className="font-mono text-sm font-semibold text-[var(--text-primary)]">
             {Math.round(data.average)} ft/min
           </p>
         </div>
         <div className="text-center">
-          <p className="text-xs text-muted-foreground mb-1">Best</p>
-          <p className="font-mono text-sm font-semibold text-emerald-400">
+          <p className="text-xs text-[var(--text-tertiary)] mb-1">Best</p>
+          <p className="font-mono text-sm font-semibold text-[var(--accent-emerald)]">
             {Math.round(data.best)} ft/min
           </p>
         </div>
         <div className="text-center">
-          <p className="text-xs text-muted-foreground mb-1">Worst</p>
-          <p className="font-mono text-sm font-semibold text-red-400">
+          <p className="text-xs text-[var(--text-tertiary)] mb-1">Worst</p>
+          <p className="font-mono text-sm font-semibold text-[var(--accent-red)]">
             {Math.round(data.worst)} ft/min
           </p>
         </div>
@@ -326,7 +324,7 @@ function FuelEfficiencyChart({ data }: { data: FuelEfficiencyEntry[] }) {
 
   if (chartData.length === 0) {
     return (
-      <p className="text-sm text-muted-foreground py-10 text-center">
+      <p className="text-sm text-[var(--text-tertiary)] py-10 text-center">
         No data for this period
       </p>
     );
@@ -335,18 +333,18 @@ function FuelEfficiencyChart({ data }: { data: FuelEfficiencyEntry[] }) {
   return (
     <ResponsiveContainer width="100%" height={300}>
       <BarChart data={chartData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
-        <CartesianGrid strokeDasharray="3 3" stroke="#2a2e3f" />
+        <CartesianGrid strokeDasharray="3 3" stroke="var(--border-primary)" />
         <XAxis
           dataKey="flight"
-          tick={{ fill: '#8b8fa3', fontSize: 11 }}
+          tick={{ fill: 'var(--text-tertiary)', fontSize: 11 }}
           tickLine={false}
-          axisLine={{ stroke: '#2a2e3f' }}
+          axisLine={{ stroke: 'var(--border-primary)' }}
           angle={-45}
           textAnchor="end"
           height={60}
         />
         <YAxis
-          tick={{ fill: '#8b8fa3', fontSize: 12 }}
+          tick={{ fill: 'var(--text-tertiary)', fontSize: 12 }}
           tickLine={false}
           axisLine={false}
           tickFormatter={(v: number) =>
@@ -356,13 +354,13 @@ function FuelEfficiencyChart({ data }: { data: FuelEfficiencyEntry[] }) {
             value: 'lbs',
             angle: -90,
             position: 'insideLeft',
-            fill: '#8b8fa3',
+            fill: 'var(--text-tertiary)',
             fontSize: 11,
           }}
         />
         <Tooltip
           contentStyle={TOOLTIP_STYLE}
-          labelStyle={{ color: '#8b8fa3' }}
+          labelStyle={{ color: 'var(--text-tertiary)' }}
           content={({ active, payload, label }) => {
             if (!active || !payload?.length) return null;
             const d = payload[0].payload as {
@@ -372,21 +370,21 @@ function FuelEfficiencyChart({ data }: { data: FuelEfficiencyEntry[] }) {
             };
             return (
               <div style={TOOLTIP_STYLE} className="px-3 py-2">
-                <p className="font-medium text-[#e8eaed] mb-1">{label}</p>
-                <p className="text-[#8b8fa3]">
-                  Planned: <span className="font-mono text-blue-400">{d.planned.toLocaleString()} lbs</span>
+                <p className="font-medium text-[var(--text-primary)] mb-1">{label}</p>
+                <p className="text-[var(--text-tertiary)]">
+                  Planned: <span className="font-mono text-[var(--accent-blue)]">{d.planned.toLocaleString()} lbs</span>
                 </p>
-                <p className="text-[#8b8fa3]">
-                  Actual: <span className="font-mono text-amber-400">{d.actual.toLocaleString()} lbs</span>
+                <p className="text-[var(--text-tertiary)]">
+                  Actual: <span className="font-mono text-[var(--accent-amber)]">{d.actual.toLocaleString()} lbs</span>
                 </p>
-                <p className="text-[#8b8fa3]">
-                  Efficiency: <span className="font-mono text-[#e8eaed]">{d.efficiency.toFixed(1)}%</span>
+                <p className="text-[var(--text-tertiary)]">
+                  Efficiency: <span className="font-mono text-[var(--text-primary)]">{d.efficiency.toFixed(1)}%</span>
                 </p>
               </div>
             );
           }}
         />
-        <Legend wrapperStyle={{ fontSize: 12, color: '#8b8fa3' }} />
+        <Legend wrapperStyle={{ fontSize: 12, color: 'var(--text-tertiary)' }} />
         <Bar dataKey="planned" name="Planned" fill="#3b82f6" radius={[4, 4, 0, 0]} maxBarSize={20} />
         <Bar dataKey="actual" name="Actual" fill="#f59e0b" radius={[4, 4, 0, 0]} maxBarSize={20} />
       </BarChart>
@@ -411,7 +409,7 @@ function OnTimeCard({ data }: { data: OnTimeData }) {
 
   if (data.totalFlights === 0) {
     return (
-      <p className="text-sm text-muted-foreground py-10 text-center">
+      <p className="text-sm text-[var(--text-tertiary)] py-10 text-center">
         No data for this period
       </p>
     );
@@ -442,7 +440,7 @@ function OnTimeCard({ data }: { data: OnTimeData }) {
             contentStyle={TOOLTIP_STYLE}
             formatter={(value: number | string | undefined) => [`${value ?? 0} flights`]}
           />
-          <Legend wrapperStyle={{ fontSize: 12, color: '#8b8fa3' }} />
+          <Legend wrapperStyle={{ fontSize: 12, color: 'var(--text-tertiary)' }} />
         </PieChart>
       </ResponsiveContainer>
 
@@ -451,26 +449,26 @@ function OnTimeCard({ data }: { data: OnTimeData }) {
         <p className="font-mono text-4xl font-bold" style={{ color }}>
           {data.percentage.toFixed(1)}%
         </p>
-        <p className="text-xs text-muted-foreground mt-1">On-Time Rate</p>
+        <p className="text-xs text-[var(--text-tertiary)] mt-1">On-Time Rate</p>
       </div>
 
       {/* Stats row */}
-      <div className="grid grid-cols-3 gap-4 w-full pt-4 border-t border-border/50">
+      <div className="grid grid-cols-3 gap-4 w-full pt-4 border-t border-[var(--border-primary)]">
         <div className="text-center">
-          <p className="text-xs text-muted-foreground mb-1">On Time</p>
-          <p className="font-mono text-sm font-semibold text-emerald-400">
+          <p className="text-xs text-[var(--text-tertiary)] mb-1">On Time</p>
+          <p className="font-mono text-sm font-semibold text-[var(--accent-emerald)]">
             {data.onTimeCount}
           </p>
         </div>
         <div className="text-center">
-          <p className="text-xs text-muted-foreground mb-1">Late</p>
-          <p className="font-mono text-sm font-semibold text-red-400">
+          <p className="text-xs text-[var(--text-tertiary)] mb-1">Late</p>
+          <p className="font-mono text-sm font-semibold text-[var(--accent-red)]">
             {data.lateCount}
           </p>
         </div>
         <div className="text-center">
-          <p className="text-xs text-muted-foreground mb-1">Total</p>
-          <p className="font-mono text-sm font-semibold text-[#e8eaed]">
+          <p className="text-xs text-[var(--text-tertiary)] mb-1">Total</p>
+          <p className="font-mono text-sm font-semibold text-[var(--text-primary)]">
             {data.totalFlights}
           </p>
         </div>
@@ -497,7 +495,7 @@ function RoutePopularityChart({ data }: { data: RoutePopularityEntry[] }) {
 
   if (chartData.length === 0) {
     return (
-      <p className="text-sm text-muted-foreground py-10 text-center">
+      <p className="text-sm text-[var(--text-tertiary)] py-10 text-center">
         No data for this period
       </p>
     );
@@ -512,45 +510,45 @@ function RoutePopularityChart({ data }: { data: RoutePopularityEntry[] }) {
         layout="vertical"
         margin={{ top: 5, right: 20, left: 10, bottom: 5 }}
       >
-        <CartesianGrid strokeDasharray="3 3" stroke="#2a2e3f" horizontal={false} />
+        <CartesianGrid strokeDasharray="3 3" stroke="var(--border-primary)" horizontal={false} />
         <XAxis
           type="number"
-          tick={{ fill: '#8b8fa3', fontSize: 12 }}
+          tick={{ fill: 'var(--text-tertiary)', fontSize: 12 }}
           tickLine={false}
-          axisLine={{ stroke: '#2a2e3f' }}
+          axisLine={{ stroke: 'var(--border-primary)' }}
           allowDecimals={false}
           label={{
             value: 'Flights',
             position: 'insideBottomRight',
             offset: -5,
-            fill: '#8b8fa3',
+            fill: 'var(--text-tertiary)',
             fontSize: 11,
           }}
         />
         <YAxis
           type="category"
           dataKey="route"
-          tick={{ fill: '#e8eaed', fontSize: 12 }}
+          tick={{ fill: 'var(--text-primary)', fontSize: 12 }}
           tickLine={false}
           axisLine={false}
           width={110}
         />
         <Tooltip
           contentStyle={TOOLTIP_STYLE}
-          labelStyle={{ color: '#8b8fa3' }}
+          labelStyle={{ color: 'var(--text-tertiary)' }}
           cursor={{ fill: 'rgba(59,130,246,0.08)' }}
           content={({ active, payload, label }) => {
             if (!active || !payload?.length) return null;
             const d = payload[0].payload as { count: number; avgLandingRate: number };
             return (
               <div style={TOOLTIP_STYLE} className="px-3 py-2">
-                <p className="font-medium text-[#e8eaed] mb-1">{label}</p>
-                <p className="text-[#8b8fa3]">
-                  Flights: <span className="font-mono text-[#e8eaed]">{d.count}</span>
+                <p className="font-medium text-[var(--text-primary)] mb-1">{label}</p>
+                <p className="text-[var(--text-tertiary)]">
+                  Flights: <span className="font-mono text-[var(--text-primary)]">{d.count}</span>
                 </p>
-                <p className="text-[#8b8fa3]">
+                <p className="text-[var(--text-tertiary)]">
                   Avg Landing Rate:{' '}
-                  <span className="font-mono text-[#e8eaed]">
+                  <span className="font-mono text-[var(--text-primary)]">
                     {Math.round(d.avgLandingRate)} ft/min
                   </span>
                 </p>
@@ -582,7 +580,7 @@ function RouteProfitabilityChart({ data }: { data: RouteProfitabilityEntry[] }) 
 
   if (chartData.length === 0) {
     return (
-      <p className="text-sm text-muted-foreground py-10 text-center">
+      <p className="text-sm text-[var(--text-tertiary)] py-10 text-center">
         No data for this period
       </p>
     );
@@ -597,12 +595,12 @@ function RouteProfitabilityChart({ data }: { data: RouteProfitabilityEntry[] }) 
         layout="vertical"
         margin={{ top: 5, right: 20, left: 10, bottom: 5 }}
       >
-        <CartesianGrid strokeDasharray="3 3" stroke="#2a2e3f" horizontal={false} />
+        <CartesianGrid strokeDasharray="3 3" stroke="var(--border-primary)" horizontal={false} />
         <XAxis
           type="number"
-          tick={{ fill: '#8b8fa3', fontSize: 12 }}
+          tick={{ fill: 'var(--text-tertiary)', fontSize: 12 }}
           tickLine={false}
-          axisLine={{ stroke: '#2a2e3f' }}
+          axisLine={{ stroke: 'var(--border-primary)' }}
           tickFormatter={(v: number) =>
             v >= 1000 || v <= -1000 ? `$${(v / 1000).toFixed(0)}k` : `$${v}`
           }
@@ -610,22 +608,22 @@ function RouteProfitabilityChart({ data }: { data: RouteProfitabilityEntry[] }) 
             value: 'Profit ($)',
             position: 'insideBottomRight',
             offset: -5,
-            fill: '#8b8fa3',
+            fill: 'var(--text-tertiary)',
             fontSize: 11,
           }}
         />
         <YAxis
           type="category"
           dataKey="route"
-          tick={{ fill: '#e8eaed', fontSize: 12 }}
+          tick={{ fill: 'var(--text-primary)', fontSize: 12 }}
           tickLine={false}
           axisLine={false}
           width={90}
         />
-        <ReferenceLine x={0} stroke="#8b8fa3" strokeDasharray="3 3" />
+        <ReferenceLine x={0} stroke="var(--text-tertiary)" strokeDasharray="3 3" />
         <Tooltip
           contentStyle={TOOLTIP_STYLE}
-          labelStyle={{ color: '#8b8fa3' }}
+          labelStyle={{ color: 'var(--text-tertiary)' }}
           cursor={{ fill: 'rgba(59,130,246,0.08)' }}
           content={({ active, payload, label }) => {
             if (!active || !payload?.length) return null;
@@ -638,21 +636,21 @@ function RouteProfitabilityChart({ data }: { data: RouteProfitabilityEntry[] }) 
             };
             return (
               <div style={TOOLTIP_STYLE} className="px-3 py-2">
-                <p className="font-medium text-[#e8eaed] mb-1">{label}</p>
-                <p className="text-[#8b8fa3]">
-                  Flights: <span className="font-mono text-[#e8eaed]">{d.flights}</span>
+                <p className="font-medium text-[var(--text-primary)] mb-1">{label}</p>
+                <p className="text-[var(--text-tertiary)]">
+                  Flights: <span className="font-mono text-[var(--text-primary)]">{d.flights}</span>
                 </p>
-                <p className="text-[#8b8fa3]">
-                  Revenue: <span className="font-mono text-emerald-400">${d.revenue.toLocaleString()}</span>
+                <p className="text-[var(--text-tertiary)]">
+                  Revenue: <span className="font-mono text-[var(--accent-emerald)]">${d.revenue.toLocaleString()}</span>
                 </p>
-                <p className="text-[#8b8fa3]">
-                  Costs: <span className="font-mono text-red-400">${d.costs.toLocaleString()}</span>
+                <p className="text-[var(--text-tertiary)]">
+                  Costs: <span className="font-mono text-[var(--accent-red)]">${d.costs.toLocaleString()}</span>
                 </p>
-                <p className="text-[#8b8fa3]">
-                  Profit: <span className="font-mono text-[#e8eaed]">${d.profit.toLocaleString()}</span>
+                <p className="text-[var(--text-tertiary)]">
+                  Profit: <span className="font-mono text-[var(--text-primary)]">${d.profit.toLocaleString()}</span>
                 </p>
-                <p className="text-[#8b8fa3]">
-                  Margin: <span className="font-mono text-[#e8eaed]">{d.margin}%</span>
+                <p className="text-[var(--text-tertiary)]">
+                  Margin: <span className="font-mono text-[var(--text-primary)]">{d.margin}%</span>
                 </p>
               </div>
             );
@@ -703,7 +701,7 @@ function FleetUtilizationChart({ data }: { data: FleetUtilizationEntry[] }) {
 
   if (chartData.length === 0 || aircraft.length === 0) {
     return (
-      <p className="text-sm text-muted-foreground py-10 text-center">
+      <p className="text-sm text-[var(--text-tertiary)] py-10 text-center">
         No data for this period
       </p>
     );
@@ -712,35 +710,35 @@ function FleetUtilizationChart({ data }: { data: FleetUtilizationEntry[] }) {
   return (
     <ResponsiveContainer width="100%" height={340}>
       <BarChart data={chartData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
-        <CartesianGrid strokeDasharray="3 3" stroke="#2a2e3f" />
+        <CartesianGrid strokeDasharray="3 3" stroke="var(--border-primary)" />
         <XAxis
           dataKey="month"
-          tick={{ fill: '#8b8fa3', fontSize: 11 }}
+          tick={{ fill: 'var(--text-tertiary)', fontSize: 11 }}
           tickLine={false}
-          axisLine={{ stroke: '#2a2e3f' }}
+          axisLine={{ stroke: 'var(--border-primary)' }}
         />
         <YAxis
-          tick={{ fill: '#8b8fa3', fontSize: 12 }}
+          tick={{ fill: 'var(--text-tertiary)', fontSize: 12 }}
           tickLine={false}
           axisLine={false}
           label={{
             value: 'Hours',
             angle: -90,
             position: 'insideLeft',
-            fill: '#8b8fa3',
+            fill: 'var(--text-tertiary)',
             fontSize: 11,
           }}
         />
         <Tooltip
           contentStyle={TOOLTIP_STYLE}
-          labelStyle={{ color: '#8b8fa3' }}
+          labelStyle={{ color: 'var(--text-tertiary)' }}
           cursor={{ fill: 'rgba(59,130,246,0.08)' }}
           formatter={(value: number | string | undefined, name?: string) => [
             `${value ?? 0} hrs`,
             name ?? '',
           ]}
         />
-        <Legend wrapperStyle={{ fontSize: 12, color: '#8b8fa3' }} />
+        <Legend wrapperStyle={{ fontSize: 12, color: 'var(--text-tertiary)' }} />
         {aircraft.map((reg, idx) => (
           <Bar
             key={reg}
@@ -797,9 +795,8 @@ const PRINT_STYLES = `
     print-color-adjust: exact !important;
   }
 
-  /* Card borders for print */
-  [class*="Card"],
-  [class*="card"] {
+  /* Surface borders for print */
+  [class*="rounded-lg"] {
     border: 1px solid #ccc !important;
     page-break-inside: avoid;
     break-inside: avoid;
@@ -1012,7 +1009,7 @@ export function ReportsPage() {
     return (
       <div className="p-6">
         <h1 className="text-2xl font-semibold mb-6">Reports</h1>
-        <div className="flex items-center justify-center py-20 text-muted-foreground">
+        <div className="flex items-center justify-center py-20 text-[var(--text-tertiary)]">
           <p>{error}</p>
         </div>
       </div>
@@ -1039,123 +1036,93 @@ export function ReportsPage() {
       </div>
 
       {/* Date Range Picker */}
-      <Card className="border-border/50 mb-6 no-print">
-        <CardContent className="py-4">
-          <div className="flex flex-wrap items-center gap-3">
-            <CalendarBlank size={18} className="text-muted-foreground" />
-            <Label className="text-muted-foreground text-sm">From</Label>
-            <Input
-              type="date"
-              value={dateFrom}
-              onChange={(e) => setDateFrom(e.target.value)}
-              className="w-[160px]"
-            />
-            <Label className="text-muted-foreground text-sm">To</Label>
-            <Input
-              type="date"
-              value={dateTo}
-              onChange={(e) => setDateTo(e.target.value)}
-              className="w-[160px]"
-            />
-            <Button onClick={handleApply} size="sm">
-              Apply
-            </Button>
-            <Button variant="ghost" size="sm" onClick={handleReset} className="gap-1">
-              <ArrowCounterClockwise size={14} />
-              Reset
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+      <Surface elevation={1} padding="compact" className="mb-6 no-print">
+        <div className="flex flex-wrap items-center gap-3">
+          <CalendarBlank size={18} className="text-[var(--text-tertiary)]" />
+          <span className="text-[var(--text-tertiary)] text-sm">From</span>
+          <Input
+            type="date"
+            value={dateFrom}
+            onChange={(e) => setDateFrom(e.target.value)}
+            className="w-[160px] bg-[var(--surface-3)] border-[var(--border-secondary)]"
+          />
+          <span className="text-[var(--text-tertiary)] text-sm">To</span>
+          <Input
+            type="date"
+            value={dateTo}
+            onChange={(e) => setDateTo(e.target.value)}
+            className="w-[160px] bg-[var(--surface-3)] border-[var(--border-secondary)]"
+          />
+          <Button onClick={handleApply} size="sm">
+            Apply
+          </Button>
+          <Button variant="ghost" size="sm" onClick={handleReset} className="gap-1">
+            <ArrowCounterClockwise size={14} />
+            Reset
+          </Button>
+        </div>
+      </Surface>
 
       {/* Print-only date range header */}
-      <div className="hidden print:block mb-4 text-sm text-muted-foreground">
+      <div className="hidden print:block mb-4 text-sm text-[var(--text-tertiary)]">
         Report period: {dateFrom} to {dateTo}
       </div>
 
       {/* Chart Grid */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         {/* 1. Flight Hours by Pilot */}
-        <Card className="border-border/50">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base">Flight Hours by Pilot</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <FlightHoursChart data={flightHours} />
-          </CardContent>
-        </Card>
+        <Surface elevation={1}>
+          <SectionHeader title="Flight Hours by Pilot" />
+          <FlightHoursChart data={flightHours} />
+        </Surface>
 
         {/* 2. Landing Rate Distribution */}
-        <Card className="border-border/50">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base">Landing Rate Distribution</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {landingRates ? (
-              <LandingRateChart data={landingRates} />
-            ) : (
-              <p className="text-sm text-muted-foreground py-10 text-center">
-                No data for this period
-              </p>
-            )}
-          </CardContent>
-        </Card>
+        <Surface elevation={1}>
+          <SectionHeader title="Landing Rate Distribution" />
+          {landingRates ? (
+            <LandingRateChart data={landingRates} />
+          ) : (
+            <p className="text-sm text-[var(--text-tertiary)] py-10 text-center">
+              No data for this period
+            </p>
+          )}
+        </Surface>
 
         {/* 3. Fuel Efficiency */}
-        <Card className="border-border/50">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base">Fuel Efficiency</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <FuelEfficiencyChart data={fuelEfficiency} />
-          </CardContent>
-        </Card>
+        <Surface elevation={1}>
+          <SectionHeader title="Fuel Efficiency" />
+          <FuelEfficiencyChart data={fuelEfficiency} />
+        </Surface>
 
         {/* 4. On-Time Performance */}
-        <Card className="border-border/50">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base">On-Time Performance</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {onTime ? (
-              <OnTimeCard data={onTime} />
-            ) : (
-              <p className="text-sm text-muted-foreground py-10 text-center">
-                No data for this period
-              </p>
-            )}
-          </CardContent>
-        </Card>
+        <Surface elevation={1}>
+          <SectionHeader title="On-Time Performance" />
+          {onTime ? (
+            <OnTimeCard data={onTime} />
+          ) : (
+            <p className="text-sm text-[var(--text-tertiary)] py-10 text-center">
+              No data for this period
+            </p>
+          )}
+        </Surface>
 
         {/* 5. Route Popularity — full width */}
-        <Card className="border-border/50 lg:col-span-2">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base">Route Popularity</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <RoutePopularityChart data={routePopularity} />
-          </CardContent>
-        </Card>
+        <Surface elevation={1} className="lg:col-span-2">
+          <SectionHeader title="Route Popularity" />
+          <RoutePopularityChart data={routePopularity} />
+        </Surface>
 
         {/* 6. Route Profitability — full width */}
-        <Card className="border-border/50 lg:col-span-2 print-break-before">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base">Route Profitability</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <RouteProfitabilityChart data={routeProfitability} />
-          </CardContent>
-        </Card>
+        <Surface elevation={1} className="lg:col-span-2 print-break-before">
+          <SectionHeader title="Route Profitability" />
+          <RouteProfitabilityChart data={routeProfitability} />
+        </Surface>
 
         {/* 7. Fleet Utilization — full width */}
-        <Card className="border-border/50 lg:col-span-2">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base">Fleet Utilization</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <FleetUtilizationChart data={fleetUtilization} />
-          </CardContent>
-        </Card>
+        <Surface elevation={1} className="lg:col-span-2">
+          <SectionHeader title="Fleet Utilization" />
+          <FleetUtilizationChart data={fleetUtilization} />
+        </Surface>
       </div>
     </div>
   );

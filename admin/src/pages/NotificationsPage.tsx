@@ -15,19 +15,11 @@ import {
 } from '@phosphor-icons/react';
 import { api, ApiError } from '@/lib/api';
 import { toast } from '@/stores/toastStore';
-import { Skeleton } from '@/components/ui/skeleton';
+import { Surface, SectionHeader, StatusBadge } from '@/components/primitives';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
 import {
   Select,
   SelectContent,
@@ -87,39 +79,6 @@ function formatDate(iso: string): string {
   });
 }
 
-function typeBadge(type: NotificationType) {
-  switch (type) {
-    case 'info':
-      return (
-        <Badge className="bg-blue-500/15 text-blue-400 border-blue-500/30 hover:bg-blue-500/20">
-          <Info size={12} weight="bold" className="mr-1" />
-          Info
-        </Badge>
-      );
-    case 'success':
-      return (
-        <Badge className="bg-emerald-500/15 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20">
-          <CheckCircle size={12} weight="bold" className="mr-1" />
-          Success
-        </Badge>
-      );
-    case 'warning':
-      return (
-        <Badge className="bg-amber-500/15 text-amber-400 border-amber-500/30 hover:bg-amber-500/20">
-          <Warning size={12} weight="bold" className="mr-1" />
-          Warning
-        </Badge>
-      );
-    case 'error':
-      return (
-        <Badge className="bg-red-500/15 text-red-400 border-red-500/30 hover:bg-red-500/20">
-          <WarningCircle size={12} weight="bold" className="mr-1" />
-          Error
-        </Badge>
-      );
-  }
-}
-
 function targetLabel(targetType: TargetType, targetId: string | null): string {
   switch (targetType) {
     case 'all':
@@ -138,8 +97,8 @@ function targetLabel(targetType: TargetType, targetId: string | null): string {
 function NotificationsPageSkeleton() {
   return (
     <div className="space-y-6">
-      <Skeleton className="h-[280px] rounded-md" />
-      <Skeleton className="h-[400px] rounded-md" />
+      <div className="h-[280px] rounded-md bg-[var(--surface-2)] animate-pulse" />
+      <div className="h-[400px] rounded-md bg-[var(--surface-2)] animate-pulse" />
     </div>
   );
 }
@@ -262,7 +221,7 @@ export function NotificationsPage() {
   if (loading) {
     return (
       <div className="p-6">
-        <h1 className="text-2xl font-semibold mb-6">Notifications</h1>
+        <h1 className="text-2xl font-semibold text-[var(--text-primary)] mb-6">Notifications</h1>
         <NotificationsPageSkeleton />
       </div>
     );
@@ -270,24 +229,24 @@ export function NotificationsPage() {
 
   return (
     <div className="p-6">
-      <h1 className="text-2xl font-semibold mb-6">Notifications</h1>
+      <h1 className="text-2xl font-semibold text-[var(--text-primary)] mb-6">Notifications</h1>
 
       <div className="space-y-6">
         {/* ── Compose Section ─────────────────────────────────── */}
-        <Card className="rounded-md border-border">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <PaperPlaneTilt size={20} weight="duotone" />
-              Compose Notification
-            </CardTitle>
-            <CardDescription>
-              Send a notification to pilots, dispatchers, or specific users
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
+        <Surface elevation={1}>
+          <SectionHeader
+            title="Compose Notification"
+            action={
+              <span className="flex items-center gap-1 text-[var(--text-tertiary)]">
+                <PaperPlaneTilt size={14} weight="duotone" />
+                Send to pilots, dispatchers, or specific users
+              </span>
+            }
+          />
+          <div className="space-y-4">
             {/* Type selector */}
             <div className="space-y-2">
-              <Label>Type</Label>
+              <Label className="text-[var(--text-secondary)]">Type</Label>
               <div className="flex gap-2">
                 {(['info', 'success', 'warning', 'error'] as NotificationType[]).map((t) => (
                   <Button
@@ -298,13 +257,13 @@ export function NotificationsPage() {
                     className={
                       composeType === t
                         ? t === 'info'
-                          ? 'bg-blue-600 hover:bg-blue-700'
+                          ? 'bg-[var(--accent-blue)] hover:bg-[var(--accent-blue)]/80'
                           : t === 'success'
-                            ? 'bg-emerald-600 hover:bg-emerald-700'
+                            ? 'bg-[var(--accent-emerald)] hover:bg-[var(--accent-emerald)]/80'
                             : t === 'warning'
-                              ? 'bg-amber-600 hover:bg-amber-700'
-                              : 'bg-red-600 hover:bg-red-700'
-                        : ''
+                              ? 'bg-[var(--accent-amber)] hover:bg-[var(--accent-amber)]/80'
+                              : 'bg-[var(--accent-red)] hover:bg-[var(--accent-red)]/80'
+                        : 'border-[var(--border-secondary)] text-[var(--text-secondary)]'
                     }
                   >
                     {t === 'info' && <Info size={14} weight="bold" />}
@@ -319,20 +278,20 @@ export function NotificationsPage() {
 
             {/* Message */}
             <div className="space-y-2">
-              <Label htmlFor="notif-message">Message</Label>
+              <Label htmlFor="notif-message" className="text-[var(--text-secondary)]">Message</Label>
               <Textarea
                 id="notif-message"
                 placeholder="Type your notification message..."
                 value={composeMessage}
                 onChange={(e) => setComposeMessage(e.target.value)}
                 rows={3}
-                className="resize-none"
+                className="resize-none bg-[var(--surface-3)] border-[var(--border-secondary)] text-[var(--text-primary)]"
               />
             </div>
 
             {/* Target */}
             <div className="space-y-2">
-              <Label>Target</Label>
+              <Label className="text-[var(--text-secondary)]">Target</Label>
               <div className="flex items-center gap-3">
                 <Select
                   value={composeTarget}
@@ -386,7 +345,7 @@ export function NotificationsPage() {
                   <div className="relative flex-1 max-w-sm">
                     <MagnifyingGlass
                       size={16}
-                      className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                      className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-tertiary)]"
                     />
                     <Input
                       placeholder="Search by callsign or name..."
@@ -395,33 +354,33 @@ export function NotificationsPage() {
                         setUserSearch(e.target.value);
                         setComposeUserId(null);
                       }}
-                      className="pl-9"
+                      className="pl-9 bg-[var(--surface-3)] border-[var(--border-secondary)] text-[var(--text-primary)]"
                     />
                     {/* Dropdown results */}
                     {userSearch.length >= 2 && !composeUserId && (
-                      <div className="absolute top-full left-0 right-0 z-50 mt-1 rounded-md border bg-popover shadow-md max-h-48 overflow-auto">
+                      <div className="absolute top-full left-0 right-0 z-50 mt-1 rounded-md border border-[var(--border-primary)] bg-[var(--surface-3)] shadow-md max-h-48 overflow-auto">
                         {userSearchLoading ? (
-                          <div className="px-3 py-2 text-sm text-muted-foreground">
+                          <div className="px-3 py-2 text-sm text-[var(--text-tertiary)]">
                             Searching...
                           </div>
                         ) : userResults.length === 0 ? (
-                          <div className="px-3 py-2 text-sm text-muted-foreground">
+                          <div className="px-3 py-2 text-sm text-[var(--text-tertiary)]">
                             No users found
                           </div>
                         ) : (
                           userResults.map((u) => (
                             <button
                               key={u.id}
-                              className="flex w-full items-center gap-2 px-3 py-2 text-sm hover:bg-accent/50 text-left"
+                              className="flex w-full items-center gap-2 px-3 py-2 text-sm hover:bg-[var(--surface-2)] text-left"
                               onClick={() => {
                                 setComposeUserId(u.id);
                                 setUserSearch(`${u.callsign} - ${u.firstName} ${u.lastName}`);
                                 setUserResults([]);
                               }}
                             >
-                              <UserCircle size={16} className="text-muted-foreground" />
-                              <span className="font-mono font-medium">{u.callsign}</span>
-                              <span className="text-muted-foreground">
+                              <UserCircle size={16} className="text-[var(--text-tertiary)]" />
+                              <span className="font-mono font-medium text-[var(--text-primary)]">{u.callsign}</span>
+                              <span className="text-[var(--text-tertiary)]">
                                 {u.firstName} {u.lastName}
                               </span>
                             </button>
@@ -439,41 +398,43 @@ export function NotificationsPage() {
               <Button
                 onClick={handleSend}
                 disabled={sending || !composeMessage.trim()}
+                className="bg-[var(--accent-blue)] hover:bg-[var(--accent-blue)]/80"
               >
                 <PaperPlaneTilt size={16} weight="bold" />
                 {sending ? 'Sending...' : 'Send Notification'}
               </Button>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </Surface>
 
         {/* ── History Section ─────────────────────────────────── */}
-        <Card className="rounded-md border-border">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Bell size={20} weight="duotone" />
-              Notification History
-            </CardTitle>
-            <CardDescription>
-              Previously sent notifications ({total} total)
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
+        <Surface elevation={1}>
+          <SectionHeader
+            title="Notification History"
+            count={total}
+            action={
+              <span className="flex items-center gap-1 text-[var(--text-tertiary)]">
+                <Bell size={14} weight="duotone" />
+                Previously sent notifications
+              </span>
+            }
+          />
+          <div className="space-y-4">
             {error ? (
-              <div className="flex items-center justify-center py-10 text-muted-foreground">
+              <div className="flex items-center justify-center py-10 text-[var(--text-tertiary)]">
                 <p>{error}</p>
               </div>
             ) : (
               <>
-                <div className="rounded-md border">
+                <div className="rounded-md border border-[var(--border-primary)]">
                   <Table>
                     <TableHeader>
-                      <TableRow>
-                        <TableHead className="w-[160px]">Date</TableHead>
-                        <TableHead className="w-[100px]">Type</TableHead>
-                        <TableHead>Message</TableHead>
-                        <TableHead className="w-[130px]">Target</TableHead>
-                        <TableHead className="w-[120px]">Sent By</TableHead>
+                      <TableRow className="border-b border-[var(--border-primary)] hover:bg-transparent">
+                        <TableHead className="w-[160px] text-[var(--text-tertiary)]">Date</TableHead>
+                        <TableHead className="w-[100px] text-[var(--text-tertiary)]">Type</TableHead>
+                        <TableHead className="text-[var(--text-tertiary)]">Message</TableHead>
+                        <TableHead className="w-[130px] text-[var(--text-tertiary)]">Target</TableHead>
+                        <TableHead className="w-[120px] text-[var(--text-tertiary)]">Sent By</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -481,25 +442,27 @@ export function NotificationsPage() {
                         <TableRow>
                           <TableCell
                             colSpan={5}
-                            className="text-center py-10 text-muted-foreground"
+                            className="text-center py-10 text-[var(--text-tertiary)]"
                           >
                             No notifications sent yet
                           </TableCell>
                         </TableRow>
                       ) : (
                         notifications.map((notif) => (
-                          <TableRow key={notif.id}>
-                            <TableCell className="font-mono text-xs text-muted-foreground">
+                          <TableRow key={notif.id} className="border-b border-[var(--border-primary)] hover:bg-[var(--surface-3)]">
+                            <TableCell className="font-mono text-xs text-[var(--text-tertiary)]">
                               {formatDate(notif.createdAt)}
                             </TableCell>
-                            <TableCell>{typeBadge(notif.type)}</TableCell>
-                            <TableCell className="max-w-[400px] truncate">
+                            <TableCell>
+                              <StatusBadge status={notif.type} />
+                            </TableCell>
+                            <TableCell className="max-w-[400px] truncate text-[var(--text-primary)]">
                               {notif.message}
                             </TableCell>
-                            <TableCell className="text-sm">
+                            <TableCell className="text-sm text-[var(--text-secondary)]">
                               {targetLabel(notif.targetType, notif.targetId)}
                             </TableCell>
-                            <TableCell className="font-mono text-sm">
+                            <TableCell className="font-mono text-sm text-[var(--text-secondary)]">
                               {notif.createdByCallsign ?? 'System'}
                             </TableCell>
                           </TableRow>
@@ -512,7 +475,7 @@ export function NotificationsPage() {
                 {/* Pagination */}
                 {totalPages > 1 && (
                   <div className="flex items-center justify-between px-2">
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-sm text-[var(--text-tertiary)]">
                       Showing {(page - 1) * pageSize + 1}-
                       {Math.min(page * pageSize, total)} of {total}
                     </p>
@@ -520,19 +483,19 @@ export function NotificationsPage() {
                       <Button
                         variant="outline"
                         size="icon"
-                        className="h-8 w-8"
+                        className="h-8 w-8 border-[var(--border-secondary)]"
                         disabled={page <= 1}
                         onClick={() => setPage((p) => p - 1)}
                       >
                         <CaretLeft size={14} />
                       </Button>
-                      <span className="text-sm text-muted-foreground">
+                      <span className="text-sm text-[var(--text-tertiary)]">
                         Page {page} of {totalPages}
                       </span>
                       <Button
                         variant="outline"
                         size="icon"
-                        className="h-8 w-8"
+                        className="h-8 w-8 border-[var(--border-secondary)]"
                         disabled={page >= totalPages}
                         onClick={() => setPage((p) => p + 1)}
                       >
@@ -543,8 +506,8 @@ export function NotificationsPage() {
                 )}
               </>
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </Surface>
       </div>
     </div>
   );
