@@ -1818,26 +1818,26 @@ export function FinancesPage() {
         {
           label: 'Revenue',
           value: formatAmount(totalRevenue),
-          icon: <TrendUp size={13} weight="duotone" />,
-          color: 'emerald',
+          icon: TrendUp,
+          accent: 'emerald',
         },
         {
           label: 'Expenses',
           value: formatAmount(totalExpenses),
-          icon: <TrendDown size={13} weight="duotone" />,
-          color: 'red',
+          icon: TrendDown,
+          accent: 'red',
         },
         {
           label: 'Net Profit',
           value: formatAmount(netProfit),
-          icon: <CurrencyDollar size={13} weight="duotone" />,
-          color: netProfit >= 0 ? 'emerald' : 'red',
+          icon: CurrencyDollar,
+          accent: netProfit >= 0 ? 'emerald' : 'red',
         },
         {
           label: 'Margin',
           value: formatMargin(profitMargin),
-          icon: <ChartBar size={13} weight="duotone" />,
-          color: 'blue',
+          icon: ChartBar,
+          accent: 'blue',
         },
       ]}
     >

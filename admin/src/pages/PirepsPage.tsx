@@ -486,10 +486,10 @@ export function PirepsPage() {
       title="PIREPs"
       subtitle="Pilot reports"
       stats={[
-        { label: 'Total', value: total, icon: <ClipboardText size={13} weight="duotone" />, color: 'blue' },
-        { label: 'Pending', value: pendingCount, icon: <Hourglass size={13} weight="duotone" />, color: 'amber' },
-        { label: 'Approved', value: stats.approved, icon: <CheckCircle size={13} weight="duotone" />, color: 'emerald' },
-        { label: 'Rejected', value: stats.rejected, icon: <XCircle size={13} weight="duotone" />, color: 'red' },
+        { label: 'Total', value: total, icon: ClipboardText, accent: 'blue' },
+        { label: 'Pending', value: pendingCount, icon: Hourglass, accent: 'amber' },
+        { label: 'Approved', value: stats.approved, icon: CheckCircle, accent: 'emerald' },
+        { label: 'Rejected', value: stats.rejected, icon: XCircle, accent: 'red' },
       ]}
     >
       {/* Status Tabs + Toolbar */}

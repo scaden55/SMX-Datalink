@@ -127,7 +127,11 @@ export function DataTable<T>({
         <div className="flex justify-end pb-2">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="h-7 text-xs gap-1">
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 text-xs gap-1 border-[var(--border-primary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-3)]"
+              >
                 <Eye className="h-3.5 w-3.5" />
                 Columns
               </Button>
@@ -155,20 +159,24 @@ export function DataTable<T>({
       )}
 
       {/* Table */}
-      <div className="overflow-auto rounded-md border border-border/50">
+      <div className="overflow-auto rounded-md border border-[var(--border-primary)]">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id} className="border-b border-border/50 hover:bg-transparent">
+              <TableRow
+                key={headerGroup.id}
+                className="border-b border-[var(--border-primary)] hover:bg-transparent"
+              >
                 {headerGroup.headers.map((header) => (
                   <TableHead
                     key={header.id}
-                    className="text-[11px] uppercase tracking-wider text-muted-foreground bg-[#0f1219] sticky top-0 px-3 h-9"
-                    style={
-                      header.column.columnDef.size
+                    className="text-[11px] uppercase tracking-wider bg-[var(--surface-0)] sticky top-0 px-3 h-9"
+                    style={{
+                      color: 'var(--text-tertiary)',
+                      ...(header.column.columnDef.size
                         ? { width: header.column.columnDef.size }
-                        : undefined
-                    }
+                        : {}),
+                    }}
                   >
                     {header.isPlaceholder
                       ? null
@@ -185,7 +193,7 @@ export function DataTable<T>({
             {loading ? (
               // Skeleton loading rows
               Array.from({ length: 5 }).map((_, i) => (
-                <TableRow key={`skeleton-${i}`} className="border-b border-border/30">
+                <TableRow key={`skeleton-${i}`} className="border-b border-[var(--border-primary)]">
                   {table.getVisibleFlatColumns().map((col) => (
                     <TableCell
                       key={col.id}
@@ -201,7 +209,8 @@ export function DataTable<T>({
               <TableRow className="hover:bg-transparent">
                 <TableCell
                   colSpan={visibleColumnCount}
-                  className="h-32 text-center text-muted-foreground"
+                  className="h-32 text-center"
+                  style={{ color: 'var(--text-tertiary)' }}
                 >
                   {emptyMessage}
                 </TableCell>
@@ -217,11 +226,11 @@ export function DataTable<T>({
                     key={row.id}
                     data-state={row.getIsSelected() ? 'selected' : undefined}
                     className={cn(
-                      'border-b border-border/30 transition-colors',
-                      index % 2 === 1 && 'bg-[#181d2b]',
-                      'hover:bg-[#1f2538]',
+                      'border-b border-[var(--border-primary)] transition-colors',
+                      index % 2 === 1 && 'bg-[var(--surface-2)]/50',
+                      'hover:bg-[var(--surface-3)]',
                       isSelected &&
-                        'bg-blue-500/10 border-l-2 border-l-blue-500',
+                        'bg-[var(--accent-blue-bg)] border-l-2 border-l-[var(--accent-blue)]',
                       onRowClick && 'cursor-pointer'
                     )}
                     onClick={() => onRowClick?.(row.original)}
@@ -230,6 +239,7 @@ export function DataTable<T>({
                       <TableCell
                         key={cell.id}
                         className="text-sm py-2.5 px-3"
+                        style={{ color: 'var(--text-secondary)' }}
                       >
                         {flexRender(
                           cell.column.columnDef.cell,

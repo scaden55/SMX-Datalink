@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { X } from '@phosphor-icons/react';
 
-// ── Types ───────────────────────────────────────────────────────
+// ── Types ───────────────────────────────────────────────────
 
 interface DetailPanelProps {
   open: boolean;
@@ -12,7 +12,7 @@ interface DetailPanelProps {
   children: ReactNode;
 }
 
-// ── Component ───────────────────────────────────────────────────
+// ── Component ───────────────────────────────────────────────
 
 export function DetailPanel({
   open,
@@ -24,21 +24,34 @@ export function DetailPanel({
 }: DetailPanelProps) {
   return (
     <div
-      className={`flex-1 flex flex-col bg-[#1c2033] border-l border-border/50 transition-[transform,opacity] duration-200 ease-out ${
+      className={`flex-1 flex flex-col border-l transition-[transform,opacity] duration-200 ease-out ${
         open
           ? 'translate-x-0 opacity-100'
           : 'translate-x-full opacity-0 pointer-events-none'
       }`}
+      style={{
+        backgroundColor: 'var(--surface-2)',
+        borderLeftColor: 'var(--border-primary)',
+      }}
     >
       {/* Header */}
-      <div className="p-4 border-b border-border/30">
+      <div
+        className="p-4 border-b"
+        style={{ borderBottomColor: 'var(--border-primary)' }}
+      >
         <div className="flex items-start justify-between">
           <div className="min-w-0 flex-1">
-            <h2 className="text-sm font-semibold text-foreground truncate">
+            <h2
+              className="text-sm font-semibold truncate"
+              style={{ color: 'var(--text-primary)' }}
+            >
               {title}
             </h2>
             {subtitle && (
-              <p className="text-xs text-muted-foreground mt-0.5 truncate">
+              <p
+                className="text-xs mt-0.5 truncate"
+                style={{ color: 'var(--text-tertiary)' }}
+              >
                 {subtitle}
               </p>
             )}
@@ -46,7 +59,10 @@ export function DetailPanel({
           <button
             type="button"
             onClick={onClose}
-            className="ml-2 flex-shrink-0 text-muted-foreground hover:text-foreground transition-colors"
+            className="ml-2 flex-shrink-0 transition-colors"
+            style={{ color: 'var(--text-tertiary)' }}
+            onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--text-primary)')}
+            onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-tertiary)')}
             aria-label="Close panel"
           >
             <X size={16} weight="bold" />

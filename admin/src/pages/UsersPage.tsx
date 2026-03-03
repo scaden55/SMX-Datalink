@@ -384,26 +384,26 @@ export function UsersPage() {
         {
           label: 'Total Users',
           value: stats.total,
-          icon: <Users size={13} weight="duotone" />,
-          color: 'blue',
+          icon: Users,
+          accent: 'blue',
         },
         {
           label: 'Active Pilots',
           value: stats.active,
-          icon: <UserCircle size={13} weight="duotone" />,
-          color: 'emerald',
+          icon: UserCircle,
+          accent: 'emerald',
         },
         {
           label: 'Admins',
           value: stats.admins,
-          icon: <Shield size={13} weight="duotone" />,
-          color: 'red',
+          icon: Shield,
+          accent: 'red',
         },
         {
           label: 'Dispatchers',
           value: stats.dispatchers,
-          icon: <Headset size={13} weight="duotone" />,
-          color: 'cyan',
+          icon: Headset,
+          accent: 'cyan',
         },
       ]}
       actions={

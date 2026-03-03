@@ -1,48 +1,26 @@
-import type { ReactNode } from 'react';
+import type { ReactNode, ComponentType } from 'react';
+import type { IconProps } from '@phosphor-icons/react';
+import { StatCard } from '@/components/primitives';
 
-// ── Types ───────────────────────────────────────────────────────
+// ── Types ───────────────────────────────────────────────────
 
-interface StatCard {
+interface PageShellStat {
+  icon: ComponentType<IconProps>;
   label: string;
   value: string | number;
-  icon?: ReactNode;
-  color?: 'blue' | 'emerald' | 'amber' | 'red' | 'cyan';
+  accent?: 'blue' | 'emerald' | 'amber' | 'red' | 'cyan';
+  trend?: { value: number; direction: 'up' | 'down' };
 }
 
 interface PageShellProps {
   title: string;
   subtitle?: string;
   actions?: ReactNode;
-  stats?: StatCard[];
+  stats?: PageShellStat[];
   children: ReactNode;
 }
 
-// ── Color Map ───────────────────────────────────────────────────
-
-const colorMap = {
-  blue: {
-    border: 'border-l-blue-500',
-    text: 'text-blue-500',
-  },
-  emerald: {
-    border: 'border-l-emerald-500',
-    text: 'text-emerald-500',
-  },
-  amber: {
-    border: 'border-l-amber-500',
-    text: 'text-amber-500',
-  },
-  red: {
-    border: 'border-l-red-500',
-    text: 'text-red-500',
-  },
-  cyan: {
-    border: 'border-l-cyan-500',
-    text: 'text-cyan-500',
-  },
-} as const;
-
-// ── Component ───────────────────────────────────────────────────
+// ── Component ───────────────────────────────────────────────
 
 export function PageShell({ title, subtitle, actions, stats, children }: PageShellProps) {
   return (
@@ -50,9 +28,19 @@ export function PageShell({ title, subtitle, actions, stats, children }: PageShe
       {/* Header */}
       <div className="flex items-start justify-between px-6 pt-6 pb-4">
         <div>
-          <h1 className="text-lg font-semibold text-foreground">{title}</h1>
+          <h1
+            className="font-bold"
+            style={{
+              fontSize: 'var(--text-display-size)',
+              color: 'var(--text-primary)',
+            }}
+          >
+            {title}
+          </h1>
           {subtitle && (
-            <p className="text-sm text-muted-foreground mt-0.5">{subtitle}</p>
+            <p className="text-[13px] mt-0.5" style={{ color: 'var(--text-secondary)' }}>
+              {subtitle}
+            </p>
           )}
         </div>
         {actions && (
@@ -64,27 +52,16 @@ export function PageShell({ title, subtitle, actions, stats, children }: PageShe
       {stats && stats.length > 0 && (
         <div className="px-6 pb-4">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            {stats.map((stat) => {
-              const palette = colorMap[stat.color ?? 'blue'];
-              return (
-                <div
-                  key={stat.label}
-                  className={`rounded-md bg-[#1c2033] border border-border/50 border-l-[3px] ${palette.border} p-3`}
-                >
-                  <div className="flex items-center gap-1.5">
-                    {stat.icon && (
-                      <span className={`${palette.text} flex-shrink-0`} style={{ fontSize: 13 }}>
-                        {stat.icon}
-                      </span>
-                    )}
-                    <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                      {stat.label}
-                    </span>
-                  </div>
-                  <p className="text-xl font-mono font-bold mt-1">{stat.value}</p>
-                </div>
-              );
-            })}
+            {stats.map((stat) => (
+              <StatCard
+                key={stat.label}
+                icon={stat.icon}
+                label={stat.label}
+                value={stat.value}
+                accent={stat.accent}
+                trend={stat.trend}
+              />
+            ))}
           </div>
         </div>
       )}
