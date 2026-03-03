@@ -19,11 +19,9 @@ import {
 } from '@phosphor-icons/react';
 import { api, ApiError } from '@/lib/api';
 import { toast } from '@/stores/toastStore';
-import { Skeleton } from '@/components/ui/skeleton';
-import { StatCard } from '@/components/widgets/StatCard';
+import { StatusBadge, SectionHeader, DataRow, StatCard } from '@/components/primitives';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import {
   Select,
   SelectContent,
@@ -134,41 +132,10 @@ interface VatsimEvent {
 
 // ── Helpers ─────────────────────────────────────────────────────
 
-function typeBadge(aircraftType: string, flightType: string | null) {
-  if (flightType === 'charter') {
-    return (
-      <Badge className="bg-amber-500/15 text-amber-400 border-amber-500/30 hover:bg-amber-500/20">
-        Charter
-      </Badge>
-    );
-  }
-  if (aircraftType === 'Cargo') {
-    return (
-      <Badge className="bg-blue-500/15 text-blue-400 border-blue-500/30 hover:bg-blue-500/20">
-        Cargo
-      </Badge>
-    );
-  }
-  return (
-    <Badge className="bg-emerald-500/15 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20">
-      Passenger
-    </Badge>
-  );
-}
-
-function activeBadge(isActive: boolean) {
-  if (isActive) {
-    return (
-      <Badge className="bg-emerald-500/15 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20">
-        Active
-      </Badge>
-    );
-  }
-  return (
-    <Badge variant="outline" className="text-muted-foreground">
-      Inactive
-    </Badge>
-  );
+function getFlightType(aircraftType: string, flightType: string | null): string {
+  if (flightType === 'charter') return 'charter';
+  if (aircraftType === 'Cargo') return 'cargo';
+  return 'passenger';
 }
 
 function formatFlightTime(minutes: number): string {
@@ -181,31 +148,6 @@ function formatFlightTime(minutes: number): string {
 function formatDistance(nm: number): string {
   if (!nm) return '--';
   return `${nm.toLocaleString()} nm`;
-}
-
-function DetailRow({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div className="flex items-start justify-between gap-4 py-1.5">
-      <span className="text-sm text-muted-foreground shrink-0">{label}</span>
-      <span className="text-sm text-right">{children}</span>
-    </div>
-  );
-}
-
-// ── Skeleton ────────────────────────────────────────────────────
-
-function SchedulesPageSkeleton() {
-  return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <Skeleton key={i} className="h-[110px] rounded-md" />
-        ))}
-      </div>
-      <Skeleton className="h-10 w-full rounded-md" />
-      <Skeleton className="h-[400px] rounded-md" />
-    </div>
-  );
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -383,7 +325,7 @@ function FlightsTab() {
     {
       accessorKey: 'flightNumber',
       header: ({ column }) => <DataTableColumnHeader column={column} title="Flight #" />,
-      cell: ({ row }) => <span className="font-mono font-medium">{row.original.flightNumber}</span>,
+      cell: ({ row }) => <span className="font-mono font-medium text-[var(--text-primary)]">{row.original.flightNumber}</span>,
       size: 110,
     },
     {
@@ -391,7 +333,9 @@ function FlightsTab() {
       header: 'Route',
       cell: ({ row }) => (
         <span className="font-mono text-sm">
-          {row.original.depIcao}<span className="text-muted-foreground mx-1">&rarr;</span>{row.original.arrIcao}
+          <span className="text-[var(--accent-blue)]">{row.original.depIcao}</span>
+          <span className="text-[var(--text-quaternary)] mx-1">&rarr;</span>
+          <span className="text-[var(--accent-cyan)]">{row.original.arrIcao}</span>
         </span>
       ),
       enableSorting: false,
@@ -400,14 +344,14 @@ function FlightsTab() {
     {
       accessorKey: 'aircraftType',
       header: ({ column }) => <DataTableColumnHeader column={column} title="Aircraft" />,
-      cell: ({ row }) => <span className="font-mono text-muted-foreground">{row.original.aircraftType}</span>,
+      cell: ({ row }) => <span className="font-mono text-[var(--text-tertiary)]">{row.original.aircraftType}</span>,
       size: 100,
     },
     {
       id: 'times',
       header: 'Dep / Arr',
       cell: ({ row }) => (
-        <span className="text-sm text-muted-foreground">
+        <span className="text-sm text-[var(--text-tertiary)]">
           {row.original.depTime} - {row.original.arrTime}
         </span>
       ),
@@ -417,21 +361,21 @@ function FlightsTab() {
     {
       accessorKey: 'daysOfWeek',
       header: 'Days',
-      cell: ({ row }) => <span className="text-xs text-muted-foreground">{row.original.daysOfWeek}</span>,
+      cell: ({ row }) => <span className="text-xs text-[var(--text-tertiary)]">{row.original.daysOfWeek}</span>,
       enableSorting: false,
       size: 100,
     },
     {
       id: 'type',
       header: 'Type',
-      cell: ({ row }) => typeBadge(row.original.aircraftType, row.original.flightType),
+      cell: ({ row }) => <StatusBadge status={getFlightType(row.original.aircraftType, row.original.flightType)} />,
       enableSorting: false,
       size: 90,
     },
     {
       id: 'status',
       header: 'Status',
-      cell: ({ row }) => activeBadge(row.original.isActive),
+      cell: ({ row }) => <StatusBadge status={row.original.isActive ? 'active' : 'inactive'} />,
       enableSorting: false,
       size: 90,
     },
@@ -461,7 +405,7 @@ function FlightsTab() {
                 <ToggleLeft size={14} /> {schedule.isActive ? 'Deactivate' : 'Activate'}
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem className="text-red-400 focus:text-red-400" onClick={() => setDeleteSchedule(schedule)}>
+              <DropdownMenuItem className="text-[var(--accent-red)] focus:text-[var(--accent-red)]" onClick={() => setDeleteSchedule(schedule)}>
                 <Trash size={14} /> Delete
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -476,7 +420,7 @@ function FlightsTab() {
 
   if (error) {
     return (
-      <div className="flex items-center justify-center py-20 text-muted-foreground">
+      <div className="flex items-center justify-center py-20 text-[var(--text-tertiary)]">
         <p>{error}</p>
       </div>
     );
@@ -485,26 +429,30 @@ function FlightsTab() {
   return (
     <div className="space-y-6">
       {/* Stat Cards */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
-          title="Total Schedules"
+          icon={CalendarBlank}
+          label="Total Schedules"
           value={stats.total}
-          icon={<CalendarBlank size={22} weight="duotone" />}
+          accent="blue"
         />
         <StatCard
-          title="Active"
+          icon={Lightning}
+          label="Active"
           value={stats.active}
-          icon={<AirplaneTilt size={22} weight="duotone" />}
+          accent="emerald"
         />
         <StatCard
-          title="Cargo Routes"
+          icon={Package}
+          label="Cargo Routes"
           value={stats.cargo}
-          icon={<Package size={22} weight="duotone" />}
+          accent="amber"
         />
         <StatCard
-          title="Passenger Routes"
+          icon={Buildings}
+          label="Passenger Routes"
           value={stats.pax}
-          icon={<AirplaneTilt size={22} weight="duotone" />}
+          accent="cyan"
         />
       </div>
 
@@ -514,7 +462,7 @@ function FlightsTab() {
           <div className="relative max-w-sm flex-1">
             <MagnifyingGlass
               size={16}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-tertiary)]"
             />
             <Input
               placeholder="Search flights..."
@@ -552,7 +500,7 @@ function FlightsTab() {
       </div>
 
       {/* Split view: table + detail */}
-      <div className="flex flex-1 gap-0 overflow-hidden rounded-md border border-border/50">
+      <div className="flex flex-1 gap-0 overflow-hidden rounded-md border border-[var(--border-primary)]">
         <div className={`${detailOpen ? 'w-[55%]' : 'w-full'} flex flex-col transition-all duration-200`}>
           <DataTable
             columns={columns}
@@ -581,18 +529,32 @@ function FlightsTab() {
               </>
             }
           >
-            <div className="space-y-4">
-              <DetailRow label="Route"><span className="font-mono">{detailSchedule.depIcao} &rarr; {detailSchedule.arrIcao}</span></DetailRow>
-              {detailSchedule.depName && <DetailRow label="Departure">{detailSchedule.depName}</DetailRow>}
-              {detailSchedule.arrName && <DetailRow label="Arrival">{detailSchedule.arrName}</DetailRow>}
-              <DetailRow label="Aircraft Type"><span className="font-mono">{detailSchedule.aircraftType}</span></DetailRow>
-              <DetailRow label="Schedule">{detailSchedule.depTime} - {detailSchedule.arrTime}</DetailRow>
-              <DetailRow label="Days">{detailSchedule.daysOfWeek}</DetailRow>
-              <DetailRow label="Flight Time">{formatFlightTime(detailSchedule.flightTimeMin)}</DetailRow>
-              <DetailRow label="Distance">{formatDistance(detailSchedule.distanceNm)}</DetailRow>
-              <DetailRow label="Type">{typeBadge(detailSchedule.aircraftType, detailSchedule.flightType)}</DetailRow>
-              <DetailRow label="Status">{activeBadge(detailSchedule.isActive)}</DetailRow>
-              <DetailRow label="Active Bids"><span className="font-mono">{detailSchedule.bidCount}</span></DetailRow>
+            <div className="space-y-1">
+              <SectionHeader title="Route Information" />
+              <DataRow
+                label="Route"
+                value={
+                  <span className="font-mono">
+                    <span className="text-[var(--accent-blue)]">{detailSchedule.depIcao}</span>
+                    {' \u2192 '}
+                    <span className="text-[var(--accent-cyan)]">{detailSchedule.arrIcao}</span>
+                  </span>
+                }
+              />
+              {detailSchedule.depName && <DataRow label="Departure" value={detailSchedule.depName} />}
+              {detailSchedule.arrName && <DataRow label="Arrival" value={detailSchedule.arrName} />}
+              <DataRow label="Distance" value={formatDistance(detailSchedule.distanceNm)} mono />
+
+              <SectionHeader title="Schedule Details" className="mt-4" />
+              <DataRow label="Aircraft Type" value={<span className="font-mono">{detailSchedule.aircraftType}</span>} />
+              <DataRow label="Schedule" value={`${detailSchedule.depTime} - ${detailSchedule.arrTime}`} mono />
+              <DataRow label="Days" value={detailSchedule.daysOfWeek} />
+              <DataRow label="Flight Time" value={formatFlightTime(detailSchedule.flightTimeMin)} mono />
+
+              <SectionHeader title="Status" className="mt-4" />
+              <DataRow label="Type" value={<StatusBadge status={getFlightType(detailSchedule.aircraftType, detailSchedule.flightType)} />} />
+              <DataRow label="Status" value={<StatusBadge status={detailSchedule.isActive ? 'active' : 'inactive'} />} />
+              <DataRow label="Active Bids" value={detailSchedule.bidCount} mono />
             </div>
           </DetailPanel>
         )}
@@ -614,7 +576,7 @@ function FlightsTab() {
             <DialogTitle>Clone Schedule</DialogTitle>
             <DialogDescription>
               Create a copy of{' '}
-              <span className="font-semibold text-foreground font-mono">
+              <span className="font-semibold text-[var(--text-primary)] font-mono">
                 {cloneDialogSchedule?.flightNumber}
               </span>{' '}
               ({cloneDialogSchedule?.depIcao} - {cloneDialogSchedule?.arrIcao}).
@@ -653,7 +615,7 @@ function FlightsTab() {
             <DialogTitle>Delete Schedule</DialogTitle>
             <DialogDescription>
               Are you sure you want to permanently delete{' '}
-              <span className="font-semibold text-foreground font-mono">
+              <span className="font-semibold text-[var(--text-primary)] font-mono">
                 {deleteSchedule?.flightNumber}
               </span>{' '}
               ({deleteSchedule?.depIcao} - {deleteSchedule?.arrIcao})?
@@ -804,11 +766,17 @@ function AirportsTab() {
 
   // ── Render ─────────────────────────────────────────────────
 
-  if (loading) return <SchedulesPageSkeleton />;
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20 text-[var(--text-tertiary)]">
+        <p>Loading airports...</p>
+      </div>
+    );
+  }
 
   if (error) {
     return (
-      <div className="flex items-center justify-center py-20 text-muted-foreground">
+      <div className="flex items-center justify-center py-20 text-[var(--text-tertiary)]">
         <p>{error}</p>
       </div>
     );
@@ -819,21 +787,24 @@ function AirportsTab() {
   return (
     <div className="space-y-6">
       {/* Stats */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
         <StatCard
-          title="Total Airports"
+          icon={MapPin}
+          label="Total Airports"
           value={airports.length}
-          icon={<MapPin size={22} weight="duotone" />}
+          accent="blue"
         />
         <StatCard
-          title="Hub Airports"
+          icon={Buildings}
+          label="Hub Airports"
           value={hubCount}
-          icon={<Buildings size={22} weight="duotone" />}
+          accent="amber"
         />
         <StatCard
-          title="Countries"
+          icon={MapPin}
+          label="Countries"
           value={new Set(airports.map((a) => a.country)).size}
-          icon={<MapPin size={22} weight="duotone" />}
+          accent="cyan"
         />
       </div>
 
@@ -842,7 +813,7 @@ function AirportsTab() {
         <div className="relative max-w-sm flex-1">
           <MagnifyingGlass
             size={16}
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-tertiary)]"
           />
           <Input
             placeholder="Search airports..."
@@ -858,7 +829,7 @@ function AirportsTab() {
       </div>
 
       {/* Table */}
-      <div className="rounded-md border">
+      <div className="rounded-md border border-[var(--border-primary)]">
         <Table>
           <TableHeader>
             <TableRow>
@@ -873,24 +844,22 @@ function AirportsTab() {
           <TableBody>
             {filteredAirports.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-10 text-muted-foreground">
+                <TableCell colSpan={6} className="text-center py-10 text-[var(--text-tertiary)]">
                   No airports found
                 </TableCell>
               </TableRow>
             ) : (
               filteredAirports.map((airport) => (
                 <TableRow key={airport.id}>
-                  <TableCell className="font-mono font-medium">{airport.icao}</TableCell>
+                  <TableCell className="font-mono font-medium text-[var(--text-primary)]">{airport.icao}</TableCell>
                   <TableCell>{airport.name}</TableCell>
-                  <TableCell className="text-muted-foreground">{airport.city}</TableCell>
-                  <TableCell className="font-mono text-muted-foreground">{airport.country}</TableCell>
+                  <TableCell className="text-[var(--text-tertiary)]">{airport.city}</TableCell>
+                  <TableCell className="font-mono text-[var(--text-tertiary)]">{airport.country}</TableCell>
                   <TableCell>
                     {airport.isHub ? (
-                      <Badge className="bg-blue-500/15 text-blue-400 border-blue-500/30 hover:bg-blue-500/20">
-                        Hub
-                      </Badge>
+                      <StatusBadge status="hub" />
                     ) : (
-                      <span className="text-xs text-muted-foreground">--</span>
+                      <span className="text-xs text-[var(--text-quaternary)]">--</span>
                     )}
                   </TableCell>
                   <TableCell>
@@ -907,7 +876,7 @@ function AirportsTab() {
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem
-                          className="text-red-400 focus:text-red-400"
+                          className="text-[var(--accent-red)] focus:text-[var(--accent-red)]"
                           onClick={() => setDeleteAirport(airport)}
                         >
                           <Trash size={14} />
@@ -936,7 +905,7 @@ function AirportsTab() {
             <div className="relative">
               <MagnifyingGlass
                 size={16}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-tertiary)]"
               />
               <Input
                 placeholder="Search ICAO or name..."
@@ -946,38 +915,38 @@ function AirportsTab() {
                 autoFocus
               />
             </div>
-            <div className="max-h-[300px] overflow-y-auto rounded-md border">
+            <div className="max-h-[300px] overflow-y-auto rounded-md border border-[var(--border-primary)]">
               {searching && (
-                <div className="p-4 text-center text-sm text-muted-foreground">Searching...</div>
+                <div className="p-4 text-center text-sm text-[var(--text-tertiary)]">Searching...</div>
               )}
               {!searching && searchQuery.length >= 2 && searchResults.length === 0 && (
-                <div className="p-4 text-center text-sm text-muted-foreground">No airports found</div>
+                <div className="p-4 text-center text-sm text-[var(--text-tertiary)]">No airports found</div>
               )}
               {!searching && searchQuery.length < 2 && (
-                <div className="p-4 text-center text-sm text-muted-foreground">Type at least 2 characters</div>
+                <div className="p-4 text-center text-sm text-[var(--text-tertiary)]">Type at least 2 characters</div>
               )}
               {searchResults.map((result) => {
                 const alreadyAdded = airports.some((a) => a.icao === result.ident);
                 return (
                   <div
                     key={result.ident}
-                    className="flex items-center justify-between px-4 py-2.5 border-b last:border-b-0 hover:bg-muted/50"
+                    className="flex items-center justify-between px-4 py-2.5 border-b border-[var(--border-primary)] last:border-b-0 hover:bg-[var(--surface-3)]"
                   >
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
-                        <span className="font-mono font-medium">{result.ident}</span>
+                        <span className="font-mono font-medium text-[var(--text-primary)]">{result.ident}</span>
                         {result.iata_code && (
-                          <span className="text-xs text-muted-foreground">({result.iata_code})</span>
+                          <span className="text-xs text-[var(--text-tertiary)]">({result.iata_code})</span>
                         )}
                       </div>
-                      <p className="text-sm text-muted-foreground truncate">
+                      <p className="text-sm text-[var(--text-tertiary)] truncate">
                         {result.name}
                         {result.municipality && `, ${result.municipality}`}
                         {result.iso_country && ` (${result.iso_country})`}
                       </p>
                     </div>
                     {alreadyAdded ? (
-                      <Badge variant="secondary" className="ml-2 shrink-0">Added</Badge>
+                      <StatusBadge status="published" label="Added" className="ml-2 shrink-0" />
                     ) : (
                       <Button
                         size="sm"
@@ -1004,7 +973,7 @@ function AirportsTab() {
             <DialogTitle>Delete Airport</DialogTitle>
             <DialogDescription>
               Are you sure you want to remove{' '}
-              <span className="font-semibold text-foreground font-mono">
+              <span className="font-semibold text-[var(--text-primary)] font-mono">
                 {deleteAirport?.icao}
               </span>{' '}
               ({deleteAirport?.name}) from the approved airports list?
@@ -1089,26 +1058,35 @@ function ChartersTab() {
     }
   }
 
-  if (loading) return <SchedulesPageSkeleton />;
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20 text-[var(--text-tertiary)]">
+        <p>Loading charters...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
       {/* Charter Generation Status */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
         <StatCard
-          title="Current Month"
+          icon={CalendarBlank}
+          label="Current Month"
           value={charterStatus?.month ?? '--'}
-          icon={<CalendarBlank size={22} weight="duotone" />}
+          accent="blue"
         />
         <StatCard
-          title="Generated Charters"
+          icon={AirplaneTilt}
+          label="Generated Charters"
           value={charterStatus?.charterCount ?? 0}
-          icon={<AirplaneTilt size={22} weight="duotone" />}
+          accent="emerald"
         />
         <StatCard
-          title="VATSIM Events"
+          icon={Lightning}
+          label="VATSIM Events"
           value={events.length}
-          icon={<Lightning size={22} weight="duotone" />}
+          accent="amber"
         />
       </div>
 
@@ -1143,22 +1121,22 @@ function ChartersTab() {
       </div>
 
       {charterStatus?.generatedAt && (
-        <p className="text-sm text-muted-foreground">
+        <p className="text-sm text-[var(--text-tertiary)]">
           Last generated: {new Date(charterStatus.generatedAt).toLocaleString()}
         </p>
       )}
 
       {/* Upcoming Events */}
       <div>
-        <h3 className="text-lg font-semibold mb-3">Active VATSIM Events</h3>
+        <SectionHeader title="Active VATSIM Events" count={events.length} />
         {events.length === 0 ? (
-          <div className="rounded-md border p-8 text-center text-muted-foreground">
+          <div className="rounded-md border border-[var(--border-primary)] p-8 text-center text-[var(--text-tertiary)]">
             <Clock size={32} weight="duotone" className="mx-auto mb-2 opacity-50" />
             <p>No active VATSIM events at this time.</p>
-            <p className="text-xs mt-1">Events are polled automatically from the VATSIM API.</p>
+            <p className="text-xs mt-1 text-[var(--text-quaternary)]">Events are polled automatically from the VATSIM API.</p>
           </div>
         ) : (
-          <div className="rounded-md border">
+          <div className="rounded-md border border-[var(--border-primary)]">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -1172,27 +1150,30 @@ function ChartersTab() {
               <TableBody>
                 {events.map((event) => (
                   <TableRow key={event.id}>
-                    <TableCell className="font-medium">{event.name}</TableCell>
+                    <TableCell className="font-medium text-[var(--text-primary)]">{event.name}</TableCell>
                     <TableCell>
-                      <Badge variant="secondary">{event.eventType}</Badge>
+                      <StatusBadge status="info" label={event.eventType} />
                     </TableCell>
-                    <TableCell className="font-mono text-sm text-muted-foreground">
+                    <TableCell className="font-mono text-sm text-[var(--text-tertiary)]">
                       {new Date(event.startTime).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                     </TableCell>
-                    <TableCell className="font-mono text-sm text-muted-foreground">
+                    <TableCell className="font-mono text-sm text-[var(--text-tertiary)]">
                       {new Date(event.endTime).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                     </TableCell>
                     <TableCell>
                       <div className="flex flex-wrap gap-1">
                         {event.airports.slice(0, 3).map((icao) => (
-                          <Badge key={icao} variant="outline" className="font-mono text-xs">
+                          <span
+                            key={icao}
+                            className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono font-medium ring-1 bg-[var(--surface-3)] text-[var(--text-secondary)] ring-[var(--border-secondary)]"
+                          >
                             {icao}
-                          </Badge>
+                          </span>
                         ))}
                         {event.airports.length > 3 && (
-                          <Badge variant="outline" className="text-xs">
+                          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium ring-1 bg-[var(--surface-3)] text-[var(--text-tertiary)] ring-[var(--border-secondary)]">
                             +{event.airports.length - 3}
-                          </Badge>
+                          </span>
                         )}
                       </div>
                     </TableCell>

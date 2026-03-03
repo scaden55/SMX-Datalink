@@ -11,14 +11,14 @@ interface AcarsChatProps {
 function getMessageStyle(source: string) {
   switch (source.toUpperCase()) {
     case 'PILOT':
-      return 'bg-zinc-700/50 text-zinc-200';
+      return 'bg-[var(--surface-3)] text-[var(--text-secondary)]';
     case 'DISPATCH':
     case 'DISPATCHER':
-      return 'bg-primary/20 text-blue-200';
+      return 'bg-[var(--accent-blue-bg)] text-[var(--accent-blue)]';
     case 'SYSTEM':
-      return 'bg-amber-900/30 text-amber-200 italic';
+      return 'bg-[var(--accent-amber-bg)] text-[var(--accent-amber)] italic';
     default:
-      return 'bg-zinc-700/50 text-zinc-200';
+      return 'bg-[var(--surface-3)] text-[var(--text-secondary)]';
   }
 }
 
@@ -63,7 +63,7 @@ export function AcarsChat({ bidId, messages }: AcarsChatProps) {
 
   if (!bidId) {
     return (
-      <div className="flex items-center justify-center py-8 text-xs text-muted-foreground">
+      <div className="flex items-center justify-center py-8 text-xs text-[var(--text-quaternary)]">
         Select a flight to chat
       </div>
     );
@@ -72,14 +72,14 @@ export function AcarsChat({ bidId, messages }: AcarsChatProps) {
   return (
     <div className="flex flex-col">
       {/* Header */}
-      <div className="border-t border-border px-4 py-2">
-        <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">ACARS Messages</h3>
+      <div className="border-t border-[var(--border-primary)] px-4 py-2">
+        <h3 className="text-xs font-semibold uppercase tracking-wide text-[var(--text-tertiary)]">ACARS Messages</h3>
       </div>
 
       {/* Messages */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-2 space-y-2 max-h-[200px] min-h-[120px]">
         {messages.length === 0 ? (
-          <p className="text-center text-xs text-muted-foreground py-4">No messages yet</p>
+          <p className="text-center text-xs text-[var(--text-quaternary)] py-4">No messages yet</p>
         ) : (
           messages.map((msg) => (
             <div key={msg.id} className={`rounded px-3 py-2 text-xs ${getMessageStyle(msg.source)}`}>
@@ -98,19 +98,19 @@ export function AcarsChat({ bidId, messages }: AcarsChatProps) {
       </div>
 
       {/* Input */}
-      <div className="flex items-center gap-2 border-t border-border px-4 py-2">
+      <div className="flex items-center gap-2 border-t border-[var(--border-primary)] px-4 py-2">
         <input
           type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder="Type a message..."
-          className="flex-1 rounded bg-secondary px-3 py-1.5 text-xs text-foreground placeholder:text-muted-foreground outline-none focus:ring-1 focus:ring-primary"
+          className="flex-1 rounded bg-[var(--surface-3)] px-3 py-1.5 text-xs text-[var(--text-primary)] placeholder:text-[var(--text-quaternary)] outline-none focus:ring-1 focus:ring-[var(--accent-blue)]"
         />
         <button
           onClick={handleSend}
           disabled={!input.trim()}
-          className="rounded bg-primary p-1.5 text-primary-foreground transition-colors hover:bg-primary/80 disabled:opacity-40"
+          className="rounded bg-[var(--accent-blue)] p-1.5 text-white transition-colors hover:brightness-110 disabled:opacity-40"
         >
           <PaperPlaneRight size={14} weight="bold" />
         </button>

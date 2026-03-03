@@ -124,15 +124,15 @@ export function DispatchBoardPage() {
           trail={trail}
         />
         {/* Connection indicator */}
-        <div className="absolute top-3 right-3 z-[1000] flex items-center gap-1.5 rounded bg-black/60 px-2.5 py-1 text-xs">
+        <div className="absolute top-3 right-3 z-[1000] flex items-center gap-1.5 rounded bg-[var(--surface-0)]/80 px-2.5 py-1 text-xs">
           <span className={`inline-block h-2 w-2 rounded-full ${
             connected
-              ? 'bg-emerald-400'
+              ? 'bg-[var(--accent-emerald)]'
               : connecting
-                ? 'bg-amber-400 animate-pulse'
-                : 'bg-red-400'
+                ? 'bg-[var(--accent-amber)] animate-pulse'
+                : 'bg-[var(--accent-red)]'
           }`} />
-          <span className="text-zinc-300">{
+          <span className="text-[var(--text-secondary)]">{
             connected
               ? 'Live'
               : connecting

@@ -27,6 +27,14 @@ const statusConfig: Record<string, { bg: string; text: string; ring: string; lab
   admin: { bg: 'bg-[var(--accent-red-bg)]', text: 'text-[var(--accent-red)]', ring: 'ring-[var(--accent-red-ring)]', label: 'Admin' },
   dispatcher: { bg: 'bg-[var(--accent-blue-bg)]', text: 'text-[var(--accent-blue)]', ring: 'ring-[var(--accent-blue-ring)]', label: 'Dispatcher' },
   pilot: { bg: 'bg-[var(--accent-emerald-bg)]', text: 'text-[var(--accent-emerald)]', ring: 'ring-[var(--accent-emerald-ring)]', label: 'Pilot' },
+  // Schedule types
+  charter: { bg: 'bg-[var(--accent-amber-bg)]', text: 'text-[var(--accent-amber)]', ring: 'ring-[var(--accent-amber-ring)]', label: 'Charter' },
+  cargo: { bg: 'bg-[var(--accent-blue-bg)]', text: 'text-[var(--accent-blue)]', ring: 'ring-[var(--accent-blue-ring)]', label: 'Cargo' },
+  passenger: { bg: 'bg-[var(--accent-emerald-bg)]', text: 'text-[var(--accent-emerald)]', ring: 'ring-[var(--accent-emerald-ring)]', label: 'Passenger' },
+  inactive: { bg: 'bg-[var(--surface-3)]', text: 'text-[var(--text-quaternary)]', ring: 'ring-[var(--border-secondary)]', label: 'Inactive' },
+  enabled: { bg: 'bg-[var(--accent-emerald-bg)]', text: 'text-[var(--accent-emerald)]', ring: 'ring-[var(--accent-emerald-ring)]', label: 'Enabled' },
+  disabled: { bg: 'bg-[var(--surface-3)]', text: 'text-[var(--text-quaternary)]', ring: 'ring-[var(--border-secondary)]', label: 'Disabled' },
+  hub: { bg: 'bg-[var(--accent-blue-bg)]', text: 'text-[var(--accent-blue)]', ring: 'ring-[var(--accent-blue-ring)]', label: 'Hub' },
   // Inactive statuses
   deleted: { bg: 'bg-[var(--surface-3)]', text: 'text-[var(--text-quaternary)]', ring: 'ring-[var(--border-secondary)]', label: 'Deleted' },
   diverted: { bg: 'bg-[var(--accent-blue-bg)]', text: 'text-[var(--accent-blue)]', ring: 'ring-[var(--accent-blue-ring)]', label: 'Diverted' },
