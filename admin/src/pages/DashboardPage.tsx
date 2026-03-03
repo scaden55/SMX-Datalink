@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { ActiveFlightHeartbeat } from '@acars/shared';
 import { AirplaneTilt, ClipboardText, Heartbeat, CurrencyDollar } from '@phosphor-icons/react';
-import { api } from '@/lib/api';
+import { api, ApiError } from '@/lib/api';
 import { useAuthStore } from '@/stores/authStore';
 import { useSocketStore } from '@/stores/socketStore';
 import { useSocket } from '@/hooks/useSocket';
@@ -79,72 +79,42 @@ export function DashboardPage() {
   const accessToken = useAuthStore((s) => s.accessToken);
   const { connect, connected } = useSocketStore();
 
-  // --- MOCK DATA (remove this block to restore live data) ---
+  // Fetch dashboard data from API
   useEffect(() => {
-    const mock: DashboardData = {
-      activeFlights: 4,
-      pendingPireps: 7,
-      fleetHealthPct: 91,
-      monthlyRevenue: 284600,
-      flightsPerDay: [
-        { day: 1, count: 12 }, { day: 2, count: 9 }, { day: 3, count: 15 },
-        { day: 4, count: 11 }, { day: 5, count: 14 }, { day: 6, count: 8 },
-        { day: 7, count: 13 },
-      ],
-      recentFlights: [
-        { id: 1, flightNumber: 'SMA401', depIcao: 'KMIA', arrIcao: 'KJFK', status: 'approved', pilotCallsign: 'SMA041', landingRate: -142, createdAt: '2026-03-02T11:22:00Z' },
-        { id: 2, flightNumber: 'SMA118', depIcao: 'PANC', arrIcao: 'KSEA', status: 'pending', pilotCallsign: 'SMA007', landingRate: -198, createdAt: '2026-03-02T09:45:00Z' },
-        { id: 3, flightNumber: 'SMA762', depIcao: 'KMEM', arrIcao: 'KORD', status: 'approved', pilotCallsign: 'SMA023', landingRate: -88, createdAt: '2026-03-02T07:30:00Z' },
-        { id: 4, flightNumber: 'SMA205', depIcao: 'KLAX', arrIcao: 'PHNL', status: 'rejected', pilotCallsign: 'SMA012', landingRate: -387, createdAt: '2026-03-01T22:15:00Z' },
-        { id: 5, flightNumber: 'SMA550', depIcao: 'KATL', arrIcao: 'KDFW', status: 'approved', pilotCallsign: 'SMA055', landingRate: -112, createdAt: '2026-03-01T18:00:00Z' },
-      ],
-      maintenanceAlerts: [
-        { type: 'Engine Inspection', aircraftReg: 'N401SM', description: 'Left engine overdue for 500hr inspection by 12 cycles', severity: 'warning' },
-        { type: 'APU Fault', aircraftReg: 'N118SM', description: 'APU auto-shutdown reported on last 3 flights', severity: 'critical' },
-        { type: 'Tire Replacement', aircraftReg: 'N762SM', description: 'Main gear tires at 85% wear — schedule swap', severity: 'warning' },
-      ],
-      pilotActivity: [
-        { callsign: 'SMA041', firstName: 'James', lastName: 'Carter', hoursThisMonth: 47.2 },
-        { callsign: 'SMA007', firstName: 'Elena', lastName: 'Voss', hoursThisMonth: 38.8 },
-        { callsign: 'SMA023', firstName: 'Marcus', lastName: 'Chen', hoursThisMonth: 33.1 },
-        { callsign: 'SMA012', firstName: 'Sarah', lastName: 'Blake', hoursThisMonth: 28.5 },
-        { callsign: 'SMA055', firstName: 'David', lastName: 'Okafor', hoursThisMonth: 21.7 },
-      ],
-      financialSummary: {
-        months: ['Sep', 'Oct', 'Nov', 'Dec', 'Jan', 'Feb'],
-        income:  [195000, 210000, 248000, 231000, 267000, 284600],
-        costs:   [142000, 155000, 168000, 162000, 171000, 178400],
-        profit:  [ 53000,  55000,  80000,  69000,  96000, 106200],
-      },
-    };
-
-    const mockFlights: ActiveFlightHeartbeat[] = [
-      { userId: 1, callsign: 'SMA041', aircraftType: 'B763F', latitude: 35.8, longitude: -78.4, altitude: 36000, heading: 42, groundSpeed: 480, phase: 'CRUISE', timestamp: new Date().toISOString() },
-      { userId: 2, callsign: 'SMA007', aircraftType: 'B744F', latitude: 55.2, longitude: -148.6, altitude: 34000, heading: 155, groundSpeed: 465, phase: 'CRUISE', timestamp: new Date().toISOString() },
-      { userId: 3, callsign: 'SMA023', aircraftType: 'A306F', latitude: 39.1, longitude: -89.2, altitude: 28000, heading: 18, groundSpeed: 420, phase: 'CLIMB', timestamp: new Date().toISOString() },
-      { userId: 4, callsign: 'SMA055', aircraftType: 'B77LF', latitude: 32.9, longitude: -97.1, altitude: 4200, heading: 265, groundSpeed: 165, phase: 'APPROACH', timestamp: new Date().toISOString() },
-    ];
-
-    setData(mock);
-    setFlights(mockFlights);
-    setLoading(false);
+    let cancelled = false;
+    async function fetchDashboard() {
+      try {
+        const res = await api.get<DashboardData>('/api/admin/dashboard');
+        if (!cancelled) {
+          setData(res);
+          setError(null);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setError(err instanceof ApiError ? err.message : 'Failed to load dashboard');
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+    fetchDashboard();
+    return () => { cancelled = true; };
   }, []);
-  // --- END MOCK DATA ---
 
-  // Connect socket for live map (disabled during mock)
-  // useEffect(() => {
-  //   if (accessToken && !connected) {
-  //     connect(accessToken);
-  //   }
-  // }, [accessToken, connected, connect]);
+  // Connect socket for live map
+  useEffect(() => {
+    if (accessToken && !connected) {
+      connect(accessToken);
+    }
+  }, [accessToken, connected, connect]);
 
-  // Subscribe to live flights (disabled during mock)
-  // useSocket<ActiveFlightHeartbeat[]>('flights:active', (data) => {
-  //   setFlights(data);
-  // }, {
-  //   subscribeEvent: 'livemap:subscribe',
-  //   unsubscribeEvent: 'livemap:unsubscribe',
-  // });
+  // Subscribe to live flights
+  useSocket<ActiveFlightHeartbeat[]>('flights:active', (data) => {
+    setFlights(data);
+  }, {
+    subscribeEvent: 'livemap:subscribe',
+    unsubscribeEvent: 'livemap:unsubscribe',
+  });
 
   return (
     <div className="absolute inset-0">
