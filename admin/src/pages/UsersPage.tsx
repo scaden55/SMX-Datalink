@@ -19,9 +19,9 @@ import { PageShell } from '@/components/shared/PageShell';
 import { DataTable } from '@/components/shared/DataTable';
 import { DataTableColumnHeader } from '@/components/shared/DataTableColumnHeader';
 import { DetailPanel } from '@/components/shared/DetailPanel';
+import { StatusBadge, DataRow, SectionHeader } from '@/components/primitives';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import {
   Select,
   SelectContent,
@@ -85,61 +85,6 @@ function formatDate(iso: string): string {
     month: 'short',
     day: 'numeric',
   });
-}
-
-function roleBadge(role: UserRole) {
-  switch (role) {
-    case 'admin':
-      return (
-        <Badge className="bg-red-500/15 text-red-400 border-red-500/30 hover:bg-red-500/20">
-          Admin
-        </Badge>
-      );
-    case 'dispatcher':
-      return (
-        <Badge className="bg-blue-500/15 text-blue-400 border-blue-500/30 hover:bg-blue-500/20">
-          Dispatcher
-        </Badge>
-      );
-    case 'pilot':
-      return (
-        <Badge variant="secondary">
-          Pilot
-        </Badge>
-      );
-  }
-}
-
-function statusBadge(status: UserStatus) {
-  switch (status) {
-    case 'active':
-      return (
-        <Badge className="bg-emerald-500/15 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20">
-          Active
-        </Badge>
-      );
-    case 'suspended':
-      return (
-        <Badge className="bg-red-500/15 text-red-400 border-red-500/30 hover:bg-red-500/20">
-          Suspended
-        </Badge>
-      );
-    case 'deleted':
-      return (
-        <Badge variant="outline" className="text-muted-foreground">
-          Deleted
-        </Badge>
-      );
-  }
-}
-
-function DetailRow({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div className="flex items-start justify-between gap-4 py-1.5">
-      <span className="text-sm text-muted-foreground shrink-0">{label}</span>
-      <span className="text-sm text-right">{children}</span>
-    </div>
-  );
 }
 
 // ── Page ────────────────────────────────────────────────────────
@@ -280,7 +225,7 @@ export function UsersPage() {
         accessorKey: 'callsign',
         header: ({ column }) => <DataTableColumnHeader column={column} title="Callsign" />,
         cell: ({ row }) => (
-          <span className="font-mono font-medium">{row.original.callsign}</span>
+          <span className="font-mono font-medium text-[var(--text-primary)]">{row.original.callsign}</span>
         ),
         size: 120,
       },
@@ -289,7 +234,7 @@ export function UsersPage() {
         header: ({ column }) => <DataTableColumnHeader column={column} title="Name" />,
         accessorFn: (row) => `${row.firstName} ${row.lastName}`,
         cell: ({ row }) => (
-          <span>
+          <span className="text-[var(--text-primary)]">
             {row.original.firstName} {row.original.lastName}
           </span>
         ),
@@ -298,20 +243,20 @@ export function UsersPage() {
         accessorKey: 'email',
         header: ({ column }) => <DataTableColumnHeader column={column} title="Email" />,
         cell: ({ row }) => (
-          <span className="text-muted-foreground">{row.original.email}</span>
+          <span className="text-[var(--text-tertiary)]">{row.original.email}</span>
         ),
       },
       {
         accessorKey: 'role',
         header: 'Role',
-        cell: ({ row }) => roleBadge(row.original.role),
+        cell: ({ row }) => <StatusBadge status={row.original.role} />,
         enableSorting: false,
         size: 110,
       },
       {
         accessorKey: 'status',
         header: 'Status',
-        cell: ({ row }) => statusBadge(row.original.status),
+        cell: ({ row }) => <StatusBadge status={row.original.status} />,
         enableSorting: false,
         size: 110,
       },
@@ -350,7 +295,7 @@ export function UsersPage() {
                 )}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
-                  className="text-red-400 focus:text-red-400"
+                  className="text-[var(--accent-red)] focus:text-[var(--accent-red)]"
                   onClick={() => setDeleteUser(user)}
                 >
                   <Trash size={14} /> Delete
@@ -369,7 +314,7 @@ export function UsersPage() {
   if (error && !loading) {
     return (
       <PageShell title="Users" subtitle="Manage pilots, dispatchers, and admins">
-        <div className="flex items-center justify-center py-20 text-muted-foreground">
+        <div className="flex items-center justify-center py-20 text-[var(--text-tertiary)]">
           <p>{error}</p>
         </div>
       </PageShell>
@@ -417,13 +362,13 @@ export function UsersPage() {
         <div className="relative max-w-sm flex-1">
           <MagnifyingGlass
             size={16}
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-quaternary)]"
           />
           <Input
             placeholder="Search users..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="pl-9"
+            className="pl-9 bg-[var(--surface-3)] border-[var(--border-secondary)] text-[var(--text-primary)]"
           />
         </div>
         <Select value={roleFilter} onValueChange={setRoleFilter}>
@@ -450,7 +395,7 @@ export function UsersPage() {
       </div>
 
       {/* Split view: table + detail */}
-      <div className="flex flex-1 gap-0 overflow-hidden rounded-md border border-border/50">
+      <div className="flex flex-1 gap-0 overflow-hidden rounded-md border border-[var(--border-primary)]">
         <div
           className={`${detailOpen ? 'w-[55%]' : 'w-full'} flex flex-col transition-all duration-200`}
         >
@@ -506,21 +451,28 @@ export function UsersPage() {
             }
           >
             <div className="space-y-4">
-              <div className="space-y-2">
-                <DetailRow label="Email">{detailUser.email}</DetailRow>
-                <DetailRow label="Role">{roleBadge(detailUser.role)}</DetailRow>
-                <DetailRow label="Status">{statusBadge(detailUser.status)}</DetailRow>
-                <DetailRow label="Rank">{detailUser.rank}</DetailRow>
-                <DetailRow label="Total Hours">
-                  <span className="font-mono">{detailUser.hoursTotal.toFixed(1)}h</span>
-                </DetailRow>
-                <DetailRow label="Last Login">
-                  {detailUser.lastLogin ? formatDate(detailUser.lastLogin) : 'Never'}
-                </DetailRow>
-                <DetailRow label="Joined">{formatDate(detailUser.createdAt)}</DetailRow>
-                {detailUser.simbriefUsername && (
-                  <DetailRow label="SimBrief">{detailUser.simbriefUsername}</DetailRow>
-                )}
+              <div>
+                <SectionHeader title="Account Details" />
+                <div className="space-y-0.5">
+                  <DataRow label="Email" value={detailUser.email} />
+                  <DataRow label="Role" value={<StatusBadge status={detailUser.role} />} />
+                  <DataRow label="Status" value={<StatusBadge status={detailUser.status} />} />
+                  <DataRow label="Rank" value={detailUser.rank} />
+                  {detailUser.simbriefUsername && (
+                    <DataRow label="SimBrief" value={detailUser.simbriefUsername} />
+                  )}
+                </div>
+              </div>
+              <div>
+                <SectionHeader title="Flight Stats" />
+                <div className="space-y-0.5">
+                  <DataRow label="Total Hours" value={`${detailUser.hoursTotal.toFixed(1)}h`} mono />
+                  <DataRow
+                    label="Last Login"
+                    value={detailUser.lastLogin ? formatDate(detailUser.lastLogin) : 'Never'}
+                  />
+                  <DataRow label="Joined" value={formatDate(detailUser.createdAt)} />
+                </div>
               </div>
             </div>
           </DetailPanel>
@@ -556,7 +508,7 @@ export function UsersPage() {
             <DialogTitle>Delete User</DialogTitle>
             <DialogDescription>
               Are you sure you want to permanently delete{' '}
-              <span className="font-semibold text-foreground">
+              <span className="font-semibold text-[var(--text-primary)]">
                 {deleteUser?.callsign}
               </span>
               ? This action cannot be undone and will remove all associated data.

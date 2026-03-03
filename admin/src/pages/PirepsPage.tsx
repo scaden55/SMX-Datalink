@@ -9,23 +9,15 @@ import {
   DotsThreeVertical,
   Eye,
   CalendarBlank,
-  AirplaneTilt,
-  MapPin,
   Clock,
-  GasPump,
-  Package,
+  MapPin,
   Users as UsersIcon,
-  ArrowDown,
-  Star,
-  Globe,
 } from '@phosphor-icons/react';
 import { api, ApiError } from '@/lib/api';
 import { toast } from '@/stores/toastStore';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
-import { Separator } from '@/components/ui/separator';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -39,6 +31,7 @@ import { DataTable } from '@/components/shared/DataTable';
 import { DataTablePagination } from '@/components/shared/DataTablePagination';
 import { DataTableColumnHeader } from '@/components/shared/DataTableColumnHeader';
 import { DetailPanel } from '@/components/shared/DetailPanel';
+import { StatusBadge, SectionHeader, DataRow } from '@/components/primitives';
 
 // ── Types ───────────────────────────────────────────────────────
 
@@ -123,11 +116,11 @@ function formatDateTime(iso: string): string {
 }
 
 function landingRateColor(fpm: number | null): string {
-  if (fpm === null) return 'text-muted-foreground';
+  if (fpm === null) return 'text-[var(--text-quaternary)]';
   const abs = Math.abs(fpm);
-  if (abs <= 200) return 'text-emerald-400';
-  if (abs <= 400) return 'text-amber-400';
-  return 'text-red-400';
+  if (abs <= 200) return 'text-[var(--accent-emerald)]';
+  if (abs <= 400) return 'text-[var(--accent-amber)]';
+  return 'text-[var(--accent-red)]';
 }
 
 function landingRateLabel(fpm: number | null): string {
@@ -140,59 +133,12 @@ function landingRateLabel(fpm: number | null): string {
   return 'Hard';
 }
 
-function statusBadge(status: PirepStatus) {
-  switch (status) {
-    case 'pending':
-      return (
-        <Badge className="bg-amber-500/15 text-amber-400 border-amber-500/30 hover:bg-amber-500/20">
-          Pending
-        </Badge>
-      );
-    case 'approved':
-    case 'completed':
-      return (
-        <Badge className="bg-emerald-500/15 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20">
-          {status === 'approved' ? 'Approved' : 'Completed'}
-        </Badge>
-      );
-    case 'rejected':
-      return (
-        <Badge className="bg-red-500/15 text-red-400 border-red-500/30 hover:bg-red-500/20">
-          Rejected
-        </Badge>
-      );
-    case 'diverted':
-      return (
-        <Badge className="bg-blue-500/15 text-blue-400 border-blue-500/30 hover:bg-blue-500/20">
-          Diverted
-        </Badge>
-      );
-    case 'cancelled':
-      return (
-        <Badge variant="outline" className="text-muted-foreground">
-          Cancelled
-        </Badge>
-      );
-  }
-}
-
 function scoreDisplay(score: number | null) {
-  if (score === null) return <span className="text-muted-foreground">N/A</span>;
-  let color = 'text-emerald-400';
-  if (score < 60) color = 'text-red-400';
-  else if (score < 80) color = 'text-amber-400';
+  if (score === null) return <span className="text-[var(--text-quaternary)]">N/A</span>;
+  let color = 'text-[var(--accent-emerald)]';
+  if (score < 60) color = 'text-[var(--accent-red)]';
+  else if (score < 80) color = 'text-[var(--accent-amber)]';
   return <span className={`font-mono font-bold ${color}`}>{score}</span>;
-}
-
-// ── Detail Row ──────────────────────────────────────────────────
-
-function DetailRow({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div className="flex items-start justify-between gap-4 py-1.5">
-      <span className="text-sm text-muted-foreground shrink-0">{label}</span>
-      <span className="text-sm text-right">{children}</span>
-    </div>
-  );
 }
 
 // ── Page ────────────────────────────────────────────────────────
@@ -361,7 +307,7 @@ export function PirepsPage() {
         accessorKey: 'flightNumber',
         header: ({ column }) => <DataTableColumnHeader column={column} title="Flight" />,
         cell: ({ row }) => (
-          <span className="font-mono font-medium">{row.original.flightNumber}</span>
+          <span className="font-mono font-medium text-[var(--text-primary)]">{row.original.flightNumber}</span>
         ),
         size: 110,
       },
@@ -369,7 +315,7 @@ export function PirepsPage() {
         accessorKey: 'pilotCallsign',
         header: ({ column }) => <DataTableColumnHeader column={column} title="Pilot" />,
         cell: ({ row }) => (
-          <span className="font-mono text-muted-foreground">
+          <span className="font-mono text-[var(--text-tertiary)]">
             {row.original.pilotCallsign || `#${row.original.userId}`}
           </span>
         ),
@@ -380,9 +326,9 @@ export function PirepsPage() {
         header: 'Route',
         cell: ({ row }) => (
           <span className="font-mono text-sm">
-            {row.original.depIcao}
-            <span className="text-muted-foreground mx-1">&rarr;</span>
-            {row.original.arrIcao}
+            <span className="text-[var(--accent-blue)]">{row.original.depIcao}</span>
+            <span className="text-[var(--text-quaternary)] mx-1">&rarr;</span>
+            <span className="text-[var(--accent-cyan)]">{row.original.arrIcao}</span>
           </span>
         ),
         enableSorting: false,
@@ -405,7 +351,7 @@ export function PirepsPage() {
         accessorKey: 'flightTimeMin',
         header: ({ column }) => <DataTableColumnHeader column={column} title="Time" />,
         cell: ({ row }) => (
-          <span className="font-mono text-muted-foreground">
+          <span className="font-mono text-[var(--text-tertiary)]">
             {formatMinutes(row.original.flightTimeMin)}
           </span>
         ),
@@ -414,7 +360,7 @@ export function PirepsPage() {
       {
         accessorKey: 'status',
         header: 'Status',
-        cell: ({ row }) => statusBadge(row.original.status),
+        cell: ({ row }) => <StatusBadge status={row.original.status} />,
         enableSorting: false,
         size: 100,
       },
@@ -422,7 +368,7 @@ export function PirepsPage() {
         accessorKey: 'createdAt',
         header: ({ column }) => <DataTableColumnHeader column={column} title="Date" />,
         cell: ({ row }) => (
-          <span className="text-muted-foreground text-sm">
+          <span className="text-[var(--text-tertiary)] text-sm">
             {formatDate(row.original.createdAt)}
           </span>
         ),
@@ -457,11 +403,11 @@ export function PirepsPage() {
                   <>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={() => handleQuickReview(pirep, 'approved')}>
-                      <CheckCircle size={14} className="text-emerald-400" />
+                      <CheckCircle size={14} className="text-[var(--accent-emerald)]" />
                       Approve
                     </DropdownMenuItem>
                     <DropdownMenuItem
-                      className="text-red-400 focus:text-red-400"
+                      className="text-[var(--accent-red)] focus:text-[var(--accent-red)]"
                       onClick={() => handleQuickReview(pirep, 'rejected')}
                     >
                       <XCircle size={14} />
@@ -501,7 +447,7 @@ export function PirepsPage() {
             <TabsTrigger value="pending" className="gap-1.5">
               Pending
               {pendingCount > 0 && (
-                <span className="inline-flex items-center justify-center rounded-full bg-amber-500/20 text-amber-400 text-[10px] font-bold min-w-[18px] h-[18px] px-1">
+                <span className="inline-flex items-center justify-center rounded-full bg-[var(--accent-amber-bg)] text-[var(--accent-amber)] text-[10px] font-bold min-w-[18px] h-[18px] px-1">
                   {pendingCount}
                 </span>
               )}
@@ -517,7 +463,7 @@ export function PirepsPage() {
             <div className="relative max-w-sm flex-1">
               <MagnifyingGlass
                 size={16}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-tertiary)]"
               />
               <Input
                 placeholder="Search flight #, callsign, ICAO..."
@@ -527,7 +473,7 @@ export function PirepsPage() {
               />
             </div>
             <div className="flex items-center gap-2">
-              <CalendarBlank size={16} className="text-muted-foreground shrink-0" />
+              <CalendarBlank size={16} className="text-[var(--text-tertiary)] shrink-0" />
               <Input
                 type="date"
                 value={dateFrom}
@@ -535,7 +481,7 @@ export function PirepsPage() {
                 className="w-[140px]"
                 placeholder="From"
               />
-              <span className="text-muted-foreground text-sm">-</span>
+              <span className="text-[var(--text-tertiary)] text-sm">-</span>
               <Input
                 type="date"
                 value={dateTo}
@@ -549,14 +495,14 @@ export function PirepsPage() {
 
         {/* Bulk Action Bar */}
         {selectedIds.length > 0 && (
-          <div className="flex items-center gap-3 rounded-md border border-border bg-muted/30 px-4 py-2.5">
-            <span className="text-sm font-medium">
+          <div className="flex items-center gap-3 rounded-md border border-[var(--border-primary)] bg-[var(--surface-3)] px-4 py-2.5">
+            <span className="text-sm font-medium text-[var(--text-primary)]">
               {selectedIds.length} selected
             </span>
             <div className="ml-auto flex gap-2">
               <Button
                 size="sm"
-                className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                className="bg-[var(--accent-emerald)] hover:brightness-110 text-white"
                 onClick={() => handleBulkReview('approved')}
                 disabled={bulkLoading}
               >
@@ -586,7 +532,7 @@ export function PirepsPage() {
       </div>
 
       {/* Split view: table + detail */}
-      <div className="flex flex-1 gap-0 overflow-hidden rounded-md border border-border/50">
+      <div className="flex flex-1 gap-0 overflow-hidden rounded-md border border-[var(--border-primary)]">
         <div className={`${detailOpen ? 'w-[55%]' : 'w-full'} flex flex-col transition-all duration-200`}>
           <DataTable
             columns={columns}
@@ -620,7 +566,7 @@ export function PirepsPage() {
                 <>
                   <Button
                     size="sm"
-                    className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                    className="bg-[var(--accent-emerald)] hover:brightness-110 text-white"
                     onClick={() => handleDetailReview('approved')}
                     disabled={reviewSubmitting}
                   >
@@ -641,65 +587,69 @@ export function PirepsPage() {
             }
           >
             {/* ── Detail Content ────────────────────────────── */}
-            <div className="space-y-6">
+            <div className="space-y-5">
               {/* Status Badge */}
-              <div>{statusBadge(detailPirep.status)}</div>
+              <div><StatusBadge status={detailPirep.status} /></div>
 
               {/* ── Flight Info ─────────────────────────────── */}
               <section>
-                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-2">
-                  <AirplaneTilt size={14} weight="duotone" />
-                  Flight Info
-                </h3>
+                <SectionHeader title="Flight Info" />
                 <div className="space-y-0.5">
-                  <DetailRow label="Route">
-                    <span className="font-mono font-medium">
-                      {detailPirep.depIcao}{' '}
-                      <span className="text-muted-foreground mx-1">&rarr;</span>{' '}
-                      {detailPirep.arrIcao}
-                    </span>
-                  </DetailRow>
+                  <DataRow
+                    label="Route"
+                    value={
+                      <span className="font-mono font-medium">
+                        <span className="text-[var(--accent-blue)]">{detailPirep.depIcao}</span>
+                        {' '}
+                        <span className="text-[var(--text-quaternary)] mx-1">&rarr;</span>
+                        {' '}
+                        <span className="text-[var(--accent-cyan)]">{detailPirep.arrIcao}</span>
+                      </span>
+                    }
+                  />
                   {detailPirep.depName && detailPirep.arrName && (
-                    <DetailRow label="Airports">
-                      <span className="text-xs text-muted-foreground">
-                        {detailPirep.depName} &mdash; {detailPirep.arrName}
-                      </span>
-                    </DetailRow>
+                    <DataRow
+                      label="Airports"
+                      value={
+                        <span className="text-xs text-[var(--text-tertiary)]">
+                          {detailPirep.depName} &mdash; {detailPirep.arrName}
+                        </span>
+                      }
+                    />
                   )}
-                  <DetailRow label="Aircraft">
-                    <span className="font-mono">{detailPirep.aircraftType}</span>
-                    {detailPirep.aircraftRegistration && (
-                      <span className="text-muted-foreground ml-1">
-                        ({detailPirep.aircraftRegistration})
+                  <DataRow
+                    label="Aircraft"
+                    value={
+                      <span>
+                        <span className="font-mono">{detailPirep.aircraftType}</span>
+                        {detailPirep.aircraftRegistration && (
+                          <span className="text-[var(--text-tertiary)] ml-1">
+                            ({detailPirep.aircraftRegistration})
+                          </span>
+                        )}
                       </span>
-                    )}
-                  </DetailRow>
+                    }
+                  />
                   {detailPirep.route && (
-                    <DetailRow label="Route String">
-                      <span className="text-xs font-mono break-all">{detailPirep.route}</span>
-                    </DetailRow>
+                    <DataRow
+                      label="Route String"
+                      value={<span className="text-xs font-mono break-all">{detailPirep.route}</span>}
+                    />
                   )}
                   {detailPirep.cruiseAltitude && (
-                    <DetailRow label="Cruise Alt">
-                      <span className="font-mono">{detailPirep.cruiseAltitude}</span>
-                    </DetailRow>
+                    <DataRow label="Cruise Alt" value={detailPirep.cruiseAltitude} mono />
                   )}
-                  <DetailRow label="Filed">{formatDateTime(detailPirep.createdAt)}</DetailRow>
+                  <DataRow label="Filed" value={formatDateTime(detailPirep.createdAt)} />
                 </div>
               </section>
 
-              <Separator />
-
               {/* ── Performance ──────────────────────────────── */}
               <section>
-                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-2">
-                  <ArrowDown size={14} weight="duotone" />
-                  Performance
-                </h3>
+                <SectionHeader title="Performance" />
 
                 {/* Landing Rate - large display */}
-                <div className="bg-muted/30 rounded-md p-4 mb-3 text-center">
-                  <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">
+                <div className="bg-[var(--surface-3)] rounded-md p-4 mb-3 text-center">
+                  <p className="text-xs text-[var(--text-quaternary)] uppercase tracking-wider mb-1">
                     Landing Rate
                   </p>
                   <p
@@ -715,136 +665,120 @@ export function PirepsPage() {
                 </div>
 
                 <div className="space-y-0.5">
-                  <DetailRow label="Flight Time">
-                    <span className="font-mono flex items-center gap-1.5">
-                      <Clock size={13} className="text-muted-foreground" />
-                      {formatMinutes(detailPirep.flightTimeMin)}
-                    </span>
-                  </DetailRow>
+                  <DataRow
+                    label="Flight Time"
+                    value={
+                      <span className="font-mono flex items-center gap-1.5">
+                        <Clock size={13} className="text-[var(--text-tertiary)]" />
+                        {formatMinutes(detailPirep.flightTimeMin)}
+                      </span>
+                    }
+                  />
                   {detailPirep.blockTimeMin !== null && (
-                    <DetailRow label="Block Time">
-                      <span className="font-mono">{formatMinutes(detailPirep.blockTimeMin)}</span>
-                    </DetailRow>
+                    <DataRow label="Block Time" value={formatMinutes(detailPirep.blockTimeMin)} mono />
                   )}
-                  <DetailRow label="Distance">
-                    <span className="font-mono flex items-center gap-1.5">
-                      <MapPin size={13} className="text-muted-foreground" />
-                      {detailPirep.distanceNm.toLocaleString()} nm
-                    </span>
-                  </DetailRow>
+                  <DataRow
+                    label="Distance"
+                    value={
+                      <span className="font-mono flex items-center gap-1.5">
+                        <MapPin size={13} className="text-[var(--text-tertiary)]" />
+                        {detailPirep.distanceNm.toLocaleString()} nm
+                      </span>
+                    }
+                  />
                 </div>
               </section>
 
-              <Separator />
-
               {/* ── Fuel ─────────────────────────────────────── */}
               <section>
-                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-2">
-                  <GasPump size={14} weight="duotone" />
-                  Fuel
-                </h3>
+                <SectionHeader title="Fuel" />
                 <div className="space-y-0.5">
-                  <DetailRow label="Fuel Used">
-                    <span className="font-mono">
-                      {detailPirep.fuelUsedLbs !== null
-                        ? `${detailPirep.fuelUsedLbs.toLocaleString()} lbs`
-                        : 'N/A'}
-                    </span>
-                  </DetailRow>
-                  <DetailRow label="Fuel Planned">
-                    <span className="font-mono">
-                      {detailPirep.fuelPlannedLbs !== null
-                        ? `${detailPirep.fuelPlannedLbs.toLocaleString()} lbs`
-                        : 'N/A'}
-                    </span>
-                  </DetailRow>
+                  <DataRow
+                    label="Fuel Used"
+                    value={detailPirep.fuelUsedLbs !== null
+                      ? `${detailPirep.fuelUsedLbs.toLocaleString()} lbs`
+                      : 'N/A'}
+                    mono
+                  />
+                  <DataRow
+                    label="Fuel Planned"
+                    value={detailPirep.fuelPlannedLbs !== null
+                      ? `${detailPirep.fuelPlannedLbs.toLocaleString()} lbs`
+                      : 'N/A'}
+                    mono
+                  />
                   {detailPirep.fuelUsedLbs !== null &&
                     detailPirep.fuelPlannedLbs !== null &&
                     detailPirep.fuelPlannedLbs > 0 && (
-                      <DetailRow label="Fuel Variance">
-                        <span
-                          className={`font-mono ${
-                            detailPirep.fuelUsedLbs <= detailPirep.fuelPlannedLbs
-                              ? 'text-emerald-400'
-                              : 'text-amber-400'
-                          }`}
-                        >
-                          {detailPirep.fuelUsedLbs <= detailPirep.fuelPlannedLbs ? '-' : '+'}
-                          {Math.abs(
-                            detailPirep.fuelUsedLbs - detailPirep.fuelPlannedLbs
-                          ).toLocaleString()}{' '}
-                          lbs
-                        </span>
-                      </DetailRow>
+                      <DataRow
+                        label="Fuel Variance"
+                        value={
+                          <span
+                            className={`font-mono ${
+                              detailPirep.fuelUsedLbs <= detailPirep.fuelPlannedLbs
+                                ? 'text-[var(--accent-emerald)]'
+                                : 'text-[var(--accent-amber)]'
+                            }`}
+                          >
+                            {detailPirep.fuelUsedLbs <= detailPirep.fuelPlannedLbs ? '-' : '+'}
+                            {Math.abs(
+                              detailPirep.fuelUsedLbs - detailPirep.fuelPlannedLbs
+                            ).toLocaleString()}{' '}
+                            lbs
+                          </span>
+                        }
+                      />
                     )}
                 </div>
               </section>
 
-              <Separator />
-
               {/* ── Load (Cargo first!) ─────────────────────── */}
               <section>
-                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-2">
-                  <Package size={14} weight="duotone" />
-                  Load
-                </h3>
+                <SectionHeader title="Load" />
                 <div className="space-y-0.5">
-                  <DetailRow label="Cargo">
-                    <span className="font-mono">
-                      {detailPirep.cargoLbs.toLocaleString()} lbs
-                    </span>
-                  </DetailRow>
-                  <DetailRow label="Passengers">
-                    <span className="font-mono flex items-center gap-1.5">
-                      <UsersIcon size={13} className="text-muted-foreground" />
-                      {detailPirep.paxCount}
-                    </span>
-                  </DetailRow>
+                  <DataRow
+                    label="Cargo"
+                    value={`${detailPirep.cargoLbs.toLocaleString()} lbs`}
+                    mono
+                  />
+                  <DataRow
+                    label="Passengers"
+                    value={
+                      <span className="font-mono flex items-center gap-1.5">
+                        <UsersIcon size={13} className="text-[var(--text-tertiary)]" />
+                        {detailPirep.paxCount}
+                      </span>
+                    }
+                  />
                 </div>
               </section>
 
               {/* ── Score ─────────────────────────────────────── */}
               {detailPirep.score !== null && (
-                <>
-                  <Separator />
-                  <section>
-                    <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-2">
-                      <Star size={14} weight="duotone" />
-                      Score
-                    </h3>
-                    <div className="bg-muted/30 rounded-md p-4 text-center">
-                      <p className="text-4xl font-mono font-bold">
-                        {scoreDisplay(detailPirep.score)}
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-1">/ 100</p>
-                    </div>
-                  </section>
-                </>
+                <section>
+                  <SectionHeader title="Score" />
+                  <div className="bg-[var(--surface-3)] rounded-md p-4 text-center">
+                    <p className="text-4xl font-mono font-bold">
+                      {scoreDisplay(detailPirep.score)}
+                    </p>
+                    <p className="text-xs text-[var(--text-quaternary)] mt-1">/ 100</p>
+                  </div>
+                </section>
               )}
 
               {/* ── VATSIM ────────────────────────────────────── */}
               {detailPirep.vatsimConnected && (
-                <>
-                  <Separator />
-                  <section>
-                    <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-2">
-                      <Globe size={14} weight="duotone" />
-                      VATSIM
-                    </h3>
-                    <div className="space-y-0.5">
-                      {detailPirep.vatsimCallsign && (
-                        <DetailRow label="Callsign">
-                          <span className="font-mono">{detailPirep.vatsimCallsign}</span>
-                        </DetailRow>
-                      )}
-                      {detailPirep.vatsimCid && (
-                        <DetailRow label="CID">
-                          <span className="font-mono">{detailPirep.vatsimCid}</span>
-                        </DetailRow>
-                      )}
-                    </div>
-                  </section>
-                </>
+                <section>
+                  <SectionHeader title="VATSIM" />
+                  <div className="space-y-0.5">
+                    {detailPirep.vatsimCallsign && (
+                      <DataRow label="Callsign" value={detailPirep.vatsimCallsign} mono />
+                    )}
+                    {detailPirep.vatsimCid && (
+                      <DataRow label="CID" value={detailPirep.vatsimCid} mono />
+                    )}
+                  </div>
+                </section>
               )}
 
               {/* ── OOOI Timestamps ───────────────────────────── */}
@@ -852,115 +786,94 @@ export function PirepsPage() {
                 detailPirep.oooiOff ||
                 detailPirep.oooiOn ||
                 detailPirep.oooiIn) && (
-                <>
-                  <Separator />
-                  <section>
-                    <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-2">
-                      <Clock size={14} weight="duotone" />
-                      OOOI Timestamps
-                    </h3>
-                    <div className="grid grid-cols-4 gap-2 text-center">
-                      {[
-                        { label: 'OUT', value: detailPirep.oooiOut },
-                        { label: 'OFF', value: detailPirep.oooiOff },
-                        { label: 'ON', value: detailPirep.oooiOn },
-                        { label: 'IN', value: detailPirep.oooiIn },
-                      ].map(({ label, value }) => (
-                        <div key={label} className="bg-muted/30 rounded-md p-2">
-                          <p className="text-[10px] uppercase text-muted-foreground">{label}</p>
-                          <p className="text-xs font-mono mt-0.5">
-                            {value
-                              ? new Date(value).toLocaleTimeString('en-US', {
-                                  hour: '2-digit',
-                                  minute: '2-digit',
-                                })
-                              : '--:--'}
-                          </p>
-                        </div>
-                      ))}
-                    </div>
-                  </section>
-                </>
+                <section>
+                  <SectionHeader title="OOOI Timestamps" />
+                  <div className="grid grid-cols-4 gap-2 text-center">
+                    {[
+                      { label: 'OUT', value: detailPirep.oooiOut },
+                      { label: 'OFF', value: detailPirep.oooiOff },
+                      { label: 'ON', value: detailPirep.oooiOn },
+                      { label: 'IN', value: detailPirep.oooiIn },
+                    ].map(({ label, value }) => (
+                      <div key={label} className="bg-[var(--surface-3)] rounded-md p-2">
+                        <p className="text-[10px] uppercase text-[var(--text-quaternary)]">{label}</p>
+                        <p className="text-xs font-mono mt-0.5 text-[var(--text-primary)]">
+                          {value
+                            ? new Date(value).toLocaleTimeString('en-US', {
+                                hour: '2-digit',
+                                minute: '2-digit',
+                              })
+                            : '--:--'}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </section>
               )}
 
               {/* ── Remarks ───────────────────────────────────── */}
               {detailPirep.remarks && (
-                <>
-                  <Separator />
-                  <section>
-                    <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-2">
-                      Pilot Remarks
-                    </h3>
-                    <p className="text-sm bg-muted/30 rounded-md p-3">{detailPirep.remarks}</p>
-                  </section>
-                </>
+                <section>
+                  <SectionHeader title="Pilot Remarks" />
+                  <p className="text-sm bg-[var(--surface-3)] rounded-md p-3 text-[var(--text-secondary)]">{detailPirep.remarks}</p>
+                </section>
               )}
 
               {/* ── Previous Review ───────────────────────────── */}
               {detailPirep.reviewedAt && (
-                <>
-                  <Separator />
-                  <section>
-                    <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-2">
-                      Review History
-                    </h3>
-                    <div className="bg-muted/30 rounded-md p-3 space-y-1">
-                      <p className="text-sm">
-                        <span className="text-muted-foreground">Reviewed by </span>
-                        <span className="font-mono font-medium">
-                          {detailPirep.reviewerCallsign || 'Unknown'}
-                        </span>
-                        <span className="text-muted-foreground"> on </span>
-                        {formatDateTime(detailPirep.reviewedAt)}
+                <section>
+                  <SectionHeader title="Review History" />
+                  <div className="bg-[var(--surface-3)] rounded-md p-3 space-y-1">
+                    <p className="text-sm text-[var(--text-primary)]">
+                      <span className="text-[var(--text-tertiary)]">Reviewed by </span>
+                      <span className="font-mono font-medium">
+                        {detailPirep.reviewerCallsign || 'Unknown'}
+                      </span>
+                      <span className="text-[var(--text-tertiary)]"> on </span>
+                      {formatDateTime(detailPirep.reviewedAt)}
+                    </p>
+                    {detailPirep.reviewNotes && (
+                      <p className="text-sm text-[var(--text-tertiary)] mt-1">
+                        {detailPirep.reviewNotes}
                       </p>
-                      {detailPirep.reviewNotes && (
-                        <p className="text-sm text-muted-foreground mt-1">
-                          {detailPirep.reviewNotes}
-                        </p>
-                      )}
-                    </div>
-                  </section>
-                </>
+                    )}
+                  </div>
+                </section>
               )}
 
               {/* ── Review Form ───────────────────────────────── */}
               {detailPirep.status === 'pending' && (
-                <>
-                  <Separator />
-                  <section>
-                    <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">
-                      Review
-                    </h3>
-                    <div className="space-y-3">
-                      <Textarea
-                        placeholder="Admin notes (optional)..."
-                        value={reviewNotes}
-                        onChange={(e) => setReviewNotes(e.target.value)}
-                        rows={3}
+                <section>
+                  <SectionHeader title="Review" />
+                  <div className="space-y-3">
+                    <Textarea
+                      placeholder="Admin notes (optional)..."
+                      value={reviewNotes}
+                      onChange={(e) => setReviewNotes(e.target.value)}
+                      rows={3}
+                      disabled={reviewSubmitting}
+                    />
+                    <div className="flex gap-2">
+                      <Button
+                        className="flex-1 bg-[var(--accent-emerald)] hover:brightness-110 text-white"
+                        onClick={() => handleDetailReview('approved')}
                         disabled={reviewSubmitting}
-                      />
-                      <div className="flex gap-2">
-                        <Button
-                          className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white"
-                          onClick={() => handleDetailReview('approved')}
-                          disabled={reviewSubmitting}
-                        >
-                          <CheckCircle size={16} weight="bold" />
-                          Approve
-                        </Button>
-                        <Button
-                          variant="destructive"
-                          className="flex-1"
-                          onClick={() => handleDetailReview('rejected')}
-                          disabled={reviewSubmitting}
-                        >
-                          <XCircle size={16} weight="bold" />
-                          Reject
-                        </Button>
-                      </div>
+                      >
+                        <CheckCircle size={16} weight="bold" />
+                        Approve
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        className="flex-1"
+                        onClick={() => handleDetailReview('rejected')}
+                        disabled={reviewSubmitting}
+                      >
+                        <XCircle size={16} weight="bold" />
+                        Reject
+                      </Button>
                     </div>
-                  </section>
-                </>
+                  </div>
+                </section>
               )}
             </div>
           </DetailPanel>

@@ -23,6 +23,14 @@ const statusConfig: Record<string, { bg: string; text: string; ring: string; lab
   warning: { bg: 'bg-[var(--accent-amber-bg)]', text: 'text-[var(--accent-amber)]', ring: 'ring-[var(--accent-amber-ring)]', label: 'Warning' },
   success: { bg: 'bg-[var(--accent-emerald-bg)]', text: 'text-[var(--accent-emerald)]', ring: 'ring-[var(--accent-emerald-ring)]', label: 'Success' },
   error: { bg: 'bg-[var(--accent-red-bg)]', text: 'text-[var(--accent-red)]', ring: 'ring-[var(--accent-red-ring)]', label: 'Error' },
+  // User roles
+  admin: { bg: 'bg-[var(--accent-red-bg)]', text: 'text-[var(--accent-red)]', ring: 'ring-[var(--accent-red-ring)]', label: 'Admin' },
+  dispatcher: { bg: 'bg-[var(--accent-blue-bg)]', text: 'text-[var(--accent-blue)]', ring: 'ring-[var(--accent-blue-ring)]', label: 'Dispatcher' },
+  pilot: { bg: 'bg-[var(--accent-emerald-bg)]', text: 'text-[var(--accent-emerald)]', ring: 'ring-[var(--accent-emerald-ring)]', label: 'Pilot' },
+  // Inactive statuses
+  deleted: { bg: 'bg-[var(--surface-3)]', text: 'text-[var(--text-quaternary)]', ring: 'ring-[var(--border-secondary)]', label: 'Deleted' },
+  diverted: { bg: 'bg-[var(--accent-blue-bg)]', text: 'text-[var(--accent-blue)]', ring: 'ring-[var(--accent-blue-ring)]', label: 'Diverted' },
+  cancelled: { bg: 'bg-[var(--surface-3)]', text: 'text-[var(--text-quaternary)]', ring: 'ring-[var(--border-secondary)]', label: 'Cancelled' },
   // Flight phases — airborne (emerald)
   climb: { bg: 'bg-[var(--accent-emerald-bg)]', text: 'text-[var(--accent-emerald)]', ring: 'ring-[var(--accent-emerald-ring)]', label: 'Climb' },
   cruise: { bg: 'bg-[var(--accent-emerald-bg)]', text: 'text-[var(--accent-emerald)]', ring: 'ring-[var(--accent-emerald-ring)]', label: 'Cruise' },
