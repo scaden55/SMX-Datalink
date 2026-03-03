@@ -27,9 +27,11 @@ interface FlightListPanelProps {
   flights: ActiveFlightHeartbeat[];
   selectedCallsign: string | null;
   onSelectFlight: (flight: ActiveFlightHeartbeat) => void;
+  connected?: boolean;
+  connecting?: boolean;
 }
 
-export function FlightListPanel({ flights, selectedCallsign, onSelectFlight }: FlightListPanelProps) {
+export function FlightListPanel({ flights, selectedCallsign, onSelectFlight, connected = false, connecting = false }: FlightListPanelProps) {
   const sorted = [...flights].sort((a, b) => a.callsign.localeCompare(b.callsign));
 
   return (
@@ -38,9 +40,20 @@ export function FlightListPanel({ flights, selectedCallsign, onSelectFlight }: F
       <div className="flex items-center gap-2 border-b border-border px-4 py-3">
         <AirplaneTilt size={18} weight="bold" className="text-primary" />
         <h2 className="text-sm font-semibold">Active Flights</h2>
-        <span className="ml-auto rounded bg-primary/20 px-1.5 py-0.5 text-xs font-mono text-primary">
-          {flights.length}
-        </span>
+        <div className="ml-auto flex items-center gap-2">
+          <div className="flex items-center gap-1.5" title={connected ? 'Connected' : connecting ? 'Connecting' : 'Disconnected'}>
+            <span className={`inline-block h-1.5 w-1.5 rounded-full ${
+              connected
+                ? 'bg-emerald-400'
+                : connecting
+                  ? 'bg-amber-400 animate-pulse'
+                  : 'bg-red-400'
+            }`} />
+          </div>
+          <span className="rounded bg-primary/20 px-1.5 py-0.5 text-xs font-mono text-primary">
+            {flights.length}
+          </span>
+        </div>
       </div>
 
       {/* Flight list */}

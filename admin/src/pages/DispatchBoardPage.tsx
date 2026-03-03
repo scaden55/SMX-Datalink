@@ -10,7 +10,7 @@ import { FlightDetailPanel } from '@/components/dispatch/FlightDetailPanel';
 
 export function DispatchBoardPage() {
   const accessToken = useAuthStore((s) => s.accessToken);
-  const { connect, connected, socket } = useSocketStore();
+  const { connect, connected, connecting, socket } = useSocketStore();
 
   const [flights, setFlights] = useState<ActiveFlightHeartbeat[]>([]);
   const [selectedFlight, setSelectedFlight] = useState<ActiveFlightHeartbeat | null>(null);
@@ -110,6 +110,8 @@ export function DispatchBoardPage() {
           flights={flights}
           selectedCallsign={selectedFlight?.callsign ?? null}
           onSelectFlight={handleSelectFlight}
+          connected={connected}
+          connecting={connecting}
         />
       </div>
 
@@ -123,8 +125,20 @@ export function DispatchBoardPage() {
         />
         {/* Connection indicator */}
         <div className="absolute top-3 right-3 z-[1000] flex items-center gap-1.5 rounded bg-black/60 px-2.5 py-1 text-xs">
-          <span className={`inline-block h-2 w-2 rounded-full ${connected ? 'bg-emerald-400' : 'bg-red-400'}`} />
-          <span className="text-zinc-300">{connected ? 'Live' : 'Disconnected'}</span>
+          <span className={`inline-block h-2 w-2 rounded-full ${
+            connected
+              ? 'bg-emerald-400'
+              : connecting
+                ? 'bg-amber-400 animate-pulse'
+                : 'bg-red-400'
+          }`} />
+          <span className="text-zinc-300">{
+            connected
+              ? 'Live'
+              : connecting
+                ? 'Connecting...'
+                : 'Offline'
+          }</span>
         </div>
       </div>
 
