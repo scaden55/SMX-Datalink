@@ -22,7 +22,7 @@ export function RouteSection() {
           <textarea
             value={route}
             onChange={(e) => onFieldChange('route', e.target.value)}
-            className="w-full h-16 rounded bg-acars-bg border border-acars-border text-acars-text text-[11px] px-2 py-1.5 font-mono resize-none focus:outline-none focus:border-sky-400"
+            className="w-full h-16 rounded bg-acars-bg border border-acars-border text-acars-text text-[11px] px-2 py-1.5 tabular-nums resize-none focus:outline-none focus:border-sky-400"
             placeholder="Enter ICAO route..."
           />
         </div>
@@ -38,7 +38,7 @@ export function RouteSection() {
       status={route ? 'green' : 'grey'}
       defaultOpen
     >
-      <div className="font-mono text-[11px] text-acars-text leading-relaxed break-all">
+      <div className="tabular-nums text-[11px] text-acars-text leading-relaxed break-all">
         {route || (
           <span className="text-acars-muted italic">No flight plan loaded. Import a .PLN file or enter an ICAO route.</span>
         )}

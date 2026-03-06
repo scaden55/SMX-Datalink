@@ -1,10 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { useState, useEffect, useCallback } from 'react';
 import {
-  AirplaneTilt,
-  Users,
   CalendarDots,
-  Clock,
   ArrowRight,
   Path,
   BookOpen,
@@ -23,6 +20,7 @@ import {
   Trash,
   X,
   FloppyDisk,
+  Airplane,
 } from '@phosphor-icons/react';
 import { MapContainer, TileLayer } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -32,7 +30,6 @@ import { useAuthStore } from '../stores/authStore';
 import type {
   ActiveBidEntry,
   AllBidsResponse,
-  DashboardStats,
   LeaderboardEntry,
   LeaderboardResponse,
   LogbookEntry,
@@ -51,66 +48,53 @@ function formatDuration(min: number): string {
   return `${h}h ${String(m).padStart(2, '0')}m`;
 }
 
-// ─── Quick Actions (static nav links) ───────────────────────────
+// ─── Bid Route Card ─────────────────────────────────────────────
 
-const QUICK_ACTIONS = [
-  { label: 'Bid a Flight', icon: CalendarDots, to: '/schedule', iconBox: 'bg-blue-500/20 border-blue-500/30', iconColor: 'text-blue-400' },
-  { label: 'File Flight Plan', icon: Path, to: '/planning', iconBox: 'bg-violet-500/20 border-violet-500/30', iconColor: 'text-violet-400' },
-  { label: 'View Logbook', icon: BookOpen, to: '/logbook', iconBox: 'bg-amber-500/20 border-amber-500/30', iconColor: 'text-amber-400' },
-  { label: 'Open Dispatch', icon: Broadcast, to: '/dispatch', iconBox: 'bg-emerald-500/20 border-emerald-500/30', iconColor: 'text-emerald-400' },
-] as const;
+function BidRouteCard({ bid }: { bid: ActiveBidEntry }) {
+  const navigate = useNavigate();
 
-// ─── Sub-Components ─────────────────────────────────────────────
-
-interface StatCardProps {
-  label: string;
-  value: string | number;
-  icon: typeof AirplaneTilt;
-  iconBox: string;
-  iconColor: string;
-}
-
-function StatCard({ label, value, icon: Icon, iconBox, iconColor }: StatCardProps) {
   return (
-    <div className="panel px-3.5 py-2.5 flex items-center gap-3 group hover:border-acars-border/30 transition-colors">
-      <div className={`flex items-center justify-center w-8 h-8 rounded-lg border ${iconBox}`}>
-        <Icon className={`w-4 h-4 ${iconColor}`} />
-      </div>
+    <div
+      className="flex items-center gap-4 px-4 py-3 rounded-lg bg-white/[0.02] border border-white/[0.04] hover:bg-white/[0.04] transition-colors cursor-pointer"
+      onClick={() => navigate('/planning')}
+    >
       <div className="flex-1 min-w-0">
-        <p className="text-[9px] uppercase tracking-[0.1em] text-acars-muted/60 font-medium mb-0.5">{label}</p>
-        <span className="text-[15px] font-semibold text-acars-text tabular-nums leading-none">{value}</span>
+        <div className="flex items-center gap-2 mb-1">
+          <span className="text-[10px] font-semibold text-[#6b8aff] tabular-nums">{bid.flightNumber}</span>
+          <span className="text-[10px] text-[var(--text-label)]">{bid.aircraftType}</span>
+        </div>
+        <div className="flex items-center gap-3">
+          <div className="text-center">
+            <span className="text-[15px] font-semibold text-white tracking-wide">{bid.depIcao}</span>
+          </div>
+          <div className="flex-1 flex items-center gap-1.5">
+            <div className="flex-1 h-px bg-white/10" />
+            <Airplane className="w-3.5 h-3.5 text-[#6b8aff]/60 shrink-0 rotate-90" weight="light" />
+            <div className="flex-1 h-px bg-white/10" />
+          </div>
+          <div className="text-center">
+            <span className="text-[15px] font-semibold text-white tracking-wide">{bid.arrIcao}</span>
+          </div>
+        </div>
+        <div className="flex items-center gap-3 mt-1">
+          <span className="text-[10px] text-[var(--text-label)] tabular-nums">{bid.depTime}Z</span>
+          <span className="text-[10px] text-[var(--text-label)] tabular-nums">{formatDuration(bid.flightTimeMin)}</span>
+        </div>
+      </div>
+      <div className="flex items-center gap-1.5 shrink-0">
+        <span className="text-[10px] text-[var(--text-secondary)]">{bid.pilotCallsign}</span>
       </div>
     </div>
   );
 }
 
-// ─── Bid phase badge ─────────────────────────────────────────────
+// ─── Active Bids Card ───────────────────────────────────────────
 
-const PHASE_STYLES: Record<string, string> = {
-  reserved:  'bg-blue-500/15 text-blue-400 border-blue-400/30',
-  preflight: 'bg-amber-500/15 text-amber-400 border-amber-400/30',
-  taxiout:   'bg-amber-500/15 text-amber-400 border-amber-400/30',
-  climb:     'bg-emerald-500/15 text-emerald-400 border-emerald-400/30',
-  cruise:    'bg-sky-500/15 text-sky-400 border-sky-400/30',
-  descent:   'bg-violet-500/15 text-violet-400 border-violet-400/30',
-  approach:  'bg-amber-500/15 text-amber-400 border-amber-400/30',
-  landed:    'bg-emerald-500/15 text-emerald-400 border-emerald-400/30',
-};
-
-function PhaseBadge({ phase }: { phase: string }) {
-  const style = PHASE_STYLES[phase] ?? PHASE_STYLES.reserved;
-  const label = phase.charAt(0).toUpperCase() + phase.slice(1);
-  return (
-    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-semibold uppercase tracking-wider border ${style}`}>
-      {label}
-    </span>
-  );
-}
-
-function ActiveBidsTable({ bids, isAdmin, onBidRemoved }: { bids: ActiveBidEntry[]; isAdmin: boolean; onBidRemoved: () => void }) {
+function ActiveBidsCard({ bids, isAdmin, onBidRemoved }: { bids: ActiveBidEntry[]; isAdmin: boolean; onBidRemoved: () => void }) {
   const navigate = useNavigate();
 
-  const handleForceRemove = async (bidId: number) => {
+  const handleForceRemove = async (bidId: number, e: React.MouseEvent) => {
+    e.stopPropagation();
     if (!confirm('Remove this bid? The pilot will be notified.')) return;
     try {
       await api.delete(`/api/bids/${bidId}/force`);
@@ -122,92 +106,63 @@ function ActiveBidsTable({ bids, isAdmin, onBidRemoved }: { bids: ActiveBidEntry
   };
 
   return (
-    <div className="panel flex flex-col max-h-[360px]">
-      <div className="flex items-center justify-between px-4 py-2.5 border-b border-acars-border">
-        <div className="flex items-center gap-2">
-          <h3 className="text-[13px] font-semibold text-acars-text">Active Bids</h3>
-          <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] rounded-full bg-blue-500/15 border border-blue-400/20 text-[9px] font-semibold text-blue-400 tabular-nums px-1">
+    <div className="gradient-card flex flex-col">
+      <div className="flex items-center justify-between px-5 py-3.5">
+        <div className="flex items-center gap-2.5">
+          <h3 className="text-[14px] font-semibold text-white">Active Bids</h3>
+          <span className="inline-flex items-center justify-center min-w-[20px] h-[20px] rounded-full bg-[#3b5bdb]/20 text-[10px] font-semibold text-[#6b8aff] tabular-nums px-1.5">
             {bids.length}
           </span>
         </div>
         <button
           onClick={() => navigate('/schedule')}
-          className="flex items-center gap-1 text-[10px] font-medium text-blue-400/70 hover:text-blue-400 transition-colors"
+          className="flex items-center gap-1 text-[11px] font-medium text-[#6b8aff]/70 hover:text-[#6b8aff] transition-colors"
         >
-          Bid a Flight <ArrowRight className="w-3 h-3" />
+          Bid a Flight <ArrowRight className="w-3.5 h-3.5" weight="light" />
         </button>
       </div>
       {bids.length === 0 ? (
-        <div className="empty-state">
-          <CalendarDots className="empty-state-icon" />
-          <p className="empty-state-title">No Active Cargo Runs</p>
-          <p className="empty-state-desc">No pilots currently have active bids across the VA</p>
+        <div className="flex flex-col items-center justify-center py-12 px-6">
+          <CalendarDots className="w-10 h-10 text-white/10 mb-3" weight="light" />
+          <p className="text-[13px] font-medium text-white/50 mb-1">No Active Cargo Runs</p>
+          <p className="text-[11px] text-[var(--text-label)] mb-4">No pilots currently have active bids</p>
           <button
             onClick={() => navigate('/schedule')}
-            className="btn-primary btn-sm mt-4"
+            className="btn-primary btn-sm"
           >
             Browse Schedule
           </button>
         </div>
       ) : (
-        <div className="flex-1 overflow-auto">
-          <table className="w-full text-[11px]">
-            <thead>
-              <tr className="text-[9px] uppercase tracking-[0.08em] text-acars-muted/60 border-b border-acars-border">
-                <th className="text-left px-4 py-2 font-medium">Flight #</th>
-                <th className="text-left px-4 py-2 font-medium">Route</th>
-                <th className="text-left px-4 py-2 font-medium hidden xl:table-cell">Aircraft</th>
-                <th className="text-left px-4 py-2 font-medium">Dep (Z)</th>
-                <th className="text-left px-4 py-2 font-medium hidden lg:table-cell">Duration</th>
-                <th className="text-left px-4 py-2 font-medium">Pilot</th>
-                <th className="text-left px-4 py-2 font-medium">Status</th>
-                {isAdmin && <th className="text-right px-4 py-2 font-medium">Action</th>}
-              </tr>
-            </thead>
-            <tbody>
-              {bids.map((bid) => (
-                <tr
-                  key={bid.id}
-                  className="border-b border-acars-border/30 hover:bg-acars-hover/50 transition-colors duration-100"
+        <div className="px-4 pb-4 space-y-2">
+          {bids.map((bid) => (
+            <div key={bid.id} className="relative group">
+              <BidRouteCard bid={bid} />
+              {isAdmin && (
+                <button
+                  onClick={(e) => handleForceRemove(bid.id, e)}
+                  className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-red-500/10 text-[var(--text-label)] hover:text-red-400 transition-all"
+                  title="Force remove this bid (admin only)"
                 >
-                  <td className="px-4 py-2 font-mono font-semibold text-acars-text">{bid.flightNumber}</td>
-                  <td className="px-4 py-2 text-acars-muted/70">
-                    <span className="font-mono text-acars-text/80">{bid.depIcao}</span>
-                    <ArrowRight className="w-3 h-3 text-blue-400/40 inline mx-1" />
-                    <span className="font-mono text-acars-text/80">{bid.arrIcao}</span>
-                  </td>
-                  <td className="px-4 py-2 text-acars-muted/60 hidden xl:table-cell font-mono">{bid.aircraftType}</td>
-                  <td className="px-4 py-2 font-mono text-acars-muted/60 tabular-nums">{bid.depTime}Z</td>
-                  <td className="px-4 py-2 font-mono text-acars-muted/60 tabular-nums hidden lg:table-cell">{formatDuration(bid.flightTimeMin)}</td>
-                  <td className="px-4 py-2">
-                    <div className="flex items-center gap-1.5">
-                      <span className="font-mono text-acars-text/70 text-[10px]">{bid.pilotCallsign}</span>
-                      <span className="text-acars-muted/40 hidden xl:inline text-[10px]">{bid.pilotName}</span>
-                    </div>
-                  </td>
-                  <td className="px-4 py-2">
-                    <PhaseBadge phase="reserved" />
-                  </td>
-                  {isAdmin && (
-                    <td className="px-4 py-2 text-right">
-                      <button
-                        onClick={() => handleForceRemove(bid.id)}
-                        className="text-[10px] text-red-400 hover:text-red-300 transition-colors font-medium"
-                        title="Force remove this bid (admin only)"
-                      >
-                        Remove
-                      </button>
-                    </td>
-                  )}
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                  <Trash className="w-3 h-3" weight="light" />
+                </button>
+              )}
+            </div>
+          ))}
         </div>
       )}
     </div>
   );
 }
+
+// ─── Quick Actions ──────────────────────────────────────────────
+
+const QUICK_ACTIONS = [
+  { label: 'Bid a Flight', icon: CalendarDots, to: '/schedule', accent: 'text-[#6b8aff]' },
+  { label: 'File Flight Plan', icon: Path, to: '/planning', accent: 'text-[#6b8aff]' },
+  { label: 'View Logbook', icon: BookOpen, to: '/logbook', accent: 'text-[#6b8aff]' },
+  { label: 'Open Dispatch', icon: Broadcast, to: '/dispatch', accent: 'text-[#6b8aff]' },
+] as const;
 
 function QuickActions() {
   const navigate = useNavigate();
@@ -220,9 +175,9 @@ function QuickActions() {
           <button
             key={action.label}
             onClick={() => navigate(action.to)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-acars-border bg-acars-panel hover:border-blue-400/30 hover:bg-acars-hover active:scale-[0.98] text-[11px] font-medium text-acars-muted hover:text-acars-text transition-all duration-150"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-white/[0.05] bg-white/[0.02] hover:bg-white/[0.05] hover:border-white/[0.08] active:scale-[0.98] text-[11px] font-medium text-[var(--text-secondary)] hover:text-white transition-all duration-150"
           >
-            <Icon className={`w-3.5 h-3.5 ${action.iconColor}`} />
+            <Icon className={`w-3.5 h-3.5 ${action.accent}`} weight="light" />
             {action.label}
           </button>
         );
@@ -237,20 +192,20 @@ function NetworkMapPreview() {
   const navigate = useNavigate();
 
   return (
-    <div className="panel flex flex-col h-[400px]">
-      <div className="flex items-center justify-between px-4 py-2.5 border-b border-acars-border">
+    <div className="gradient-card flex flex-col h-[400px]">
+      <div className="flex items-center justify-between px-5 py-3.5">
         <div className="flex items-center gap-2">
-          <img src="./logos/chevron-light.png" alt="SMX" className="h-4 w-auto opacity-60" />
-          <h3 className="text-[13px] font-semibold text-acars-text">Network Map</h3>
+          <img src="./logos/chevron-light.png" alt="SMX" className="h-4 w-auto opacity-40" />
+          <h3 className="text-[14px] font-semibold text-white">Network Map</h3>
         </div>
         <button
           onClick={() => navigate('/map')}
-          className="flex items-center gap-1 text-[10px] font-medium text-blue-400/70 hover:text-blue-400 transition-colors"
+          className="flex items-center gap-1 text-[11px] font-medium text-[#6b8aff]/70 hover:text-[#6b8aff] transition-colors"
         >
-          Expand <ArrowsOut className="w-3 h-3" />
+          Expand <ArrowsOut className="w-3.5 h-3.5" weight="light" />
         </button>
       </div>
-      <div className="flex-1 relative overflow-hidden shadow-[inset_0_2px_8px_rgba(0,0,0,0.3)]">
+      <div className="flex-1 relative overflow-hidden">
         <MapContainer
           center={[37.5, -96.0]}
           zoom={4.5}
@@ -258,7 +213,7 @@ function NetworkMapPreview() {
           className="h-full w-full"
           zoomControl={false}
           attributionControl={false}
-          style={{ background: 'var(--bg-map)' }}
+          style={{ background: '#000000' }}
           scrollWheelZoom={false}
           dragging={false}
           doubleClickZoom={false}
@@ -284,21 +239,21 @@ function MyInfoCard({ recentFlights }: { recentFlights: LogbookEntry[] }) {
   const initials = `${user.firstName[0]}${user.lastName[0]}`.toUpperCase();
 
   return (
-    <div className="panel flex flex-col">
-      <div className="flex items-center justify-between px-4 py-2.5 border-b border-acars-border">
-        <h3 className="text-[13px] font-semibold text-acars-text">My Info</h3>
+    <div className="gradient-card flex flex-col">
+      <div className="flex items-center justify-between px-5 py-3.5 border-b border-white/[0.04]">
+        <h3 className="text-[14px] font-semibold text-white">My Info</h3>
       </div>
-      <div className="flex-1 overflow-auto px-4 py-4 space-y-4">
+      <div className="flex-1 overflow-auto px-5 py-4 space-y-4">
         {/* Profile header */}
         <div className="flex items-center gap-3">
-          <div className="flex items-center justify-center w-11 h-11 rounded-full bg-blue-500/25 border border-blue-400/40 text-blue-400 text-sm font-semibold shrink-0">
+          <div className="flex items-center justify-center w-11 h-11 rounded-full bg-[#3b5bdb]/15 text-[#6b8aff] text-sm font-semibold shrink-0">
             {initials}
           </div>
           <div className="min-w-0 flex-1">
-            <p className="text-sm font-semibold text-acars-text">{user.firstName} {user.lastName}</p>
-            <div className="flex items-center gap-2 text-[11px] text-acars-muted mt-0.5">
-              <span className="font-mono">{user.callsign}</span>
-              <span className="text-acars-border">|</span>
+            <p className="text-[14px] font-semibold text-white">{user.firstName} {user.lastName}</p>
+            <div className="flex items-center gap-2 text-[11px] text-[var(--text-secondary)] mt-0.5">
+              <span>{user.callsign}</span>
+              <span className="text-white/10">|</span>
               <span className="truncate">{user.email}</span>
             </div>
           </div>
@@ -306,39 +261,39 @@ function MyInfoCard({ recentFlights }: { recentFlights: LogbookEntry[] }) {
 
         {/* Role & Rank row */}
         <div className="flex items-center gap-2">
-          <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-amber-400 bg-amber-500/15 border border-amber-400/30 px-2 py-0.5 rounded-full">
-            <Medal className="w-3 h-3" /> {user.rank}
+          <span className="inline-flex items-center gap-1 text-[9px] font-semibold uppercase tracking-wider text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded">
+            <Medal className="w-3 h-3" weight="light" /> {user.rank}
           </span>
-          <span className="inline-flex items-center text-[10px] font-semibold uppercase tracking-wide text-blue-400 bg-blue-500/15 border border-blue-400/30 px-2 py-0.5 rounded-full">
+          <span className="inline-flex items-center text-[9px] font-semibold uppercase tracking-wider text-[#6b8aff] bg-[#3b5bdb]/10 px-2 py-0.5 rounded">
             {user.role === 'admin' ? 'Admin' : 'Pilot'}
           </span>
-          <span className="text-[10px] text-acars-muted ml-auto">
+          <span className="text-[10px] text-[var(--text-label)] ml-auto">
             Member since {new Date(user.createdAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
           </span>
         </div>
 
         {/* Recent Flights */}
         <div>
-          <p className="text-[10px] uppercase tracking-wider text-acars-muted font-medium mb-2">Recent Flights</p>
+          <p className="text-[10px] uppercase tracking-wider text-[var(--text-label)] font-medium mb-2">Recent Flights</p>
           {recentFlights.length === 0 ? (
-            <p className="text-[11px] text-acars-muted/60 italic">No flights logged yet</p>
+            <p className="text-[11px] text-[var(--text-label)] italic">No flights logged yet</p>
           ) : (
             <div className="space-y-1">
               {recentFlights.map(flight => {
                 const date = new Date(flight.createdAt);
                 const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
                 const fpm = flight.landingRateFpm;
-                const fpmColor = fpm == null ? 'text-acars-muted/60' : Math.abs(fpm) <= 200 ? 'text-emerald-400' : Math.abs(fpm) <= 400 ? 'text-amber-400' : 'text-red-400';
+                const fpmColor = fpm == null ? 'text-[var(--text-label)]' : Math.abs(fpm) <= 200 ? 'text-emerald-400' : Math.abs(fpm) <= 400 ? 'text-amber-400' : 'text-red-400';
                 return (
                   <div key={flight.id} className="flex items-center gap-3 text-[11px] py-1.5">
-                    <span className="text-acars-muted/80 tabular-nums w-14 shrink-0">{dateStr}</span>
-                    <span className="font-mono text-acars-text">
+                    <span className="text-[var(--text-label)] tabular-nums w-14 shrink-0">{dateStr}</span>
+                    <span className="text-white">
                       {flight.depIcao}
-                      <ArrowRight className="w-3 h-3 text-blue-400/60 inline mx-1" />
+                      <ArrowRight className="w-3 h-3 text-[#6b8aff]/40 inline mx-1" />
                       {flight.arrIcao}
                     </span>
-                    <span className="text-acars-muted/60 tabular-nums ml-auto">{formatDuration(flight.flightTimeMin)}</span>
-                    <span className={`font-mono tabular-nums ${fpmColor}`}>
+                    <span className="text-[var(--text-label)] tabular-nums ml-auto">{formatDuration(flight.flightTimeMin)}</span>
+                    <span className={`tabular-nums ${fpmColor}`}>
                       {fpm != null ? `${fpm > 0 ? '-' : '-'}${Math.abs(fpm)}fpm` : '---'}
                     </span>
                   </div>
@@ -349,8 +304,8 @@ function MyInfoCard({ recentFlights }: { recentFlights: LogbookEntry[] }) {
         </div>
 
         {/* Hub info */}
-        <div className="flex items-center gap-2 text-[11px] text-acars-muted">
-          <MapPin className="w-3.5 h-3.5 text-blue-400" />
+        <div className="flex items-center gap-2 text-[11px] text-[var(--text-label)]">
+          <MapPin className="w-3.5 h-3.5 text-[#6b8aff]/60" weight="light" />
           <span>Home hub assignment coming soon</span>
         </div>
       </div>
@@ -376,12 +331,6 @@ function formatMonth(month: string): string {
   return new Date(y, m - 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 }
 
-const RANK_STYLES: Record<number, string> = {
-  1: 'text-yellow-400 font-bold',
-  2: 'text-gray-300 font-bold',
-  3: 'text-amber-600 font-bold',
-};
-
 function PilotLeaderboard() {
   const [month, setMonth] = useState(getCurrentMonth);
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
@@ -398,37 +347,37 @@ function PilotLeaderboard() {
   const canGoNext = month < getCurrentMonth();
 
   return (
-    <div className="panel flex flex-col max-h-[360px]">
-      <div className="flex items-center justify-between px-4 py-2.5 border-b border-acars-border">
+    <div className="gradient-card flex flex-col min-h-[280px] max-h-[560px]">
+      <div className="flex items-center justify-between px-5 py-3.5 border-b border-white/[0.04]">
         <div className="flex items-center gap-2">
-          <Trophy className="w-3.5 h-3.5 text-yellow-500" />
-          <h3 className="text-[13px] font-semibold text-acars-text">Pilot Leaderboard</h3>
+          <Trophy className="w-4 h-4 text-yellow-500" weight="light" />
+          <h3 className="text-[14px] font-semibold text-white">Pilot Leaderboard</h3>
         </div>
         <div className="flex items-center gap-1">
-          <button onClick={() => setMonth(m => shiftMonth(m, -1))} className="p-1 rounded hover:bg-acars-border text-acars-muted hover:text-acars-text transition-colors">
-            <CaretLeft className="w-4 h-4" />
+          <button onClick={() => setMonth(m => shiftMonth(m, -1))} className="p-1 rounded hover:bg-white/[0.04] text-[var(--text-label)] hover:text-white transition-colors">
+            <CaretLeft className="w-4 h-4" weight="light" />
           </button>
-          <span className="text-xs text-acars-muted tabular-nums min-w-[120px] text-center">{formatMonth(month)}</span>
-          <button onClick={() => canGoNext && setMonth(m => shiftMonth(m, 1))} disabled={!canGoNext} className="p-1 rounded hover:bg-acars-border text-acars-muted hover:text-acars-text transition-colors disabled:opacity-30 disabled:cursor-not-allowed">
-            <CaretRight className="w-4 h-4" />
+          <span className="text-[11px] text-[var(--text-secondary)] tabular-nums min-w-[120px] text-center">{formatMonth(month)}</span>
+          <button onClick={() => canGoNext && setMonth(m => shiftMonth(m, 1))} disabled={!canGoNext} className="p-1 rounded hover:bg-white/[0.04] text-[var(--text-label)] hover:text-white transition-colors disabled:opacity-30 disabled:cursor-not-allowed">
+            <CaretRight className="w-4 h-4" weight="light" />
           </button>
         </div>
       </div>
 
       {loading ? (
         <div className="flex-1 flex items-center justify-center">
-          <SpinnerGap className="w-5 h-5 text-blue-400 animate-spin" />
+          <SpinnerGap className="w-5 h-5 text-[#6b8aff] animate-spin" />
         </div>
       ) : entries.length === 0 ? (
         <div className="flex-1 flex flex-col items-center justify-center">
-          <Trophy className="w-8 h-8 text-acars-muted/30 mb-2" />
-          <p className="text-xs text-acars-muted">No flights logged for {formatMonth(month)}</p>
+          <Trophy className="w-8 h-8 text-white/10 mb-2" weight="light" />
+          <p className="text-[11px] text-[var(--text-label)]">No flights logged for {formatMonth(month)}</p>
         </div>
       ) : (
         <div className="flex-1 overflow-auto">
           <table className="w-full text-[11px]">
             <thead>
-              <tr className="text-[9px] uppercase tracking-[0.08em] text-acars-muted/60 border-b border-acars-border">
+              <tr className="text-[9px] uppercase tracking-[0.08em] text-[var(--text-label)] border-b border-white/[0.04]">
                 <th className="text-center px-3 py-2 font-medium w-10">#</th>
                 <th className="text-left px-3 py-2 font-medium">Pilot</th>
                 <th className="text-right px-3 py-2 font-medium">Flights</th>
@@ -441,38 +390,39 @@ function PilotLeaderboard() {
               {entries.map((e, i) => (
                 <tr
                   key={e.callsign}
-                  className={`border-b border-acars-border/30 hover:bg-acars-hover/50 transition-colors duration-100 ${
-                    i % 2 === 0 ? '' : 'bg-acars-bg/30'
-                  }`}
+                  className="border-b border-white/[0.03] hover:bg-white/[0.02] transition-colors duration-100"
                 >
-                  <td className={`text-center px-3 py-2.5 tabular-nums ${RANK_STYLES[e.rank] ?? 'text-acars-muted'}`}>
+                  <td className={`text-center px-3 py-2.5 tabular-nums ${
+                    e.rank === 1 ? 'text-yellow-400 font-bold' :
+                    e.rank === 2 ? 'text-gray-300 font-bold' :
+                    e.rank === 3 ? 'text-amber-600 font-bold' : 'text-[var(--text-label)]'
+                  }`}>
                     <span className="inline-flex items-center gap-1">
-                      {e.rank <= 3 && (
+                      {e.rank <= 3 ? (
                         <span className={`inline-block w-4 h-4 rounded-full text-[9px] font-bold leading-4 text-center ${
-                          e.rank === 1 ? 'bg-yellow-500/25 text-yellow-400' :
-                          e.rank === 2 ? 'bg-gray-400/25 text-gray-300' :
-                          'bg-amber-700/25 text-amber-600'
+                          e.rank === 1 ? 'bg-yellow-500/15 text-yellow-400' :
+                          e.rank === 2 ? 'bg-gray-400/15 text-gray-300' :
+                          'bg-amber-700/15 text-amber-600'
                         }`}>{e.rank}</span>
-                      )}
-                      {e.rank > 3 && e.rank}
+                      ) : e.rank}
                     </span>
                   </td>
                   <td className="px-3 py-2.5">
                     <div className="flex items-center gap-1.5">
-                      <span className="font-mono text-acars-text">{e.callsign}</span>
-                      <span className="text-acars-muted hidden xl:inline">{e.pilotName}</span>
+                      <span className="text-white">{e.callsign}</span>
+                      <span className="text-[var(--text-label)] hidden xl:inline">{e.pilotName}</span>
                     </div>
                   </td>
-                  <td className="text-right px-3 py-2.5 font-mono text-acars-text tabular-nums">{e.flights}</td>
-                  <td className="text-right px-3 py-2.5 font-mono text-acars-muted tabular-nums hidden lg:table-cell">{formatDuration(e.hoursMin)}</td>
-                  <td className="text-right px-3 py-2.5 font-mono text-acars-muted tabular-nums hidden xl:table-cell">{e.cargoLbs.toLocaleString()} lb</td>
+                  <td className="text-right px-3 py-2.5 text-white tabular-nums">{e.flights}</td>
+                  <td className="text-right px-3 py-2.5 text-[var(--text-secondary)] tabular-nums hidden lg:table-cell">{formatDuration(e.hoursMin)}</td>
+                  <td className="text-right px-3 py-2.5 text-[var(--text-secondary)] tabular-nums hidden xl:table-cell">{e.cargoLbs.toLocaleString()} lb</td>
                   <td className="text-right px-3 py-2.5 tabular-nums">
                     {e.avgScore != null ? (
                       <span className={e.avgScore >= 90 ? 'text-emerald-400' : e.avgScore >= 75 ? 'text-amber-400' : 'text-red-400'}>
                         {e.avgScore}
                       </span>
                     ) : (
-                      <span className="text-acars-muted">—</span>
+                      <span className="text-[var(--text-label)]">—</span>
                     )}
                   </td>
                 </tr>
@@ -504,7 +454,7 @@ function NewsFeed() {
   const isAdmin = user?.role === 'admin';
   const [posts, setPosts] = useState<NewsPost[]>([]);
   const [loading, setLoading] = useState(true);
-  const [editing, setEditing] = useState<number | null>(null); // post id or -1 for new
+  const [editing, setEditing] = useState<number | null>(null);
   const [formTitle, setFormTitle] = useState('');
   const [formBody, setFormBody] = useState('');
   const [formPinned, setFormPinned] = useState(false);
@@ -567,40 +517,40 @@ function NewsFeed() {
   }
 
   return (
-    <div className="panel flex flex-col h-[400px]">
-      <div className="flex items-center justify-between px-4 py-2.5 border-b border-acars-border">
+    <div className="gradient-card flex flex-col h-[400px]">
+      <div className="flex items-center justify-between px-5 py-3.5 border-b border-white/[0.04]">
         <div className="flex items-center gap-2">
-          <Megaphone className="w-3.5 h-3.5 text-blue-400" />
-          <h3 className="text-[13px] font-semibold text-acars-text">Announcements</h3>
+          <Megaphone className="w-4 h-4 text-[#6b8aff]" weight="light" />
+          <h3 className="text-[14px] font-semibold text-white">Announcements</h3>
           {posts.length > 0 && (
-            <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] rounded-full bg-blue-500/15 border border-blue-400/20 text-[9px] font-semibold text-blue-400 tabular-nums px-1">
+            <span className="inline-flex items-center justify-center min-w-[20px] h-[20px] rounded-full bg-[#3b5bdb]/20 text-[10px] font-semibold text-[#6b8aff] tabular-nums px-1.5">
               {posts.length}
             </span>
           )}
         </div>
         {isAdmin && editing === null && (
           <button onClick={startCreate} className="btn-green btn-sm flex items-center gap-1">
-            <Plus className="w-3.5 h-3.5" /> New Post
+            <Plus className="w-3.5 h-3.5" weight="light" /> New Post
           </button>
         )}
       </div>
 
       {/* Inline create/edit form */}
       {editing !== null && (
-        <div className="px-4 py-3 border-b border-acars-border space-y-2 bg-acars-bg/50">
+        <div className="px-5 py-3 border-b border-white/[0.04] space-y-2 bg-white/[0.02]">
           <input
             type="text"
             value={formTitle}
             onChange={e => setFormTitle(e.target.value)}
             placeholder="Title"
-            className="w-full px-2.5 py-1.5 bg-acars-bg border border-acars-border rounded text-xs text-acars-text placeholder:text-acars-muted/60 focus:outline-none focus:border-blue-400"
+            className="w-full px-2.5 py-1.5 bg-black border border-white/[0.06] rounded text-[12px] text-white placeholder:text-[var(--text-label)] focus:outline-none focus:border-[#3b5bdb]/50"
           />
           <textarea
             value={formBody}
             onChange={e => setFormBody(e.target.value)}
             placeholder="Body"
             rows={3}
-            className="w-full px-2.5 py-1.5 bg-acars-bg border border-acars-border rounded text-xs text-acars-text placeholder:text-acars-muted/60 focus:outline-none focus:border-blue-400 resize-none"
+            className="w-full px-2.5 py-1.5 bg-black border border-white/[0.06] rounded text-[12px] text-white placeholder:text-[var(--text-label)] focus:outline-none focus:border-[#3b5bdb]/50 resize-none"
           />
           <div className="flex items-center justify-between">
             <label className="flex items-center gap-1.5 text-[11px] text-amber-400 cursor-pointer select-none">
@@ -608,16 +558,16 @@ function NewsFeed() {
                 type="checkbox"
                 checked={formPinned}
                 onChange={e => setFormPinned(e.target.checked)}
-                className="w-3.5 h-3.5 rounded border-amber-400/40 bg-acars-bg text-amber-400 focus:ring-amber-400/40 focus:ring-offset-0 accent-amber-500"
+                className="w-3.5 h-3.5 rounded border-amber-400/40 bg-black text-amber-400 focus:ring-amber-400/40 focus:ring-offset-0 accent-amber-500"
               />
-              <PushPin className="w-3 h-3" /> Pin post
+              <PushPin className="w-3 h-3" weight="light" /> Pin post
             </label>
             <div className="flex items-center gap-2">
               <button onClick={cancelEdit} className="btn-danger btn-sm flex items-center gap-1">
-                <X className="w-3 h-3" /> Cancel
+                <X className="w-3 h-3" weight="light" /> Cancel
               </button>
               <button onClick={handleSave} disabled={saving || !formTitle.trim() || !formBody.trim()} className="btn-green btn-sm flex items-center gap-1">
-                <FloppyDisk className="w-3 h-3" /> {saving ? 'Saving...' : 'Save'}
+                <FloppyDisk className="w-3 h-3" weight="light" /> {saving ? 'Saving...' : 'Save'}
               </button>
             </div>
           </div>
@@ -626,12 +576,12 @@ function NewsFeed() {
 
       {loading ? (
         <div className="flex-1 flex items-center justify-center">
-          <SpinnerGap className="w-5 h-5 text-blue-400 animate-spin" />
+          <SpinnerGap className="w-5 h-5 text-[#6b8aff] animate-spin" />
         </div>
       ) : posts.length === 0 ? (
         <div className="flex-1 flex flex-col items-center justify-center">
-          <Megaphone className="w-8 h-8 text-acars-muted/30 mb-2" />
-          <p className="text-xs text-acars-muted">No announcements yet — check back soon!</p>
+          <Megaphone className="w-8 h-8 text-white/10 mb-2" weight="light" />
+          <p className="text-[11px] text-[var(--text-label)]">No announcements yet — check back soon!</p>
         </div>
       ) : (
         <div className="flex-1 overflow-auto">
@@ -640,23 +590,23 @@ function NewsFeed() {
             return (
               <div
                 key={post.id}
-                className="px-4 py-3 border-b border-acars-border/30 hover:bg-acars-hover/50 transition-colors duration-100 group cursor-pointer"
+                className="px-5 py-3 border-b border-white/[0.03] hover:bg-white/[0.02] transition-colors duration-100 group cursor-pointer"
                 onClick={() => setExpandedId(isExpanded ? null : post.id)}
               >
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-1.5 mb-0.5">
-                      {post.pinned && <PushPin className="w-3 h-3 text-amber-400 shrink-0" />}
-                      <h4 className="text-xs font-semibold text-acars-text truncate">{post.title}</h4>
+                      {post.pinned && <PushPin className="w-3 h-3 text-amber-400 shrink-0" weight="light" />}
+                      <h4 className="text-[12px] font-semibold text-white truncate">{post.title}</h4>
                     </div>
-                    <p className={`text-[11px] text-acars-muted mb-1 ${isExpanded ? 'whitespace-pre-wrap' : 'line-clamp-2'}`}>{post.body}</p>
-                    <div className="flex items-center gap-2 text-[10px] text-acars-muted/80">
-                      <span className="font-mono">{post.authorCallsign}</span>
-                      <span className="text-acars-border">|</span>
+                    <p className={`text-[11px] text-[var(--text-secondary)] mb-1 ${isExpanded ? 'whitespace-pre-wrap' : 'line-clamp-2'}`}>{post.body}</p>
+                    <div className="flex items-center gap-2 text-[10px] text-[var(--text-label)]">
+                      <span>{post.authorCallsign}</span>
+                      <span className="text-white/10">|</span>
                       <span>{relativeTime(post.createdAt)}</span>
                       {isExpanded && post.updatedAt !== post.createdAt && (
                         <>
-                          <span className="text-acars-border">|</span>
+                          <span className="text-white/10">|</span>
                           <span>edited {relativeTime(post.updatedAt)}</span>
                         </>
                       )}
@@ -664,11 +614,11 @@ function NewsFeed() {
                   </div>
                   {isAdmin && editing === null && (
                     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" onClick={e => e.stopPropagation()}>
-                      <button onClick={() => startEdit(post)} className="p-1 rounded hover:bg-acars-border text-acars-muted hover:text-acars-text transition-colors">
-                        <PencilSimple className="w-3 h-3" />
+                      <button onClick={() => startEdit(post)} className="p-1 rounded hover:bg-white/[0.04] text-[var(--text-label)] hover:text-white transition-colors">
+                        <PencilSimple className="w-3 h-3" weight="light" />
                       </button>
-                      <button onClick={() => handleDelete(post.id)} className="p-1 rounded hover:bg-red-500/10 text-acars-muted hover:text-red-400 transition-colors">
-                        <Trash className="w-3 h-3" />
+                      <button onClick={() => handleDelete(post.id)} className="p-1 rounded hover:bg-red-500/10 text-[var(--text-label)] hover:text-red-400 transition-colors">
+                        <Trash className="w-3 h-3" weight="light" />
                       </button>
                     </div>
                   )}
@@ -685,7 +635,6 @@ function NewsFeed() {
 // ─── Dashboard Page ─────────────────────────────────────────────
 
 export function DashboardPage() {
-  const [stats, setStats] = useState<DashboardStats | null>(null);
   const [bids, setBids] = useState<ActiveBidEntry[]>([]);
   const [recentFlights, setRecentFlights] = useState<LogbookEntry[]>([]);
   const [loading, setLoading] = useState(true);
@@ -701,11 +650,9 @@ export function DashboardPage() {
   useEffect(() => {
     setLoading(true);
     Promise.all([
-      api.get<DashboardStats>('/api/stats'),
       api.get<AllBidsResponse>('/api/bids/all'),
       api.get<LogbookListResponse>('/api/logbook?pageSize=5').catch(() => ({ entries: [] as LogbookEntry[], total: 0, page: 1, pageSize: 5 })),
-    ]).then(([statsData, bidsData, logbookData]) => {
-      setStats(statsData);
+    ]).then(([bidsData, logbookData]) => {
       setBids(bidsData.bids);
       setRecentFlights(logbookData.entries);
     }).catch(err => {
@@ -718,26 +665,18 @@ export function DashboardPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full">
-        <SpinnerGap className="w-6 h-6 text-blue-400 animate-spin" />
+        <SpinnerGap className="w-6 h-6 text-[#6b8aff] animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="p-4 space-y-4 overflow-auto h-full">
-      {/* Row 1: KPI Stats */}
-      <div className="grid grid-cols-4 gap-4">
-        <StatCard label="Active Flights" value={stats?.activeFlights ?? '—'} icon={AirplaneTilt} iconBox="bg-emerald-500/20 border-emerald-500/30" iconColor="text-emerald-400" />
-        <StatCard label="Pilots Online" value={stats?.pilotsOnline ?? '—'} icon={Users} iconBox="bg-blue-500/20 border-blue-500/30" iconColor="text-blue-400" />
-        <StatCard label="Flights this Month" value={stats?.flightsThisMonth ?? '—'} icon={CalendarDots} iconBox="bg-amber-500/20 border-amber-500/30" iconColor="text-amber-400" />
-        <StatCard label="Total Flight Hours" value={stats?.totalHours ?? '—'} icon={Clock} iconBox="bg-blue-400/20 border-blue-400/30" iconColor="text-blue-300" />
-      </div>
-
+    <div className="p-6 space-y-5 overflow-auto h-full">
       {/* Quick Actions strip */}
       <QuickActions />
 
       {/* Row 2: Active Bids — primary operational view (full width) */}
-      <ActiveBidsTable bids={bids} isAdmin={!!isAdmin} onBidRemoved={fetchBids} />
+      <ActiveBidsCard bids={bids} isAdmin={!!isAdmin} onBidRemoved={fetchBids} />
 
       {/* Row 3: Network Map (full width, hero) */}
       <NetworkMapPreview />

@@ -41,7 +41,7 @@ class ChartErrorBoundary extends Component<{ children: ReactNode }, { hasError: 
     if (this.state.hasError) {
       return (
         <div className="h-full flex items-center justify-center">
-          <span className="text-[11px] text-acars-muted font-sans">Chart unavailable</span>
+          <span className="text-[11px] text-acars-muted">Chart unavailable</span>
         </div>
       );
     }
@@ -90,8 +90,8 @@ export function PlanningAltitudeProfile() {
 
   if (!hasSteps) {
     return (
-      <div className="flex-[1] min-h-[60px] border-t flex items-center justify-center bg-acars-panel" style={{ borderColor: 'var(--border-panel)' }}>
-        <span className="text-[11px] text-acars-muted font-sans">Generate OFP to see altitude profile</span>
+      <div className="flex-[1] min-h-[60px] border-t border-white/[0.06] flex items-center justify-center">
+        <span className="text-[11px] text-acars-muted">Generate OFP to see altitude profile</span>
       </div>
     );
   }
@@ -114,7 +114,7 @@ export function PlanningAltitudeProfile() {
   const canDraw = chartW > 0 && chartH > 0;
 
   return (
-    <div className="flex-[1] min-h-[60px] min-w-0 border-t bg-acars-panel overflow-hidden relative" style={{ borderColor: 'var(--border-panel)' }}>
+    <div className="flex-[1] min-h-[60px] min-w-0 border-t border-white/[0.06] overflow-hidden relative">
       {/* Waypoint ident labels pinned to top */}
       <div className="absolute top-0 left-[42px] right-[8px] h-[16px] z-10 pointer-events-none overflow-hidden">
         {data.map((d, i) => {
@@ -123,7 +123,7 @@ export function PlanningAltitudeProfile() {
           return (
             <span
               key={i}
-              className="absolute text-[10px] font-mono whitespace-nowrap"
+              className="absolute text-[10px] tabular-nums whitespace-nowrap"
               style={{
                 color: 'var(--text-label)',
                 left: `${pct}%`,

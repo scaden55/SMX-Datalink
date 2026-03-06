@@ -91,14 +91,14 @@ export function DispatchActionBar() {
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-1.5">
             <DiamondIcon active={hasMel} />
-            <span className={`text-[10px] font-sans ${hasMel ? 'text-amber-400' : 'text-acars-muted'}`}>
+            <span className={`text-[10px] ${hasMel ? 'text-amber-400' : 'text-acars-muted'}`}>
               MEL & Restrictions
             </span>
           </div>
           {hasNotoc && (
             <div className="flex items-center gap-1.5">
               <DiamondIcon active />
-              <span className="text-[10px] font-sans text-amber-400">NOTOC</span>
+              <span className="text-[10px] text-amber-400">NOTOC</span>
             </div>
           )}
         </div>

@@ -44,6 +44,7 @@ export interface ServerToClientEvents {
   'flights:active': (flights: ActiveFlightHeartbeat[]) => void;
   'bid:expired': (data: { bidId: number; flightNumber: string; reason: 'expired' | 'admin_removed' }) => void;
   'dispatch:exceedance': (data: FlightExceedance) => void;
+  'fleet:updated': () => void;
 }
 
 export interface ClientToServerEvents {

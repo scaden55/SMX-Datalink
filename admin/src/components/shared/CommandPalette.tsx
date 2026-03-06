@@ -2,22 +2,22 @@ import { useEffect, useRef, useState } from 'react';
 import { Command } from 'cmdk';
 import { useNavigate } from 'react-router-dom';
 import {
-  ChartLineUp,
-  MapTrifold,
-  CalendarBlank,
-  ClipboardText,
+  TrendingUp,
+  Map,
+  Calendar,
+  ClipboardList,
   Users,
   Wrench,
-  CurrencyDollar,
-  ChartBar,
+  DollarSign,
+  BarChart3,
   Bell,
-  ClockCounterClockwise,
-  Gear,
+  History,
+  Settings,
   User,
-  AirplaneTilt,
-  Engine,
-  Lightning,
-} from '@phosphor-icons/react';
+  Plane,
+  Cog,
+  Zap,
+} from 'lucide-react';
 import { api } from '@/lib/api';
 
 interface SearchUser {
@@ -55,30 +55,30 @@ interface SearchResults {
 }
 
 const pages = [
-  { label: 'Dashboard', path: '/', icon: ChartLineUp, shortcut: 'D' },
-  { label: 'Dispatch Board', path: '/dispatch', icon: MapTrifold, shortcut: 'B' },
-  { label: 'Schedules', path: '/schedules', icon: CalendarBlank, shortcut: 'S' },
-  { label: 'PIREPs', path: '/pireps', icon: ClipboardText, shortcut: 'P' },
+  { label: 'Dashboard', path: '/', icon: TrendingUp, shortcut: 'D' },
+  { label: 'Dispatch Board', path: '/dispatch', icon: Map, shortcut: 'B' },
+  { label: 'Schedules', path: '/schedules', icon: Calendar, shortcut: 'S' },
+  { label: 'PIREPs', path: '/pireps', icon: ClipboardList, shortcut: 'P' },
   { label: 'Users', path: '/users', icon: Users, shortcut: 'U' },
   { label: 'Maintenance', path: '/maintenance', icon: Wrench, shortcut: 'M' },
-  { label: 'Finances', path: '/finances', icon: CurrencyDollar, shortcut: 'F' },
-  { label: 'Reports', path: '/reports', icon: ChartBar, shortcut: 'R' },
+  { label: 'Finances', path: '/finances', icon: DollarSign, shortcut: 'F' },
+  { label: 'Reports', path: '/reports', icon: BarChart3, shortcut: 'R' },
   { label: 'Notifications', path: '/notifications', icon: Bell, shortcut: 'N' },
-  { label: 'Audit Log', path: '/audit', icon: ClockCounterClockwise, shortcut: 'A' },
-  { label: 'Settings', path: '/settings', icon: Gear, shortcut: ',' },
+  { label: 'Audit Log', path: '/audit', icon: History, shortcut: 'A' },
+  { label: 'Settings', path: '/settings', icon: Settings, shortcut: ',' },
 ];
 
 const groupHeadingClass =
   '[&_[cmdk-group-heading]]:text-[10px] [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-wider [&_[cmdk-group-heading]]:text-muted-foreground [&_[cmdk-group-heading]]:px-4 [&_[cmdk-group-heading]]:py-1.5';
 
 const itemClass =
-  'px-4 py-2.5 text-sm flex items-center gap-3 cursor-pointer rounded-sm mx-1 text-muted-foreground data-[selected=true]:bg-blue-500/10 data-[selected=true]:text-foreground';
+  'px-4 py-2.5 text-sm flex items-center gap-3 cursor-pointer rounded-sm mx-1 text-muted-foreground data-[selected=true]:bg-[var(--accent-blue-bg)] data-[selected=true]:text-foreground';
 
 function statusColor(status: string): string {
   const s = status.toLowerCase();
-  if (s === 'approved' || s === 'accepted' || s === 'active' || s === 'completed') return 'text-green-400';
-  if (s === 'pending' || s === 'filed') return 'text-yellow-400';
-  if (s === 'rejected' || s === 'failed' || s === 'inactive') return 'text-red-400';
+  if (s === 'approved' || s === 'accepted' || s === 'active' || s === 'completed') return 'text-[var(--accent-emerald)]';
+  if (s === 'pending' || s === 'filed') return 'text-[var(--accent-amber)]';
+  if (s === 'rejected' || s === 'failed' || s === 'inactive') return 'text-[var(--accent-red)]';
   return 'text-muted-foreground';
 }
 
@@ -150,7 +150,7 @@ export function CommandPalette() {
       overlayClassName="fixed inset-0 bg-black/50 z-50"
       contentClassName="fixed inset-0 z-50 flex items-start justify-center pt-[20vh]"
     >
-      <div className="max-w-lg w-full bg-[#1c2033] border border-border/50 rounded-md shadow-2xl overflow-hidden">
+      <div className="max-w-lg w-full bg-[var(--surface-3)] border border-[var(--border-primary)] rounded-md shadow-2xl overflow-hidden">
         <Command.Input
           placeholder="Search pages, pilots, flights..."
           autoFocus
@@ -171,7 +171,7 @@ export function CommandPalette() {
                 onSelect={() => handleSelect(page.path)}
                 className={itemClass}
               >
-                <page.icon size={18} weight="regular" />
+                <page.icon size={18} />
                 <span>{page.label}</span>
                 <kbd className="ml-auto text-[10px] text-muted-foreground/50">{page.shortcut}</kbd>
               </Command.Item>
@@ -188,8 +188,8 @@ export function CommandPalette() {
                   onSelect={() => handleSelect('/users')}
                   className={itemClass}
                 >
-                  <User size={18} weight="regular" />
-                  <span className="font-mono text-xs text-blue-400">{user.callsign}</span>
+                  <User size={18} />
+                  <span className="font-mono text-xs text-[var(--accent-blue-bright)]">{user.callsign}</span>
                   <span>{user.name}</span>
                   <span className="ml-auto text-[10px] text-muted-foreground/50">{user.role}</span>
                 </Command.Item>
@@ -207,7 +207,7 @@ export function CommandPalette() {
                   onSelect={() => handleSelect('/pireps')}
                   className={itemClass}
                 >
-                  <AirplaneTilt size={18} weight="regular" />
+                  <Plane size={18} />
                   <span className="font-mono text-xs">{flight.flightNumber}</span>
                   <span className="text-muted-foreground">{flight.route}</span>
                   <span className={`ml-auto text-[10px] ${statusColor(flight.status)}`}>
@@ -228,8 +228,8 @@ export function CommandPalette() {
                   onSelect={() => handleSelect('/maintenance')}
                   className={itemClass}
                 >
-                  <Engine size={18} weight="regular" />
-                  <span className="font-mono text-xs text-blue-400">{ac.registration}</span>
+                  <Cog size={18} />
+                  <span className="font-mono text-xs text-[var(--accent-blue-bright)]">{ac.registration}</span>
                   <span className="text-muted-foreground">{ac.type}</span>
                   <span className={`ml-auto text-[10px] ${statusColor(ac.status)}`}>
                     {ac.status}
@@ -249,7 +249,7 @@ export function CommandPalette() {
                   onSelect={() => handleSelect('/schedules')}
                   className={itemClass}
                 >
-                  <CalendarBlank size={18} weight="regular" />
+                  <Calendar size={18} />
                   <span className="font-mono text-xs">{sched.flightNumber}</span>
                   <span className="text-muted-foreground">{sched.route}</span>
                 </Command.Item>
@@ -264,7 +264,7 @@ export function CommandPalette() {
               onSelect={() => handleSelect('/pireps?status=pending')}
               className={itemClass}
             >
-              <Lightning size={18} weight="regular" />
+              <Zap size={18} />
               <span>Approve pending PIREPs</span>
             </Command.Item>
             <Command.Item
@@ -272,7 +272,7 @@ export function CommandPalette() {
               onSelect={() => handleSelect('/finances?tab=pilot-pay')}
               className={itemClass}
             >
-              <Lightning size={18} weight="regular" />
+              <Zap size={18} />
               <span>Generate payroll</span>
             </Command.Item>
           </Command.Group>

@@ -26,7 +26,7 @@ export function MELSection({ melRestrictions }: MELSectionProps) {
           <textarea
             value={editableFields.melRestrictions ?? melRestrictions ?? ''}
             onChange={(e) => onFieldChange('melRestrictions', e.target.value)}
-            className="w-full h-20 rounded bg-acars-bg border border-acars-border text-acars-text text-[11px] px-2 py-1.5 font-mono resize-none focus:outline-none focus:border-sky-400"
+            className="w-full h-20 rounded bg-acars-bg border border-acars-border text-acars-text text-[11px] px-2 py-1.5 tabular-nums resize-none focus:outline-none focus:border-sky-400"
             placeholder="Enter MEL items, one per line..."
           />
         </div>

@@ -16,19 +16,19 @@ export function AircraftSection({ title, tailNumber, type, formData }: AircraftS
   const aobFL = editableFields.aobFL ?? formData?.aobFL ?? '';
   const pic = editableFields.pic ?? formData?.pic ?? '';
 
-  const inputCls = "bg-acars-input border border-acars-border text-[11px] font-mono text-acars-text rounded-md px-1.5 py-0.5 outline-none focus:border-blue-400 truncate w-full";
+  const inputCls = "bg-acars-input border border-acars-border text-[11px] tabular-nums text-acars-text rounded-md px-1.5 py-0.5 outline-none focus:border-blue-400 truncate w-full";
 
   return (
     <div className="px-3 py-1.5">
       <div className="flex items-end gap-1.5">
         {/* Aircraft — read-only (from SimConnect telemetry) */}
         <div className="flex flex-col min-w-0 flex-[2]">
-          <span className="text-[9px] font-sans text-acars-muted/70 mb-0.5">Aircraft</span>
+          <span className="text-[9px] text-acars-muted/70 mb-0.5">Aircraft</span>
           <input type="text" value={`${tailNumber} (${type})`} readOnly className={inputCls} />
         </div>
         {/* Cruise — editable */}
         <div className="flex flex-col min-w-0 flex-1">
-          <span className="text-[9px] font-sans text-acars-muted/70 mb-0.5">Cruise</span>
+          <span className="text-[9px] text-acars-muted/70 mb-0.5">Cruise</span>
           <input
             type="text"
             value={cruiseFL}
@@ -40,7 +40,7 @@ export function AircraftSection({ title, tailNumber, type, formData }: AircraftS
         </div>
         {/* CI Value — editable */}
         <div className="flex flex-col min-w-0 flex-1">
-          <span className="text-[9px] font-sans text-acars-muted/70 mb-0.5">CI Value</span>
+          <span className="text-[9px] text-acars-muted/70 mb-0.5">CI Value</span>
           <input
             type="text"
             value={costIdx}
@@ -52,7 +52,7 @@ export function AircraftSection({ title, tailNumber, type, formData }: AircraftS
         </div>
         {/* AOB FL — editable */}
         <div className="flex flex-col min-w-0 flex-1">
-          <span className="text-[9px] font-sans text-acars-muted/70 mb-0.5">AOB FL</span>
+          <span className="text-[9px] text-acars-muted/70 mb-0.5">AOB FL</span>
           <input
             type="text"
             value={aobFL}
@@ -64,7 +64,7 @@ export function AircraftSection({ title, tailNumber, type, formData }: AircraftS
         </div>
         {/* Pilot in Command — editable, auto-filled from SimBrief */}
         <div className="flex flex-col min-w-0 flex-[2]">
-          <span className="text-[9px] font-sans text-acars-muted/70 mb-0.5">Pilot in Command</span>
+          <span className="text-[9px] text-acars-muted/70 mb-0.5">Pilot in Command</span>
           <input
             type="text"
             value={pic || (title !== '---' ? `${title} | PIC | Left Seat` : '---')}

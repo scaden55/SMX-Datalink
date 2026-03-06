@@ -72,23 +72,23 @@ export function FlightHeader({ ofp, formData }: FlightHeaderProps) {
     <div className="border-b border-acars-border px-4 py-2.5">
       {/* Row 1: Airport names + date */}
       <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 mb-1">
-        <span className="text-[10px] font-sans text-acars-muted/70 truncate">{depLabel}</span>
-        <span className="text-[10px] font-sans text-acars-muted/70 uppercase tracking-wider shrink-0">{formatDateHeader()}</span>
-        <span className="text-[10px] font-sans text-acars-muted/70 truncate text-right">{arrLabel}</span>
+        <span className="text-[10px] text-acars-muted/70 truncate">{depLabel}</span>
+        <span className="text-[10px] text-acars-muted/70 uppercase tracking-wider shrink-0">{formatDateHeader()}</span>
+        <span className="text-[10px] text-acars-muted/70 truncate text-right">{arrLabel}</span>
       </div>
 
       {/* Row 2: ICAO codes + route center line */}
       <div className="grid grid-cols-[auto_1fr_auto] items-center gap-0">
         {/* Origin */}
         <span className="shrink-0">
-          <span className="text-[20px] font-semibold text-acars-text font-mono tabular-nums">{origin}</span>
+          <span className="text-[20px] font-semibold text-acars-text tabular-nums">{origin}</span>
           <span className="text-[13px] text-acars-muted/70 ml-1">/ {depIata}</span>
         </span>
 
         {/* Center: dotted line + route data + flight number */}
         <div className="flex items-center mx-2 min-w-0">
           <div className="flex-1 border-b border-dotted border-acars-border/40" />
-          <span className="px-2 shrink-0 text-center text-[15px] font-medium text-acars-text font-mono tabular-nums">
+          <span className="px-2 shrink-0 text-center text-[15px] font-medium text-acars-text tabular-nums">
             {flightId}
           </span>
           <div className="flex-1 border-b border-dotted border-acars-border/40" />
@@ -96,37 +96,37 @@ export function FlightHeader({ ofp, formData }: FlightHeaderProps) {
 
         {/* Destination */}
         <span className="shrink-0 text-right">
-          <span className="text-[20px] font-semibold text-acars-text font-mono tabular-nums">{destination}</span>
+          <span className="text-[20px] font-semibold text-acars-text tabular-nums">{destination}</span>
           <span className="text-[13px] text-acars-muted/70 ml-1">/ {arrIata}</span>
         </span>
       </div>
 
       {/* Row 3: STD/ETD left | flight number center | STA/ETA right */}
       <div className="grid grid-cols-[1fr_auto_1fr] items-center mt-1.5">
-        <div className="flex items-center gap-2 text-[10px] font-sans">
-          <span className="text-acars-muted/70">STD <span className="text-acars-text/80 font-mono">{schedDep}</span></span>
+        <div className="flex items-center gap-2 text-[10px]">
+          <span className="text-acars-muted/70">STD <span className="text-acars-text/80 tabular-nums">{schedDep}</span></span>
           <span className="text-acars-border/60">|</span>
-          <span className="text-acars-muted/70">ETD <span className="text-acars-text/80 font-mono">{etd}</span></span>
+          <span className="text-acars-muted/70">ETD <span className="text-acars-text/80 tabular-nums">{etd}</span></span>
         </div>
-        <span className="text-center shrink-0 px-3 text-[11px] font-medium text-blue-400/80 font-mono tabular-nums">
+        <span className="text-center shrink-0 px-3 text-[11px] font-medium text-blue-400/80 tabular-nums">
           {flightId}
         </span>
-        <div className="flex items-center justify-end gap-2 text-[10px] font-sans">
-          <span className="text-acars-muted/70">STA <span className="text-acars-text/80 font-mono">{schedArr}</span></span>
+        <div className="flex items-center justify-end gap-2 text-[10px]">
+          <span className="text-acars-muted/70">STA <span className="text-acars-text/80 tabular-nums">{schedArr}</span></span>
           <span className="text-acars-border/60">|</span>
-          <span className="text-acars-muted/70">ETA <span className="text-acars-text/80 font-mono">{eta}</span></span>
+          <span className="text-acars-muted/70">ETA <span className="text-acars-text/80 tabular-nums">{eta}</span></span>
         </div>
       </div>
 
       {/* Row 4: On Time left | ETE center | late badge right */}
       <div className="grid grid-cols-[1fr_auto_1fr] items-center mt-1">
         <div>
-          <span className="inline-flex items-center px-1.5 py-0 rounded-[2px] text-[10px] font-semibold uppercase tracking-[0.06em] font-sans bg-emerald-500/15 text-emerald-400">
+          <span className="inline-flex items-center px-1.5 py-0 rounded-[2px] text-[10px] font-semibold uppercase tracking-[0.06em] bg-emerald-500/15 text-emerald-400">
             On Time
           </span>
         </div>
-        <span className="text-center shrink-0 px-3 text-[11px] font-sans text-acars-text/80">
-          ETE <span className="font-mono font-semibold">{ete}</span>
+        <span className="text-center shrink-0 px-3 text-[11px] text-acars-text/80">
+          ETE <span className="tabular-nums font-semibold">{ete}</span>
         </span>
         <div className="flex justify-end">
           {/* Show late badge only when there's a delay — placeholder for now */}

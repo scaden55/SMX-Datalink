@@ -216,6 +216,36 @@ export type {
   MELListResponse,
 } from './types/maintenance.js';
 
+// Finance Engine
+export type {
+  CommodityCode,
+  FinanceRateConfig,
+  LaneRate,
+  CommodityCategoryCode,
+  CommodityRate,
+  LeaseType,
+  FinanceAircraftProfile,
+  CreateAircraftProfileRequest,
+  UpdateAircraftProfileRequest,
+  StationFees,
+  CreateStationFeesRequest,
+  UpdateStationFeesRequest,
+  FinanceCheckType,
+  MaintThreshold,
+  MaintCheckAlert,
+  RatedShipment,
+  RatedManifest,
+  RatedManifestSummary,
+  FlightCostBreakdown,
+  FixedCostAllocation,
+  FlightPnL,
+  PeriodType,
+  PeriodPnL,
+  OpEventType,
+  OperationalEvent,
+} from './types/finance-engine.js';
+export { COMMODITY_CATEGORY_LABELS } from './types/finance-engine.js';
+
 // Utilities
 export { altitudeToColor } from './utils/altitudeColor.js';
 

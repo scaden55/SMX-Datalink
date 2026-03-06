@@ -72,6 +72,10 @@ export class VpsRelay {
     }
   }
 
+  updatePhase(phase: string): void {
+    this.latestPhase = phase;
+  }
+
   emitExceedance(event: unknown): void {
     if (this.socket?.connected) {
       this.socket.emit('flight:exceedance', event as any);

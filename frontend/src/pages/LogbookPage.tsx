@@ -247,7 +247,7 @@ export function LogbookPage() {
               value={search}
               onChange={e => { setSearch(e.target.value); setPage(1); }}
               placeholder="Search flight, ICAO, registration..."
-              className="w-full h-8 pl-8 pr-3 rounded-md border border-acars-border bg-acars-panel text-xs text-acars-text placeholder:text-acars-muted/50 outline-none focus:border-emerald-400 transition-colors font-mono"
+              className="w-full h-8 pl-8 pr-3 rounded-md border border-acars-border bg-acars-panel text-xs text-acars-text placeholder:text-acars-muted/50 outline-none focus:border-emerald-400 transition-colors tabular-nums"
             />
           </div>
 
@@ -324,37 +324,37 @@ export function LogbookPage() {
                     <div className="text-acars-muted text-[10px]">{formatTime(entry.actualDep)}</div>
                   </td>
                   <td className="px-3 py-2.5">
-                    <span className="text-acars-text font-mono font-semibold">{entry.flightNumber}</span>
+                    <span className="text-acars-text tabular-nums font-semibold">{entry.flightNumber}</span>
                   </td>
                   <td className="px-3 py-2.5">
                     <div className="flex items-center gap-1.5">
-                      <span className="text-acars-text font-mono font-semibold">{entry.depIcao}</span>
+                      <span className="text-acars-text tabular-nums font-semibold">{entry.depIcao}</span>
                       <ArrowRight className="w-3 h-3 text-sky-400/40" />
-                      <span className="text-acars-text font-mono font-semibold">{entry.arrIcao}</span>
+                      <span className="text-acars-text tabular-nums font-semibold">{entry.arrIcao}</span>
                     </div>
                     <div className="text-acars-muted text-[10px]">{entry.distanceNm.toLocaleString()} nm</div>
                   </td>
                   <td className="px-3 py-2.5">
                     <div className="text-acars-text font-medium">{entry.aircraftType}</div>
                     {entry.aircraftRegistration && (
-                      <div className="text-acars-muted text-[10px] font-mono">{entry.aircraftRegistration}</div>
+                      <div className="text-acars-muted text-[10px] tabular-nums">{entry.aircraftRegistration}</div>
                     )}
                   </td>
                   <td className="px-3 py-2.5">
-                    <span className="text-acars-text font-mono">{entry.flightTimeMin > 0 ? formatDuration(entry.flightTimeMin) : '—'}</span>
+                    <span className="text-acars-text tabular-nums">{entry.flightTimeMin > 0 ? formatDuration(entry.flightTimeMin) : '—'}</span>
                   </td>
                   <td className="px-3 py-2.5">
-                    <span className="text-acars-text font-mono">
+                    <span className="text-acars-text tabular-nums">
                       {entry.blockTimeMin != null ? formatDuration(entry.blockTimeMin) : '—'}
                     </span>
                   </td>
                   <td className="text-right px-3 py-2.5">
-                    <span className={`font-mono font-semibold ${landingRateColor(entry.landingRateFpm)}`}>
+                    <span className={`tabular-nums font-semibold ${landingRateColor(entry.landingRateFpm)}`}>
                       {entry.landingRateFpm != null ? `${entry.landingRateFpm} fpm` : '—'}
                     </span>
                   </td>
                   <td className="text-right px-3 py-2.5">
-                    <span className={`font-mono font-bold ${scoreColor(entry.score)}`}>
+                    <span className={`tabular-nums font-bold ${scoreColor(entry.score)}`}>
                       {entry.score ?? '—'}
                     </span>
                   </td>
@@ -385,7 +385,7 @@ export function LogbookPage() {
             >
               <CaretLeft className="w-3.5 h-3.5" />
             </button>
-            <span className="text-xs text-acars-text px-2 font-mono">{page} / {totalPages}</span>
+            <span className="text-xs text-acars-text px-2 tabular-nums">{page} / {totalPages}</span>
             <button
               onClick={() => setPage(p => Math.min(totalPages, p + 1))}
               disabled={page >= totalPages}

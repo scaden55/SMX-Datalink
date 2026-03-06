@@ -1,5 +1,5 @@
 import { type Column } from '@tanstack/react-table';
-import { ArrowUp, ArrowDown, CaretUpDown } from '@phosphor-icons/react';
+import { ArrowUp, ArrowDown, ChevronsUpDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface DataTableColumnHeaderProps<T, V> {
@@ -34,7 +34,7 @@ export function DataTableColumnHeader<T, V>({
       ) : sorted === 'desc' ? (
         <ArrowDown className="h-3.5 w-3.5" />
       ) : (
-        <CaretUpDown className="h-3.5 w-3.5 text-muted-foreground/50" />
+        <ChevronsUpDown className="h-3.5 w-3.5 text-muted-foreground/50" />
       )}
     </button>
   );

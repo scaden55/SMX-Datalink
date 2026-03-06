@@ -1,23 +1,33 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { type ColumnDef, type RowSelectionState } from '@tanstack/react-table';
+import { motion } from 'motion/react';
 import {
-  ClipboardText,
-  Hourglass,
-  CheckCircle,
-  XCircle,
-  MagnifyingGlass,
-  DotsThreeVertical,
+  ClipboardCheck,
+  Search,
+  MoreVertical,
   Eye,
-  CalendarBlank,
+  Calendar,
   Clock,
   MapPin,
+  CheckCircle2,
+  XCircle,
   Users as UsersIcon,
-} from '@phosphor-icons/react';
+  ChevronDown,
+} from 'lucide-react';
 import { api, ApiError } from '@/lib/api';
 import { toast } from '@/stores/toastStore';
-import { Input } from '@/components/ui/input';
+import {
+  pageVariants,
+  staggerContainer,
+  staggerItem,
+  fadeUp,
+  tableContainer,
+  tableRow,
+  cardHover,
+} from '@/lib/motion';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -25,8 +35,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { PageShell } from '@/components/shared/PageShell';
 import { DataTable } from '@/components/shared/DataTable';
 import { DataTablePagination } from '@/components/shared/DataTablePagination';
 import { DataTableColumnHeader } from '@/components/shared/DataTableColumnHeader';
@@ -116,11 +124,11 @@ function formatDateTime(iso: string): string {
 }
 
 function landingRateColor(fpm: number | null): string {
-  if (fpm === null) return 'text-[var(--text-quaternary)]';
+  if (fpm === null) return 'var(--text-quaternary)';
   const abs = Math.abs(fpm);
-  if (abs <= 200) return 'text-[var(--accent-emerald)]';
-  if (abs <= 400) return 'text-[var(--accent-amber)]';
-  return 'text-[var(--accent-red)]';
+  if (abs <= 150) return 'var(--accent-emerald)';
+  if (abs <= 300) return 'var(--accent-amber)';
+  return 'var(--accent-red)';
 }
 
 function landingRateLabel(fpm: number | null): string {
@@ -134,14 +142,48 @@ function landingRateLabel(fpm: number | null): string {
 }
 
 function scoreDisplay(score: number | null) {
-  if (score === null) return <span className="text-[var(--text-quaternary)]">N/A</span>;
-  let color = 'text-[var(--accent-emerald)]';
-  if (score < 60) color = 'text-[var(--accent-red)]';
-  else if (score < 80) color = 'text-[var(--accent-amber)]';
-  return <span className={`font-mono font-bold ${color}`}>{score}</span>;
+  if (score === null) return <span style={{ color: 'var(--text-quaternary)' }}>N/A</span>;
+  let color = 'var(--accent-emerald)';
+  if (score < 60) color = 'var(--accent-red)';
+  else if (score < 80) color = 'var(--accent-amber)';
+  return <span style={{ color, fontFamily: 'var(--font-mono)', fontWeight: 700 }}>{score}</span>;
+}
+
+// ── Status badge (inline for table) ─────────────────────────────
+
+function InlineStatusBadge({ status }: { status: string }) {
+  const config: Record<string, { bg: string; text: string }> = {
+    approved: { bg: 'var(--accent-emerald-bg)', text: 'var(--accent-emerald)' },
+    completed: { bg: 'var(--accent-blue-bg)', text: 'var(--accent-blue-bright)' },
+    pending: { bg: 'var(--accent-amber-bg)', text: 'var(--accent-amber)' },
+    rejected: { bg: 'var(--accent-red-bg)', text: 'var(--accent-red)' },
+    diverted: { bg: 'var(--accent-blue-bg)', text: 'var(--accent-blue-bright)' },
+    cancelled: { bg: 'var(--surface-3)', text: 'var(--text-quaternary)' },
+  };
+  const c = config[status] ?? { bg: 'var(--accent-blue-bg)', text: 'var(--accent-blue-bright)' };
+  const label = status.charAt(0).toUpperCase() + status.slice(1);
+  return (
+    <span
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        padding: '2px 8px',
+        borderRadius: 3,
+        fontSize: 10,
+        fontWeight: 600,
+        backgroundColor: c.bg,
+        color: c.text,
+        lineHeight: '16px',
+      }}
+    >
+      {label}
+    </span>
+  );
 }
 
 // ── Page ────────────────────────────────────────────────────────
+
+const STATUS_TABS = ['all', 'pending', 'approved', 'rejected'] as const;
 
 export function PirepsPage() {
   const [pireps, setPireps] = useState<PirepEntry[]>([]);
@@ -224,7 +266,6 @@ export function PirepsPage() {
 
   // ── Selection helpers ─────────────────────────────────────────
 
-  // Get selected IDs — only pending PIREPs are valid for bulk actions
   const selectedIds = useMemo(() => {
     return Object.keys(rowSelection)
       .filter((id) => rowSelection[id])
@@ -299,6 +340,15 @@ export function PirepsPage() {
     }
   }
 
+  // ── Date display for filter ──────────────────────────────────
+
+  const dateDisplay = useMemo(() => {
+    if (dateFrom && dateTo) return `${dateFrom} - ${dateTo}`;
+    if (dateFrom) return `From ${dateFrom}`;
+    if (dateTo) return `Until ${dateTo}`;
+    return 'All Dates';
+  }, [dateFrom, dateTo]);
+
   // ── Column Definitions ────────────────────────────────────────
 
   const columns: ColumnDef<PirepEntry, unknown>[] = useMemo(
@@ -307,32 +357,48 @@ export function PirepsPage() {
         accessorKey: 'flightNumber',
         header: ({ column }) => <DataTableColumnHeader column={column} title="Flight" />,
         cell: ({ row }) => (
-          <span className="font-mono font-medium text-[var(--text-primary)]">{row.original.flightNumber}</span>
+          <span
+            style={{
+              fontSize: 12,
+              fontWeight: 600,
+              color: 'var(--text-primary)',
+              fontFamily: 'var(--font-mono)',
+            }}
+          >
+            {row.original.flightNumber}
+          </span>
         ),
-        size: 110,
+        size: 70,
       },
       {
         accessorKey: 'pilotCallsign',
         header: ({ column }) => <DataTableColumnHeader column={column} title="Pilot" />,
         cell: ({ row }) => (
-          <span className="font-mono text-[var(--text-tertiary)]">
-            {row.original.pilotCallsign || `#${row.original.userId}`}
-          </span>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+            <span style={{ fontSize: 12, color: 'var(--text-primary)', fontWeight: 500 }}>
+              {row.original.pilotCallsign || `Pilot #${row.original.userId}`}
+            </span>
+            {row.original.pilotName && (
+              <span style={{ fontSize: 10, color: 'var(--text-tertiary)' }}>
+                {row.original.pilotName}
+              </span>
+            )}
+          </div>
         ),
-        size: 90,
+        size: 120,
       },
       {
         id: 'route',
         header: 'Route',
         cell: ({ row }) => (
-          <span className="font-mono text-sm">
-            <span className="text-[var(--accent-blue)]">{row.original.depIcao}</span>
-            <span className="text-[var(--text-quaternary)] mx-1">&rarr;</span>
-            <span className="text-[var(--accent-cyan)]">{row.original.arrIcao}</span>
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12 }}>
+            <span style={{ color: 'var(--accent-blue-bright)' }}>{row.original.depIcao}</span>
+            <span style={{ color: 'var(--text-quaternary)', margin: '0 4px' }}>&rarr;</span>
+            <span style={{ color: 'var(--accent-blue-bright)' }}>{row.original.arrIcao}</span>
           </span>
         ),
         enableSorting: false,
-        size: 120,
+        size: 110,
       },
       {
         accessorKey: 'landingRateFpm',
@@ -340,59 +406,72 @@ export function PirepsPage() {
         cell: ({ row }) => {
           const fpm = row.original.landingRateFpm;
           return (
-            <span className={`font-mono ${landingRateColor(fpm)}`}>
-              {fpm !== null ? `${fpm} fpm` : 'N/A'}
+            <span
+              style={{
+                fontFamily: 'var(--font-mono)',
+                fontSize: 12,
+                fontWeight: 600,
+                color: landingRateColor(fpm),
+              }}
+            >
+              {fpm !== null ? `${Math.abs(fpm)} fpm` : 'N/A'}
             </span>
           );
         },
-        size: 100,
+        size: 90,
       },
       {
         accessorKey: 'flightTimeMin',
         header: ({ column }) => <DataTableColumnHeader column={column} title="Time" />,
         cell: ({ row }) => (
-          <span className="font-mono text-[var(--text-tertiary)]">
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--text-secondary)' }}>
             {formatMinutes(row.original.flightTimeMin)}
           </span>
         ),
-        size: 90,
+        size: 80,
+      },
+      {
+        accessorKey: 'score',
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Score" />,
+        cell: ({ row }) => scoreDisplay(row.original.score),
+        size: 60,
       },
       {
         accessorKey: 'status',
         header: 'Status',
-        cell: ({ row }) => <StatusBadge status={row.original.status} />,
+        cell: ({ row }) => <InlineStatusBadge status={row.original.status} />,
         enableSorting: false,
-        size: 100,
-      },
-      {
-        accessorKey: 'createdAt',
-        header: ({ column }) => <DataTableColumnHeader column={column} title="Date" />,
-        cell: ({ row }) => (
-          <span className="text-[var(--text-tertiary)] text-sm">
-            {formatDate(row.original.createdAt)}
-          </span>
-        ),
-        size: 100,
+        size: 90,
       },
       {
         id: 'actions',
         enableHiding: false,
         enableSorting: false,
-        size: 50,
+        size: 40,
         cell: ({ row }) => {
           const pirep = row.original;
           const isPending = pirep.status === 'pending';
           return (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8"
+                <button
+                  type="button"
                   onClick={(e) => e.stopPropagation()}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: 28,
+                    height: 28,
+                    borderRadius: 4,
+                    border: 'none',
+                    background: 'transparent',
+                    color: 'var(--text-tertiary)',
+                    cursor: 'pointer',
+                  }}
                 >
-                  <DotsThreeVertical size={16} weight="bold" />
-                </Button>
+                  <MoreVertical size={14} />
+                </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuItem onClick={() => handleRowClick(pirep)}>
@@ -403,12 +482,12 @@ export function PirepsPage() {
                   <>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={() => handleQuickReview(pirep, 'approved')}>
-                      <CheckCircle size={14} className="text-[var(--accent-emerald)]" />
+                      <CheckCircle2 size={14} style={{ color: 'var(--accent-emerald)' }} />
                       Approve
                     </DropdownMenuItem>
                     <DropdownMenuItem
-                      className="text-[var(--accent-red)] focus:text-[var(--accent-red)]"
                       onClick={() => handleQuickReview(pirep, 'rejected')}
+                      style={{ color: 'var(--accent-red)' }}
                     >
                       <XCircle size={14} />
                       Reject
@@ -428,112 +507,372 @@ export function PirepsPage() {
   // ── Render ──────────────────────────────────────────────────
 
   return (
-    <PageShell
-      title="PIREPs"
-      subtitle="Pilot reports"
-      stats={[
-        { label: 'Total', value: total, icon: ClipboardText, accent: 'blue' },
-        { label: 'Pending', value: pendingCount, icon: Hourglass, accent: 'amber' },
-        { label: 'Approved', value: stats.approved, icon: CheckCircle, accent: 'emerald' },
-        { label: 'Rejected', value: stats.rejected, icon: XCircle, accent: 'red' },
-      ]}
+    <motion.div
+      style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}
+      variants={pageVariants}
+      initial="hidden"
+      animate="visible"
     >
-      {/* Status Tabs + Toolbar */}
-      <div className="space-y-3 mb-3">
-        {/* Status Tabs */}
-        <Tabs value={statusTab} onValueChange={setStatusTab}>
-          <TabsList>
-            <TabsTrigger value="all">All</TabsTrigger>
-            <TabsTrigger value="pending" className="gap-1.5">
-              Pending
-              {pendingCount > 0 && (
-                <span className="inline-flex items-center justify-center rounded-full bg-[var(--accent-amber-bg)] text-[var(--accent-amber)] text-[10px] font-bold min-w-[18px] h-[18px] px-1">
-                  {pendingCount}
-                </span>
-              )}
-            </TabsTrigger>
-            <TabsTrigger value="approved">Approved</TabsTrigger>
-            <TabsTrigger value="rejected">Rejected</TabsTrigger>
-          </TabsList>
-        </Tabs>
+      {/* ═══ Page Header ═══ */}
+      <div style={{ padding: '16px 24px', display: 'flex', flexDirection: 'column', gap: 16 }}>
 
-        {/* Search + Date Filters */}
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex flex-1 items-center gap-3">
-            <div className="relative max-w-sm flex-1">
-              <MagnifyingGlass
-                size={16}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-tertiary)]"
-              />
-              <Input
-                placeholder="Search flight #, callsign, ICAO..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="pl-9"
-              />
-            </div>
-            <div className="flex items-center gap-2">
-              <CalendarBlank size={16} className="text-[var(--text-tertiary)] shrink-0" />
-              <Input
-                type="date"
-                value={dateFrom}
-                onChange={(e) => setDateFrom(e.target.value)}
-                className="w-[140px]"
-                placeholder="From"
-              />
-              <span className="text-[var(--text-tertiary)] text-sm">-</span>
-              <Input
-                type="date"
-                value={dateTo}
-                onChange={(e) => setDateTo(e.target.value)}
-                className="w-[140px]"
-                placeholder="To"
-              />
-            </div>
-          </div>
+        {/* Title Row */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <ClipboardCheck size={20} style={{ color: 'var(--accent-blue-bright)', flexShrink: 0 }} />
+          <span style={{ fontSize: 20, fontWeight: 700, color: 'var(--text-primary)' }}>PIREPs</span>
+          {pendingCount > 0 && (
+            <span
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '2px 8px',
+                borderRadius: 3,
+                fontSize: 10,
+                fontWeight: 600,
+                backgroundColor: 'var(--accent-blue-bg)',
+                color: 'var(--accent-blue-bright)',
+                lineHeight: '16px',
+              }}
+            >
+              {pendingCount} pending
+            </span>
+          )}
+          <div style={{ flex: 1 }} />
+          <button
+            type="button"
+            className="btn-glow"
+            onClick={() => handleBulkReview('approved')}
+            disabled={selectedIds.length === 0 || bulkLoading}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+              padding: '8px 16px',
+              borderRadius: 6,
+              fontSize: 12,
+              fontWeight: 600,
+              border: 'none',
+              cursor: selectedIds.length === 0 ? 'not-allowed' : 'pointer',
+              backgroundColor: selectedIds.length > 0 ? 'var(--accent-emerald)' : 'var(--surface-3)',
+              color: selectedIds.length > 0 ? '#fff' : 'var(--text-quaternary)',
+              opacity: selectedIds.length === 0 ? 0.5 : 1,
+              transition: 'opacity 150ms',
+            }}
+          >
+            <CheckCircle2 size={13} />
+            Approve Selected
+          </button>
+          <button
+            type="button"
+            className="btn-glow"
+            onClick={() => handleBulkReview('rejected')}
+            disabled={selectedIds.length === 0 || bulkLoading}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+              padding: '8px 16px',
+              borderRadius: 6,
+              fontSize: 12,
+              fontWeight: 600,
+              border: '1px solid var(--accent-red-bg)',
+              cursor: selectedIds.length === 0 ? 'not-allowed' : 'pointer',
+              backgroundColor: selectedIds.length > 0 ? 'var(--accent-red-bg)' : 'transparent',
+              color: selectedIds.length > 0 ? 'var(--accent-red)' : 'var(--text-quaternary)',
+              opacity: selectedIds.length === 0 ? 0.5 : 1,
+              transition: 'opacity 150ms',
+            }}
+          >
+            <XCircle size={13} />
+            Reject Selected
+          </button>
         </div>
 
-        {/* Bulk Action Bar */}
-        {selectedIds.length > 0 && (
-          <div className="flex items-center gap-3 rounded-md border border-[var(--border-primary)] bg-[var(--surface-3)] px-4 py-2.5">
-            <span className="text-sm font-medium text-[var(--text-primary)]">
-              {selectedIds.length} selected
-            </span>
-            <div className="ml-auto flex gap-2">
-              <Button
-                size="sm"
-                className="bg-[var(--accent-emerald)] hover:brightness-110 text-white"
-                onClick={() => handleBulkReview('approved')}
-                disabled={bulkLoading}
+        {/* Status Tabs */}
+        <motion.div
+          variants={fadeUp}
+          initial="hidden"
+          animate="visible"
+          style={{
+            display: 'flex',
+            gap: 0,
+            borderBottom: '1px solid var(--border-primary)',
+          }}
+        >
+          {STATUS_TABS.map((tab) => {
+            const isActive = statusTab === tab;
+            const label = tab === 'all' ? 'All' : tab.charAt(0).toUpperCase() + tab.slice(1);
+            const showCount = tab === 'pending' && pendingCount > 0;
+            return (
+              <button
+                key={tab}
+                type="button"
+                onClick={() => setStatusTab(tab)}
+                style={{
+                  position: 'relative',
+                  padding: '8px 16px',
+                  fontSize: 12,
+                  fontWeight: 500,
+                  background: 'none',
+                  border: 'none',
+                  borderBottom: isActive ? '2px solid var(--accent-blue-bright)' : '2px solid transparent',
+                  color: isActive ? 'var(--accent-blue-bright)' : 'var(--text-secondary)',
+                  cursor: 'pointer',
+                  transition: 'color 150ms, border-color 150ms',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 6,
+                }}
               >
-                <CheckCircle size={14} weight="bold" />
-                Approve Selected
-              </Button>
-              <Button
-                size="sm"
-                variant="destructive"
-                onClick={() => handleBulkReview('rejected')}
-                disabled={bulkLoading}
-              >
-                <XCircle size={14} weight="bold" />
-                Reject Selected
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => setRowSelection({})}
-                disabled={bulkLoading}
-              >
-                Clear
-              </Button>
-            </div>
-          </div>
-        )}
+                {label}
+                {showCount && (
+                  <span
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      padding: '1px 6px',
+                      borderRadius: 3,
+                      fontSize: 9,
+                      fontWeight: 600,
+                      backgroundColor: 'var(--accent-amber-bg)',
+                      color: 'var(--accent-amber)',
+                      lineHeight: '14px',
+                    }}
+                  >
+                    {pendingCount}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </motion.div>
+
+        {/* Stats Row */}
+        <motion.div
+          style={{ display: 'flex', gap: 12 }}
+          variants={staggerContainer}
+          initial="hidden"
+          animate="visible"
+        >
+          {[
+            { label: 'Total PIREPs', value: total, color: 'var(--text-primary)' },
+            { label: 'Pending', value: pendingCount, color: 'var(--accent-amber)' },
+            { label: 'Approved', value: stats.approved, color: 'var(--text-primary)' },
+            { label: 'Rejected', value: stats.rejected, color: 'var(--accent-red)' },
+          ].map((stat) => (
+            <motion.div
+              key={stat.label}
+              variants={staggerItem}
+              style={{
+                flex: 1,
+                borderRadius: 6,
+                backgroundColor: 'var(--surface-2)',
+                border: '1px solid var(--border-primary)',
+                padding: '12px 16px',
+              }}
+            >
+              <div style={{ fontSize: 10, fontWeight: 500, color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>
+                {stat.label}
+              </div>
+              <div style={{ fontSize: 22, fontWeight: 700, color: stat.color, fontFamily: 'var(--font-mono)' }}>
+                {stat.value}
+              </div>
+            </motion.div>
+          ))}
+        </motion.div>
       </div>
 
-      {/* Split view: table + detail */}
-      <div className="flex flex-1 gap-0 overflow-hidden rounded-md border border-[var(--border-primary)]">
-        <div className={`${detailOpen ? 'w-[55%]' : 'w-full'} flex flex-col transition-all duration-200`}>
+      {/* ═══ Filter Bar ═══ */}
+      <div
+        style={{
+          padding: '12px 24px',
+          borderBottom: '1px solid var(--border-primary)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 10,
+        }}
+      >
+        {/* Search Input */}
+        <div style={{ position: 'relative', width: 220 }}>
+          <Search
+            size={14}
+            style={{
+              position: 'absolute',
+              left: 10,
+              top: '50%',
+              transform: 'translateY(-50%)',
+              color: 'var(--text-tertiary)',
+              pointerEvents: 'none',
+            }}
+          />
+          <input
+            type="text"
+            className="input-glow"
+            placeholder="Search flight #, pilots..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            style={{
+              width: '100%',
+              height: 32,
+              paddingLeft: 32,
+              paddingRight: 10,
+              fontSize: 12,
+              borderRadius: 6,
+              border: '1px solid var(--input-border)',
+              backgroundColor: 'var(--input-bg)',
+              color: 'var(--text-primary)',
+              outline: 'none',
+            }}
+          />
+        </div>
+
+        {/* Date Filter */}
+        <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center' }}>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  height: 32,
+                  padding: '0 12px',
+                  fontSize: 12,
+                  borderRadius: 6,
+                  border: '1px solid var(--input-border)',
+                  backgroundColor: 'var(--input-bg)',
+                  color: 'var(--text-secondary)',
+                  cursor: 'pointer',
+                }}
+              >
+                <Calendar size={13} style={{ color: 'var(--text-tertiary)' }} />
+                {dateDisplay}
+                <ChevronDown size={12} style={{ color: 'var(--text-tertiary)' }} />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" style={{ padding: 12, minWidth: 240 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <label style={{ fontSize: 11, color: 'var(--text-tertiary)', fontWeight: 500 }}>
+                  From
+                  <input
+                    type="date"
+                    value={dateFrom}
+                    onChange={(e) => setDateFrom(e.target.value)}
+                    style={{
+                      display: 'block',
+                      width: '100%',
+                      height: 30,
+                      marginTop: 4,
+                      padding: '0 8px',
+                      fontSize: 12,
+                      borderRadius: 4,
+                      border: '1px solid var(--input-border)',
+                      backgroundColor: 'var(--input-bg)',
+                      color: 'var(--text-primary)',
+                      outline: 'none',
+                    }}
+                  />
+                </label>
+                <label style={{ fontSize: 11, color: 'var(--text-tertiary)', fontWeight: 500 }}>
+                  To
+                  <input
+                    type="date"
+                    value={dateTo}
+                    onChange={(e) => setDateTo(e.target.value)}
+                    style={{
+                      display: 'block',
+                      width: '100%',
+                      height: 30,
+                      marginTop: 4,
+                      padding: '0 8px',
+                      fontSize: 12,
+                      borderRadius: 4,
+                      border: '1px solid var(--input-border)',
+                      backgroundColor: 'var(--input-bg)',
+                      color: 'var(--text-primary)',
+                      outline: 'none',
+                    }}
+                  />
+                </label>
+                {(dateFrom || dateTo) && (
+                  <button
+                    type="button"
+                    onClick={() => { setDateFrom(''); setDateTo(''); }}
+                    style={{
+                      fontSize: 11,
+                      color: 'var(--accent-blue-bright)',
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      padding: '4px 0',
+                      textAlign: 'left',
+                    }}
+                  >
+                    Clear dates
+                  </button>
+                )}
+              </div>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+
+        {/* Status Dropdown (secondary filter) */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              type="button"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                height: 32,
+                padding: '0 12px',
+                fontSize: 12,
+                borderRadius: 6,
+                border: '1px solid var(--input-border)',
+                backgroundColor: 'var(--input-bg)',
+                color: 'var(--text-secondary)',
+                cursor: 'pointer',
+              }}
+            >
+              Status: {statusTab === 'all' ? 'All' : statusTab.charAt(0).toUpperCase() + statusTab.slice(1)}
+              <ChevronDown size={12} style={{ color: 'var(--text-tertiary)' }} />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start">
+            {STATUS_TABS.map((tab) => (
+              <DropdownMenuItem
+                key={tab}
+                onClick={() => setStatusTab(tab)}
+                style={{
+                  fontWeight: statusTab === tab ? 600 : 400,
+                  color: statusTab === tab ? 'var(--accent-blue-bright)' : undefined,
+                }}
+              >
+                {tab === 'all' ? 'All' : tab.charAt(0).toUpperCase() + tab.slice(1)}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+
+      {/* ═══ Table + Detail Split ═══ */}
+      <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+        <motion.div
+          variants={tableContainer}
+          initial="hidden"
+          animate="visible"
+          style={{
+            width: detailOpen ? '55%' : '100%',
+            display: 'flex',
+            flexDirection: 'column',
+            transition: 'width 200ms ease-out',
+            overflow: 'hidden',
+          }}
+        >
           <DataTable
             columns={columns}
             data={pireps}
@@ -553,7 +892,7 @@ export function PirepsPage() {
             onPageChange={setPage}
             onPageSizeChange={setPageSize}
           />
-        </div>
+        </motion.div>
 
         {detailOpen && detailPirep && (
           <DetailPanel
@@ -570,7 +909,7 @@ export function PirepsPage() {
                     onClick={() => handleDetailReview('approved')}
                     disabled={reviewSubmitting}
                   >
-                    <CheckCircle size={14} weight="bold" />
+                    <CheckCircle2 size={14} />
                     Approve
                   </Button>
                   <Button
@@ -579,7 +918,7 @@ export function PirepsPage() {
                     onClick={() => handleDetailReview('rejected')}
                     disabled={reviewSubmitting}
                   >
-                    <XCircle size={14} weight="bold" />
+                    <XCircle size={14} />
                     Reject
                   </Button>
                 </>
@@ -598,12 +937,12 @@ export function PirepsPage() {
                   <DataRow
                     label="Route"
                     value={
-                      <span className="font-mono font-medium">
-                        <span className="text-[var(--accent-blue)]">{detailPirep.depIcao}</span>
+                      <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 500 }}>
+                        <span style={{ color: 'var(--accent-blue-bright)' }}>{detailPirep.depIcao}</span>
                         {' '}
-                        <span className="text-[var(--text-quaternary)] mx-1">&rarr;</span>
+                        <span style={{ color: 'var(--text-quaternary)', margin: '0 4px' }}>&rarr;</span>
                         {' '}
-                        <span className="text-[var(--accent-cyan)]">{detailPirep.arrIcao}</span>
+                        <span style={{ color: 'var(--accent-blue-bright)' }}>{detailPirep.arrIcao}</span>
                       </span>
                     }
                   />
@@ -611,7 +950,7 @@ export function PirepsPage() {
                     <DataRow
                       label="Airports"
                       value={
-                        <span className="text-xs text-[var(--text-tertiary)]">
+                        <span style={{ fontSize: 11, color: 'var(--text-tertiary)' }}>
                           {detailPirep.depName} &mdash; {detailPirep.arrName}
                         </span>
                       }
@@ -621,9 +960,9 @@ export function PirepsPage() {
                     label="Aircraft"
                     value={
                       <span>
-                        <span className="font-mono">{detailPirep.aircraftType}</span>
+                        <span style={{ fontFamily: 'var(--font-mono)' }}>{detailPirep.aircraftType}</span>
                         {detailPirep.aircraftRegistration && (
-                          <span className="text-[var(--text-tertiary)] ml-1">
+                          <span style={{ color: 'var(--text-tertiary)', marginLeft: 4 }}>
                             ({detailPirep.aircraftRegistration})
                           </span>
                         )}
@@ -633,7 +972,7 @@ export function PirepsPage() {
                   {detailPirep.route && (
                     <DataRow
                       label="Route String"
-                      value={<span className="text-xs font-mono break-all">{detailPirep.route}</span>}
+                      value={<span style={{ fontSize: 11, fontFamily: 'var(--font-mono)', wordBreak: 'break-all' }}>{detailPirep.route}</span>}
                     />
                   )}
                   {detailPirep.cruiseAltitude && (
@@ -648,18 +987,31 @@ export function PirepsPage() {
                 <SectionHeader title="Performance" />
 
                 {/* Landing Rate - large display */}
-                <div className="bg-[var(--surface-3)] rounded-md p-4 mb-3 text-center">
-                  <p className="text-xs text-[var(--text-quaternary)] uppercase tracking-wider mb-1">
+                <div
+                  style={{
+                    backgroundColor: 'var(--surface-3)',
+                    borderRadius: 6,
+                    padding: 16,
+                    marginBottom: 12,
+                    textAlign: 'center',
+                  }}
+                >
+                  <p style={{ fontSize: 10, color: 'var(--text-quaternary)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>
                     Landing Rate
                   </p>
                   <p
-                    className={`text-3xl font-mono font-bold ${landingRateColor(detailPirep.landingRateFpm)}`}
+                    style={{
+                      fontSize: 28,
+                      fontFamily: 'var(--font-mono)',
+                      fontWeight: 700,
+                      color: landingRateColor(detailPirep.landingRateFpm),
+                    }}
                   >
                     {detailPirep.landingRateFpm !== null
                       ? `${detailPirep.landingRateFpm} fpm`
                       : 'N/A'}
                   </p>
-                  <p className={`text-xs mt-1 ${landingRateColor(detailPirep.landingRateFpm)}`}>
+                  <p style={{ fontSize: 11, marginTop: 2, color: landingRateColor(detailPirep.landingRateFpm) }}>
                     {landingRateLabel(detailPirep.landingRateFpm)}
                   </p>
                 </div>
@@ -668,8 +1020,8 @@ export function PirepsPage() {
                   <DataRow
                     label="Flight Time"
                     value={
-                      <span className="font-mono flex items-center gap-1.5">
-                        <Clock size={13} className="text-[var(--text-tertiary)]" />
+                      <span style={{ fontFamily: 'var(--font-mono)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <Clock size={13} style={{ color: 'var(--text-tertiary)' }} />
                         {formatMinutes(detailPirep.flightTimeMin)}
                       </span>
                     }
@@ -680,8 +1032,8 @@ export function PirepsPage() {
                   <DataRow
                     label="Distance"
                     value={
-                      <span className="font-mono flex items-center gap-1.5">
-                        <MapPin size={13} className="text-[var(--text-tertiary)]" />
+                      <span style={{ fontFamily: 'var(--font-mono)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <MapPin size={13} style={{ color: 'var(--text-tertiary)' }} />
                         {detailPirep.distanceNm.toLocaleString()} nm
                       </span>
                     }
@@ -714,11 +1066,12 @@ export function PirepsPage() {
                         label="Fuel Variance"
                         value={
                           <span
-                            className={`font-mono ${
-                              detailPirep.fuelUsedLbs <= detailPirep.fuelPlannedLbs
-                                ? 'text-[var(--accent-emerald)]'
-                                : 'text-[var(--accent-amber)]'
-                            }`}
+                            style={{
+                              fontFamily: 'var(--font-mono)',
+                              color: detailPirep.fuelUsedLbs <= detailPirep.fuelPlannedLbs
+                                ? 'var(--accent-emerald)'
+                                : 'var(--accent-amber)',
+                            }}
                           >
                             {detailPirep.fuelUsedLbs <= detailPirep.fuelPlannedLbs ? '-' : '+'}
                             {Math.abs(
@@ -744,8 +1097,8 @@ export function PirepsPage() {
                   <DataRow
                     label="Passengers"
                     value={
-                      <span className="font-mono flex items-center gap-1.5">
-                        <UsersIcon size={13} className="text-[var(--text-tertiary)]" />
+                      <span style={{ fontFamily: 'var(--font-mono)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <UsersIcon size={13} style={{ color: 'var(--text-tertiary)' }} />
                         {detailPirep.paxCount}
                       </span>
                     }
@@ -757,11 +1110,18 @@ export function PirepsPage() {
               {detailPirep.score !== null && (
                 <section>
                   <SectionHeader title="Score" />
-                  <div className="bg-[var(--surface-3)] rounded-md p-4 text-center">
-                    <p className="text-4xl font-mono font-bold">
+                  <div
+                    style={{
+                      backgroundColor: 'var(--surface-3)',
+                      borderRadius: 6,
+                      padding: 16,
+                      textAlign: 'center',
+                    }}
+                  >
+                    <p style={{ fontSize: 32, fontFamily: 'var(--font-mono)', fontWeight: 700 }}>
                       {scoreDisplay(detailPirep.score)}
                     </p>
-                    <p className="text-xs text-[var(--text-quaternary)] mt-1">/ 100</p>
+                    <p style={{ fontSize: 11, color: 'var(--text-quaternary)', marginTop: 4 }}>/ 100</p>
                   </div>
                 </section>
               )}
@@ -788,16 +1148,16 @@ export function PirepsPage() {
                 detailPirep.oooiIn) && (
                 <section>
                   <SectionHeader title="OOOI Timestamps" />
-                  <div className="grid grid-cols-4 gap-2 text-center">
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, textAlign: 'center' }}>
                     {[
                       { label: 'OUT', value: detailPirep.oooiOut },
                       { label: 'OFF', value: detailPirep.oooiOff },
                       { label: 'ON', value: detailPirep.oooiOn },
                       { label: 'IN', value: detailPirep.oooiIn },
                     ].map(({ label, value }) => (
-                      <div key={label} className="bg-[var(--surface-3)] rounded-md p-2">
-                        <p className="text-[10px] uppercase text-[var(--text-quaternary)]">{label}</p>
-                        <p className="text-xs font-mono mt-0.5 text-[var(--text-primary)]">
+                      <div key={label} style={{ backgroundColor: 'var(--surface-3)', borderRadius: 6, padding: 8 }}>
+                        <p style={{ fontSize: 10, textTransform: 'uppercase', color: 'var(--text-quaternary)' }}>{label}</p>
+                        <p style={{ fontSize: 12, fontFamily: 'var(--font-mono)', marginTop: 2, color: 'var(--text-primary)' }}>
                           {value
                             ? new Date(value).toLocaleTimeString('en-US', {
                                 hour: '2-digit',
@@ -815,7 +1175,7 @@ export function PirepsPage() {
               {detailPirep.remarks && (
                 <section>
                   <SectionHeader title="Pilot Remarks" />
-                  <p className="text-sm bg-[var(--surface-3)] rounded-md p-3 text-[var(--text-secondary)]">{detailPirep.remarks}</p>
+                  <p style={{ fontSize: 13, backgroundColor: 'var(--surface-3)', borderRadius: 6, padding: 12, color: 'var(--text-secondary)' }}>{detailPirep.remarks}</p>
                 </section>
               )}
 
@@ -823,17 +1183,17 @@ export function PirepsPage() {
               {detailPirep.reviewedAt && (
                 <section>
                   <SectionHeader title="Review History" />
-                  <div className="bg-[var(--surface-3)] rounded-md p-3 space-y-1">
-                    <p className="text-sm text-[var(--text-primary)]">
-                      <span className="text-[var(--text-tertiary)]">Reviewed by </span>
-                      <span className="font-mono font-medium">
+                  <div style={{ backgroundColor: 'var(--surface-3)', borderRadius: 6, padding: 12 }}>
+                    <p style={{ fontSize: 13, color: 'var(--text-primary)' }}>
+                      <span style={{ color: 'var(--text-tertiary)' }}>Reviewed by </span>
+                      <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 500 }}>
                         {detailPirep.reviewerCallsign || 'Unknown'}
                       </span>
-                      <span className="text-[var(--text-tertiary)]"> on </span>
+                      <span style={{ color: 'var(--text-tertiary)' }}> on </span>
                       {formatDateTime(detailPirep.reviewedAt)}
                     </p>
                     {detailPirep.reviewNotes && (
-                      <p className="text-sm text-[var(--text-tertiary)] mt-1">
+                      <p style={{ fontSize: 13, color: 'var(--text-tertiary)', marginTop: 4 }}>
                         {detailPirep.reviewNotes}
                       </p>
                     )}
@@ -853,13 +1213,13 @@ export function PirepsPage() {
                       rows={3}
                       disabled={reviewSubmitting}
                     />
-                    <div className="flex gap-2">
+                    <div style={{ display: 'flex', gap: 8 }}>
                       <Button
                         className="flex-1 bg-[var(--accent-emerald)] hover:brightness-110 text-white"
                         onClick={() => handleDetailReview('approved')}
                         disabled={reviewSubmitting}
                       >
-                        <CheckCircle size={16} weight="bold" />
+                        <CheckCircle2 size={16} />
                         Approve
                       </Button>
                       <Button
@@ -868,7 +1228,7 @@ export function PirepsPage() {
                         onClick={() => handleDetailReview('rejected')}
                         disabled={reviewSubmitting}
                       >
-                        <XCircle size={16} weight="bold" />
+                        <XCircle size={16} />
                         Reject
                       </Button>
                     </div>
@@ -879,6 +1239,6 @@ export function PirepsPage() {
           </DetailPanel>
         )}
       </div>
-    </PageShell>
+    </motion.div>
   );
 }

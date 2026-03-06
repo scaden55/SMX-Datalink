@@ -4,6 +4,15 @@ import { AuditService } from '../services/audit.js';
 import { getDb } from '../db/index.js';
 import { logger } from '../lib/logger.js';
 
+// ── Lane rate row type ──────────────────────────────────────────
+
+interface LaneRateRow {
+  id: number;
+  origin_icao: string;
+  dest_icao: string;
+  rate_per_lb: number;
+}
+
 // ── Helpers ──────────────────────────────────────────────────────
 
 function timezoneFromIcao(icao: string): string {
@@ -80,28 +89,47 @@ export function adminAirportsRouter(): Router {
   const router = Router();
   const auditService = new AuditService();
 
-  // GET /api/admin/airports — list all approved airports
+  // GET /api/admin/airports — list all approved airports (with lane rate summary)
   router.get('/admin/airports', authMiddleware, dispatcherMiddleware, (_req, res) => {
     try {
-      const rows = getDb().prepare(`
+      const db = getDb();
+      const rows = db.prepare(`
         SELECT id, icao, name, city, state, country, lat, lon, elevation, timezone, is_hub, handler
         FROM airports ORDER BY icao
       `).all() as AirportRow[];
 
-      const airports = rows.map(row => ({
-        id: row.id,
-        icao: row.icao,
-        name: row.name,
-        city: row.city,
-        state: row.state,
-        country: row.country,
-        lat: row.lat,
-        lon: row.lon,
-        elevation: row.elevation,
-        timezone: row.timezone,
-        isHub: row.is_hub === 1,
-        handler: row.handler,
-      }));
+      // Aggregate lane rate stats per airport (avg rate, lane count)
+      const laneStats = db.prepare(`
+        SELECT icao, AVG(rate_per_lb) as avg_rate, COUNT(*) as lane_count
+        FROM (
+          SELECT origin_icao AS icao, rate_per_lb FROM finance_lane_rates
+          UNION ALL
+          SELECT dest_icao AS icao, rate_per_lb FROM finance_lane_rates
+        )
+        GROUP BY icao
+      `).all() as { icao: string; avg_rate: number; lane_count: number }[];
+
+      const statsMap = new Map(laneStats.map(s => [s.icao, s]));
+
+      const airports = rows.map(row => {
+        const stats = statsMap.get(row.icao);
+        return {
+          id: row.id,
+          icao: row.icao,
+          name: row.name,
+          city: row.city,
+          state: row.state,
+          country: row.country,
+          lat: row.lat,
+          lon: row.lon,
+          elevation: row.elevation,
+          timezone: row.timezone,
+          isHub: row.is_hub === 1,
+          handler: row.handler,
+          avgRatePerLb: stats ? Math.round(stats.avg_rate * 10000) / 10000 : null,
+          laneCount: stats?.lane_count ?? 0,
+        };
+      });
 
       res.json({ airports, total: airports.length });
     } catch (err) {
@@ -113,7 +141,12 @@ export function adminAirportsRouter(): Router {
   // POST /api/admin/airports — add airport by ICAO (lookup from oa_airports)
   router.post('/admin/airports', authMiddleware, dispatcherMiddleware, (req, res) => {
     try {
-      const { icao, isHub, handler } = req.body as { icao?: string; isHub?: boolean; handler?: string };
+      const { icao, isHub, handler, defaultRatePerLb } = req.body as {
+        icao?: string;
+        isHub?: boolean;
+        handler?: string;
+        defaultRatePerLb?: number;
+      };
 
       if (!icao || typeof icao !== 'string') {
         res.status(400).json({ error: 'icao is required' });
@@ -146,7 +179,9 @@ export function adminAirportsRouter(): Router {
       const hubValue = isHub ? 1 : 0;
       const handlerValue = handler?.trim() || null;
 
-      const result = getDb().prepare(`
+      const db = getDb();
+
+      const result = db.prepare(`
         INSERT INTO airports (icao, name, city, state, country, lat, lon, elevation, timezone, is_hub, handler)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `).run(
@@ -162,6 +197,29 @@ export function adminAirportsRouter(): Router {
         hubValue,
         handlerValue,
       );
+
+      // Auto-create bidirectional lane rates with all existing approved airports
+      let laneRateCount = 0;
+      if (defaultRatePerLb != null && defaultRatePerLb > 0) {
+        const otherAirports = db.prepare(
+          'SELECT icao FROM airports WHERE icao != ?'
+        ).all(icaoUpper) as { icao: string }[];
+
+        const upsert = db.prepare(`
+          INSERT INTO finance_lane_rates (origin_icao, dest_icao, rate_per_lb)
+          VALUES (?, ?, ?)
+          ON CONFLICT(origin_icao, dest_icao) DO UPDATE SET rate_per_lb = excluded.rate_per_lb
+        `);
+
+        const createLanes = db.transaction(() => {
+          for (const other of otherAirports) {
+            upsert.run(icaoUpper, other.icao, defaultRatePerLb);
+            upsert.run(other.icao, icaoUpper, defaultRatePerLb);
+            laneRateCount += 2;
+          }
+        });
+        createLanes();
+      }
 
       const airport = {
         id: result.lastInsertRowid as number,
@@ -183,11 +241,11 @@ export function adminAirportsRouter(): Router {
         action: 'airport.create',
         targetType: 'airport',
         targetId: airport.id,
-        after: { icao: icaoUpper, isHub: airport.isHub, handler: airport.handler },
+        after: { icao: icaoUpper, isHub: airport.isHub, handler: airport.handler, defaultRatePerLb, laneRateCount },
         ipAddress: req.ip ?? null,
       });
 
-      logger.info('Admin', `Airport ${icaoUpper} added`, { userId: req.user!.userId });
+      logger.info('Admin', `Airport ${icaoUpper} added (${laneRateCount} lane rates created)`, { userId: req.user!.userId });
       res.status(201).json(airport);
     } catch (err) {
       logger.error('Admin', 'Add airport error', err);
@@ -195,10 +253,11 @@ export function adminAirportsRouter(): Router {
     }
   });
 
-  // DELETE /api/admin/airports/:icao — remove airport (blocked if used by active schedules)
+  // DELETE /api/admin/airports/:icao — remove airport (cascade with ?force=true)
   router.delete('/admin/airports/:icao', authMiddleware, dispatcherMiddleware, (req, res) => {
     try {
       const icao = (req.params.icao as string).toUpperCase();
+      const force = req.query.force === 'true';
 
       const existing = getDb().prepare('SELECT id FROM airports WHERE icao = ?').get(icao) as { id: number } | undefined;
       if (!existing) {
@@ -206,29 +265,56 @@ export function adminAirportsRouter(): Router {
         return;
       }
 
-      // Check if used by any active schedules
+      // Check if used by any schedules (active or inactive)
       const usedBy = getDb().prepare(`
         SELECT COUNT(*) as count FROM scheduled_flights
-        WHERE (dep_icao = ? OR arr_icao = ?) AND is_active = 1
+        WHERE dep_icao = ? OR arr_icao = ?
       `).get(icao, icao) as { count: number };
 
-      if (usedBy.count > 0) {
-        res.status(409).json({ error: `Cannot delete ${icao} — used by ${usedBy.count} active schedule(s)` });
+      if (usedBy.count > 0 && !force) {
+        res.status(409).json({
+          error: `${icao} is used by ${usedBy.count} schedule(s)`,
+          scheduleCount: usedBy.count,
+          icao,
+        });
         return;
       }
 
-      getDb().prepare('DELETE FROM airports WHERE icao = ?').run(icao);
+      const db = getDb();
+
+      const cascadeDelete = db.transaction(() => {
+        // Delete schedules that use this airport
+        let schedulesDeleted = 0;
+        if (usedBy.count > 0) {
+          const result = db.prepare(
+            'DELETE FROM scheduled_flights WHERE dep_icao = ? OR arr_icao = ?'
+          ).run(icao, icao);
+          schedulesDeleted = result.changes;
+        }
+
+        // Clean up lane rates involving this airport
+        const deletedLanes = db.prepare(
+          'DELETE FROM finance_lane_rates WHERE origin_icao = ? OR dest_icao = ?'
+        ).run(icao, icao);
+
+        // Delete the airport
+        db.prepare('DELETE FROM airports WHERE icao = ?').run(icao);
+
+        return { schedulesDeleted, laneRatesRemoved: deletedLanes.changes };
+      });
+
+      const { schedulesDeleted, laneRatesRemoved } = cascadeDelete();
 
       auditService.log({
         actorId: req.user!.userId,
         action: 'airport.delete',
         targetType: 'airport',
         targetId: existing.id,
-        before: { icao },
+        before: { icao, schedulesDeleted, laneRatesRemoved },
         ipAddress: req.ip ?? null,
       });
 
-      logger.info('Admin', `Airport ${icao} deleted`, { userId: req.user!.userId });
+      logger.info('Admin', `Airport ${icao} deleted (${schedulesDeleted} schedules, ${laneRatesRemoved} lane rates removed)`, { userId: req.user!.userId });
       res.status(204).end();
     } catch (err) {
       logger.error('Admin', 'Delete airport error', err);
@@ -349,6 +435,90 @@ export function adminAirportsRouter(): Router {
     } catch (err) {
       logger.error('Admin', 'Update airport error', err);
       res.status(500).json({ error: 'Failed to update airport' });
+    }
+  });
+
+  // GET /api/admin/airports/:icao/lane-rates — lane rates for a specific airport
+  router.get('/admin/airports/:icao/lane-rates', authMiddleware, dispatcherMiddleware, (req, res) => {
+    try {
+      const icao = (req.params.icao as string).toUpperCase();
+      const rows = getDb().prepare(`
+        SELECT id, origin_icao, dest_icao, rate_per_lb
+        FROM finance_lane_rates
+        WHERE origin_icao = ? OR dest_icao = ?
+        ORDER BY origin_icao, dest_icao
+      `).all(icao, icao) as LaneRateRow[];
+
+      const laneRates = rows.map(r => ({
+        id: r.id,
+        originIcao: r.origin_icao,
+        destIcao: r.dest_icao,
+        ratePerLb: r.rate_per_lb,
+      }));
+
+      res.json({ laneRates });
+    } catch (err) {
+      logger.error('Admin', 'Get airport lane rates error', err);
+      res.status(500).json({ error: 'Failed to get lane rates' });
+    }
+  });
+
+  // PUT /api/admin/airports/:icao/lane-rates — set default rate for all lanes involving this airport
+  router.put('/admin/airports/:icao/lane-rates', authMiddleware, dispatcherMiddleware, (req, res) => {
+    try {
+      const icao = (req.params.icao as string).toUpperCase();
+      const { ratePerLb } = req.body as { ratePerLb?: number };
+
+      if (ratePerLb == null || ratePerLb < 0) {
+        res.status(400).json({ error: 'ratePerLb is required and must be >= 0' });
+        return;
+      }
+
+      const existing = getDb().prepare('SELECT id FROM airports WHERE icao = ?').get(icao) as { id: number } | undefined;
+      if (!existing) {
+        res.status(404).json({ error: `Airport ${icao} not found` });
+        return;
+      }
+
+      const db = getDb();
+
+      // Get all other approved airports
+      const otherAirports = db.prepare(
+        'SELECT icao FROM airports WHERE icao != ?'
+      ).all(icao) as { icao: string }[];
+
+      const upsert = db.prepare(`
+        INSERT INTO finance_lane_rates (origin_icao, dest_icao, rate_per_lb)
+        VALUES (?, ?, ?)
+        ON CONFLICT(origin_icao, dest_icao) DO UPDATE SET rate_per_lb = excluded.rate_per_lb
+      `);
+
+      const updateLanes = db.transaction(() => {
+        let count = 0;
+        for (const other of otherAirports) {
+          upsert.run(icao, other.icao, ratePerLb);
+          upsert.run(other.icao, icao, ratePerLb);
+          count += 2;
+        }
+        return count;
+      });
+
+      const laneCount = updateLanes();
+
+      auditService.log({
+        actorId: req.user!.userId,
+        action: 'airport.updateLaneRates',
+        targetType: 'airport',
+        targetId: existing.id,
+        after: { icao, ratePerLb, laneCount },
+        ipAddress: req.ip ?? null,
+      });
+
+      logger.info('Admin', `Lane rates for ${icao} set to ${ratePerLb}/lb (${laneCount} lanes)`, { userId: req.user!.userId });
+      res.json({ icao, ratePerLb, laneCount });
+    } catch (err) {
+      logger.error('Admin', 'Update airport lane rates error', err);
+      res.status(500).json({ error: 'Failed to update lane rates' });
     }
   });
 

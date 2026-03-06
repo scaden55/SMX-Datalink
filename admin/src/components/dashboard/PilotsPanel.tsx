@@ -1,4 +1,4 @@
-import { Users } from '@phosphor-icons/react';
+import { Users } from 'lucide-react';
 
 interface PilotActivity {
   callsign: string;
@@ -21,7 +21,7 @@ export function PilotsPanel({ pilotActivity }: PilotsPanelProps) {
       <div className="flex items-center justify-between p-3 pb-2">
         <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Top Pilots</h2>
         <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-          <Users size={12} weight="duotone" className="text-blue-400" />
+          <Users size={12} className="text-blue-400" />
           <span>this month</span>
         </div>
       </div>

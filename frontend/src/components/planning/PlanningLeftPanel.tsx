@@ -20,7 +20,7 @@ interface Props {
 
 export function PlanningLeftPanel({ onGenerate, onFetch, onStartFlight }: Props) {
   return (
-    <div className="w-[420px] shrink-0 border-r border-acars-border flex flex-col bg-acars-panel overflow-hidden">
+    <div className="w-[420px] shrink-0 border-r border-white/[0.06] flex flex-col overflow-hidden">
       <div className="flex-1 overflow-auto">
         <PlanningHeader />
         <PlanningAircraftSection />

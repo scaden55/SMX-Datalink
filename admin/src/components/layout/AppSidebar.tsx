@@ -1,254 +1,237 @@
 import { useEffect, useState } from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'motion/react';
+import type { LucideIcon } from 'lucide-react';
 import {
-  SquaresFour,
-  Broadcast,
-  CalendarDots,
-  ClipboardText,
-  Users,
+  LayoutGrid,
+  Radio,
+  Plane,
+  Calendar,
+  ClipboardCheck,
   Wrench,
-  CurrencyDollar,
-  ChartBar,
-  Bell,
-  ClockCounterClockwise,
-  GearSix,
-  AirplaneTilt,
-} from '@phosphor-icons/react';
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarFooter,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
-  SidebarHeader,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-  SidebarRail,
-} from '@/components/ui/sidebar';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+  BarChart3,
+  Wallet,
+  Calculator,
+  Users,
+  Settings,
+  LogOut,
+} from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
 import { api } from '@/lib/api';
 
-// ── Navigation Groups ────────────────────────────────────────
+// ── Nav definitions ─────────────────────────────────────
 
-const navGroups = [
-  {
-    label: 'Operations',
-    items: [
-      { title: 'Dashboard', path: '/', icon: SquaresFour },
-      { title: 'Dispatch Board', path: '/dispatch', icon: Broadcast },
-    ],
-  },
-  {
-    label: 'Management',
-    items: [
-      { title: 'Schedules', path: '/schedules', icon: CalendarDots },
-      { title: 'PIREPs', path: '/pireps', icon: ClipboardText },
-      { title: 'Users', path: '/users', icon: Users },
-      { title: 'Notifications', path: '/notifications', icon: Bell },
-    ],
-  },
-  {
-    label: 'Fleet & Finance',
-    items: [
-      { title: 'Maintenance', path: '/maintenance', icon: Wrench },
-      { title: 'Finances', path: '/finances', icon: CurrencyDollar },
-      { title: 'Reports', path: '/reports', icon: ChartBar },
-    ],
-  },
-  {
-    label: 'System',
-    items: [
-      { title: 'Audit Log', path: '/audit', icon: ClockCounterClockwise },
-      { title: 'Settings', path: '/settings', icon: GearSix },
-    ],
-  },
+interface NavItem {
+  title: string;
+  path: string;
+  icon: LucideIcon;
+  badge?: 'pireps';
+}
+
+const navMain: NavItem[] = [
+  { title: 'Overview', path: '/', icon: LayoutGrid },
+  { title: 'Dispatch', path: '/dispatch', icon: Radio },
+  { title: 'Fleet', path: '/fleet', icon: Plane },
 ];
 
-// ── Helpers ──────────────────────────────────────────────────
+const navOperations: NavItem[] = [
+  { title: 'Schedules', path: '/schedules', icon: Calendar },
+  { title: 'PIREPs', path: '/pireps', icon: ClipboardCheck, badge: 'pireps' },
+  { title: 'Maintenance', path: '/maintenance', icon: Wrench },
+];
 
-function getInitials(firstName: string, lastName: string): string {
-  return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
-}
+const navAnalytics: NavItem[] = [
+  { title: 'Reports', path: '/reports', icon: BarChart3 },
+  { title: 'Finances', path: '/finances', icon: Wallet },
+  { title: 'Cost Engine', path: '/cost-engine', icon: Calculator },
+];
 
-function roleBadgeStyle(role: string): { bg: string; text: string } {
-  switch (role) {
-    case 'admin':
-      return { bg: 'var(--accent-red-bg)', text: 'var(--accent-red)' };
-    case 'dispatcher':
-      return { bg: 'var(--accent-blue-bg)', text: 'var(--accent-blue)' };
-    default:
-      return { bg: 'var(--accent-emerald-bg)', text: 'var(--accent-emerald)' };
-  }
-}
+const navSystem: NavItem[] = [
+  { title: 'Users', path: '/users', icon: Users },
+  { title: 'Settings', path: '/settings', icon: Settings },
+];
 
-// ── Component ───────────────────────────────────────────────
+// ── Component ───────────────────────────────────────────
 
 export function AppSidebar() {
-  const user = useAuthStore((s) => s.user);
+  const logout = useAuthStore((s) => s.logout);
+  const navigate = useNavigate();
   const [pendingPireps, setPendingPireps] = useState(0);
-  const [activeFlights, setActiveFlights] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
-
-    // Fetch both active flights + pending PIREPs from dashboard endpoint
     api
-      .get<{ activeFlights: number; pendingPireps: number }>('/api/admin/dashboard')
+      .get<{ pendingPireps: number }>('/api/admin/dashboard')
       .then((res) => {
-        if (!cancelled) {
-          setActiveFlights(res.activeFlights);
-          setPendingPireps(res.pendingPireps);
-        }
+        if (!cancelled) setPendingPireps(res.pendingPireps);
       })
       .catch(() => {});
-
     return () => {
       cancelled = true;
     };
   }, []);
 
-  const badge = user ? roleBadgeStyle(user.role) : null;
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
 
   return (
-    <Sidebar
-      collapsible="icon"
-      variant="sidebar"
-      className="bg-[var(--surface-0)] border-r border-r-[var(--border-primary)]"
+    <aside
+      className="flex flex-col shrink-0 h-full overflow-y-auto"
+      style={{
+        width: 220,
+        backgroundColor: 'var(--surface-1)',
+        paddingTop: 24,
+      }}
     >
-      {/* Header / Logo */}
-      <SidebarHeader className="border-b border-[var(--border-primary)]">
-        <div className="flex items-center gap-2 px-1 py-1">
-          <img
-            src="/admin/logos/chevron-light.png"
-            alt="SMA"
-            className="h-8 w-8 shrink-0 object-contain"
-          />
-          <span className="truncate font-semibold text-sm tracking-tight text-[var(--text-primary)] group-data-[collapsible=icon]:hidden">
-            SMA ACARS
-          </span>
-        </div>
-      </SidebarHeader>
+      {/* Logo */}
+      <motion.div
+        className="flex justify-center"
+        style={{ padding: '0 20px 20px 20px' }}
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+      >
+        <motion.img
+          src="/admin/logos/block-light.png"
+          alt="Special Missions Air"
+          className="object-contain"
+          style={{ height: 40 }}
+          whileHover={{ scale: 1.05 }}
+          transition={{ duration: 0.2 }}
+        />
+      </motion.div>
 
-      {/* Operations Pulse */}
-      <div className="px-3 pt-3 pb-1 group-data-[collapsible=icon]:hidden">
-        <div
-          className="rounded-md border p-2.5 flex items-center gap-4"
+      {/* Nav Main — no group label */}
+      <NavGroup items={navMain} pendingPireps={0} startIndex={0} />
+
+      {/* Operations */}
+      <GroupLabel style={{ padding: '20px 20px 6px 20px' }}>OPERATIONS</GroupLabel>
+      <NavGroup items={navOperations} pendingPireps={pendingPireps} startIndex={3} />
+
+      {/* Analytics */}
+      <GroupLabel style={{ padding: '20px 20px 6px 20px' }}>ANALYTICS</GroupLabel>
+      <NavGroup items={navAnalytics} pendingPireps={0} startIndex={6} />
+
+      {/* Spacer pushes System to bottom */}
+      <div className="flex-1" />
+
+      {/* System */}
+      <GroupLabel style={{ padding: '0 20px 6px 20px' }}>SYSTEM</GroupLabel>
+      <NavGroup items={navSystem} pendingPireps={0} startIndex={8} />
+
+      {/* Log Out */}
+      <div className="flex flex-col" style={{ gap: 2, paddingBottom: 24 }}>
+        <button
+          onClick={handleLogout}
+          className="flex items-center w-full border-none bg-transparent cursor-pointer nav-logout-hover"
           style={{
-            backgroundColor: 'var(--surface-2)',
-            borderColor: 'var(--border-primary)',
+            gap: 12,
+            padding: '10px 20px',
+            color: 'var(--text-secondary)',
+            fontSize: 14,
+            fontFamily: 'Inter, sans-serif',
+            borderLeft: '3px solid transparent',
           }}
         >
-          <div className="flex items-center gap-1.5">
-            <AirplaneTilt size={13} weight="duotone" style={{ color: 'var(--accent-emerald)' }} />
-            <span className="text-[11px] font-mono font-semibold" style={{ color: 'var(--text-primary)' }}>
-              {activeFlights}
-            </span>
-            <span className="text-[10px]" style={{ color: 'var(--text-tertiary)' }}>
-              flying
-            </span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <ClipboardText size={13} weight="duotone" style={{ color: 'var(--accent-amber)' }} />
-            <span className="text-[11px] font-mono font-semibold" style={{ color: 'var(--text-primary)' }}>
-              {pendingPireps}
-            </span>
-            <span className="text-[10px]" style={{ color: 'var(--text-tertiary)' }}>
-              pending
-            </span>
-          </div>
-        </div>
+          <LogOut size={18} />
+          <span>Log Out</span>
+        </button>
       </div>
+    </aside>
+  );
+}
 
-      {/* Navigation */}
-      <SidebarContent>
-        {navGroups.map((group) => (
-          <SidebarGroup key={group.label} className="py-1">
-            <SidebarGroupLabel className="text-[var(--text-quaternary)]">
-              {group.label}
-            </SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {group.items.map((item) => (
-                  <SidebarMenuItem key={item.path}>
-                    <SidebarMenuButton asChild tooltip={item.title}>
-                      <NavLink
-                        to={item.path}
-                        end={item.path === '/'}
-                        className={({ isActive }) =>
-                          isActive
-                            ? '[&]:bg-[var(--surface-3)] [&]:text-[var(--text-primary)] [&]:font-medium [&]:border-l-2 [&]:border-l-[var(--accent-blue)]'
-                            : 'text-[var(--text-secondary)]'
-                        }
-                      >
-                        {({ isActive }) => (
-                          <>
-                            <item.icon
-                              size={18}
-                              weight={isActive ? 'fill' : 'regular'}
-                            />
-                            <span className="flex-1">{item.title}</span>
-                            {item.title === 'PIREPs' && pendingPireps > 0 && (
-                              <span
-                                className="ml-auto inline-flex h-5 min-w-5 items-center justify-center rounded-md px-1.5 text-[10px] font-semibold group-data-[collapsible=icon]:hidden"
-                                style={{
-                                  backgroundColor: 'var(--accent-amber-bg)',
-                                  color: 'var(--accent-amber)',
-                                }}
-                              >
-                                {pendingPireps}
-                              </span>
-                            )}
-                          </>
-                        )}
-                      </NavLink>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        ))}
-      </SidebarContent>
+// ── Helpers ──────────────────────────────────────────────
 
-      {/* Footer -- Current user */}
-      <SidebarFooter className="border-t border-[var(--border-primary)]">
-        {user && (
-          <div className="flex items-center gap-2 px-1 py-1">
-            <Avatar className="h-8 w-8 shrink-0">
-              <AvatarFallback
-                className="text-xs font-medium"
-                style={{
-                  backgroundColor: 'var(--accent-blue-bg)',
-                  color: 'var(--accent-blue)',
-                }}
-              >
-                {getInitials(user.firstName, user.lastName)}
-              </AvatarFallback>
-            </Avatar>
-            <div className="flex min-w-0 flex-col group-data-[collapsible=icon]:hidden">
-              <span className="truncate text-sm font-medium text-[var(--text-primary)]">
-                {user.firstName} {user.lastName}
-              </span>
-              {badge && (
-                <span
-                  className="inline-flex w-fit items-center rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase"
-                  style={{
-                    backgroundColor: badge.bg,
-                    color: badge.text,
-                  }}
-                >
-                  {user.role}
-                </span>
+function GroupLabel({ children, style }: { children: string; style?: React.CSSProperties }) {
+  return (
+    <div style={style}>
+      <span
+        style={{
+          color: 'var(--text-tertiary)',
+          fontFamily: 'Inter, sans-serif',
+          fontSize: 11,
+          fontWeight: 600,
+          letterSpacing: 1,
+        }}
+      >
+        {children}
+      </span>
+    </div>
+  );
+}
+
+function NavGroup({
+  items,
+  pendingPireps,
+  startIndex,
+}: {
+  items: NavItem[];
+  pendingPireps: number;
+  startIndex: number;
+}) {
+  return (
+    <div className="flex flex-col" style={{ gap: 2 }}>
+      {items.map((item, i) => (
+        <NavLink
+          key={item.path}
+          to={item.path}
+          end={item.path === '/'}
+          className={({ isActive }) =>
+            `flex items-center no-underline ${!isActive ? 'nav-item-hover' : ''}`
+          }
+          style={({ isActive }) => ({
+            gap: 12,
+            padding: '10px 20px',
+            backgroundColor: isActive ? 'var(--accent-blue-dim)' : 'transparent',
+            borderLeft: isActive
+              ? '3px solid var(--accent-blue)'
+              : '3px solid transparent',
+            color: isActive ? 'var(--accent-blue-bright)' : 'var(--text-secondary)',
+            fontWeight: isActive ? 500 : 'normal',
+            fontSize: 14,
+            fontFamily: 'Inter, sans-serif',
+            textDecoration: 'none',
+          })}
+        >
+          {({ isActive }) => (
+            <motion.div
+              className="flex items-center w-full"
+              style={{ gap: 12 }}
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.3, delay: (startIndex + i) * 0.03, ease: [0.16, 1, 0.3, 1] }}
+            >
+              <item.icon size={18} />
+              <span className="flex-1">{item.title}</span>
+              {item.badge === 'pireps' && pendingPireps > 0 && (
+                <AnimatePresence>
+                  <motion.span
+                    className="flex items-center justify-center"
+                    style={{
+                      width: 20,
+                      height: 20,
+                      borderRadius: 10,
+                      backgroundColor: 'var(--accent-blue)',
+                      color: '#ffffff',
+                      fontSize: 10,
+                      fontWeight: 600,
+                      flexShrink: 0,
+                    }}
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    transition={{ type: 'spring', stiffness: 500, damping: 20 }}
+                  >
+                    {pendingPireps}
+                  </motion.span>
+                </AnimatePresence>
               )}
-            </div>
-          </div>
-        )}
-      </SidebarFooter>
-
-      <SidebarRail />
-    </Sidebar>
+            </motion.div>
+          )}
+        </NavLink>
+      ))}
+    </div>
   );
 }

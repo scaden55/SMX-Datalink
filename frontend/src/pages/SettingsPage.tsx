@@ -99,7 +99,7 @@ export function SettingsPage() {
                 onChange={(e) => setSimbriefUsername(e.target.value)}
                 placeholder={loading ? 'Loading...' : 'Enter your SimBrief username'}
                 disabled={loading}
-                className="input-field flex-1 text-[11px] font-mono"
+                className="input-field flex-1 text-[11px] tabular-nums"
               />
               <button
                 onClick={handleSave}

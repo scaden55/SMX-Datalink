@@ -204,7 +204,7 @@ export function VerticalProfile() {
       .attr('text-anchor', 'middle')
       .attr('fill', 'rgb(var(--text-secondary-rgb))')
       .attr('font-size', '8px')
-      .attr('font-family', 'Inter, system-ui, sans-serif')
+      .attr('font-family', 'Lufga, system-ui, sans-serif')
       .text((d) => d.ident);
 
     // Y-axis (FL labels)

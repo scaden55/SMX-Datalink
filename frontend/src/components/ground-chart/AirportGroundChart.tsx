@@ -178,14 +178,14 @@ export function AirportGroundChart({ icao, aircraftPosition, className }: Airpor
       {/* Loading overlay */}
       {loading && (
         <div className="absolute inset-0 flex items-center justify-center bg-black/60">
-          <div className="text-xs text-acars-muted font-mono">Loading ground chart...</div>
+          <div className="text-xs text-acars-muted tabular-nums">Loading ground chart...</div>
         </div>
       )}
 
       {/* Error overlay */}
       {error && !loading && (
         <div className="absolute inset-0 flex items-center justify-center bg-black/60">
-          <div className="text-xs text-red-400 font-mono">Failed to load chart</div>
+          <div className="text-xs text-red-400 tabular-nums">Failed to load chart</div>
         </div>
       )}
 
@@ -193,14 +193,14 @@ export function AirportGroundChart({ icao, aircraftPosition, className }: Airpor
       {data && data.geojson.features.length === 0 && !loading && (
         <div className="absolute inset-0 flex items-center justify-center bg-black/60">
           <div className="text-center">
-            <div className="text-xs text-acars-muted font-mono">No ground chart data</div>
+            <div className="text-xs text-acars-muted tabular-nums">No ground chart data</div>
             <div className="text-[10px] text-acars-muted/60 mt-1">OSM data unavailable for {icao}</div>
           </div>
         </div>
       )}
 
       {/* ICAO badge */}
-      <div className="absolute top-2 left-2 px-2 py-1 rounded bg-black/70 text-[10px] font-mono font-bold text-acars-text">
+      <div className="absolute top-2 left-2 px-2 py-1 rounded bg-black/70 text-[10px] tabular-nums font-bold text-acars-text">
         {icao}
       </div>
     </div>

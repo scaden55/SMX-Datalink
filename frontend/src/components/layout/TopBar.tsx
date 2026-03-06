@@ -17,7 +17,7 @@ export function TopBar() {
     <div className="flex items-center justify-between border-b border-acars-border bg-acars-card px-4 h-8">
       {/* Left: Flight info */}
       <div className="flex items-center gap-3">
-        <span className="text-[10px] text-acars-muted font-sans">
+        <span className="text-[10px] text-acars-muted">
           {new Date().toUTCString().replace('GMT', 'UTC')}
         </span>
         <div className="flex items-center gap-2">
@@ -41,7 +41,7 @@ export function TopBar() {
           <button
             key={m.value}
             onClick={() => setViewMode(m.value)}
-            className={`px-3 py-0.5 text-[10px] font-sans uppercase transition-colors ${
+            className={`px-3 py-0.5 text-[10px] uppercase transition-colors ${
               viewMode === m.value
                 ? 'bg-[#1b2b3d] text-[#93c5fd]'
                 : 'bg-acars-input text-acars-muted hover:text-acars-text'

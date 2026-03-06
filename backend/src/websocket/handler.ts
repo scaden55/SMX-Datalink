@@ -60,14 +60,14 @@ export function setupWebSocket(
     getDb().prepare(
       `SELECT ab.id AS bid_id, ab.user_id AS pilot_id
        FROM active_bids ab
-       WHERE ab.flight_plan_phase = 'active'
+       WHERE ab.flight_plan_phase IN ('active', 'airborne')
        LIMIT 1`,
     );
 
   // Look up a pilot's active bid by user_id (for dispatch telemetry relay)
   const findActiveBidByUser = () =>
     getDb().prepare(
-      `SELECT id FROM active_bids WHERE user_id = ? AND flight_plan_phase = 'active' LIMIT 1`,
+      `SELECT id FROM active_bids WHERE user_id = ? AND flight_plan_phase IN ('active', 'airborne') LIMIT 1`,
     );
 
   // Wire up VATSIM broadcast callbacks
@@ -273,8 +273,8 @@ export function setupWebSocket(
       const user = socket.user;
       if (!user) return;
 
-      // Verify user owns this bid or is admin
-      if (user.role !== 'admin') {
+      // Verify user owns this bid, or is admin/dispatcher
+      if (user.role !== 'admin' && user.role !== 'dispatcher') {
         const bid = bidOwnerStmt().get(bidId) as { user_id: number } | undefined;
         if (!bid || bid.user_id !== user.userId) return;
       }
@@ -292,14 +292,14 @@ export function setupWebSocket(
       const user = socket.user;
       if (!user || !data.content?.trim()) return;
 
-      // Verify sender owns this bid or is admin
-      if (user.role !== 'admin') {
+      // Verify sender owns this bid, or is admin/dispatcher
+      if (user.role !== 'admin' && user.role !== 'dispatcher') {
         const bid = bidOwnerStmt().get(data.bidId) as { user_id: number } | undefined;
         if (!bid || bid.user_id !== user.userId) return;
       }
 
       const content = data.content.trim().slice(0, 2000); // enforce max length
-      const type = user.role === 'admin' ? 'DISPATCHER' : 'PILOT';
+      const type = (user.role === 'admin' || user.role === 'dispatcher') ? 'DISPATCHER' : 'PILOT';
       const message = messageService.createMessage(data.bidId, user.userId, type, content);
       io.to(`bid:${data.bidId}`).emit('acars:message', message);
     });
@@ -317,8 +317,17 @@ export function setupWebSocket(
 
     socket.on('flight:heartbeat', (data: ActiveFlightHeartbeat) => {
       if (!socket.user) return;
+
+      // Look up the pilot's active bid ID so admin dispatch board can subscribe to the correct room
+      let bidId: number | undefined;
+      try {
+        const bid = findActiveBidByUser().get(socket.user.userId) as { id: number } | undefined;
+        bidId = bid?.id;
+      } catch { /* non-critical */ }
+
       const sanitized: ActiveFlightHeartbeat = {
         userId: socket.user.userId,
+        bidId,
         callsign: socket.user.callsign,
         aircraftType: String(data.aircraftType || '').slice(0, 64),
         latitude: Number.isFinite(data.latitude) ? data.latitude : 0,

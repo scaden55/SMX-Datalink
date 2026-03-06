@@ -18,7 +18,6 @@ import { flightRouter } from './routes/flight.js';
 import { fuelRouter } from './routes/fuel.js';
 import { engineRouter } from './routes/engine.js';
 import { authRouter } from './routes/auth.js';
-import { adminRouter } from './routes/admin.js';
 import { scheduleRouter } from './routes/schedules.js';
 import { flightPlanRouter } from './routes/flight-plan.js';
 import { dispatchRouter } from './routes/dispatch.js';
@@ -40,6 +39,7 @@ import { adminDashboardRouter } from './routes/admin-dashboard.js';
 import { adminReportsRouter } from './routes/admin-reports.js';
 import { adminNotificationsRouter } from './routes/admin-notifications.js';
 import { adminSearchRouter } from './routes/admin-search.js';
+import { adminFinanceEngineRouter } from './routes/admin-finance-engine.js';
 import { notificationsRouter } from './routes/notifications.js';
 import { SettingsService } from './services/settings.js';
 import { AuthService } from './services/auth.js';
@@ -123,10 +123,8 @@ app.use('/api', flightRouter(telemetry, config.simconnectEnabled));
 app.use('/api', fuelRouter(telemetry, config.simconnectEnabled));
 app.use('/api', engineRouter(telemetry, config.simconnectEnabled));
 app.use('/api', authRouter());
-app.use('/api', adminRouter());
 app.use('/api', flightPlanRouter());
 app.use('/api', faaRouter());
-app.use('/api', fleetManageRouter());
 app.use('/api', logbookRouter());
 app.use('/api', reportsRouter());
 app.use('/api', leaderboardRouter());
@@ -143,6 +141,7 @@ app.use('/api', adminDashboardRouter());
 app.use('/api', adminReportsRouter());
 app.use('/api', adminNotificationsRouter());
 app.use('/api', adminSearchRouter());
+app.use('/api', adminFinanceEngineRouter());
 app.use('/api', notificationsRouter());
 app.use('/api', airportDetailRouter());
 app.use('/api', trackRouter());
@@ -162,6 +161,9 @@ app.use('/api', dispatchRouter(io, telemetry, flightEventTracker));
 
 // Register schedule router with io for bid:expired notifications
 app.use('/api', scheduleRouter(io));
+
+// Register fleet router with io for real-time fleet updates
+app.use('/api', fleetManageRouter(io));
 
 // Serve admin frontend static files
 const __filename = fileURLToPath(import.meta.url);

@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
-  ClockCounterClockwise,
-  MagnifyingGlass,
-  CalendarBlank,
-  CaretDown,
-  CaretRight,
-  Funnel,
-} from '@phosphor-icons/react';
+  History,
+  Search,
+  Calendar,
+  ChevronDown,
+  ChevronRight,
+  Filter,
+} from 'lucide-react';
 import { api, ApiError } from '@/lib/api';
 import { toast } from '@/stores/toastStore';
 import { StatusBadge } from '@/components/primitives';
@@ -297,7 +297,7 @@ export function AuditPage() {
   return (
     <div className="p-6">
       <div className="flex items-center gap-3 mb-6">
-        <ClockCounterClockwise size={28} weight="duotone" className="text-[var(--text-tertiary)]" />
+        <History size={28} className="text-[var(--text-tertiary)]" />
         <h1 className="text-2xl font-semibold text-[var(--text-primary)]">Audit Log</h1>
       </div>
 
@@ -305,7 +305,7 @@ export function AuditPage() {
         {/* Toolbar / Filters */}
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:flex-wrap">
           <div className="relative max-w-xs flex-1 min-w-[200px]">
-            <MagnifyingGlass
+            <Search
               size={16}
               className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-tertiary)]"
             />
@@ -341,7 +341,7 @@ export function AuditPage() {
             </SelectContent>
           </Select>
           <div className="flex items-center gap-2">
-            <CalendarBlank size={16} className="text-[var(--text-tertiary)] shrink-0" />
+            <Calendar size={16} className="text-[var(--text-tertiary)] shrink-0" />
             <Input
               type="date"
               value={dateFrom}
@@ -360,7 +360,7 @@ export function AuditPage() {
           </div>
           {hasActiveFilters && (
             <Button variant="ghost" size="sm" onClick={clearFilters} className="gap-1.5 text-[var(--text-secondary)]">
-              <Funnel size={14} />
+              <Filter size={14} />
               Clear Filters
             </Button>
           )}
@@ -385,7 +385,7 @@ export function AuditPage() {
                 <TableRow>
                   <TableCell colSpan={7} className="text-center py-16 text-[var(--text-tertiary)]">
                     <div className="flex flex-col items-center gap-2">
-                      <ClockCounterClockwise size={32} weight="duotone" className="opacity-40" />
+                      <History size={32} className="opacity-40" />
                       <p>No audit log entries found</p>
                       {hasActiveFilters && (
                         <p className="text-xs">Try adjusting your filters</p>
@@ -472,8 +472,8 @@ function ExpandableRow({
           {hasDetails && (
             <Button variant="ghost" size="icon" className="h-6 w-6" onClick={(e) => { e.stopPropagation(); onToggle(); }}>
               {isExpanded
-                ? <CaretDown size={14} weight="bold" />
-                : <CaretRight size={14} weight="bold" />
+                ? <ChevronDown size={14} />
+                : <ChevronRight size={14} />
               }
             </Button>
           )}

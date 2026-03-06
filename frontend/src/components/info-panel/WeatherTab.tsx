@@ -30,7 +30,7 @@ function MetarBlock({ icao, label, metar }: { icao: string; label: string; metar
         <>
           <div>
             <span className="data-label">METAR</span>
-            <div className="font-mono text-[10px] text-acars-text mt-1 leading-relaxed break-all">
+            <div className="tabular-nums text-[10px] text-acars-text mt-1 leading-relaxed break-all">
               {metar.rawOb}
             </div>
           </div>
@@ -38,7 +38,7 @@ function MetarBlock({ icao, label, metar }: { icao: string; label: string; metar
           <div className="grid grid-cols-5 gap-2 text-[11px]">
             <div>
               <span className="text-acars-muted">Wind</span>
-              <div className="text-acars-text font-mono">
+              <div className="text-acars-text tabular-nums">
                 {metar.windDir != null ? `${String(metar.windDir).padStart(3, '0')}°` : '---'}
                 /{metar.windSpeed ?? '--'}kt
                 {metar.windGust != null && `G${metar.windGust}`}
@@ -46,19 +46,19 @@ function MetarBlock({ icao, label, metar }: { icao: string; label: string; metar
             </div>
             <div>
               <span className="text-acars-muted">Vis</span>
-              <div className="text-acars-text font-mono">{metar.visibility ?? '--'} sm</div>
+              <div className="text-acars-text tabular-nums">{metar.visibility ?? '--'} sm</div>
             </div>
             <div>
               <span className="text-acars-muted">Temp</span>
-              <div className="text-acars-text font-mono">{metar.temp ?? '--'}°C</div>
+              <div className="text-acars-text tabular-nums">{metar.temp ?? '--'}°C</div>
             </div>
             <div>
               <span className="text-acars-muted">Dewpoint</span>
-              <div className="text-acars-text font-mono">{metar.dewpoint ?? '--'}°C</div>
+              <div className="text-acars-text tabular-nums">{metar.dewpoint ?? '--'}°C</div>
             </div>
             <div>
               <span className="text-acars-muted">Altimeter</span>
-              <div className="text-acars-text font-mono">{metar.altimeter?.toFixed(2) ?? '----'}</div>
+              <div className="text-acars-text tabular-nums">{metar.altimeter?.toFixed(2) ?? '----'}</div>
             </div>
           </div>
         </>
@@ -79,7 +79,7 @@ function TafBlock({ icao, label, taf }: { icao: string; label: string; taf?: Taf
 
       {taf ? (
         <div>
-          <div className="font-mono text-[10px] text-acars-text leading-relaxed break-all whitespace-pre-wrap">
+          <div className="tabular-nums text-[10px] text-acars-text leading-relaxed break-all whitespace-pre-wrap">
             {taf.rawTaf}
           </div>
           <div className="text-[10px] text-acars-muted mt-1">

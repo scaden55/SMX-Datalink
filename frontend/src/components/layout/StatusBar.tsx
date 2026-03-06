@@ -20,7 +20,7 @@ function ZuluClock() {
   }, []);
 
   return (
-    <span className="font-mono text-[10px] text-acars-muted/80 tabular-nums">
+    <span className="tabular-nums text-[10px] text-acars-muted/80 tabular-nums">
       {time}<span className="text-blue-400/80 ml-0.5">Z</span>
     </span>
   );
@@ -44,7 +44,7 @@ function ActiveFlightPill() {
         {flight.phase?.replace('_', ' ') ?? 'IDLE'}
       </span>
       <span className="text-emerald-400/40">|</span>
-      <span className="font-mono tabular-nums">
+      <span className="tabular-nums">
         FL{Math.round(alt / 100).toString().padStart(3, '0')}
       </span>
     </button>
@@ -55,7 +55,7 @@ export function StatusBar() {
   const { flight, connectionStatus, isStale } = useTelemetry();
 
   return (
-    <div className="flex items-center justify-between border-t border-acars-border bg-acars-panel px-4 h-7 text-[10px]">
+    <div className="flex items-center justify-between border-t border-white/[0.04] px-4 h-7 text-[10px]">
       <div className="flex items-center gap-2.5">
         <span className="text-acars-muted/40 font-medium tracking-wide">v{__APP_VERSION__}</span>
         <span className="w-px h-3 bg-white/10" />
@@ -68,7 +68,7 @@ export function StatusBar() {
             }`}
           />
           {connectionStatus.connected ? (
-            <span className={`font-mono ${isStale ? 'text-amber-400/60' : 'text-emerald-400/60'}`}>
+            <span className={`tabular-nums ${isStale ? 'text-amber-400/60' : 'text-emerald-400/60'}`}>
               {connectionStatus.applicationName}
             </span>
           ) : (
@@ -80,14 +80,14 @@ export function StatusBar() {
         {flight && (
           <>
             <span className="w-px h-3 bg-white/10" />
-            <span className="text-acars-muted/60 font-mono tabular-nums">
+            <span className="text-acars-muted/60 tabular-nums">
               {flight.simRate}x
             </span>
           </>
         )}
         <ActiveFlightPill />
       </div>
-      <div className="flex items-center gap-2.5 text-acars-muted/60 font-mono tabular-nums">
+      <div className="flex items-center gap-2.5 text-acars-muted/60 tabular-nums">
         <ZuluClock />
         {flight && (
           <>

@@ -27,13 +27,13 @@ export function TabBar<T extends string>({ tabs, active, onChange }: TabBarProps
     <div
       ref={ref}
       onWheel={handleWheel}
-      className="flex overflow-x-auto border-b border-acars-border shrink-0 tab-scroll"
+      className="flex overflow-x-auto border-b border-white/[0.06] shrink-0 tab-scroll"
     >
       {tabs.map((tab) => (
         <button
           key={tab.id}
           onClick={() => onChange(tab.id)}
-          className={`whitespace-nowrap px-3 py-2 text-[11px] uppercase tracking-[0.08em] font-medium font-sans transition-colors ${
+          className={`whitespace-nowrap px-3 py-2 text-[11px] uppercase tracking-[0.08em] font-medium transition-colors ${
             active === tab.id ? 'tab-active' : 'tab-inactive'
           }`}
         >

@@ -1,34 +1,28 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import type { ColumnDef } from '@tanstack/react-table';
+import { motion } from 'motion/react';
 import {
   Users,
-  UserCircle,
-  Shield,
-  Headset,
-  MagnifyingGlass,
-  DotsThreeVertical,
-  PencilSimple,
-  Prohibit,
-  ArrowCounterClockwise,
-  Trash,
+  Search,
+  MoreVertical,
+  Pencil,
+  Ban,
+  RotateCcw,
+  Trash2,
   Plus,
-} from '@phosphor-icons/react';
+  ChevronLeft,
+  ChevronRight,
+} from 'lucide-react';
 import { api, ApiError } from '@/lib/api';
 import { toast } from '@/stores/toastStore';
-import { PageShell } from '@/components/shared/PageShell';
-import { DataTable } from '@/components/shared/DataTable';
-import { DataTableColumnHeader } from '@/components/shared/DataTableColumnHeader';
-import { DetailPanel } from '@/components/shared/DetailPanel';
-import { StatusBadge, DataRow, SectionHeader } from '@/components/primitives';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+  pageVariants,
+  staggerContainer,
+  staggerItem,
+  fadeUp,
+  tableContainer,
+  tableRow,
+  cardHover,
+} from '@/lib/motion';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -78,13 +72,34 @@ interface AdminUserListResponse {
 
 // ── Helpers ─────────────────────────────────────────────────────
 
-function formatDate(iso: string): string {
-  const d = new Date(iso);
-  return d.toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-  });
+function roleBadge(role: UserRole) {
+  switch (role) {
+    case 'admin':
+      return { bg: 'var(--accent-red-bg)', color: 'var(--accent-red)', label: 'Admin' };
+    case 'dispatcher':
+      return { bg: 'var(--accent-blue-bg)', color: 'var(--accent-blue-bright)', label: 'Dispatcher' };
+    case 'pilot':
+      return { bg: 'var(--accent-emerald-bg)', color: 'var(--accent-emerald)', label: 'Pilot' };
+    default:
+      return { bg: 'var(--surface-3)', color: 'var(--text-tertiary)', label: role };
+  }
+}
+
+function avatarBg(role: UserRole): string {
+  switch (role) {
+    case 'admin':
+      return 'var(--accent-red)';
+    case 'dispatcher':
+      return 'var(--accent-blue)';
+    case 'pilot':
+      return 'var(--accent-emerald)';
+    default:
+      return 'var(--text-tertiary)';
+  }
+}
+
+function initials(firstName: string, lastName: string): string {
+  return (firstName.charAt(0) + lastName.charAt(0)).toUpperCase();
 }
 
 // ── Page ────────────────────────────────────────────────────────
@@ -99,21 +114,21 @@ export function UsersPage() {
   const [roleFilter, setRoleFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
 
+  // Pagination
+  const [page, setPage] = useState(1);
+  const pageSize = 20;
+
   // Dialogs
   const [createOpen, setCreateOpen] = useState(false);
   const [editUser, setEditUser] = useState<AdminUserProfile | null>(null);
   const [deleteUser, setDeleteUser] = useState<AdminUserProfile | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
 
-  // Detail panel
-  const [detailUser, setDetailUser] = useState<AdminUserProfile | null>(null);
-  const [detailOpen, setDetailOpen] = useState(false);
-
   // ── Fetch ───────────────────────────────────────────────────
 
   const fetchUsers = useCallback(async () => {
     try {
-      const res = await api.get<AdminUserListResponse>('/api/admin/users?pageSize=100');
+      const res = await api.get<AdminUserListResponse>('/api/admin/users?pageSize=500');
       setUsers(res.users);
       setError(null);
     } catch (err) {
@@ -127,19 +142,6 @@ export function UsersPage() {
   useEffect(() => {
     fetchUsers();
   }, [fetchUsers]);
-
-  // Keep detail panel in sync when users list refreshes
-  useEffect(() => {
-    if (detailUser) {
-      const updated = users.find((u) => u.id === detailUser.id);
-      if (updated) {
-        setDetailUser(updated);
-      } else {
-        setDetailUser(null);
-        setDetailOpen(false);
-      }
-    }
-  }, [users]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Filtered list ──────────────────────────────────────────
 
@@ -160,14 +162,27 @@ export function UsersPage() {
     });
   }, [users, roleFilter, statusFilter, search]);
 
+  // ── Pagination ────────────────────────────────────────────
+
+  const totalPages = Math.max(1, Math.ceil(filteredUsers.length / pageSize));
+  const paginatedUsers = useMemo(() => {
+    const start = (page - 1) * pageSize;
+    return filteredUsers.slice(start, start + pageSize);
+  }, [filteredUsers, page, pageSize]);
+
+  // Reset page when filters change
+  useEffect(() => {
+    setPage(1);
+  }, [search, roleFilter, statusFilter]);
+
   // ── Stats ──────────────────────────────────────────────────
 
   const stats = useMemo(() => {
     const total = users.length;
-    const active = users.filter((u) => u.status === 'active' && u.role === 'pilot').length;
+    const pilots = users.filter((u) => u.role === 'pilot').length;
     const admins = users.filter((u) => u.role === 'admin').length;
     const dispatchers = users.filter((u) => u.role === 'dispatcher').length;
-    return { total, active, admins, dispatchers };
+    return { total, pilots, admins, dispatchers };
   }, [users]);
 
   // ── Actions ────────────────────────────────────────────────
@@ -207,277 +222,376 @@ export function UsersPage() {
     }
   }
 
-  function handleRowClick(user: AdminUserProfile) {
-    if (detailUser?.id === user.id) {
-      setDetailOpen(false);
-      setDetailUser(null);
-    } else {
-      setDetailUser(user);
-      setDetailOpen(true);
-    }
-  }
-
-  // ── Column Definitions ─────────────────────────────────────
-
-  const columns: ColumnDef<AdminUserProfile, unknown>[] = useMemo(
-    () => [
-      {
-        accessorKey: 'callsign',
-        header: ({ column }) => <DataTableColumnHeader column={column} title="Callsign" />,
-        cell: ({ row }) => (
-          <span className="font-mono font-medium text-[var(--text-primary)]">{row.original.callsign}</span>
-        ),
-        size: 120,
-      },
-      {
-        id: 'name',
-        header: ({ column }) => <DataTableColumnHeader column={column} title="Name" />,
-        accessorFn: (row) => `${row.firstName} ${row.lastName}`,
-        cell: ({ row }) => (
-          <span className="text-[var(--text-primary)]">
-            {row.original.firstName} {row.original.lastName}
-          </span>
-        ),
-      },
-      {
-        accessorKey: 'email',
-        header: ({ column }) => <DataTableColumnHeader column={column} title="Email" />,
-        cell: ({ row }) => (
-          <span className="text-[var(--text-tertiary)]">{row.original.email}</span>
-        ),
-      },
-      {
-        accessorKey: 'role',
-        header: 'Role',
-        cell: ({ row }) => <StatusBadge status={row.original.role} />,
-        enableSorting: false,
-        size: 110,
-      },
-      {
-        accessorKey: 'status',
-        header: 'Status',
-        cell: ({ row }) => <StatusBadge status={row.original.status} />,
-        enableSorting: false,
-        size: 110,
-      },
-      {
-        id: 'actions',
-        enableHiding: false,
-        enableSorting: false,
-        size: 50,
-        cell: ({ row }) => {
-          const user = row.original;
-          return (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <DotsThreeVertical size={16} weight="bold" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => setEditUser(user)}>
-                  <PencilSimple size={14} /> Edit
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                {user.status === 'active' ? (
-                  <DropdownMenuItem onClick={() => handleSuspend(user)}>
-                    <Prohibit size={14} /> Suspend
-                  </DropdownMenuItem>
-                ) : (
-                  <DropdownMenuItem onClick={() => handleReactivate(user)}>
-                    <ArrowCounterClockwise size={14} /> Reactivate
-                  </DropdownMenuItem>
-                )}
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  className="text-[var(--accent-red)] focus:text-[var(--accent-red)]"
-                  onClick={() => setDeleteUser(user)}
-                >
-                  <Trash size={14} /> Delete
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          );
-        },
-      },
-    ],
-    [] // eslint-disable-line react-hooks/exhaustive-deps
-  );
-
   // ── Render ─────────────────────────────────────────────────
 
   if (error && !loading) {
     return (
-      <PageShell title="Users" subtitle="Manage pilots, dispatchers, and admins">
-        <div className="flex items-center justify-center py-20 text-[var(--text-tertiary)]">
-          <p>{error}</p>
+      <div className="flex flex-col h-full">
+        <div className="flex flex-col" style={{ padding: '16px 24px', gap: 16 }}>
+          <div className="flex items-center" style={{ gap: 12 }}>
+            <Users size={20} style={{ color: 'var(--accent-blue)' }} />
+            <span style={{ fontSize: 20, fontWeight: 700, color: 'var(--text-primary)' }}>Users</span>
+          </div>
         </div>
-      </PageShell>
+        <div className="flex items-center justify-center flex-1" style={{ fontSize: 12, color: 'var(--text-tertiary)' }}>
+          {error}
+        </div>
+      </div>
     );
   }
 
   return (
-    <PageShell
-      title="Users"
-      subtitle="Manage pilots, dispatchers, and admins"
-      stats={[
-        {
-          label: 'Total Users',
-          value: stats.total,
-          icon: Users,
-          accent: 'blue',
-        },
-        {
-          label: 'Active Pilots',
-          value: stats.active,
-          icon: UserCircle,
-          accent: 'emerald',
-        },
-        {
-          label: 'Admins',
-          value: stats.admins,
-          icon: Shield,
-          accent: 'red',
-        },
-        {
-          label: 'Dispatchers',
-          value: stats.dispatchers,
-          icon: Headset,
-          accent: 'cyan',
-        },
-      ]}
-      actions={
-        <Button onClick={() => setCreateOpen(true)}>
-          <Plus size={16} weight="bold" /> Add User
-        </Button>
-      }
-    >
-      {/* Toolbar: search + filters */}
-      <div className="flex items-center gap-3 mb-3">
-        <div className="relative max-w-sm flex-1">
-          <MagnifyingGlass
-            size={16}
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-quaternary)]"
-          />
-          <Input
+    <motion.div className="flex flex-col h-full" variants={pageVariants} initial="hidden" animate="visible">
+      {/* Header */}
+      <motion.div className="flex flex-col" style={{ padding: '16px 24px', gap: 16 }} variants={fadeUp}>
+        {/* Title row */}
+        <div className="flex items-center" style={{ gap: 12 }}>
+          <Users size={20} style={{ color: 'var(--accent-blue)' }} />
+          <div className="flex flex-col" style={{ gap: 2 }}>
+            <span style={{ fontSize: 20, fontWeight: 700, color: 'var(--text-primary)' }}>Users</span>
+            <span style={{ fontSize: 12, color: 'var(--text-tertiary)' }}>Manage pilots, dispatchers, and administrators</span>
+          </div>
+          <div className="flex-1" />
+          <button
+            onClick={() => setCreateOpen(true)}
+            className="flex items-center btn-glow"
+            style={{
+              gap: 6,
+              padding: '8px 16px',
+              borderRadius: 6,
+              backgroundColor: 'var(--accent-blue)',
+              color: '#fff',
+              fontSize: 13,
+              fontWeight: 600,
+              border: 'none',
+              cursor: 'pointer',
+            }}
+          >
+            <Plus size={14} />
+            Add User
+          </button>
+        </div>
+
+        {/* Stat cards */}
+        <motion.div className="flex" style={{ gap: 12 }} variants={staggerContainer} initial="hidden" animate="visible">
+          <motion.div className="flex-1" variants={staggerItem}>
+            <StatCard label="Total Users" value={stats.total} />
+          </motion.div>
+          <motion.div className="flex-1" variants={staggerItem}>
+            <StatCard label="Pilots" value={stats.pilots} />
+          </motion.div>
+          <motion.div className="flex-1" variants={staggerItem}>
+            <StatCard label="Dispatchers" value={stats.dispatchers} color="var(--accent-blue-bright)" />
+          </motion.div>
+          <motion.div className="flex-1" variants={staggerItem}>
+            <StatCard label="Admins" value={stats.admins} color="var(--accent-amber)" />
+          </motion.div>
+        </motion.div>
+      </motion.div>
+
+      {/* Filter Bar */}
+      <div
+        className="flex items-center"
+        style={{
+          padding: '12px 24px',
+          gap: 10,
+          borderBottom: '1px solid var(--border-primary)',
+        }}
+      >
+        {/* Search */}
+        <div
+          className="flex items-center"
+          style={{
+            gap: 8,
+            padding: '8px 12px',
+            borderRadius: 6,
+            backgroundColor: 'var(--input-bg)',
+            border: '1px solid var(--input-border)',
+            width: 220,
+          }}
+        >
+          <Search size={14} style={{ color: 'var(--text-tertiary)', flexShrink: 0 }} />
+          <input
+            type="text"
             placeholder="Search users..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="pl-9 bg-[var(--surface-3)] border-[var(--border-secondary)] text-[var(--text-primary)]"
+            className="bg-transparent border-none outline-none flex-1 input-glow"
+            style={{ fontSize: 12, color: 'var(--text-primary)' }}
           />
         </div>
-        <Select value={roleFilter} onValueChange={setRoleFilter}>
-          <SelectTrigger className="w-[140px]">
-            <SelectValue placeholder="Role" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Roles</SelectItem>
-            <SelectItem value="admin">Admin</SelectItem>
-            <SelectItem value="dispatcher">Dispatcher</SelectItem>
-            <SelectItem value="pilot">Pilot</SelectItem>
-          </SelectContent>
-        </Select>
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-[140px]">
-            <SelectValue placeholder="Status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Status</SelectItem>
-            <SelectItem value="active">Active</SelectItem>
-            <SelectItem value="suspended">Suspended</SelectItem>
-          </SelectContent>
-        </Select>
+
+        {/* Role filter */}
+        <SelectDropdown
+          value={roleFilter}
+          onChange={setRoleFilter}
+          options={[
+            { value: 'all', label: 'All Roles' },
+            { value: 'admin', label: 'Admin' },
+            { value: 'dispatcher', label: 'Dispatcher' },
+            { value: 'pilot', label: 'Pilot' },
+          ]}
+        />
+
+        {/* Status filter */}
+        <SelectDropdown
+          value={statusFilter}
+          onChange={setStatusFilter}
+          options={[
+            { value: 'all', label: 'All Status' },
+            { value: 'active', label: 'Active' },
+            { value: 'suspended', label: 'Suspended' },
+          ]}
+        />
       </div>
 
-      {/* Split view: table + detail */}
-      <div className="flex flex-1 gap-0 overflow-hidden rounded-md border border-[var(--border-primary)]">
-        <div
-          className={`${detailOpen ? 'w-[55%]' : 'w-full'} flex flex-col transition-all duration-200`}
-        >
-          <DataTable
-            columns={columns}
-            data={filteredUsers}
-            onRowClick={handleRowClick}
-            selectedRowId={detailUser?.id}
-            loading={loading}
-            emptyMessage="No users found"
-            getRowId={(row) => String(row.id)}
-          />
-        </div>
-        {detailOpen && detailUser && (
-          <DetailPanel
-            open={detailOpen}
-            onClose={() => {
-              setDetailOpen(false);
-              setDetailUser(null);
-            }}
-            title={detailUser.callsign}
-            subtitle={`${detailUser.firstName} ${detailUser.lastName}`}
-            actions={
-              <>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-7 text-xs"
-                  onClick={() => setEditUser(detailUser)}
-                >
-                  <PencilSimple size={12} /> Edit
-                </Button>
-                {detailUser.status === 'active' ? (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-7 text-xs"
-                    onClick={() => handleSuspend(detailUser)}
+      {/* Table */}
+      <div className="flex-1 overflow-y-auto">
+        {loading ? (
+          <div className="flex items-center justify-center h-full" style={{ fontSize: 12, color: 'var(--text-tertiary)' }}>
+            Loading users...
+          </div>
+        ) : paginatedUsers.length === 0 ? (
+          <div className="flex items-center justify-center h-full" style={{ fontSize: 12, color: 'var(--text-tertiary)' }}>
+            No users found
+          </div>
+        ) : (
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead>
+              <tr style={{ borderBottom: '1px solid var(--border-primary)' }}>
+                {['NAME', 'EMAIL', 'CALLSIGN', 'ROLE', 'HOURS', 'FLIGHTS', 'STATUS', ''].map((h) => (
+                  <th
+                    key={h}
+                    style={{
+                      padding: '8px 16px',
+                      textAlign: 'left',
+                      fontSize: 10,
+                      fontWeight: 600,
+                      color: 'var(--text-quaternary)',
+                      letterSpacing: '0.05em',
+                      textTransform: 'uppercase' as const,
+                    }}
                   >
-                    <Prohibit size={12} /> Suspend
-                  </Button>
-                ) : (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-7 text-xs"
-                    onClick={() => handleReactivate(detailUser)}
+                    {h}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <motion.tbody variants={tableContainer} initial="hidden" animate="visible">
+              {paginatedUsers.map((user) => {
+                const role = roleBadge(user.role);
+                const isActive = user.status === 'active';
+
+                return (
+                  <motion.tr
+                    key={user.id}
+                    variants={tableRow}
+                    style={{ borderBottom: '1px solid var(--border-primary)' }}
+                    onMouseEnter={(e) => {
+                      (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--surface-2)';
+                    }}
+                    onMouseLeave={(e) => {
+                      (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent';
+                    }}
                   >
-                    <ArrowCounterClockwise size={12} /> Reactivate
-                  </Button>
-                )}
-              </>
-            }
-          >
-            <div className="space-y-4">
-              <div>
-                <SectionHeader title="Account Details" />
-                <div className="space-y-0.5">
-                  <DataRow label="Email" value={detailUser.email} />
-                  <DataRow label="Role" value={<StatusBadge status={detailUser.role} />} />
-                  <DataRow label="Status" value={<StatusBadge status={detailUser.status} />} />
-                  <DataRow label="Rank" value={detailUser.rank} />
-                  {detailUser.simbriefUsername && (
-                    <DataRow label="SimBrief" value={detailUser.simbriefUsername} />
-                  )}
-                </div>
-              </div>
-              <div>
-                <SectionHeader title="Flight Stats" />
-                <div className="space-y-0.5">
-                  <DataRow label="Total Hours" value={`${detailUser.hoursTotal.toFixed(1)}h`} mono />
-                  <DataRow
-                    label="Last Login"
-                    value={detailUser.lastLogin ? formatDate(detailUser.lastLogin) : 'Never'}
-                  />
-                  <DataRow label="Joined" value={formatDate(detailUser.createdAt)} />
-                </div>
-              </div>
-            </div>
-          </DetailPanel>
+                    {/* Avatar + Name */}
+                    <td style={{ padding: '10px 16px' }}>
+                      <div className="flex items-center" style={{ gap: 10 }}>
+                        <div
+                          className="flex items-center justify-center"
+                          style={{
+                            width: 28,
+                            height: 28,
+                            borderRadius: '50%',
+                            backgroundColor: avatarBg(user.role),
+                            fontSize: 10,
+                            fontWeight: 700,
+                            color: '#fff',
+                            flexShrink: 0,
+                          }}
+                        >
+                          {initials(user.firstName, user.lastName)}
+                        </div>
+                        <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-primary)' }}>
+                          {user.firstName} {user.lastName}
+                        </span>
+                      </div>
+                    </td>
+
+                    {/* Email */}
+                    <td style={{ padding: '10px 16px', fontSize: 11, color: 'var(--text-secondary)' }}>
+                      {user.email}
+                    </td>
+
+                    {/* Callsign */}
+                    <td style={{ padding: '10px 16px', fontSize: 12, fontWeight: 600, color: 'var(--text-primary)', fontFamily: 'var(--font-mono)' }}>
+                      {user.callsign}
+                    </td>
+
+                    {/* Role badge */}
+                    <td style={{ padding: '10px 16px' }}>
+                      <span
+                        style={{
+                          padding: '2px 8px',
+                          borderRadius: 3,
+                          fontSize: 10,
+                          fontWeight: 600,
+                          backgroundColor: role.bg,
+                          color: role.color,
+                        }}
+                      >
+                        {role.label}
+                      </span>
+                    </td>
+
+                    {/* Hours */}
+                    <td style={{ padding: '10px 16px', fontSize: 12, fontWeight: 500, color: 'var(--text-primary)', fontFamily: 'var(--font-mono)' }}>
+                      {user.hoursTotal.toFixed(1)}
+                    </td>
+
+                    {/* Flights placeholder — not in the data model, show dash */}
+                    <td style={{ padding: '10px 16px', fontSize: 12, color: 'var(--text-tertiary)', fontFamily: 'var(--font-mono)' }}>
+                      —
+                    </td>
+
+                    {/* Status badge */}
+                    <td style={{ padding: '10px 16px' }}>
+                      <span
+                        style={{
+                          padding: '2px 8px',
+                          borderRadius: 3,
+                          fontSize: 10,
+                          fontWeight: 600,
+                          backgroundColor: isActive ? 'var(--accent-emerald-bg)' : 'var(--surface-3)',
+                          color: isActive ? 'var(--accent-emerald)' : 'var(--text-tertiary)',
+                        }}
+                      >
+                        {isActive ? 'Active' : 'Inactive'}
+                      </span>
+                    </td>
+
+                    {/* Actions */}
+                    <td style={{ padding: '10px 16px' }}>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <button
+                            className="flex items-center justify-center"
+                            style={{
+                              width: 28,
+                              height: 28,
+                              borderRadius: 4,
+                              border: 'none',
+                              backgroundColor: 'transparent',
+                              color: 'var(--text-tertiary)',
+                              cursor: 'pointer',
+                            }}
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <MoreVertical size={14} />
+                          </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => setEditUser(user)}>
+                            <Pencil size={14} /> Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          {user.status === 'active' ? (
+                            <DropdownMenuItem onClick={() => handleSuspend(user)}>
+                              <Ban size={14} /> Suspend
+                            </DropdownMenuItem>
+                          ) : (
+                            <DropdownMenuItem onClick={() => handleReactivate(user)}>
+                              <RotateCcw size={14} /> Reactivate
+                            </DropdownMenuItem>
+                          )}
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            className="text-[var(--accent-red)] focus:text-[var(--accent-red)]"
+                            onClick={() => setDeleteUser(user)}
+                          >
+                            <Trash2 size={14} /> Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </td>
+                  </motion.tr>
+                );
+              })}
+            </motion.tbody>
+          </table>
         )}
       </div>
+
+      {/* Pagination */}
+      {!loading && filteredUsers.length > pageSize && (
+        <div
+          className="flex items-center justify-between"
+          style={{
+            padding: '10px 24px',
+            borderTop: '1px solid var(--border-primary)',
+          }}
+        >
+          <span style={{ fontSize: 11, color: 'var(--text-tertiary)' }}>
+            Showing {(page - 1) * pageSize + 1}–{Math.min(page * pageSize, filteredUsers.length)} of {filteredUsers.length}
+          </span>
+          <div className="flex items-center" style={{ gap: 4 }}>
+            <button
+              disabled={page <= 1}
+              onClick={() => setPage(page - 1)}
+              className="flex items-center justify-center"
+              style={{
+                width: 28,
+                height: 28,
+                borderRadius: 4,
+                border: '1px solid var(--border-primary)',
+                backgroundColor: 'transparent',
+                color: page <= 1 ? 'var(--text-quaternary)' : 'var(--text-secondary)',
+                cursor: page <= 1 ? 'default' : 'pointer',
+                opacity: page <= 1 ? 0.5 : 1,
+              }}
+            >
+              <ChevronLeft size={14} />
+            </button>
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+              <button
+                key={p}
+                onClick={() => setPage(p)}
+                className="flex items-center justify-center"
+                style={{
+                  width: 28,
+                  height: 28,
+                  borderRadius: 4,
+                  border: p === page ? '1px solid var(--accent-blue)' : '1px solid transparent',
+                  backgroundColor: p === page ? 'var(--accent-blue-bg)' : 'transparent',
+                  color: p === page ? 'var(--accent-blue-bright)' : 'var(--text-tertiary)',
+                  fontSize: 11,
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                }}
+              >
+                {p}
+              </button>
+            ))}
+            <button
+              disabled={page >= totalPages}
+              onClick={() => setPage(page + 1)}
+              className="flex items-center justify-center"
+              style={{
+                width: 28,
+                height: 28,
+                borderRadius: 4,
+                border: '1px solid var(--border-primary)',
+                backgroundColor: 'transparent',
+                color: page >= totalPages ? 'var(--text-quaternary)' : 'var(--text-secondary)',
+                cursor: page >= totalPages ? 'default' : 'pointer',
+                opacity: page >= totalPages ? 0.5 : 1,
+              }}
+            >
+              <ChevronRight size={14} />
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Create User Dialog */}
       <CreateUserDialog
@@ -515,23 +629,98 @@ export function UsersPage() {
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button
-              variant="outline"
+            <button
               onClick={() => setDeleteUser(null)}
               disabled={deleteLoading}
+              style={{
+                padding: '8px 16px',
+                borderRadius: 6,
+                border: '1px solid var(--border-primary)',
+                backgroundColor: 'transparent',
+                color: 'var(--text-secondary)',
+                fontSize: 13,
+                cursor: 'pointer',
+              }}
             >
               Cancel
-            </Button>
-            <Button
-              variant="destructive"
+            </button>
+            <button
               onClick={handleDelete}
               disabled={deleteLoading}
+              className="btn-glow"
+              style={{
+                padding: '8px 16px',
+                borderRadius: 6,
+                border: 'none',
+                backgroundColor: 'var(--accent-red)',
+                color: '#fff',
+                fontSize: 13,
+                fontWeight: 600,
+                cursor: 'pointer',
+                opacity: deleteLoading ? 0.6 : 1,
+              }}
             >
               {deleteLoading ? 'Deleting...' : 'Delete'}
-            </Button>
+            </button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </PageShell>
+    </motion.div>
+  );
+}
+
+// ── Stat Card ────────────────────────────────────────────────────
+
+function StatCard({ label, value, color }: { label: string; value: string | number; color?: string }) {
+  return (
+    <div
+      className="flex flex-col flex-1"
+      style={{
+        padding: '12px 16px',
+        gap: 4,
+        borderRadius: 6,
+        backgroundColor: 'var(--surface-2)',
+        border: '1px solid var(--border-primary)',
+      }}
+    >
+      <span style={{ fontSize: 10, color: 'var(--text-tertiary)' }}>{label}</span>
+      <span style={{ fontSize: 22, fontWeight: 700, color: color ?? 'var(--text-primary)' }}>{value}</span>
+    </div>
+  );
+}
+
+// ── Select Dropdown ──────────────────────────────────────────────
+
+function SelectDropdown({
+  value,
+  onChange,
+  options,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  options: { value: string; label: string }[];
+}) {
+  return (
+    <select
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      style={{
+        padding: '8px 12px',
+        borderRadius: 6,
+        backgroundColor: 'var(--input-bg)',
+        border: '1px solid var(--input-border)',
+        color: 'var(--text-primary)',
+        fontSize: 12,
+        outline: 'none',
+        cursor: 'pointer',
+        appearance: 'auto',
+      }}
+    >
+      {options.map((opt) => (
+        <option key={opt.value} value={opt.value}>
+          {opt.label}
+        </option>
+      ))}
+    </select>
   );
 }

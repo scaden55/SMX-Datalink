@@ -118,11 +118,11 @@ function FaaStatusSection({ event }: { event: FaaAirportEvent | null }) {
       {event.airportConfig && (
         <div className="text-[11px] mt-1 grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5">
           <span className="text-acars-muted">Arr Runways</span>
-          <span className="text-acars-text font-mono">{event.airportConfig.arrivalRunwayConfig || '—'}</span>
+          <span className="text-acars-text tabular-nums">{event.airportConfig.arrivalRunwayConfig || '—'}</span>
           <span className="text-acars-muted">Dep Runways</span>
-          <span className="text-acars-text font-mono">{event.airportConfig.departureRunwayConfig || '—'}</span>
+          <span className="text-acars-text tabular-nums">{event.airportConfig.departureRunwayConfig || '—'}</span>
           <span className="text-acars-muted">Arr Rate</span>
-          <span className="text-acars-text font-mono">{event.airportConfig.arrivalRate}/hr</span>
+          <span className="text-acars-text tabular-nums">{event.airportConfig.arrivalRate}/hr</span>
         </div>
       )}
     </div>
@@ -148,13 +148,13 @@ function MetarSummary({ metar }: { metar?: MetarData }) {
         <h3 className="text-xs font-semibold text-acars-text">METAR</h3>
         {cat && <StatusBadge color={catColor}>{cat}</StatusBadge>}
       </div>
-      <div className="font-mono text-[10px] text-acars-text leading-relaxed break-all">
+      <div className="tabular-nums text-[10px] text-acars-text leading-relaxed break-all">
         {metar.rawOb}
       </div>
       <div className="grid grid-cols-4 gap-2 text-[11px]">
         <div>
           <span className="text-acars-muted">Wind</span>
-          <div className="text-acars-text font-mono">
+          <div className="text-acars-text tabular-nums">
             {metar.windDir != null ? `${String(metar.windDir).padStart(3, '0')}°` : '---'}
             /{metar.windSpeed ?? '--'}kt
             {metar.windGust != null && `G${metar.windGust}`}
@@ -162,17 +162,17 @@ function MetarSummary({ metar }: { metar?: MetarData }) {
         </div>
         <div>
           <span className="text-acars-muted">Vis</span>
-          <div className="text-acars-text font-mono">{metar.visibility ?? '--'} sm</div>
+          <div className="text-acars-text tabular-nums">{metar.visibility ?? '--'} sm</div>
         </div>
         <div>
           <span className="text-acars-muted">Temp/Dew</span>
-          <div className="text-acars-text font-mono">
+          <div className="text-acars-text tabular-nums">
             {metar.temp ?? '--'}/{metar.dewpoint ?? '--'}°C
           </div>
         </div>
         <div>
           <span className="text-acars-muted">Altimeter</span>
-          <div className="text-acars-text font-mono">{metar.altimeter?.toFixed(2) ?? '----'}</div>
+          <div className="text-acars-text tabular-nums">{metar.altimeter?.toFixed(2) ?? '----'}</div>
         </div>
       </div>
     </div>
@@ -199,9 +199,9 @@ function AirportDetail({ airport }: { airport: Airport | null }) {
         <span className="text-acars-muted">Location</span>
         <span className="text-acars-text">{airport.city}, {airport.state}, {airport.country}</span>
         <span className="text-acars-muted">ICAO</span>
-        <span className="text-acars-text font-mono">{airport.icao}</span>
+        <span className="text-acars-text tabular-nums">{airport.icao}</span>
         <span className="text-acars-muted">Coordinates</span>
-        <span className="text-acars-text font-mono">{coords.lat} / {coords.lon}</span>
+        <span className="text-acars-text tabular-nums">{coords.lat} / {coords.lon}</span>
         <span className="text-acars-muted">Elevation</span>
         <span className="text-acars-text">{airport.elevation.toLocaleString()} ft</span>
         <span className="text-acars-muted">Timezone</span>

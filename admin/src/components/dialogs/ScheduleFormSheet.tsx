@@ -20,7 +20,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet';
-import { SpinnerGap } from '@phosphor-icons/react';
+import { Loader2 } from 'lucide-react';
 
 // ── Types ───────────────────────────────────────────────────────
 
@@ -321,7 +321,7 @@ export function ScheduleFormSheet({ open, onOpenChange, onSaved, schedule, isClo
             <div className="space-y-2">
               <Label htmlFor="sched-distance">
                 Distance (nm)
-                {autofillLoading && <SpinnerGap size={12} className="inline ml-1 animate-spin" />}
+                {autofillLoading && <Loader2 size={12} className="inline ml-1 animate-spin" />}
               </Label>
               <Input
                 id="sched-distance"

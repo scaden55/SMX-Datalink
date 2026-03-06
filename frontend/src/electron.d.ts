@@ -18,11 +18,6 @@ interface ElectronAPI {
   getBackendPort: () => Promise<number>;
   getBackendStatus: () => Promise<string>;
 
-  // Settings
-  getSetting: (key: string) => Promise<unknown>;
-  setSetting: (key: string, value: unknown) => Promise<void>;
-  getAllSettings: () => Promise<Record<string, unknown>>;
-
   // File dialogs
   openFileDialog: (options?: unknown) => Promise<{ canceled: boolean; filePaths: string[] }>;
   saveFileDialog: (options?: unknown) => Promise<{ canceled: boolean; filePath: string }>;

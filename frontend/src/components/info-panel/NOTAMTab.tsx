@@ -28,7 +28,7 @@ function AirportAdvisories({ icao, label, faaEvent }: { icao: string; label: str
 
       {hasFreeForm ? (
         <div className="space-y-2">
-          <div className="text-[11px] text-acars-text bg-acars-bg/50 p-2 rounded border border-acars-border font-mono leading-relaxed whitespace-pre-wrap">
+          <div className="text-[11px] text-acars-text bg-acars-bg/50 p-2 rounded border border-acars-border tabular-nums leading-relaxed whitespace-pre-wrap">
             {faaEvent!.freeForm!.simpleText}
           </div>
           <div className="text-[10px] text-acars-muted">

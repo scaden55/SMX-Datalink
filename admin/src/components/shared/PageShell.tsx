@@ -1,11 +1,11 @@
-import type { ReactNode, ComponentType } from 'react';
-import type { IconProps } from '@phosphor-icons/react';
+import type { ReactNode } from 'react';
+import type { LucideIcon } from 'lucide-react';
 import { StatCard } from '@/components/primitives';
 
 // ── Types ───────────────────────────────────────────────────
 
 interface PageShellStat {
-  icon: ComponentType<IconProps>;
+  icon: LucideIcon;
   label: string;
   value: string | number;
   accent?: 'blue' | 'emerald' | 'amber' | 'red' | 'cyan';

@@ -26,9 +26,11 @@ import {
   ArrowsDownUp,
   Shield,
   Broadcast,
+  CheckCircle,
 } from '@phosphor-icons/react';
 import { api } from '../lib/api';
 import { useAuthStore } from '../stores/authStore';
+import { useSocketSubscription } from '../hooks/useSocketSubscription';
 import type {
   FleetAircraft,
   FleetStatus,
@@ -37,6 +39,8 @@ import type {
   UpdateFleetAircraftRequest,
   SimBriefAircraftType,
   SimBriefAircraftSearchResponse,
+  FleetMaintenanceStatus,
+  CheckDueStatus,
 } from '@acars/shared';
 
 // ─── Helpers ────────────────────────────────────────────────────
@@ -86,7 +90,7 @@ function fmt(val: number | null | undefined, suffix = ''): string {
   return val.toLocaleString() + (suffix ? ` ${suffix}` : '');
 }
 
-const INPUT_CLS = 'w-full h-9 rounded-md border border-acars-border bg-acars-bg text-xs text-acars-text px-2.5 font-mono outline-none focus:border-emerald-400 transition-colors placeholder:text-acars-muted/50';
+const INPUT_CLS = 'w-full h-9 rounded-md border border-acars-border bg-acars-bg text-xs text-acars-text px-2.5 tabular-nums outline-none focus:border-emerald-400 transition-colors placeholder:text-acars-muted/50';
 const LABEL_CLS = 'text-[10px] uppercase tracking-wider text-acars-muted font-medium mb-1.5 block';
 
 // ─── Add Aircraft Modal ─────────────────────────────────────────
@@ -222,7 +226,7 @@ function AddAircraftModal({ onClose, onCreated }: AddAircraftModalProps) {
                     onClick={() => selectSimBrief(ac)}
                     className="w-full flex items-center gap-3 px-3 py-2 text-left hover:bg-acars-panel transition-colors border-b border-acars-border last:border-0"
                   >
-                    <span className="font-mono font-bold text-xs text-sky-400 w-[48px] shrink-0">{ac.aircraftIcao}</span>
+                    <span className="tabular-nums font-bold text-xs text-sky-400 w-[48px] shrink-0">{ac.aircraftIcao}</span>
                     <span className="text-xs text-acars-text flex-1 truncate">{ac.aircraftName}</span>
                     <span className="text-[10px] text-acars-muted truncate max-w-[100px]">{ac.engines}</span>
                     <span className="text-[10px] text-acars-muted tabular-nums w-[40px] text-right">{ac.maxPax} pax</span>
@@ -234,7 +238,7 @@ function AddAircraftModal({ onClose, onCreated }: AddAircraftModalProps) {
             {sbSelected && (
               <div className="mt-1.5 flex items-center gap-2 px-2.5 py-1.5 rounded-md bg-sky-500/10 border border-sky-400/20 text-[10px] text-sky-400">
                 <AirplaneTilt className="w-3 h-3" />
-                Auto-filled from SimBrief: <span className="font-mono font-bold">{sbSelected.aircraftIcao}</span> — {sbSelected.aircraftName}
+                Auto-filled from SimBrief: <span className="tabular-nums font-bold">{sbSelected.aircraftIcao}</span> — {sbSelected.aircraftName}
               </div>
             )}
           </div>
@@ -253,7 +257,7 @@ function AddAircraftModal({ onClose, onCreated }: AddAircraftModalProps) {
             </div>
             <div>
               <label className={LABEL_CLS}>Name *</label>
-              <input type="text" value={form.name ?? ''} onChange={e => set('name', e.target.value)} placeholder="Boeing 737-800" className={INPUT_CLS.replace('font-mono ', '')} />
+              <input type="text" value={form.name ?? ''} onChange={e => set('name', e.target.value)} placeholder="Boeing 737-800" className={INPUT_CLS.replace('tabular-nums ', '')} />
             </div>
           </div>
 
@@ -317,7 +321,7 @@ function AddAircraftModal({ onClose, onCreated }: AddAircraftModalProps) {
           <div className="grid grid-cols-4 gap-3">
             <div>
               <label className={LABEL_CLS}>Engines</label>
-              <input type="text" value={form.engines ?? ''} onChange={e => set('engines', e.target.value)} placeholder="2x CFM56-7B" className={INPUT_CLS.replace('font-mono ', '')} />
+              <input type="text" value={form.engines ?? ''} onChange={e => set('engines', e.target.value)} placeholder="2x CFM56-7B" className={INPUT_CLS.replace('tabular-nums ', '')} />
             </div>
             <div>
               <label className={LABEL_CLS}>Ceiling (ft)</label>
@@ -337,7 +341,7 @@ function AddAircraftModal({ onClose, onCreated }: AddAircraftModalProps) {
           <div className="grid grid-cols-3 gap-3">
             <div>
               <label className={LABEL_CLS}>Status</label>
-              <select value={form.status ?? 'active'} onChange={e => set('status', e.target.value)} className={INPUT_CLS.replace('font-mono ', '')}>
+              <select value={form.status ?? 'active'} onChange={e => set('status', e.target.value)} className={INPUT_CLS.replace('tabular-nums ', '')}>
                 <option value="active">Active</option>
                 <option value="stored">Stored</option>
                 <option value="retired">Retired</option>
@@ -398,7 +402,7 @@ function SpecRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-center justify-between py-1.5 border-b border-acars-border last:border-0">
       <span className="text-[10px] text-acars-muted uppercase tracking-wider">{label}</span>
-      <span className="text-xs font-mono font-semibold tabular-nums text-acars-text">{value}</span>
+      <span className="text-xs tabular-nums font-semibold tabular-nums text-acars-text">{value}</span>
     </div>
   );
 }
@@ -472,6 +476,123 @@ function UtilizationStats({ aircraftId }: { aircraftId: number }) {
   );
 }
 
+// ─── Check Card (A/B/C/D) ──────────────────────────────────────
+
+const CHECK_COLORS: Record<string, { bar: string; label: string; border: string }> = {
+  A: { bar: 'bg-blue-500', label: 'text-blue-400', border: 'border-blue-500/40' },
+  B: { bar: 'bg-cyan-500', label: 'text-cyan-400', border: 'border-cyan-500/40' },
+  C: { bar: 'bg-amber-500', label: 'text-amber-400', border: 'border-amber-500/40' },
+  D: { bar: 'bg-violet-500', label: 'text-violet-400', border: 'border-violet-500/40' },
+};
+
+function CheckCard({ check }: { check: CheckDueStatus }) {
+  const isOverdue = check.isOverdue;
+  const colors = CHECK_COLORS[check.checkType] ?? { bar: 'bg-blue-500', label: 'text-blue-400', border: 'border-blue-500/40' };
+  const pct = check.remainingHours != null && check.dueAtHours != null && check.dueAtHours > 0
+    ? Math.max(0, Math.min(100, ((check.dueAtHours - check.remainingHours) / check.dueAtHours) * 100))
+    : 0;
+  const barColor = isOverdue ? 'bg-red-500' : colors.bar;
+  const borderColor = isOverdue ? 'border-red-500/40' : check.isInOverflight ? colors.border : 'border-acars-border';
+
+  return (
+    <div className={`flex flex-col flex-1 p-3 rounded-md bg-acars-bg border ${borderColor} gap-2`}>
+      <div className="flex items-center gap-1.5">
+        <span className={`text-xs font-bold ${isOverdue ? 'text-red-400' : colors.label}`}>{check.checkType}-Check</span>
+        {isOverdue && <Warning className="w-3 h-3 text-red-400" />}
+      </div>
+      {check.checkType === 'D' ? (
+        <div className="flex items-center justify-between">
+          <span className="text-[9px] text-acars-muted">Due Date</span>
+          <span className={`text-[11px] font-semibold tabular-nums ${isOverdue ? 'text-red-400' : 'text-acars-text'}`}>
+            {check.dueAtDate ?? '—'}
+          </span>
+        </div>
+      ) : (
+        <>
+          <div className="space-y-1">
+            <div className="flex items-center justify-between">
+              <span className="text-[9px] text-acars-muted">Rem. Hours</span>
+              <span className={`text-[11px] font-semibold tabular-nums ${isOverdue ? 'text-red-400' : 'text-acars-text'}`}>
+                {check.remainingHours != null ? check.remainingHours.toLocaleString() : '—'}
+              </span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-[9px] text-acars-muted">Rem. Cycles</span>
+              <span className={`text-[11px] font-semibold tabular-nums ${isOverdue ? 'text-red-400' : 'text-acars-text'}`}>
+                {check.remainingCycles != null ? check.remainingCycles.toLocaleString() : '—'}
+              </span>
+            </div>
+          </div>
+          <div className="h-[3px] rounded-full bg-acars-border/50">
+            <div className={`h-full rounded-full transition-all ${barColor}`} style={{ width: `${pct}%` }} />
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+// ─── Maintenance Section ───────────────────────────────────────
+
+function MaintenanceSection({ aircraftId }: { aircraftId: number }) {
+  const [maintenance, setMaintenance] = useState<FleetMaintenanceStatus | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    setLoading(true);
+    api.get<FleetMaintenanceStatus>(`/api/fleet/manage/${aircraftId}/maintenance`)
+      .then(setMaintenance)
+      .catch(() => setMaintenance(null))
+      .finally(() => setLoading(false));
+  }, [aircraftId]);
+
+  return (
+    <div className="rounded-md border border-acars-border bg-acars-panel/50 p-3">
+      <div className="flex items-center gap-2 mb-3">
+        <Wrench className="w-3.5 h-3.5 text-amber-400" />
+        <span className="text-[10px] uppercase tracking-wider text-acars-muted font-medium">Maintenance</span>
+      </div>
+      {loading ? (
+        <div className="flex items-center gap-2 py-2">
+          <SpinnerGap className="w-3.5 h-3.5 text-acars-muted animate-spin" />
+          <span className="text-[11px] text-acars-muted">Loading maintenance data...</span>
+        </div>
+      ) : !maintenance ? (
+        <p className="text-[11px] text-acars-muted/60 italic">No maintenance data available</p>
+      ) : (
+        <div className="space-y-3">
+          {/* Summary row */}
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] text-acars-muted tabular-nums">
+              {maintenance.totalHours.toLocaleString()} hrs · {maintenance.totalCycles.toLocaleString()} cycles
+            </span>
+            {maintenance.hasOverdueChecks ? (
+              <span className="flex items-center gap-1 text-[10px] text-red-400">
+                <Warning className="w-3 h-3" /> Overdue checks
+              </span>
+            ) : (
+              <span className="flex items-center gap-1 text-[10px] text-emerald-400">
+                <CheckCircle className="w-3 h-3" /> All checks current
+              </span>
+            )}
+          </div>
+
+          {/* Check cards grid */}
+          {maintenance.checksDue.length > 0 ? (
+            <div className="grid grid-cols-4 gap-2">
+              {maintenance.checksDue.map((check) => (
+                <CheckCard key={check.checkType} check={check} />
+              ))}
+            </div>
+          ) : (
+            <p className="text-[11px] text-acars-muted/60 italic">No check schedules configured for this aircraft type</p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 interface FleetDetailPanelProps {
   aircraft: FleetAircraft;
   isAdmin: boolean;
@@ -505,7 +626,7 @@ function FleetDetailPanel({ aircraft, isAdmin, onSave, onDelete }: FleetDetailPa
   const [deleting, setDeleting] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
 
-  const EDIT_INPUT = 'w-full h-8 rounded-md border border-acars-border bg-acars-bg text-xs text-acars-text px-2 font-mono outline-none focus:border-blue-400 transition-colors placeholder:text-acars-muted/50';
+  const EDIT_INPUT = 'w-full h-8 rounded-md border border-acars-border bg-acars-bg text-xs text-acars-text px-2 tabular-nums outline-none focus:border-blue-400 transition-colors placeholder:text-acars-muted/50';
 
   const handleSave = async () => {
     setSaving(true);
@@ -599,23 +720,17 @@ function FleetDetailPanel({ aircraft, isAdmin, onSave, onDelete }: FleetDetailPa
             <span className="text-[10px] uppercase tracking-wider text-acars-muted font-medium">Equipment Codes</span>
           </div>
           <div className="grid grid-cols-5 gap-3">
-            {a.equipCode && <div><div className="text-[10px] text-acars-muted">Equipment</div><div className="text-xs font-mono text-acars-text">{a.equipCode}</div></div>}
-            {a.transponderCode && <div><div className="text-[10px] text-acars-muted">Transponder</div><div className="text-xs font-mono text-acars-text">{a.transponderCode}</div></div>}
-            {a.pbn && <div><div className="text-[10px] text-acars-muted">PBN</div><div className="text-xs font-mono text-acars-text">{a.pbn}</div></div>}
-            {a.selcal && <div><div className="text-[10px] text-acars-muted">SELCAL</div><div className="text-xs font-mono text-acars-text">{a.selcal}</div></div>}
-            {a.hexCode && <div><div className="text-[10px] text-acars-muted">Hex Code</div><div className="text-xs font-mono text-acars-text">{a.hexCode}</div></div>}
+            {a.equipCode && <div><div className="text-[10px] text-acars-muted">Equipment</div><div className="text-xs tabular-nums text-acars-text">{a.equipCode}</div></div>}
+            {a.transponderCode && <div><div className="text-[10px] text-acars-muted">Transponder</div><div className="text-xs tabular-nums text-acars-text">{a.transponderCode}</div></div>}
+            {a.pbn && <div><div className="text-[10px] text-acars-muted">PBN</div><div className="text-xs tabular-nums text-acars-text">{a.pbn}</div></div>}
+            {a.selcal && <div><div className="text-[10px] text-acars-muted">SELCAL</div><div className="text-xs tabular-nums text-acars-text">{a.selcal}</div></div>}
+            {a.hexCode && <div><div className="text-[10px] text-acars-muted">Hex Code</div><div className="text-xs tabular-nums text-acars-text">{a.hexCode}</div></div>}
           </div>
         </div>
       )}
 
-      {/* Section 2: Maintenance placeholder */}
-      <div className="rounded-md border border-acars-border bg-acars-panel/50 p-3">
-        <div className="flex items-center gap-2 mb-2">
-          <Wrench className="w-3.5 h-3.5 text-amber-400" />
-          <span className="text-[10px] uppercase tracking-wider text-acars-muted font-medium">Maintenance</span>
-        </div>
-        <p className="text-[11px] text-acars-muted/60 italic">Maintenance tracking coming soon</p>
-      </div>
+      {/* Section 2: Maintenance */}
+      <MaintenanceSection aircraftId={a.id} />
 
       {/* Section 3: Flight Reports placeholder */}
       <div className="rounded-md border border-acars-border bg-acars-panel/50 p-3">
@@ -652,7 +767,7 @@ function FleetDetailPanel({ aircraft, isAdmin, onSave, onDelete }: FleetDetailPa
             <div className="grid grid-cols-3 gap-3">
               <div>
                 <label className="text-[10px] uppercase tracking-wider text-acars-muted font-medium mb-1 block">Status</label>
-                <select value={editStatus} onChange={e => setEditStatus(e.target.value as FleetStatus)} className={EDIT_INPUT.replace('font-mono ', '')}>
+                <select value={editStatus} onChange={e => setEditStatus(e.target.value as FleetStatus)} className={EDIT_INPUT.replace('tabular-nums ', '')}>
                   <option value="active">Active</option>
                   <option value="stored">Stored</option>
                   <option value="maintenance">Maintenance</option>
@@ -839,6 +954,9 @@ export function FleetPage() {
   }, [typeFilter, statusFilter, searchTerm]);
 
   useEffect(() => { fetchFleet(); }, [fetchFleet]);
+
+  // ── Live updates from admin fleet changes ─────────────────
+  useSocketSubscription('fleet:updated', () => { fetchFleet(); });
 
   // ── Search debounce ─────────────────────────────────────────
   const handleSearchChange = (value: string) => {
@@ -1037,16 +1155,16 @@ export function FleetPage() {
                         <td className="px-4 py-2.5">
                           <div className="flex items-center gap-2">
                             <CaretDown className={`w-3.5 h-3.5 text-acars-muted/50 transition-transform duration-200 shrink-0 ${isExpanded ? 'rotate-0' : '-rotate-90'}`} />
-                            <span className="font-mono font-semibold text-acars-text">{a.registration}</span>
+                            <span className="tabular-nums font-semibold text-acars-text">{a.registration}</span>
                           </div>
                         </td>
-                        <td className="px-4 py-2.5 font-mono text-acars-muted">{a.icaoType}</td>
+                        <td className="px-4 py-2.5 tabular-nums text-acars-muted">{a.icaoType}</td>
                         <td className="px-4 py-2.5 text-acars-text">{a.name}</td>
-                        <td className="px-4 py-2.5 font-mono text-acars-muted">{a.baseIcao ?? '—'}</td>
-                        <td className="px-4 py-2.5 font-mono text-acars-muted">{a.locationIcao ?? '—'}</td>
-                        <td className="px-4 py-2.5 text-right font-mono text-acars-muted tabular-nums">{a.rangeNm.toLocaleString()} nm</td>
-                        <td className="px-4 py-2.5 text-right font-mono text-acars-muted tabular-nums">{a.paxCapacity}</td>
-                        <td className="px-4 py-2.5 text-right font-mono text-acars-muted tabular-nums">{a.cargoCapacityLbs.toLocaleString()}</td>
+                        <td className="px-4 py-2.5 tabular-nums text-acars-muted">{a.baseIcao ?? '—'}</td>
+                        <td className="px-4 py-2.5 tabular-nums text-acars-muted">{a.locationIcao ?? '—'}</td>
+                        <td className="px-4 py-2.5 text-right tabular-nums text-acars-muted tabular-nums">{a.rangeNm.toLocaleString()} nm</td>
+                        <td className="px-4 py-2.5 text-right tabular-nums text-acars-muted tabular-nums">{a.paxCapacity}</td>
+                        <td className="px-4 py-2.5 text-right tabular-nums text-acars-muted tabular-nums">{a.cargoCapacityLbs.toLocaleString()}</td>
                         <td className="px-4 py-2.5 text-center">
                           <FleetStatusDisplay aircraft={a} />
                         </td>

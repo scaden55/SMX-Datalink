@@ -34,6 +34,7 @@ export interface ConnectionStatus {
 /** Lightweight heartbeat sent by pilot's Electron app every 30s */
 export interface ActiveFlightHeartbeat {
   userId: number;
+  bidId?: number; // active_bids.id — populated by backend, used by admin dispatch board
   callsign: string;
   aircraftType: string;
   latitude: number;

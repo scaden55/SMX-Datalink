@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { PaperPlaneRight } from '@phosphor-icons/react';
+import { SendHorizontal } from 'lucide-react';
 import type { AcarsMessagePayload } from '@acars/shared';
 import { useSocketStore } from '@/stores/socketStore';
 
@@ -112,7 +112,7 @@ export function AcarsChat({ bidId, messages }: AcarsChatProps) {
           disabled={!input.trim()}
           className="rounded bg-[var(--accent-blue)] p-1.5 text-white transition-colors hover:brightness-110 disabled:opacity-40"
         >
-          <PaperPlaneRight size={14} weight="bold" />
+          <SendHorizontal size={14} />
         </button>
       </div>
     </div>

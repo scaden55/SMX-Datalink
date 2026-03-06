@@ -94,7 +94,14 @@ export function adminUsersRouter(): Router {
         return;
       }
 
-      const updated = await userAdminService.update(parseInt(req.params.id as string), req.body, req.user!.userId);
+      // Prevent admin from demoting themselves
+      const targetId = parseInt(req.params.id as string);
+      if (targetId === req.user!.userId && req.body.role && req.body.role !== 'admin') {
+        res.status(400).json({ error: 'Cannot change your own role' });
+        return;
+      }
+
+      const updated = await userAdminService.update(targetId, req.body, req.user!.userId);
       if (!updated) { res.status(404).json({ error: 'User not found' }); return; }
       res.json(updated);
     } catch (err) {
@@ -106,7 +113,12 @@ export function adminUsersRouter(): Router {
   // POST /api/admin/users/:id/suspend
   router.post('/admin/users/:id/suspend', authMiddleware, adminMiddleware, async (req, res) => {
     try {
-      const updated = await userAdminService.suspend(parseInt(req.params.id as string), req.user!.userId);
+      const targetId = parseInt(req.params.id as string);
+      if (targetId === req.user!.userId) {
+        res.status(400).json({ error: 'Cannot suspend your own account' });
+        return;
+      }
+      const updated = await userAdminService.suspend(targetId, req.user!.userId);
       if (!updated) { res.status(404).json({ error: 'User not found' }); return; }
       res.json(updated);
     } catch (err) {
@@ -130,7 +142,12 @@ export function adminUsersRouter(): Router {
   // DELETE /api/admin/users/:id — hard delete (removes all user data)
   router.delete('/admin/users/:id', authMiddleware, adminMiddleware, (req, res) => {
     try {
-      const deleted = userAdminService.hardDelete(parseInt(req.params.id as string), req.user!.userId);
+      const targetId = parseInt(req.params.id as string);
+      if (targetId === req.user!.userId) {
+        res.status(400).json({ error: 'Cannot delete your own account' });
+        return;
+      }
+      const deleted = userAdminService.hardDelete(targetId, req.user!.userId);
       if (!deleted) { res.status(404).json({ error: 'User not found' }); return; }
       res.json({ success: true });
     } catch (err) {

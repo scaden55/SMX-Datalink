@@ -10,7 +10,7 @@ function FlightCatBadge({ cat }: { cat: string | null }) {
     LIFR: 'text-blue-400 bg-blue-500/10',
   };
   return (
-    <span className={`inline-flex px-[3px] rounded-[2px] text-[11px] font-bold uppercase tracking-[0.08em] font-sans ${colors[cat] ?? 'text-acars-muted bg-acars-input'}`}>
+    <span className={`inline-flex px-[3px] rounded-[2px] text-[11px] font-bold uppercase tracking-[0.08em] ${colors[cat] ?? 'text-acars-muted bg-acars-input'}`}>
       {cat}
     </span>
   );
@@ -25,23 +25,23 @@ function WeatherBlock({ icao, label }: { icao: string; label: string }) {
   return (
     <div className="space-y-1">
       <div className="flex items-center gap-2">
-        <span className="text-[11px] uppercase tracking-[0.08em] text-acars-muted font-medium font-sans">{label}</span>
-        <span className="font-mono text-[12px] text-acars-mono font-semibold">{icao}</span>
+        <span className="text-[11px] uppercase tracking-[0.08em] text-acars-muted font-medium">{label}</span>
+        <span className="tabular-nums text-[12px] text-acars-text font-semibold">{icao}</span>
         {wx?.metar?.flightCategory && <FlightCatBadge cat={wx.metar.flightCategory} />}
       </div>
       {wx?.metar ? (
-        <pre className="text-[11px] font-mono text-acars-mono bg-acars-input rounded-md px-2 py-1 whitespace-pre-wrap break-words border border-acars-border">
+        <pre className="text-[11px] tabular-nums text-acars-text bg-acars-input rounded-md px-2 py-1 whitespace-pre-wrap break-words border border-acars-border">
           {wx.metar.rawOb}
         </pre>
       ) : (
-        <p className="text-[11px] text-acars-muted font-sans">No METAR available</p>
+        <p className="text-[11px] text-acars-muted">No METAR available</p>
       )}
       {wx?.taf ? (
-        <pre className="text-[11px] font-mono text-acars-muted bg-acars-input rounded-md px-2 py-1 whitespace-pre-wrap break-words border border-acars-border">
+        <pre className="text-[11px] tabular-nums text-acars-muted bg-acars-input rounded-md px-2 py-1 whitespace-pre-wrap break-words border border-acars-border">
           {wx.taf.rawTaf}
         </pre>
       ) : (
-        <p className="text-[11px] text-acars-muted font-sans">No TAF available</p>
+        <p className="text-[11px] text-acars-muted">No TAF available</p>
       )}
     </div>
   );
@@ -61,14 +61,14 @@ export function PlanningWeatherTab() {
     return (
       <div className="flex flex-col items-center justify-center h-full text-center gap-2 p-4">
         <Cloud className="w-6 h-6 text-acars-muted/20" />
-        <p className="text-[11px] text-acars-muted font-sans">Enter origin/destination to fetch weather</p>
+        <p className="text-[11px] text-acars-muted">Enter origin/destination to fetch weather</p>
       </div>
     );
   }
 
   return (
     <div className="p-3 space-y-3 overflow-auto">
-      {weatherLoading && <p className="text-[11px] text-blue-400 animate-pulse font-sans">Fetching weather...</p>}
+      {weatherLoading && <p className="text-[11px] text-blue-400 animate-pulse">Fetching weather...</p>}
       {icaos.map((e) => (
         <WeatherBlock key={e.icao} icao={e.icao} label={e.label} />
       ))}

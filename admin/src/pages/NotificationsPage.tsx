@@ -1,18 +1,18 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
   Bell,
-  PaperPlaneTilt,
-  CaretLeft,
-  CaretRight,
+  Send,
+  ChevronLeft,
+  ChevronRight,
   Users,
-  UserCircle,
+  CircleUser,
   Shield,
-  MagnifyingGlass,
+  Search,
   Info,
-  CheckCircle,
-  Warning,
-  WarningCircle,
-} from '@phosphor-icons/react';
+  CheckCircle2,
+  AlertTriangle,
+  AlertCircle,
+} from 'lucide-react';
 import { api, ApiError } from '@/lib/api';
 import { toast } from '@/stores/toastStore';
 import { Surface, SectionHeader, StatusBadge } from '@/components/primitives';
@@ -238,7 +238,7 @@ export function NotificationsPage() {
             title="Compose Notification"
             action={
               <span className="flex items-center gap-1 text-[var(--text-tertiary)]">
-                <PaperPlaneTilt size={14} weight="duotone" />
+                <Send size={14} />
                 Send to pilots, dispatchers, or specific users
               </span>
             }
@@ -266,10 +266,10 @@ export function NotificationsPage() {
                         : 'border-[var(--border-secondary)] text-[var(--text-secondary)]'
                     }
                   >
-                    {t === 'info' && <Info size={14} weight="bold" />}
-                    {t === 'success' && <CheckCircle size={14} weight="bold" />}
-                    {t === 'warning' && <Warning size={14} weight="bold" />}
-                    {t === 'error' && <WarningCircle size={14} weight="bold" />}
+                    {t === 'info' && <Info size={14} />}
+                    {t === 'success' && <CheckCircle2 size={14} />}
+                    {t === 'warning' && <AlertTriangle size={14} />}
+                    {t === 'error' && <AlertCircle size={14} />}
                     {t.charAt(0).toUpperCase() + t.slice(1)}
                   </Button>
                 ))}
@@ -313,7 +313,7 @@ export function NotificationsPage() {
                     </SelectItem>
                     <SelectItem value="user">
                       <span className="flex items-center gap-2">
-                        <UserCircle size={14} />
+                        <CircleUser size={14} />
                         Specific User
                       </span>
                     </SelectItem>
@@ -343,7 +343,7 @@ export function NotificationsPage() {
                 {/* User search */}
                 {composeTarget === 'user' && (
                   <div className="relative flex-1 max-w-sm">
-                    <MagnifyingGlass
+                    <Search
                       size={16}
                       className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-tertiary)]"
                     />
@@ -378,7 +378,7 @@ export function NotificationsPage() {
                                 setUserResults([]);
                               }}
                             >
-                              <UserCircle size={16} className="text-[var(--text-tertiary)]" />
+                              <CircleUser size={16} className="text-[var(--text-tertiary)]" />
                               <span className="font-mono font-medium text-[var(--text-primary)]">{u.callsign}</span>
                               <span className="text-[var(--text-tertiary)]">
                                 {u.firstName} {u.lastName}
@@ -400,7 +400,7 @@ export function NotificationsPage() {
                 disabled={sending || !composeMessage.trim()}
                 className="bg-[var(--accent-blue)] hover:bg-[var(--accent-blue)]/80"
               >
-                <PaperPlaneTilt size={16} weight="bold" />
+                <Send size={16} />
                 {sending ? 'Sending...' : 'Send Notification'}
               </Button>
             </div>
@@ -414,7 +414,7 @@ export function NotificationsPage() {
             count={total}
             action={
               <span className="flex items-center gap-1 text-[var(--text-tertiary)]">
-                <Bell size={14} weight="duotone" />
+                <Bell size={14} />
                 Previously sent notifications
               </span>
             }
@@ -487,7 +487,7 @@ export function NotificationsPage() {
                         disabled={page <= 1}
                         onClick={() => setPage((p) => p - 1)}
                       >
-                        <CaretLeft size={14} />
+                        <ChevronLeft size={14} />
                       </Button>
                       <span className="text-sm text-[var(--text-tertiary)]">
                         Page {page} of {totalPages}
@@ -499,7 +499,7 @@ export function NotificationsPage() {
                         disabled={page >= totalPages}
                         onClick={() => setPage((p) => p + 1)}
                       >
-                        <CaretRight size={14} />
+                        <ChevronRight size={14} />
                       </Button>
                     </div>
                   </div>

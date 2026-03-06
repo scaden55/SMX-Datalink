@@ -77,7 +77,7 @@ export function FlightMap() {
       {!connected && (
         <div className="absolute top-2 right-2 z-[1001] bg-acars-panel/90 border border-acars-border rounded-md px-2.5 py-1.5 flex items-center gap-2">
           <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
-          <span className="text-[10px] text-acars-muted font-sans">Sim Offline</span>
+          <span className="text-[10px] text-acars-muted">Sim Offline</span>
         </div>
       )}
 

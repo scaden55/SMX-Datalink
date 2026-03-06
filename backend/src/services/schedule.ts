@@ -530,7 +530,7 @@ export class ScheduleService {
     // Insert schedule (no auto-bid — pilot bids separately with aircraft selection)
     const insertSchedule = db.prepare(`
       INSERT INTO scheduled_flights (flight_number, dep_icao, arr_icao, aircraft_type, dep_time, arr_time, distance_nm, flight_time_min, days_of_week, is_active, flight_type, created_by)
-      VALUES (?, ?, ?, NULL, ?, ?, ?, ?, '1234567', 1, ?, ?)
+      VALUES (?, ?, ?, '', ?, ?, ?, ?, '1234567', 1, ?, ?)
     `);
 
     const txn = db.transaction(() => {

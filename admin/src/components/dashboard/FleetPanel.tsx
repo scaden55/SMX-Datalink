@@ -1,4 +1,4 @@
-import { Heartbeat, Warning, WarningCircle, CheckCircle } from '@phosphor-icons/react';
+import { HeartPulse, AlertTriangle, AlertCircle, CheckCircle2 } from 'lucide-react';
 
 interface MaintenanceAlert {
   type: string;
@@ -15,11 +15,11 @@ interface FleetPanelProps {
 function severityIcon(severity: string) {
   switch (severity) {
     case 'critical':
-      return <WarningCircle weight="fill" className="h-3.5 w-3.5 text-red-500 shrink-0" />;
+      return <AlertCircle className="h-3.5 w-3.5 text-red-500 shrink-0" />;
     case 'warning':
-      return <Warning weight="fill" className="h-3.5 w-3.5 text-amber-500 shrink-0" />;
+      return <AlertTriangle className="h-3.5 w-3.5 text-amber-500 shrink-0" />;
     default:
-      return <Warning weight="fill" className="h-3.5 w-3.5 text-muted-foreground shrink-0" />;
+      return <AlertTriangle className="h-3.5 w-3.5 text-muted-foreground shrink-0" />;
   }
 }
 
@@ -36,7 +36,7 @@ export function FleetPanel({ fleetHealthPct, maintenanceAlerts }: FleetPanelProp
       <div className="flex items-center justify-between p-3 pb-2">
         <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Fleet Health</h2>
         <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-          <Heartbeat size={12} weight="duotone" className="text-emerald-400" />
+          <HeartPulse size={12} className="text-emerald-400" />
           <span className="font-mono font-medium text-foreground">{fleetHealthPct}%</span>
         </div>
       </div>
@@ -58,7 +58,7 @@ export function FleetPanel({ fleetHealthPct, maintenanceAlerts }: FleetPanelProp
       <div className="p-3">
         {maintenanceAlerts.length === 0 ? (
           <div className="flex items-center gap-2 py-2 justify-center text-muted-foreground">
-            <CheckCircle weight="fill" className="h-3.5 w-3.5 text-emerald-500" />
+            <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
             <span className="text-xs">All aircraft operational</span>
           </div>
         ) : (

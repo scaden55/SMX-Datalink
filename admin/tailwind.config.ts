@@ -57,13 +57,14 @@ export default {
   		},
   		fontFamily: {
   			sans: [
-  				'Inter',
+  				'Lufga',
   				'system-ui',
   				'sans-serif'
   			],
   			mono: [
-  				'IBM Plex Mono',
-  				'monospace'
+  				'Lufga',
+  				'system-ui',
+  				'sans-serif'
   			]
   		},
   		borderRadius: {

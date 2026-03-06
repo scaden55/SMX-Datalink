@@ -12,7 +12,7 @@ export function AirportCard({ label, icao, active }: AirportCardProps) {
         : 'border-acars-border bg-acars-panel hover:border-acars-muted'
     }`}>
       <div className="text-[9px] uppercase tracking-wider text-acars-muted">{label}</div>
-      <div className={`text-sm font-bold font-mono ${active ? 'text-sky-400' : 'text-acars-text'}`}>
+      <div className={`text-sm font-bold tabular-nums ${active ? 'text-sky-400' : 'text-acars-text'}`}>
         {icao}
       </div>
     </button>

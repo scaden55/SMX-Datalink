@@ -202,7 +202,7 @@ ok "Admin frontend deployed"
 
 step 9 "Committing and pushing v${VERSION}"
 cd "$ROOT"
-git add -A
+git add package.json electron/package.json
 git commit -m "release: v${VERSION}
 
 Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>" || warn "Nothing to commit"

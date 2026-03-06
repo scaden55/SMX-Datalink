@@ -31,7 +31,6 @@ const FACILITY_BADGES: Partial<Record<VatsimFacilityType, BadgeInfo>> = {
   2: { letter: 'D', color: '#60a5fa' }, // Delivery — blue
   3: { letter: 'G', color: '#22c55e' }, // Ground — green
   4: { letter: 'T', color: '#ef4444' }, // Tower — red
-  5: { letter: 'A', color: '#f59e0b' }, // Approach — amber
 };
 
 const ATIS_BADGE: BadgeInfo = { letter: 'A', color: '#d29922' }; // ATIS — yellow-gold
@@ -197,10 +196,9 @@ export const AirportLabels = memo(function AirportLabels({ controllers, atis, vi
       if (!facilities) return [];
 
       const badges: BadgeInfo[] = [];
-      // Ordered: Tower, Ground, Approach, Delivery, ATIS
+      // Ordered: Tower, Ground, Delivery, ATIS (Approach shown via TRACON boundaries)
       if (facilities.has(4)) badges.push(FACILITY_BADGES[4]!);
       if (facilities.has(3)) badges.push(FACILITY_BADGES[3]!);
-      if (facilities.has(5)) badges.push(FACILITY_BADGES[5]!);
       if (facilities.has(2)) badges.push(FACILITY_BADGES[2]!);
       if (facilities.has(0 as VatsimFacilityType)) badges.push(ATIS_BADGE); // ATIS sentinel
 

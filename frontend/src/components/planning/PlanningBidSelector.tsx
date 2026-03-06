@@ -12,7 +12,7 @@ export function PlanningBidSelector({ bids, onSelect }: Props) {
   const active = bids.find((b) => b.id === activeBidId);
 
   return (
-    <div className="px-3 py-2 border-b border-acars-border bg-acars-bg/50">
+    <div className="px-3 py-2 border-b border-white/[0.06] bg-white/[0.02]">
       <label className="text-[9px] uppercase tracking-wider text-acars-muted font-medium mb-1 block">Active Bid</label>
       <div className="relative">
         <select
@@ -21,7 +21,7 @@ export function PlanningBidSelector({ bids, onSelect }: Props) {
             const id = parseInt(e.target.value, 10);
             if (!isNaN(id)) onSelect(id);
           }}
-          className="w-full appearance-none rounded bg-acars-bg border border-acars-border text-acars-text text-[11px] pl-7 pr-7 py-1.5 font-mono outline-none focus:border-blue-400 transition-colors cursor-pointer"
+          className="w-full appearance-none rounded bg-white/[0.03] border border-white/[0.06] text-white text-[11px] pl-7 pr-7 py-1.5 tabular-nums outline-none focus:border-[#3b5bdb] transition-colors cursor-pointer"
         >
           {!activeBidId && <option value="">Select a bid to plan...</option>}
           {bids.map((b) => (
@@ -30,7 +30,7 @@ export function PlanningBidSelector({ bids, onSelect }: Props) {
             </option>
           ))}
         </select>
-        <AirplaneTilt className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-blue-400 pointer-events-none" />
+        <AirplaneTilt className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#6b8aff] pointer-events-none" />
         <CaretDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-acars-muted pointer-events-none" />
       </div>
       {active && (

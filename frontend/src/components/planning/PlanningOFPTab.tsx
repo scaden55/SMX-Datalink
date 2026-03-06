@@ -8,7 +8,7 @@ export function PlanningOFPTab() {
     return (
       <div className="flex flex-col items-center justify-center h-full text-center gap-2 p-4">
         <FileText className="w-6 h-6 text-acars-muted/20" />
-        <p className="text-[11px] text-acars-muted font-sans">Generate an OFP to view it here</p>
+        <p className="text-[11px] text-acars-muted">Generate an OFP to view it here</p>
       </div>
     );
   }
@@ -28,7 +28,7 @@ export function PlanningOFPTab() {
   return (
     <div className="flex flex-col h-full overflow-hidden">
       <div className="flex items-center justify-between px-3 py-1.5 border-b border-acars-border">
-        <span className="text-[11px] text-acars-muted font-mono">
+        <span className="text-[11px] text-acars-muted tabular-nums">
           {ofp.origin} → {ofp.destination} | {ofp.route.slice(0, 60)}{ofp.route.length > 60 ? '...' : ''}
         </span>
         <button
@@ -39,7 +39,7 @@ export function PlanningOFPTab() {
         </button>
       </div>
       <div className="flex-1 overflow-auto p-3">
-        <pre className="text-[11px] font-mono text-acars-mono whitespace-pre-wrap break-words leading-relaxed">
+        <pre className="text-[11px] tabular-nums text-acars-text whitespace-pre-wrap break-words leading-relaxed">
           {ofp.rawText || buildOFPText(ofp)}
         </pre>
       </div>

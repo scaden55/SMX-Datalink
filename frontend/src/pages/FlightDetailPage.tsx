@@ -161,7 +161,7 @@ function OooiTimeline({ entry }: { entry: LogbookEntry }) {
         {events.map(e => (
           <div key={e.key} className="flex flex-col items-center">
             <div className="text-[10px] uppercase tracking-wider text-acars-muted font-medium">{e.key}</div>
-            <div className="text-xs font-mono text-acars-text font-semibold">
+            <div className="text-xs tabular-nums text-acars-text font-semibold">
               {e.time ? formatTime(e.time) : '—'}
             </div>
             <div className="text-[10px] text-acars-muted">{e.label}</div>
@@ -174,11 +174,11 @@ function OooiTimeline({ entry }: { entry: LogbookEntry }) {
         <div className="mt-3 pt-3 border-t border-acars-border flex items-center justify-center gap-6">
           <div className="text-center">
             <div className="text-[10px] uppercase tracking-wider text-acars-muted">Block Time</div>
-            <div className="text-sm font-mono font-bold text-acars-text">{formatDuration(entry.blockTimeMin)}</div>
+            <div className="text-sm tabular-nums font-bold text-acars-text">{formatDuration(entry.blockTimeMin)}</div>
           </div>
           <div className="text-center">
             <div className="text-[10px] uppercase tracking-wider text-acars-muted">Flight Time</div>
-            <div className="text-sm font-mono font-bold text-blue-400">{entry.flightTimeMin > 0 ? formatDuration(entry.flightTimeMin) : '—'}</div>
+            <div className="text-sm tabular-nums font-bold text-blue-400">{entry.flightTimeMin > 0 ? formatDuration(entry.flightTimeMin) : '—'}</div>
           </div>
         </div>
       )}
@@ -255,7 +255,7 @@ export function FlightDetailPage() {
               <AirplaneTilt className="w-5 h-5 text-amber-400" />
             </div>
             <div>
-              <h1 className="text-lg font-bold text-acars-text font-mono">{entry.flightNumber}</h1>
+              <h1 className="text-lg font-bold text-acars-text tabular-nums">{entry.flightNumber}</h1>
               <p className="text-xs text-acars-muted">{formatDateTime(entry.actualDep)}</p>
             </div>
           </div>
@@ -280,7 +280,7 @@ export function FlightDetailPage() {
             {/* Departure */}
             <div className="text-center">
               <AirplaneTakeoff className="w-5 h-5 text-emerald-400 mx-auto mb-1" />
-              <div className="text-2xl font-bold font-mono text-acars-text">{entry.depIcao}</div>
+              <div className="text-2xl font-bold tabular-nums text-acars-text">{entry.depIcao}</div>
               {entry.depName && <div className="text-xs text-acars-muted mt-0.5">{entry.depName}</div>}
               <div className="text-xs text-acars-muted mt-1">
                 <span className="text-acars-text font-medium">{formatTime(entry.actualDep)}</span>
@@ -292,19 +292,19 @@ export function FlightDetailPage() {
 
             {/* Connection line */}
             <div className="flex flex-col items-center flex-1 max-w-xs">
-              <div className="text-xs text-acars-muted font-mono mb-1">{entry.flightTimeMin > 0 ? formatDuration(entry.flightTimeMin) : '—'}</div>
+              <div className="text-xs text-acars-muted tabular-nums mb-1">{entry.flightTimeMin > 0 ? formatDuration(entry.flightTimeMin) : '—'}</div>
               <div className="w-full flex items-center">
                 <div className="h-px flex-1 bg-acars-border" />
                 <ArrowRight className="w-4 h-4 text-sky-400/40 mx-2" />
                 <div className="h-px flex-1 bg-acars-border" />
               </div>
-              <div className="text-xs text-acars-muted font-mono mt-1">{entry.distanceNm.toLocaleString()} nm</div>
+              <div className="text-xs text-acars-muted tabular-nums mt-1">{entry.distanceNm.toLocaleString()} nm</div>
             </div>
 
             {/* Arrival */}
             <div className="text-center">
               <AirplaneLanding className="w-5 h-5 text-red-400 mx-auto mb-1" />
-              <div className="text-2xl font-bold font-mono text-acars-text">{entry.arrIcao}</div>
+              <div className="text-2xl font-bold tabular-nums text-acars-text">{entry.arrIcao}</div>
               {entry.arrName && <div className="text-xs text-acars-muted mt-0.5">{entry.arrName}</div>}
               <div className="text-xs text-acars-muted mt-1">
                 <span className="text-acars-text font-medium">{formatTime(entry.actualArr)}</span>
@@ -332,7 +332,7 @@ export function FlightDetailPage() {
                 <div className="text-[10px] uppercase tracking-wider text-acars-muted mb-1">Landing Rate</div>
                 {entry.landingRateFpm != null ? (
                   <>
-                    <div className={`text-xl font-bold font-mono ${landingInfo!.color}`}>
+                    <div className={`text-xl font-bold tabular-nums ${landingInfo!.color}`}>
                       {entry.landingRateFpm} <span className="text-xs font-normal">fpm</span>
                     </div>
                     <div className={`text-xs ${landingInfo!.color}`}>{landingInfo!.label}</div>
@@ -345,7 +345,7 @@ export function FlightDetailPage() {
                 <div className="text-[10px] uppercase tracking-wider text-acars-muted mb-1">Flight Score</div>
                 {entry.score != null ? (
                   <>
-                    <div className={`text-xl font-bold font-mono ${scoreInfo!.color}`}>
+                    <div className={`text-xl font-bold tabular-nums ${scoreInfo!.color}`}>
                       {entry.score} <span className="text-xs font-normal">/ 100</span>
                     </div>
                     <div className={`text-xs ${scoreInfo!.color}`}>{scoreInfo!.label}</div>
@@ -366,14 +366,14 @@ export function FlightDetailPage() {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <div className="text-[10px] uppercase tracking-wider text-acars-muted mb-1">Fuel Used</div>
-                <div className="text-xl font-bold font-mono text-acars-text">
+                <div className="text-xl font-bold tabular-nums text-acars-text">
                   {entry.fuelUsedLbs != null ? entry.fuelUsedLbs.toLocaleString() : '—'}
                   {entry.fuelUsedLbs != null && <span className="text-xs font-normal text-acars-muted ml-1">lbs</span>}
                 </div>
               </div>
               <div>
                 <div className="text-[10px] uppercase tracking-wider text-acars-muted mb-1">Fuel Planned</div>
-                <div className="text-xl font-bold font-mono text-acars-text">
+                <div className="text-xl font-bold tabular-nums text-acars-text">
                   {entry.fuelPlannedLbs != null ? entry.fuelPlannedLbs.toLocaleString() : '—'}
                   {entry.fuelPlannedLbs != null && <span className="text-xs font-normal text-acars-muted ml-1">lbs</span>}
                 </div>
@@ -382,7 +382,7 @@ export function FlightDetailPage() {
             {entry.fuelUsedLbs != null && entry.fuelPlannedLbs != null && (
               <div className="mt-2 pt-2 border-t border-acars-border">
                 <div className="text-[10px] uppercase tracking-wider text-acars-muted">Variance</div>
-                <div className={`text-sm font-mono font-semibold ${
+                <div className={`text-sm tabular-nums font-semibold ${
                   entry.fuelUsedLbs <= entry.fuelPlannedLbs ? 'text-emerald-400' : 'text-amber-400'
                 }`}>
                   {entry.fuelUsedLbs <= entry.fuelPlannedLbs ? '' : '+'}
@@ -478,7 +478,7 @@ export function FlightDetailPage() {
             {entry.route && (
               <div className="mt-2 pt-2 border-t border-acars-border">
                 <div className="text-[10px] uppercase tracking-wider text-acars-muted font-medium mb-1">Path</div>
-                <div className="text-xs text-acars-text font-mono leading-relaxed bg-acars-bg rounded px-2 py-1.5 border border-acars-border">
+                <div className="text-xs text-acars-text tabular-nums leading-relaxed bg-acars-bg rounded px-2 py-1.5 border border-acars-border">
                   {entry.route}
                 </div>
               </div>
@@ -496,7 +496,7 @@ export function FlightDetailPage() {
             {entry.pilotCallsign && (
               <div className="text-xs">
                 <span className="text-acars-muted">Pilot: </span>
-                <span className="text-acars-text font-semibold font-mono">{entry.pilotCallsign}</span>
+                <span className="text-acars-text font-semibold tabular-nums">{entry.pilotCallsign}</span>
                 {entry.pilotName && <span className="text-acars-muted ml-1">({entry.pilotName})</span>}
               </div>
             )}

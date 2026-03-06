@@ -27,9 +27,6 @@ const INVOKE_CHANNELS = new Set<string>([
   IpcChannels.APP_IS_MAXIMIZED,
   IpcChannels.BACKEND_PORT,
   IpcChannels.BACKEND_STATUS,
-  IpcChannels.SETTINGS_GET,
-  IpcChannels.SETTINGS_SET,
-  IpcChannels.SETTINGS_GET_ALL,
   IpcChannels.FILE_OPEN_DIALOG,
   IpcChannels.FILE_SAVE_DIALOG,
   IpcChannels.SIMBRIEF_CLEAR_SESSION,
@@ -43,6 +40,7 @@ const RECEIVE_CHANNELS = new Set<string>([
   IpcChannels.BACKEND_STATUS,
   IpcChannels.SIM_STATUS,
   IpcChannels.SIM_TELEMETRY,
+  IpcChannels.SIM_EXCEEDANCE,
   IpcChannels.SIM_DIAGNOSTIC,
   IpcChannels.UPDATE_AVAILABLE,
   IpcChannels.UPDATE_DOWNLOADED,
@@ -64,11 +62,6 @@ const electronAPI = {
   // --- Backend ---
   getBackendPort: () => ipcRenderer.invoke(IpcChannels.BACKEND_PORT) as Promise<number>,
   getBackendStatus: () => ipcRenderer.invoke(IpcChannels.BACKEND_STATUS) as Promise<string>,
-
-  // --- Settings ---
-  getSetting: (key: string) => ipcRenderer.invoke(IpcChannels.SETTINGS_GET, key),
-  setSetting: (key: string, value: unknown) => ipcRenderer.invoke(IpcChannels.SETTINGS_SET, key, value),
-  getAllSettings: () => ipcRenderer.invoke(IpcChannels.SETTINGS_GET_ALL),
 
   // --- File Dialogs ---
   openFileDialog: (options?: Electron.OpenDialogOptions) =>

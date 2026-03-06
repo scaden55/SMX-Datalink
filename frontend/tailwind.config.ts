@@ -11,7 +11,7 @@ const config: Config = {
         'acars-panel':      'rgb(var(--bg-panel-rgb) / <alpha-value>)',
         'acars-input':      'rgb(var(--bg-input-rgb) / <alpha-value>)',
         'acars-hover':      'rgb(var(--bg-hover-rgb) / <alpha-value>)',
-        'acars-border':     'rgba(255, 255, 255, 0.10)',
+        'acars-border':     'rgba(255, 255, 255, 0.06)',
         'acars-blue':       'rgb(var(--accent-rgb) / <alpha-value>)',
         'acars-amber':      'rgb(var(--status-amber-rgb) / <alpha-value>)',
         'acars-green':      'rgb(var(--status-green-rgb) / <alpha-value>)',
@@ -21,7 +21,6 @@ const config: Config = {
         'acars-cyan':       'rgb(var(--accent-rgb) / <alpha-value>)',
         'acars-text':       'rgb(var(--text-primary-rgb) / <alpha-value>)',
         'acars-muted':      'rgb(var(--text-secondary-rgb) / <alpha-value>)',
-        'acars-mono':       'rgb(var(--text-primary-rgb) / <alpha-value>)',
         'acars-badge-bg':   'var(--accent-dark)',
         'acars-badge-text': 'var(--accent)',
         // shadcn/ui semantic colors
@@ -56,8 +55,7 @@ const config: Config = {
         },
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
-        mono: ['IBM Plex Mono', 'monospace'],
+        sans: ['Lufga', 'system-ui', 'sans-serif'],
       },
       borderRadius: {
         lg: 'var(--radius)',

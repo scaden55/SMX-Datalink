@@ -41,7 +41,7 @@ function createSplash(): void {
 
   splashWindow = new BrowserWindow({
     width: 400,
-    height: 340,
+    height: 460,
     frame: false,
     transparent: false,
     resizable: false,
@@ -49,7 +49,7 @@ function createSplash(): void {
     center: true,
     alwaysOnTop: true,
     skipTaskbar: true,
-    backgroundColor: '#0d1117',
+    backgroundColor: '#1a1a1a',
     show: false,
     webPreferences: {
       contextIsolation: true,
@@ -61,6 +61,7 @@ function createSplash(): void {
   splashWindow.loadFile(splashPath);
 
   splashWindow.once('ready-to-show', () => {
+    splashExec(`setVersion(${JSON.stringify(app.getVersion())})`);
     splashWindow?.show();
   });
 
@@ -164,7 +165,7 @@ function createWindow(): void {
     frame: false,
     icon: APP_ICON,
     autoHideMenuBar: true,
-    backgroundColor: '#0d1117',
+    backgroundColor: '#000000',
     show: false, // show after ready-to-show
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
@@ -198,6 +199,17 @@ function createWindow(): void {
     mainWindow?.setIcon(APP_ICON);
     mainWindow?.show();
     mainWindow?.focus();
+  });
+
+  // Block navigation away from the app — prevents hijacking via malicious links
+  mainWindow.webContents.on('will-navigate', (event, url) => {
+    const allowed = IS_DEV
+      ? url.startsWith(VITE_DEV_URL)
+      : url.startsWith('file://');
+    if (!allowed) {
+      event.preventDefault();
+      shell.openExternal(url);
+    }
   });
 
   // Handle window.open() calls from the renderer
@@ -493,6 +505,9 @@ app.whenReady().then(async () => {
           engineN1: engines[0]?.n1 ?? 0,
           parkingBrake: (flightState.parkingBrake as boolean) ?? true,
         });
+
+        // Keep VPS relay phase in sync for heartbeats
+        vpsRelay?.updatePhase(phase);
 
         // Detect exceedances from current telemetry
         const exceedancePosition = {

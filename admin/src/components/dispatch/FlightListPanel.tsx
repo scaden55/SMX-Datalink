@@ -1,4 +1,4 @@
-import { AirplaneTilt } from '@phosphor-icons/react';
+import { Plane } from 'lucide-react';
 import type { ActiveFlightHeartbeat } from '@acars/shared';
 import { StatusBadge } from '@/components/primitives';
 
@@ -17,7 +17,7 @@ export function FlightListPanel({ flights, selectedCallsign, onSelectFlight, con
     <div className="flex h-full flex-col bg-[var(--surface-0)] border-r border-[var(--border-primary)]">
       {/* Header */}
       <div className="flex items-center gap-2 border-b border-[var(--border-primary)] px-4 py-3">
-        <AirplaneTilt size={18} weight="bold" className="text-[var(--accent-blue)]" />
+        <Plane size={18} className="text-[var(--accent-blue)]" />
         <h2 className="text-sm font-semibold">Active Flights</h2>
         <div className="ml-auto flex items-center gap-2">
           <div className="flex items-center gap-1.5" title={connected ? 'Connected' : connecting ? 'Connecting' : 'Disconnected'}>
@@ -39,7 +39,7 @@ export function FlightListPanel({ flights, selectedCallsign, onSelectFlight, con
       <div className="flex-1 overflow-y-auto">
         {sorted.length === 0 ? (
           <div className="flex flex-col items-center justify-center gap-2 py-16 text-[var(--text-quaternary)]">
-            <AirplaneTilt size={32} />
+            <Plane size={32} />
             <p className="text-sm">No active flights</p>
           </div>
         ) : (

@@ -1,4 +1,4 @@
-import { Airplane, ClipboardText, ArrowRight } from '@phosphor-icons/react';
+import { Plane, ClipboardList, ArrowRight } from 'lucide-react';
 
 interface RecentFlight {
   id: number;
@@ -62,11 +62,11 @@ export function OperationsPanel({ activeFlights, pendingPireps, recentFlights }:
         <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Recent Flights</h2>
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-            <Airplane size={12} weight="duotone" className="text-blue-400" />
+            <Plane size={12} className="text-blue-400" />
             <span className="font-mono font-medium text-foreground">{activeFlights}</span>
           </div>
           <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-            <ClipboardText size={12} weight="duotone" className="text-amber-400" />
+            <ClipboardList size={12} className="text-amber-400" />
             <span className="font-mono font-medium text-foreground">{pendingPireps}</span>
           </div>
         </div>

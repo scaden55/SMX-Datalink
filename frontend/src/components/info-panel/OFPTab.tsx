@@ -22,7 +22,7 @@ export function OFPTab() {
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <h3 className="text-xs font-semibold text-acars-text">Operational Flight Plan</h3>
-        <span className="text-[10px] text-acars-muted font-mono">
+        <span className="text-[10px] text-acars-muted tabular-nums">
           {ofp.airline}{ofp.flightNumber} | {ofp.aircraftType}
         </span>
       </div>
@@ -32,38 +32,38 @@ export function OFPTab() {
         <div className="grid grid-cols-4 gap-3 text-[11px]">
           <div>
             <span className="data-label">Origin</span>
-            <div className="text-acars-text font-mono">{ofp.origin}</div>
+            <div className="text-acars-text tabular-nums">{ofp.origin}</div>
           </div>
           <div>
             <span className="data-label">Destination</span>
-            <div className="text-acars-text font-mono">{ofp.destination}</div>
+            <div className="text-acars-text tabular-nums">{ofp.destination}</div>
           </div>
           <div>
             <span className="data-label">Cruise</span>
-            <div className="text-acars-text font-mono">FL{Math.round(ofp.cruiseAltitude / 100)}</div>
+            <div className="text-acars-text tabular-nums">FL{Math.round(ofp.cruiseAltitude / 100)}</div>
           </div>
           <div>
             <span className="data-label">Est Enroute</span>
-            <div className="text-acars-text font-mono">{enrouteH}h{String(enrouteM).padStart(2, '0')}m</div>
+            <div className="text-acars-text tabular-nums">{enrouteH}h{String(enrouteM).padStart(2, '0')}m</div>
           </div>
         </div>
 
         <div className="grid grid-cols-4 gap-3 text-[11px] mt-2">
           <div>
             <span className="data-label">Fuel Plan</span>
-            <div className="text-acars-text font-mono">{ofp.fuel.totalLbs.toLocaleString()} lbs</div>
+            <div className="text-acars-text tabular-nums">{ofp.fuel.totalLbs.toLocaleString()} lbs</div>
           </div>
           <div>
             <span className="data-label">Burn</span>
-            <div className="text-acars-text font-mono">{ofp.fuel.burnLbs.toLocaleString()} lbs</div>
+            <div className="text-acars-text tabular-nums">{ofp.fuel.burnLbs.toLocaleString()} lbs</div>
           </div>
           <div>
             <span className="data-label">ZFW</span>
-            <div className="text-acars-text font-mono">{ofp.weights.estZfw.toLocaleString()} lbs</div>
+            <div className="text-acars-text tabular-nums">{ofp.weights.estZfw.toLocaleString()} lbs</div>
           </div>
           <div>
             <span className="data-label">TOW</span>
-            <div className="text-acars-text font-mono">{ofp.weights.estTow.toLocaleString()} lbs</div>
+            <div className="text-acars-text tabular-nums">{ofp.weights.estTow.toLocaleString()} lbs</div>
           </div>
         </div>
       </div>
@@ -71,7 +71,7 @@ export function OFPTab() {
       {/* Route */}
       <div className="panel p-3">
         <span className="data-label">Route</span>
-        <div className="text-[11px] text-acars-text font-mono mt-1 break-all leading-relaxed">
+        <div className="text-[11px] text-acars-text tabular-nums mt-1 break-all leading-relaxed">
           {ofp.route || flightPlan?.route || '---'}
         </div>
       </div>
@@ -82,7 +82,7 @@ export function OFPTab() {
           <span className="data-label">Alternates</span>
           <div className="mt-1 space-y-1">
             {ofp.alternates.map((alt) => (
-              <div key={alt.icao} className="text-[11px] text-acars-text font-mono">
+              <div key={alt.icao} className="text-[11px] text-acars-text tabular-nums">
                 {alt.icao} ({alt.name}) — {alt.distanceNm} nm, fuel {alt.fuelLbs.toLocaleString()} lbs
               </div>
             ))}
@@ -94,7 +94,7 @@ export function OFPTab() {
       {ofp.rawText && (
         <div className="panel p-3">
           <span className="data-label">Raw OFP</span>
-          <pre className="text-[10px] text-acars-text font-mono mt-1 whitespace-pre-wrap leading-relaxed max-h-[300px] overflow-y-auto">
+          <pre className="text-[10px] text-acars-text tabular-nums mt-1 whitespace-pre-wrap leading-relaxed max-h-[300px] overflow-y-auto">
             {ofp.rawText}
           </pre>
         </div>

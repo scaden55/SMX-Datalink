@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'sonner';
 import { useAuthStore } from '@/stores/authStore';
 import { CommandPalette } from '@/components/shared/CommandPalette';
+import { ErrorBoundary } from '@/components/shared/ErrorBoundary';
 import { AuthGuard } from '@/components/auth/AuthGuard';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { LoginPage } from '@/pages/LoginPage';
@@ -17,6 +18,9 @@ import { NotificationsPage } from '@/pages/NotificationsPage';
 import { DispatchBoardPage } from '@/pages/DispatchBoardPage';
 import { AuditPage } from '@/pages/AuditPage';
 import { SettingsPage } from '@/pages/SettingsPage';
+import { FleetPage } from '@/pages/FleetPage';
+import { AircraftDetailPage } from '@/pages/AircraftDetailPage';
+import { CostEnginePage } from '@/pages/CostEnginePage';
 
 export function App() {
   const hydrate = useAuthStore((s) => s.hydrate);
@@ -26,11 +30,12 @@ export function App() {
   }, [hydrate]);
 
   return (
+    <ErrorBoundary>
     <BrowserRouter basename="/admin">
       <Toaster
         position="bottom-right"
         toastOptions={{
-          style: { background: '#1c2033', border: '1px solid #2a2e3f', color: '#e8eaed' },
+          style: { background: 'var(--surface-3)', border: '1px solid var(--border-primary)', color: 'var(--text-primary)' },
         }}
         richColors
       />
@@ -40,11 +45,14 @@ export function App() {
         <Route element={<AuthGuard><DashboardLayout /></AuthGuard>}>
           <Route index element={<DashboardPage />} />
           <Route path="dispatch" element={<DispatchBoardPage />} />
+          <Route path="fleet" element={<FleetPage />} />
+          <Route path="fleet/:id" element={<AircraftDetailPage />} />
           <Route path="users" element={<UsersPage />} />
           <Route path="schedules" element={<SchedulesPage />} />
           <Route path="pireps" element={<PirepsPage />} />
           <Route path="maintenance" element={<MaintenancePage />} />
           <Route path="finances" element={<FinancesPage />} />
+          <Route path="cost-engine" element={<CostEnginePage />} />
           <Route path="reports" element={<ReportsPage />} />
           <Route path="notifications" element={<NotificationsPage />} />
           <Route path="audit" element={<AuditPage />} />
@@ -53,5 +61,6 @@ export function App() {
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
+    </ErrorBoundary>
   );
 }

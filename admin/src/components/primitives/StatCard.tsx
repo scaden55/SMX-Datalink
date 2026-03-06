@@ -1,12 +1,11 @@
-import type { ComponentType } from 'react';
-import type { IconProps } from '@phosphor-icons/react';
-import { TrendUp, TrendDown } from '@phosphor-icons/react';
+import type { LucideIcon } from 'lucide-react';
+import { TrendingUp, TrendingDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 type Accent = 'blue' | 'emerald' | 'amber' | 'red' | 'cyan';
 
 interface StatCardProps {
-  icon: ComponentType<IconProps>;
+  icon: LucideIcon;
   label: string;
   value: string | number;
   accent?: Accent;
@@ -32,7 +31,7 @@ export function StatCard({ icon: Icon, label, value, accent = 'blue', trend, cla
     >
       <div className="flex items-center gap-3">
         <div className={cn('flex items-center justify-center w-9 h-9 rounded-lg', iconBg[accent])}>
-          <Icon size={18} weight="duotone" />
+          <Icon size={18} />
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-[11px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">
@@ -49,7 +48,7 @@ export function StatCard({ icon: Icon, label, value, accent = 'blue', trend, cla
                   trend.direction === 'up' ? 'text-[var(--accent-emerald)]' : 'text-[var(--accent-red)]',
                 )}
               >
-                {trend.direction === 'up' ? <TrendUp size={12} /> : <TrendDown size={12} />}
+                {trend.direction === 'up' ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
                 {trend.value}%
               </span>
             )}

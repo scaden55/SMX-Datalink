@@ -73,7 +73,7 @@ async function request<T>(method: string, url: string, body?: unknown): Promise<
 
   if (!res.ok) {
     const data = await res.json().catch(() => ({ message: res.statusText }));
-    throw new ApiError(res.status, data.message ?? res.statusText);
+    throw new ApiError(res.status, data.error ?? data.message ?? res.statusText);
   }
 
   if (res.status === 204) return undefined as T;

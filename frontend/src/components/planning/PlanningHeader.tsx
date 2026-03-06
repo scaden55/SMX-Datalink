@@ -4,7 +4,7 @@ export function PlanningHeader() {
   const { form, setFormField } = useFlightPlanStore();
 
   return (
-    <div className="px-3 py-3 border-b border-acars-border space-y-2">
+    <div className="px-3 py-3 border-b border-white/[0.06] space-y-2">
       <div className="grid grid-cols-2 gap-2.5">
         <div>
           <label className="planning-label mb-1">Origin</label>

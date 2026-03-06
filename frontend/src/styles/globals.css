@@ -1,5 +1,42 @@
 @import './planning-tokens.css';
 
+/* ── Lufga font (self-hosted) ──────────────────────────── */
+@font-face {
+  font-family: 'Lufga';
+  src: url('./fonts/Lufga-Light.woff') format('woff');
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Lufga';
+  src: url('./fonts/Lufga-Regular.woff') format('woff');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Lufga';
+  src: url('./fonts/Lufga-Medium.woff') format('woff');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Lufga';
+  src: url('./fonts/Lufga-SemiBold.woff') format('woff');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Lufga';
+  src: url('./fonts/Lufga-Bold.woff') format('woff');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -24,11 +61,11 @@
     background: rgba(255, 255, 255, 0.18);
   }
 
-  /* Form elements use IBM Plex Mono for clear numeric/data input */
+  /* Form elements use Urbanist for consistent typography */
   input,
   select,
   textarea {
-    font-family: 'IBM Plex Mono', monospace;
+    font-family: 'Lufga', system-ui, sans-serif;
     font-feature-settings: "tnum";
   }
 
@@ -41,14 +78,15 @@
 
   body {
     @apply bg-[hsl(var(--background))] text-[hsl(var(--foreground))];
+    font-family: 'Lufga', system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
 }
 
-/* ── Tabular numbers — font-mono now means IBM Plex Mono ──── */
-.font-mono {
-  font-feature-settings: "tnum";
+/* ── Tabular numbers ──────────────────────────────────────── */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
 }
 
 /* Planning page: tnum + ss01 globally */
@@ -64,23 +102,16 @@
 @layer components {
   /* ── Panels ─────────────────────────────────────────────────── */
   .panel {
-    @apply rounded-md relative overflow-hidden;
-    background: var(--bg-panel);
-    border: 1px solid var(--border-panel);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04),
-                0 1px 2px rgba(0, 0, 0, 0.12),
-                0 4px 12px rgba(0, 0, 0, 0.16);
+    @apply rounded-lg relative overflow-hidden;
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.06);
   }
-  .panel::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    opacity: 0.03;
-    pointer-events: none;
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-    background-repeat: repeat;
-    background-size: 128px 128px;
-    mix-blend-mode: overlay;
+
+  /* ── Gradient Card (transparent with subtle border) ────────── */
+  .gradient-card {
+    @apply rounded-lg relative overflow-hidden;
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.06);
   }
 
   /* ── Focus Ring ─────────────────────────────────────────────── */
@@ -95,12 +126,12 @@
            hover:brightness-110 active:brightness-95 active:scale-[0.98]
            disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:transform-none
            transition-all focus-ring;
-    background: linear-gradient(135deg, #4d9cf6 0%, #3478e0 100%);
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2), 0 2px 8px rgba(77, 156, 246, 0.25);
+    background: linear-gradient(135deg, #3b5bdb 0%, #2b4bc0 100%);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3), 0 2px 8px rgba(59, 91, 219, 0.20);
   }
   .btn-primary:hover:not(:disabled) {
     transform: translateY(-1px);
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2), 0 4px 16px rgba(77, 156, 246, 0.40);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3), 0 4px 16px rgba(59, 91, 219, 0.35);
   }
   .btn-primary.btn-sm { @apply px-3 py-1.5 text-[10px]; }
   .btn-primary.btn-md { @apply px-4 py-2; }
@@ -150,7 +181,7 @@
   /* ── Inputs ─────────────────────────────────────────────────── */
   .input-field {
     @apply w-full rounded-md bg-acars-input border border-acars-border
-           text-[11px] font-mono px-2.5 py-1.5
+           text-[11px] tabular-nums px-2.5 py-1.5
            placeholder:text-acars-muted/40
            focus:outline-none focus:border-blue-400
            disabled:opacity-50 disabled:cursor-not-allowed
@@ -163,7 +194,7 @@
 
   .select-field {
     @apply w-full h-7 rounded-md border border-acars-border bg-acars-input
-           text-[11px] font-mono px-2.5
+           text-[11px] tabular-nums px-2.5
            outline-none focus:border-blue-400
            transition-colors cursor-pointer
            appearance-none
@@ -174,7 +205,7 @@
 
   /* ── Planning-specific input (dense) ─────────────────────────── */
   .planning-input {
-    @apply w-full rounded-md text-[12px] font-mono px-2.5 py-1.5
+    @apply w-full rounded-md text-[12px] tabular-nums px-2.5 py-1.5
            focus:outline-none transition-colors;
     background: var(--bg-input);
     border: 1px solid var(--border-input);
@@ -184,7 +215,7 @@
   .planning-input::placeholder { color: var(--text-hint); }
 
   .planning-select {
-    @apply w-full rounded-md text-[12px] font-mono px-2.5 py-1.5
+    @apply w-full rounded-md text-[12px] tabular-nums px-2.5 py-1.5
            outline-none transition-colors;
     background: var(--bg-input);
     border: 1px solid var(--border-input);
@@ -193,7 +224,7 @@
   .planning-select:focus { border-color: var(--accent); }
 
   .planning-textarea {
-    @apply w-full rounded-md text-[12px] font-mono px-2.5 py-1.5
+    @apply w-full rounded-md text-[12px] tabular-nums px-2.5 py-1.5
            focus:outline-none transition-colors resize-none;
     background: var(--bg-input);
     border: 1px solid var(--border-input);
@@ -281,7 +312,7 @@
     color: var(--text-label);
   }
   .data-value {
-    @apply text-[12px] font-mono;
+    @apply text-[12px] tabular-nums;
     color: var(--text-primary);
   }
 
@@ -317,7 +348,7 @@
 
   /* ── ACARS Message Block ──────────────────────────────────── */
   pre.acars-msg {
-    @apply font-mono text-[11px] leading-relaxed p-3 rounded-md overflow-x-auto;
+    @apply text-[11px] leading-relaxed p-3 rounded-md overflow-x-auto;
     background: var(--bg-input);
     border: 1px solid var(--border-panel);
     color: var(--text-primary);
@@ -332,7 +363,7 @@
   color: #ffffff;
   font-size: 12px;
   font-weight: 700;
-  font-family: 'IBM Plex Mono', monospace;
+  font-family: 'Lufga', system-ui, sans-serif;
   text-shadow: 0 0 4px #000, 0 0 8px #000, 1px 1px 2px #000;
   padding: 0 !important;
 }
@@ -347,7 +378,7 @@
   color: #eab308;
   font-size: 10px;
   font-weight: 600;
-  font-family: 'IBM Plex Mono', monospace;
+  font-family: 'Lufga', system-ui, sans-serif;
   text-shadow: 0 0 3px #1a1a00, 0 0 6px #000, 1px 1px 2px #000;
   padding: 0 !important;
 }
@@ -394,7 +425,7 @@
   box-shadow: 0 0 6px rgba(88, 166, 255, 0.3);
 }
 .airport-label-icao {
-  font: 11px 'IBM Plex Mono', monospace;
+  font: 11px 'Lufga', system-ui, sans-serif;
   font-weight: 600;
   color: #6e7681;
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
@@ -405,7 +436,7 @@
 }
 .airport-facility-badge {
   color: #fff;
-  font: bold 8px 'IBM Plex Mono', monospace;
+  font: bold 8px 'Lufga', system-ui, sans-serif;
   padding: 0 3px;
   border-radius: 2px;
   line-height: 13px;
@@ -422,6 +453,8 @@
   background: none !important;
   border: none !important;
   overflow: visible !important;
+  width: auto !important;
+  height: auto !important;
 }
 .airspace-badge {
   background: rgba(15, 18, 25, 0.92);
@@ -430,7 +463,7 @@
   padding: 2px 6px;
   font-size: 11px;
   line-height: 1.3;
-  font-family: 'IBM Plex Mono', monospace;
+  font-family: 'Lufga', system-ui, sans-serif;
   font-weight: 600;
   white-space: nowrap;
   cursor: pointer;
@@ -462,7 +495,7 @@
   border-radius: 4px !important;
   color: #e6e9ee !important;
   font-size: 11px !important;
-  font-family: 'IBM Plex Mono', monospace !important;
+  font-family: 'Lufga', system-ui, sans-serif !important;
   padding: 4px 8px !important;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5) !important;
   white-space: pre-line !important;
@@ -478,7 +511,7 @@
   border-radius: 4px !important;
   color: #e6e9ee !important;
   font-size: 10px !important;
-  font-family: 'IBM Plex Mono', monospace !important;
+  font-family: 'Lufga', system-ui, sans-serif !important;
   padding: 2px 6px !important;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5) !important;
 }

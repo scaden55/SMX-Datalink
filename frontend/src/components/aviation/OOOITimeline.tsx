@@ -40,7 +40,7 @@ export function OOOITimeline({ events, className }: OOOITimelineProps) {
               {/* Time */}
               <span
                 className={cn(
-                  'text-[11px] font-mono tabular-nums',
+                  'text-[11px] tabular-nums',
                   isCompleted ? 'text-acars-text' : 'text-acars-muted/30',
                 )}
               >

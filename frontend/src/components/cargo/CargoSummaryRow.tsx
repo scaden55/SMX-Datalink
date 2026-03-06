@@ -26,7 +26,7 @@ export function CargoSummaryRow() {
         </svg>
         <Package className="w-3 h-3 text-blue-400 mr-1.5" />
         <span className="text-[11px] font-semibold text-acars-muted">Cargo</span>
-        <span className="ml-auto text-[11px] font-mono text-acars-text">
+        <span className="ml-auto text-[11px] tabular-nums text-acars-text">
           {uldCount} ULDs
         </span>
         <svg
@@ -39,22 +39,22 @@ export function CargoSummaryRow() {
       {open && (
         <div className="px-3 pb-2 space-y-1">
           <div className="flex justify-between text-[10px]">
-            <span className="text-acars-muted font-sans">Manifest</span>
-            <span className="font-mono text-acars-text">{manifest.manifestNumber}</span>
+            <span className="text-acars-muted">Manifest</span>
+            <span className="tabular-nums text-acars-text">{manifest.manifestNumber}</span>
           </div>
           <div className="flex justify-between text-[10px]">
-            <span className="text-acars-muted font-sans">Total</span>
-            <span className="font-mono text-acars-text">{displayWeight} {unit} ({manifest.payloadUtilization}%)</span>
+            <span className="text-acars-muted">Total</span>
+            <span className="tabular-nums text-acars-text">{displayWeight} {unit} ({manifest.payloadUtilization}%)</span>
           </div>
           {manifest.notocRequired && (
             <div className="flex justify-between text-[10px]">
-              <span className="text-amber-400 font-sans">NOTOC</span>
-              <span className="font-mono text-amber-400">{manifest.notocItems.length} DG items</span>
+              <span className="text-amber-400">NOTOC</span>
+              <span className="tabular-nums text-amber-400">{manifest.notocItems.length} DG items</span>
             </div>
           )}
           <div className="flex justify-between text-[10px]">
-            <span className="text-acars-muted font-sans">CG</span>
-            <span className="font-mono text-acars-text">{manifest.cgPosition}% MAC</span>
+            <span className="text-acars-muted">CG</span>
+            <span className="tabular-nums text-acars-text">{manifest.cgPosition}% MAC</span>
           </div>
         </div>
       )}

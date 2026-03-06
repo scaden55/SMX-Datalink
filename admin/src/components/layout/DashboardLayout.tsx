@@ -1,18 +1,17 @@
 import { Outlet } from 'react-router-dom';
-import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
 import { AppSidebar } from './AppSidebar';
 import { TopBar } from './TopBar';
 
 export function DashboardLayout() {
   return (
-    <SidebarProvider>
+    <div className="flex h-screen overflow-hidden" style={{ backgroundColor: 'var(--surface-0)' }}>
       <AppSidebar />
-      <SidebarInset>
+      <div className="flex flex-1 flex-col min-w-0">
         <TopBar />
-        <div className="flex-1 overflow-y-auto p-6" style={{ backgroundColor: 'var(--surface-1)' }}>
+        <main className="flex-1 overflow-y-auto">
           <Outlet />
-        </div>
-      </SidebarInset>
-    </SidebarProvider>
+        </main>
+      </div>
+    </div>
   );
 }

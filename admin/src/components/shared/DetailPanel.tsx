@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { X } from '@phosphor-icons/react';
+import { X } from 'lucide-react';
 
 // ── Types ───────────────────────────────────────────────────
 
@@ -65,7 +65,7 @@ export function DetailPanel({
             onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-tertiary)')}
             aria-label="Close panel"
           >
-            <X size={16} weight="bold" />
+            <X size={16} />
           </button>
         </div>
         {actions && <div className="flex gap-2 mt-3">{actions}</div>}

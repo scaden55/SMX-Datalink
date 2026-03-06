@@ -1,4 +1,4 @@
-import { CurrencyDollar } from '@phosphor-icons/react';
+import { DollarSign } from 'lucide-react';
 import {
   AreaChart,
   Area,
@@ -47,7 +47,7 @@ export function FinancePanel({ monthlyRevenue, financialSummary }: FinancePanelP
       <div className="flex items-center justify-between p-3 pb-2">
         <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Finance</h2>
         <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-          <CurrencyDollar size={12} weight="duotone" className="text-cyan-400" />
+          <DollarSign size={12} className="text-cyan-400" />
           <span className="font-mono font-medium text-foreground">{formatRevenue(monthlyRevenue)}</span>
           <span>/ mo</span>
         </div>

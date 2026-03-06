@@ -124,7 +124,7 @@ function StatCard({ icon: Icon, label, value, color }: {
         <Icon className="w-3.5 h-3.5 flex-shrink-0" style={{ color }} />
         <span className="text-[10px] uppercase tracking-wider text-acars-muted font-medium truncate">{label}</span>
       </div>
-      <span className="text-lg font-bold text-acars-text font-mono truncate">{value}</span>
+      <span className="text-lg font-bold text-acars-text tabular-nums truncate">{value}</span>
     </div>
   );
 }
@@ -152,8 +152,8 @@ function ExpenseRow({ icon: Icon, label, amount, pct, color, description }: {
               <span className="text-[10px] text-acars-muted">{description}</span>
             </div>
             <div className="flex items-center gap-3">
-              <span className="text-[10px] font-mono text-acars-muted">{pct.toFixed(1)}%</span>
-              <span className="text-xs font-mono font-semibold text-acars-text min-w-[80px] text-right">{formatCurrencyFull(amount)}</span>
+              <span className="text-[10px] tabular-nums text-acars-muted">{pct.toFixed(1)}%</span>
+              <span className="text-xs tabular-nums font-semibold text-acars-text min-w-[80px] text-right">{formatCurrencyFull(amount)}</span>
             </div>
           </div>
           <div className="h-1.5 rounded-full bg-acars-border overflow-hidden">
@@ -201,7 +201,7 @@ function AircraftFilter({ options, value, onChange }: {
               <button
                 key={type}
                 onClick={() => { onChange(type); setOpen(false); }}
-                className={`w-full text-left px-3 py-1.5 text-xs font-mono transition-colors ${value === type ? 'text-sky-400 bg-sky-500/5' : 'text-acars-text hover:bg-acars-border'}`}
+                className={`w-full text-left px-3 py-1.5 text-xs tabular-nums transition-colors ${value === type ? 'text-sky-400 bg-sky-500/5' : 'text-acars-text hover:bg-acars-border'}`}
               >
                 {type}
               </button>
@@ -400,7 +400,7 @@ export function ReportsPage() {
                   <div className="rounded-md border border-acars-border bg-acars-panel p-4">
                     <div className="flex items-center justify-between mb-1">
                       <h3 className="text-xs font-semibold text-acars-text uppercase tracking-wider">Expense Breakdown</h3>
-                      <span className="text-xs font-mono font-semibold text-amber-400">{formatCurrencyFull(activeFin.expenses.totalExpenses)}</span>
+                      <span className="text-xs tabular-nums font-semibold text-amber-400">{formatCurrencyFull(activeFin.expenses.totalExpenses)}</span>
                     </div>
                     <p className="text-[10px] text-acars-muted mb-3">Operating costs for completed flights</p>
 
@@ -444,14 +444,14 @@ export function ReportsPage() {
                   <div className="rounded-md border border-acars-border bg-acars-panel p-4">
                     <div className="flex items-center justify-between mb-1">
                       <h3 className="text-xs font-semibold text-acars-text uppercase tracking-wider">Revenue &amp; Profit</h3>
-                      <span className="text-xs font-mono font-semibold" style={{ color: COLORS.green }}>{formatCurrencyFull(activeFin.revenue.totalRevenue)}</span>
+                      <span className="text-xs tabular-nums font-semibold" style={{ color: COLORS.green }}>{formatCurrencyFull(activeFin.revenue.totalRevenue)}</span>
                     </div>
                     <p className="text-[10px] text-acars-muted mb-4">Revenue sources and margin analysis</p>
 
                     <div className="flex flex-col items-center gap-5">
                       {/* Profit Margin */}
                       <div className="text-center">
-                        <div className="text-2xl font-bold font-mono" style={{ color: activeFin.netProfit >= 0 ? COLORS.green : COLORS.red }}>
+                        <div className="text-2xl font-bold tabular-nums" style={{ color: activeFin.netProfit >= 0 ? COLORS.green : COLORS.red }}>
                           {activeFin.profitMargin > 0 ? '+' : ''}{activeFin.profitMargin}%
                         </div>
                         <div className="text-[10px] uppercase tracking-wider text-acars-muted mt-1">Profit Margin</div>
@@ -465,7 +465,7 @@ export function ReportsPage() {
                               <Package className="w-3 h-3" style={{ color: COLORS.amber }} />
                               <span className="text-[10px] text-acars-muted uppercase tracking-wider">Cargo Revenue</span>
                             </div>
-                            <span className="text-xs font-mono font-semibold text-acars-text">{formatCurrencyFull(activeFin.revenue.cargoRevenue)}</span>
+                            <span className="text-xs tabular-nums font-semibold text-acars-text">{formatCurrencyFull(activeFin.revenue.cargoRevenue)}</span>
                           </div>
                           <div className="h-2 rounded-full bg-acars-border overflow-hidden">
                             <div
@@ -485,7 +485,7 @@ export function ReportsPage() {
                               <Users className="w-3 h-3" style={{ color: COLORS.cyan }} />
                               <span className="text-[10px] text-acars-muted uppercase tracking-wider">Passenger Revenue</span>
                             </div>
-                            <span className="text-xs font-mono font-semibold text-acars-text">{formatCurrencyFull(activeFin.revenue.passengerRevenue)}</span>
+                            <span className="text-xs tabular-nums font-semibold text-acars-text">{formatCurrencyFull(activeFin.revenue.passengerRevenue)}</span>
                           </div>
                           <div className="h-2 rounded-full bg-acars-border overflow-hidden">
                             <div
@@ -504,15 +504,15 @@ export function ReportsPage() {
                         <div className="pt-2 border-t border-acars-border space-y-1.5">
                           <div className="flex items-center justify-between">
                             <span className="text-[10px] text-acars-muted uppercase tracking-wider">Total Revenue</span>
-                            <span className="text-xs font-mono font-semibold" style={{ color: COLORS.green }}>{formatCurrencyFull(activeFin.revenue.totalRevenue)}</span>
+                            <span className="text-xs tabular-nums font-semibold" style={{ color: COLORS.green }}>{formatCurrencyFull(activeFin.revenue.totalRevenue)}</span>
                           </div>
                           <div className="flex items-center justify-between">
                             <span className="text-[10px] text-acars-muted uppercase tracking-wider">Total Expenses</span>
-                            <span className="text-xs font-mono font-semibold" style={{ color: COLORS.amber }}>-{formatCurrencyFull(activeFin.expenses.totalExpenses)}</span>
+                            <span className="text-xs tabular-nums font-semibold" style={{ color: COLORS.amber }}>-{formatCurrencyFull(activeFin.expenses.totalExpenses)}</span>
                           </div>
                           <div className="flex items-center justify-between pt-1.5 border-t border-acars-border">
                             <span className="text-[10px] text-acars-text font-semibold uppercase tracking-wider">Net Profit</span>
-                            <span className="text-xs font-mono font-bold" style={{ color: activeFin.netProfit >= 0 ? COLORS.green : COLORS.red }}>
+                            <span className="text-xs tabular-nums font-bold" style={{ color: activeFin.netProfit >= 0 ? COLORS.green : COLORS.red }}>
                               {formatCurrencyFull(activeFin.netProfit)}
                             </span>
                           </div>
@@ -578,9 +578,9 @@ export function ReportsPage() {
                           <td className="py-1.5 text-acars-muted">{i + 1}</td>
                           <td className="py-1.5">
                             <div className="flex items-center gap-1.5">
-                              <span className="font-mono font-semibold text-acars-text">{r.depIcao}</span>
+                              <span className="tabular-nums font-semibold text-acars-text">{r.depIcao}</span>
                               <ArrowRight className="w-3 h-3 text-sky-400/40" />
-                              <span className="font-mono font-semibold text-acars-text">{r.arrIcao}</span>
+                              <span className="tabular-nums font-semibold text-acars-text">{r.arrIcao}</span>
                             </div>
                             {(r.depName || r.arrName) && (
                               <div className="text-[10px] text-acars-muted truncate max-w-[240px]">
@@ -588,7 +588,7 @@ export function ReportsPage() {
                               </div>
                             )}
                           </td>
-                          <td className="py-1.5 text-right font-mono font-semibold text-acars-text">{r.flights}</td>
+                          <td className="py-1.5 text-right tabular-nums font-semibold text-acars-text">{r.flights}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -620,9 +620,9 @@ export function ReportsPage() {
                             <div className="font-semibold text-acars-text">{p.callsign}</div>
                             <div className="text-[10px] text-acars-muted">{p.pilotName}</div>
                           </td>
-                          <td className="py-1.5 text-right font-mono font-semibold text-acars-text">{p.flights}</td>
-                          <td className="py-1.5 text-right font-mono text-acars-text">{formatDuration(p.hoursMin)}</td>
-                          <td className="py-1.5 text-right font-mono font-semibold" style={{
+                          <td className="py-1.5 text-right tabular-nums font-semibold text-acars-text">{p.flights}</td>
+                          <td className="py-1.5 text-right tabular-nums text-acars-text">{formatDuration(p.hoursMin)}</td>
+                          <td className="py-1.5 text-right tabular-nums font-semibold" style={{
                             color: p.avgScore == null ? COLORS.muted : p.avgScore >= 90 ? COLORS.green : p.avgScore >= 75 ? COLORS.amber : COLORS.red,
                           }}>
                             {p.avgScore ?? '—'}

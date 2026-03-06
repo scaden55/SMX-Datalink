@@ -33,7 +33,7 @@ export function DataReadout({ fields, columns = 3, className }: DataReadoutProps
           <span
             className={cn(
               'text-[12px] text-acars-text',
-              (field.mono ?? true) && 'font-mono tabular-nums',
+              (field.mono ?? true) && 'tabular-nums',
             )}
           >
             {field.value ?? '—'}

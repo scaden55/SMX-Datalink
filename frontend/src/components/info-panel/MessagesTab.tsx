@@ -148,7 +148,7 @@ export function MessagesTab() {
               key={msg.id}
               className="flex items-start gap-2 px-2 py-1.5 rounded bg-acars-panel/50 text-[11px]"
             >
-              <span className="text-acars-muted shrink-0 font-mono text-[10px] mt-0.5">
+              <span className="text-acars-muted shrink-0 tabular-nums text-[10px] mt-0.5">
                 {formatTimestamp(msg.timestamp)}
               </span>
               <span className="shrink-0 mt-0.5">{typeBadge(msg.type)}</span>

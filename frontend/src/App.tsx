@@ -1,7 +1,7 @@
-import { lazy, Suspense } from 'react';
+import { lazy, Suspense, useState, useEffect } from 'react';
 import { HashRouter, Routes, Route } from 'react-router-dom';
+import { Minus, Square, X, Copy } from '@phosphor-icons/react';
 import { ErrorBoundary } from './components/ErrorBoundary';
-import { TitleBar } from './components/navigation/TitleBar';
 import { MainShell } from './components/navigation/MainShell';
 import { AuthGuard } from './components/auth/AuthGuard';
 import { Toaster } from './components/ui/Toaster';
@@ -15,14 +15,6 @@ import { LogbookPage } from './pages/LogbookPage';
 import { FlightDetailPage } from './pages/FlightDetailPage';
 import { ReportsPage } from './pages/ReportsPage';
 import { SettingsPage } from './pages/SettingsPage';
-import { AdminUsersPage } from './pages/admin/AdminUsersPage';
-import { AdminSchedulesPage } from './pages/admin/AdminSchedulesPage';
-import { AdminPirepsPage } from './pages/admin/AdminPirepsPage';
-import { AdminFinancesPage } from './pages/admin/AdminFinancesPage';
-import { AdminReportsPage } from './pages/admin/AdminReportsPage';
-import { AdminSettingsPage } from './pages/admin/AdminSettingsPage';
-import { AdminAuditPage } from './pages/admin/AdminAuditPage';
-import { AdminMaintenancePage } from './pages/admin/AdminMaintenancePage';
 
 // Lazy-load pages that import Leaflet/react-leaflet to split the map chunk
 const DashboardPage = lazy(() =>
@@ -38,20 +30,72 @@ const FlightPlanningPage = lazy(() =>
   import('./pages/FlightPlanningPage').then((m) => ({ default: m.FlightPlanningPage }))
 );
 
-const PageFallback = () => <div className="flex-1 h-full bg-acars-bg" />;
+const isElectron = !!window.electronAPI;
+
+const PageFallback = () => <div className="flex-1 h-full" />;
+
+/** Floating window controls for pages outside MainShell (login, register) */
+function FloatingWindowControls() {
+  const [maximized, setMaximized] = useState(false);
+
+  useEffect(() => {
+    if (!isElectron) return;
+    window.electronAPI!.isMaximized().then(setMaximized);
+    const unsub = window.electronAPI!.on('window:maximized-change', (isMax: unknown) => {
+      setMaximized(isMax as boolean);
+    });
+    return unsub;
+  }, []);
+
+  if (!isElectron) return null;
+
+  return (
+    <div
+      className="fixed top-0 right-0 flex items-center h-8 z-[9999]"
+      style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
+    >
+      <button
+        onClick={() => window.electronAPI!.windowMinimize()}
+        className="flex items-center justify-center w-12 h-full text-white/30 hover:bg-white/[0.06] hover:text-white/70 transition-colors"
+        title="Minimize"
+      >
+        <Minus className="w-4 h-4" weight="light" />
+      </button>
+      <button
+        onClick={() => window.electronAPI!.windowMaximizeToggle()}
+        className="flex items-center justify-center w-12 h-full text-white/30 hover:bg-white/[0.06] hover:text-white/70 transition-colors"
+        title={maximized ? 'Restore' : 'Maximize'}
+      >
+        {maximized ? <Copy className="w-3.5 h-3.5" weight="light" /> : <Square className="w-3.5 h-3.5" weight="light" />}
+      </button>
+      <button
+        onClick={() => window.electronAPI!.windowClose()}
+        className="flex items-center justify-center w-12 h-full text-white/30 hover:bg-[#e81123] hover:text-white transition-colors"
+        title="Close"
+      >
+        <X className="w-4 h-4" weight="light" />
+      </button>
+    </div>
+  );
+}
 
 export function App() {
   useLocalSimConnect();
 
   return (
     <ErrorBoundary>
-    <div className="flex flex-col h-full">
-      <TitleBar />
-      <div className="flex-1 min-h-0">
+    <div
+      className="flex flex-col h-full"
+      style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}
+    >
+      <div
+        className="flex-1 min-h-0"
+        style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
+      >
         <HashRouter>
           <Routes>
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/register" element={<RegisterPage />} />
+            <Route path="/login" element={<><FloatingWindowControls /><LoginPage /></>} />
+            <Route path="/register" element={<><FloatingWindowControls /><RegisterPage /></>} />
             <Route element={<AuthGuard />}>
               <Route element={<MainShell />}>
                 <Route path="/" element={<Suspense fallback={<PageFallback />}><DashboardPage /></Suspense>} />
@@ -64,24 +108,6 @@ export function App() {
                 <Route path="/logbook/:id" element={<FlightDetailPage />} />
                 <Route path="/reports" element={<ReportsPage />} />
                 <Route path="/settings" element={<SettingsPage />} />
-              </Route>
-            </Route>
-            {/* Dispatcher admin routes (dispatcher + admin) */}
-            <Route element={<AuthGuard minRole="dispatcher" />}>
-              <Route element={<MainShell />}>
-                <Route path="/admin/schedules" element={<AdminSchedulesPage />} />
-                <Route path="/admin/pireps" element={<AdminPirepsPage />} />
-              </Route>
-            </Route>
-            {/* Admin-only routes */}
-            <Route element={<AuthGuard minRole="admin" />}>
-              <Route element={<MainShell />}>
-                <Route path="/admin/users" element={<AdminUsersPage />} />
-                <Route path="/admin/maintenance" element={<AdminMaintenancePage />} />
-                <Route path="/admin/finances" element={<AdminFinancesPage />} />
-                <Route path="/admin/reports" element={<AdminReportsPage />} />
-                <Route path="/admin/settings" element={<AdminSettingsPage />} />
-                <Route path="/admin/audit" element={<AdminAuditPage />} />
               </Route>
             </Route>
           </Routes>

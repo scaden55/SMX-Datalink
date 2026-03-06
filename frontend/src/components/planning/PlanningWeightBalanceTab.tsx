@@ -5,18 +5,18 @@ function WeightRow({ label, value, max }: { label: string; value: number; max?: 
   const over = max !== undefined && value > max;
   return (
     <div className="flex items-center justify-between py-1 border-b border-acars-border last:border-0">
-      <span className="text-[11px] text-acars-muted font-sans">{label}</span>
+      <span className="text-[11px] text-acars-muted">{label}</span>
       <div className="flex items-center gap-2">
-        <span className={`text-[12px] font-mono font-semibold ${over ? 'text-red-400' : 'text-acars-mono'}`}>
+        <span className={`text-[12px] tabular-nums font-semibold ${over ? 'text-red-400' : 'text-acars-text'}`}>
           {value ? value.toLocaleString() : '\u2014'}
         </span>
         {max !== undefined && (
-          <span className="text-[11px] text-acars-muted font-mono">
+          <span className="text-[11px] text-acars-muted tabular-nums">
             / {max.toLocaleString()}
           </span>
         )}
         {over && (
-          <span className="text-[9px] font-bold text-red-400 uppercase tracking-[0.08em] font-sans">OVER</span>
+          <span className="text-[9px] font-bold text-red-400 uppercase tracking-[0.08em]">OVER</span>
         )}
       </div>
     </div>
@@ -30,7 +30,7 @@ export function PlanningWeightBalanceTab() {
     return (
       <div className="flex flex-col items-center justify-center h-full text-center gap-2 p-4">
         <Scales className="w-6 h-6 text-acars-muted/20" />
-        <p className="text-[11px] text-acars-muted font-sans">Generate OFP to see weight & balance</p>
+        <p className="text-[11px] text-acars-muted">Generate OFP to see weight & balance</p>
       </div>
     );
   }

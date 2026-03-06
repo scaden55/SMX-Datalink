@@ -94,12 +94,12 @@ export function TrackInfoCard({ points, flightNumber, depIcao, arrIcao }: Props)
       <div className="flex items-center justify-between px-3 py-1.5 border-b border-acars-border">
         <div className="flex items-center gap-2">
           <AirplaneTilt className="w-3.5 h-3.5 text-sky-400" />
-          <span className="text-xs font-bold text-acars-text font-mono tracking-wide">{flightNumber}</span>
-          <span className="text-[10px] text-acars-muted font-mono">{depIcao} → {arrIcao}</span>
+          <span className="text-xs font-bold text-acars-text tabular-nums tracking-wide">{flightNumber}</span>
+          <span className="text-[10px] text-acars-muted tabular-nums">{depIcao} → {arrIcao}</span>
         </div>
         <div className="flex items-center gap-1">
           <span className="w-2 h-2 rounded-full" style={{ backgroundColor: altColor }} />
-          <span className="text-[10px] font-mono text-acars-text">{stats.currentAlt.toLocaleString()} ft</span>
+          <span className="text-[10px] tabular-nums text-acars-text">{stats.currentAlt.toLocaleString()} ft</span>
         </div>
       </div>
 
@@ -130,19 +130,19 @@ export function TrackInfoCard({ points, flightNumber, depIcao, arrIcao }: Props)
       <div className="flex items-center justify-around px-2 py-1.5 border-t border-acars-border text-[10px]">
         <div className="flex items-center gap-1 text-acars-muted">
           <Clock className="w-3 h-3" />
-          <span className="text-acars-text font-mono">{formatDuration(stats.duration)}</span>
+          <span className="text-acars-text tabular-nums">{formatDuration(stats.duration)}</span>
         </div>
         <div className="flex items-center gap-1 text-acars-muted">
           <Path className="w-3 h-3" />
-          <span className="text-acars-text font-mono">{Math.round(stats.totalNm)} nm</span>
+          <span className="text-acars-text tabular-nums">{Math.round(stats.totalNm)} nm</span>
         </div>
         <div className="flex items-center gap-1 text-acars-muted">
           <ArrowsDownUp className="w-3 h-3" />
-          <span className="text-acars-text font-mono">{stats.maxAlt.toLocaleString()} ft max</span>
+          <span className="text-acars-text tabular-nums">{stats.maxAlt.toLocaleString()} ft max</span>
         </div>
         <div className="flex items-center gap-1 text-acars-muted">
           <VsIcon className={`w-3 h-3 ${vsColor}`} />
-          <span className={`font-mono ${vsColor}`}>
+          <span className={`tabular-nums ${vsColor}`}>
             {stats.currentVs > 0 ? '+' : ''}{Math.round(stats.currentVs)} fpm
           </span>
         </div>

@@ -130,7 +130,7 @@ export function PilotPlannedRoute({ pilotLat, pilotLon, routeString, departure, 
             permanent
             className="!bg-transparent !border-none !shadow-none !p-0"
           >
-            <span style={{ fontSize: '10px', color: WP_COLOR, fontFamily: 'IBM Plex Mono, monospace', fontWeight: 500 }}>
+            <span style={{ fontSize: '10px', color: WP_COLOR, fontFamily: 'Lufga, system-ui, sans-serif', fontWeight: 500 }}>
               {fix.ident}
             </span>
           </Tooltip>

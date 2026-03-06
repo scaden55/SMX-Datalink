@@ -171,7 +171,7 @@ export function PilotDetailPanel({ pilot, onClose, onRouteResolved }: Props) {
         <div className="flex items-start justify-between">
           <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <h2 className="text-lg font-bold text-acars-text font-mono tracking-wide">{pilot.callsign}</h2>
+              <h2 className="text-lg font-bold text-acars-text tabular-nums tracking-wide">{pilot.callsign}</h2>
               <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold tracking-wider uppercase ${status.bgColor} ${status.color}`}>
                 {status.label}
               </span>
@@ -197,10 +197,10 @@ export function PilotDetailPanel({ pilot, onClose, onRouteResolved }: Props) {
           {fp && (
             <>
               <span className="text-acars-border mx-1">|</span>
-              <span className="text-[10px] text-acars-muted font-mono">
+              <span className="text-[10px] text-acars-muted tabular-nums">
                 {formatFlightRules(fp.flight_rules)}
               </span>
-              <span className="text-[10px] text-acars-muted font-mono ml-1">
+              <span className="text-[10px] text-acars-muted tabular-nums ml-1">
                 {fp.aircraft_short || fp.aircraft_faa || '—'}
               </span>
             </>
@@ -215,7 +215,7 @@ export function PilotDetailPanel({ pilot, onClose, onRouteResolved }: Props) {
             {/* Airport pair */}
             <div className="flex items-center gap-2 mb-3">
               <div className="text-center">
-                <div className="text-base font-bold font-mono text-acars-text">{fp.departure}</div>
+                <div className="text-base font-bold tabular-nums text-acars-text">{fp.departure}</div>
               </div>
               <div className="flex-1 relative h-6 flex items-center">
                 {/* Track line */}
@@ -244,7 +244,7 @@ export function PilotDetailPanel({ pilot, onClose, onRouteResolved }: Props) {
                 </div>
               </div>
               <div className="text-center">
-                <div className="text-base font-bold font-mono text-acars-text">{fp.arrival}</div>
+                <div className="text-base font-bold tabular-nums text-acars-text">{fp.arrival}</div>
               </div>
             </div>
 
@@ -255,7 +255,7 @@ export function PilotDetailPanel({ pilot, onClose, onRouteResolved }: Props) {
               )}
               {fp.alternate && (
                 <span className="text-acars-muted ml-auto">
-                  ALT <span className="font-mono text-acars-text">{fp.alternate}</span>
+                  ALT <span className="tabular-nums text-acars-text">{fp.alternate}</span>
                 </span>
               )}
             </div>
@@ -348,7 +348,7 @@ export function PilotDetailPanel({ pilot, onClose, onRouteResolved }: Props) {
               </button>
             }
           >
-            <div className="p-2.5 rounded-md bg-acars-bg/80 border border-acars-border text-[11px] font-mono text-acars-text leading-relaxed max-h-28 overflow-y-auto break-all select-all">
+            <div className="p-2.5 rounded-md bg-acars-bg/80 border border-acars-border text-[11px] tabular-nums text-acars-text leading-relaxed max-h-28 overflow-y-auto break-all select-all">
               {fp.route}
             </div>
           </CollapsibleSection>
@@ -361,7 +361,7 @@ export function PilotDetailPanel({ pilot, onClose, onRouteResolved }: Props) {
             collapsed={collapsed.remarks}
             onToggle={() => toggle('remarks')}
           >
-            <div className="p-2.5 rounded-md bg-acars-bg/80 border border-acars-border text-[10px] font-mono text-acars-muted leading-relaxed max-h-24 overflow-y-auto break-all">
+            <div className="p-2.5 rounded-md bg-acars-bg/80 border border-acars-border text-[10px] tabular-nums text-acars-muted leading-relaxed max-h-24 overflow-y-auto break-all">
               {fp.remarks}
             </div>
           </CollapsibleSection>
@@ -405,7 +405,7 @@ function DataCard({
         <span className="text-[9px] text-acars-muted uppercase tracking-wider font-medium">{label}</span>
       </div>
       <div className="flex items-baseline gap-0.5">
-        <span className="text-base font-bold font-mono text-acars-text tabular-nums">{value}</span>
+        <span className="text-base font-bold tabular-nums text-acars-text tabular-nums">{value}</span>
         <span className="text-[10px] text-acars-muted">{unit}</span>
       </div>
     </div>
@@ -459,7 +459,7 @@ function DataRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-center justify-between py-0.5">
       <span className="text-[10px] text-acars-muted">{label}</span>
-      <span className="text-[11px] text-acars-text font-mono tabular-nums">{value}</span>
+      <span className="text-[11px] text-acars-text tabular-nums">{value}</span>
     </div>
   );
 }

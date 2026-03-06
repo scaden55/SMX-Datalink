@@ -1,4 +1,4 @@
-import { AirplaneTilt, Gauge, ArrowsVertical, Compass, Drop, NavigationArrow } from '@phosphor-icons/react';
+import { Plane, Gauge, ArrowUpDown, Compass, Droplet, Navigation } from 'lucide-react';
 import type { TelemetrySnapshot, AcarsMessagePayload } from '@acars/shared';
 import type { ActiveFlightHeartbeat } from '@acars/shared';
 import { StatusBadge, SectionHeader, DataRow } from '@/components/primitives';
@@ -15,7 +15,7 @@ export function FlightDetailPanel({ flight, telemetry, bidId, messages }: Flight
   if (!flight) {
     return (
       <div className="flex h-full flex-col items-center justify-center gap-2 border-l border-[var(--border-primary)] text-[var(--text-quaternary)]">
-        <AirplaneTilt size={32} />
+        <Plane size={32} />
         <p className="text-sm">Select a flight</p>
       </div>
     );
@@ -54,7 +54,7 @@ export function FlightDetailPanel({ flight, telemetry, bidId, messages }: Flight
             label="Altitude"
             value={
               <span className="flex items-center gap-1.5">
-                <ArrowsVertical size={14} className="text-[var(--text-tertiary)]" />
+                <ArrowUpDown size={14} className="text-[var(--text-tertiary)]" />
                 {`${Math.round(altitude).toLocaleString()} ft`}
               </span>
             }
@@ -84,7 +84,7 @@ export function FlightDetailPanel({ flight, telemetry, bidId, messages }: Flight
             label="Vertical Speed"
             value={
               <span className="flex items-center gap-1.5">
-                <NavigationArrow size={14} className="text-[var(--text-tertiary)]" />
+                <Navigation size={14} className="text-[var(--text-tertiary)]" />
                 {`${verticalSpeed > 0 ? '+' : ''}${Math.round(verticalSpeed)} fpm`}
               </span>
             }
@@ -107,7 +107,7 @@ export function FlightDetailPanel({ flight, telemetry, bidId, messages }: Flight
               label="Fuel Remaining"
               value={
                 <span className="flex items-center gap-1.5">
-                  <Drop size={14} className="text-[var(--text-tertiary)]" />
+                  <Droplet size={14} className="text-[var(--text-tertiary)]" />
                   {`${fuelRemaining.toLocaleString()} lbs (${fuelPercent}%)`}
                 </span>
               }

@@ -31,26 +31,26 @@ export function LoadSummary({ manifest }: Props) {
     <div className="space-y-3">
       {/* Header */}
       <div className="flex items-baseline justify-between">
-        <span className="text-[10px] uppercase tracking-wide text-acars-muted font-sans">Load Summary</span>
-        <span className="text-[10px] text-acars-muted font-mono">{manifest.manifestNumber}</span>
+        <span className="text-[10px] uppercase tracking-wide text-acars-muted">Load Summary</span>
+        <span className="text-[10px] text-acars-muted tabular-nums">{manifest.manifestNumber}</span>
       </div>
 
       {/* Total weight + utilization */}
       <div>
         <div className="flex items-baseline justify-between mb-1">
-          <span className="text-[18px] font-mono text-acars-text font-semibold">{weight} <span className="text-[11px] text-acars-muted font-normal">{unit}</span></span>
-          <span className="text-[11px] font-mono text-blue-400">{utilPct}%</span>
+          <span className="text-[18px] tabular-nums text-acars-text font-semibold">{weight} <span className="text-[11px] text-acars-muted font-normal">{unit}</span></span>
+          <span className="text-[11px] tabular-nums text-blue-400">{utilPct}%</span>
         </div>
         <ProgressBar value={utilPct} max={100} />
         <div className="flex justify-between mt-0.5">
-          <span className="text-[9px] text-acars-muted font-sans">Payload utilization</span>
-          <span className="text-[9px] text-acars-muted font-mono">{manifest.ulds.length} ULDs</span>
+          <span className="text-[9px] text-acars-muted">Payload utilization</span>
+          <span className="text-[9px] text-acars-muted tabular-nums">{manifest.ulds.length} ULDs</span>
         </div>
       </div>
 
       {/* CG Position */}
       <div>
-        <span className="text-[10px] text-acars-muted font-sans block mb-1">CG Position (% MAC)</span>
+        <span className="text-[10px] text-acars-muted block mb-1">CG Position (% MAC)</span>
         <div className="relative h-4 bg-acars-input rounded-sm overflow-hidden">
           {/* Green envelope */}
           <div
@@ -69,20 +69,20 @@ export function LoadSummary({ manifest }: Props) {
           />
         </div>
         <div className="flex justify-between mt-0.5">
-          <span className="text-[9px] text-acars-muted font-mono">{cgMin}%</span>
-          <span className="text-[9px] font-mono text-acars-text">{manifest.cgPosition}% MAC</span>
-          <span className="text-[9px] text-acars-muted font-mono">{cgMax}%</span>
+          <span className="text-[9px] text-acars-muted tabular-nums">{cgMin}%</span>
+          <span className="text-[9px] tabular-nums text-acars-text">{manifest.cgPosition}% MAC</span>
+          <span className="text-[9px] text-acars-muted tabular-nums">{cgMax}%</span>
         </div>
       </div>
 
       {/* Deck utilization breakdown */}
       <div className="space-y-1.5">
-        <span className="text-[10px] text-acars-muted font-sans">Deck Utilization</span>
+        <span className="text-[10px] text-acars-muted">Deck Utilization</span>
         {sections.map(([key, sec]) => (
           <div key={key}>
             <div className="flex items-center justify-between mb-0.5">
-              <span className="text-[10px] text-acars-text font-sans">{sec.name}</span>
-              <span className="text-[10px] font-mono text-acars-muted">
+              <span className="text-[10px] text-acars-text">{sec.name}</span>
+              <span className="text-[10px] tabular-nums text-acars-muted">
                 {Math.round(sec.weight).toLocaleString()} kg — {sec.utilization}%
               </span>
             </div>

@@ -11,13 +11,22 @@ interface SettingRow {
 const DEFAULTS: Record<string, string> = {
   'va.name': 'SMX Virtual',
   'va.icao': 'SMX',
+  'va.base_airport': 'KMIA',
+  'va.currency': 'USD',
   'pirep.auto_approve': 'false',
   'pirep.min_score': '0',
+  'finance.fuel_cost': '5.50',
   'finance.pay_per_hour': '50',
   'finance.cargo_rate': '0.0005',
   'finance.pax_rate': '0.12',
   'bids.max_active': '5',
+  'bids.route_limit': '50',
+  'charter.auto_generate': 'true',
+  'vatsim.enabled': 'false',
+  'discord.webhook_url': '',
+  'system.log_level': 'info',
   'dev.enabled': 'false',
+  'simbrief.pilot_id': '',
 };
 
 export class SettingsService {

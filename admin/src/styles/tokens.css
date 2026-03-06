@@ -5,42 +5,49 @@
 
 :root {
   /* ── Surface Colors (4-tier depth system) ─────────────── */
-  --surface-0: #0a0d14;
-  --surface-1: #0f1219;
-  --surface-2: #151a24;
+  --surface-0: #05060d;
+  --surface-1: #060812;
+  --surface-2: rgba(15, 19, 36, 0.5);
   --surface-3: #1c2230;
 
   /* ── Text Hierarchy ───────────────────────────────────── */
-  --text-primary: #f0f1f3;
-  --text-secondary: #c4c7ce;
-  --text-tertiary: #7a7f8e;
-  --text-quaternary: #4a4f5e;
+  --text-primary: #eceef5;
+  --text-secondary: #8793a1;
+  --text-tertiary: #566270;
+  --text-quaternary: #3a4250;
 
   /* ── Semantic Accent Colors ───────────────────────────── */
-  --accent-blue: #3b82f6;
-  --accent-blue-bg: rgba(59, 130, 246, 0.12);
-  --accent-blue-ring: rgba(59, 130, 246, 0.25);
+  --accent-blue: #3950ed;
+  --accent-blue-bright: #8ca4fa;
+  --accent-blue-dim: rgba(57, 86, 237, 0.13);
+  --accent-blue-bg: rgba(57, 86, 237, 0.12);
+  --accent-blue-ring: rgba(57, 86, 237, 0.25);
 
-  --accent-emerald: #10b981;
-  --accent-emerald-bg: rgba(16, 185, 129, 0.12);
-  --accent-emerald-ring: rgba(16, 185, 129, 0.25);
+  --accent-emerald: #4ade80;
+  --accent-emerald-bg: rgba(74, 222, 128, 0.12);
+  --accent-emerald-ring: rgba(74, 222, 128, 0.25);
 
-  --accent-amber: #f59e0b;
-  --accent-amber-bg: rgba(245, 158, 11, 0.12);
-  --accent-amber-ring: rgba(245, 158, 11, 0.25);
+  --accent-amber: #fbbf24;
+  --accent-amber-bg: rgba(251, 191, 36, 0.12);
+  --accent-amber-ring: rgba(251, 191, 36, 0.25);
 
-  --accent-red: #ef4444;
-  --accent-red-bg: rgba(239, 68, 68, 0.12);
-  --accent-red-ring: rgba(239, 68, 68, 0.25);
+  --accent-red: #f87171;
+  --accent-red-bg: rgba(248, 113, 113, 0.12);
+  --accent-red-ring: rgba(248, 113, 113, 0.25);
 
-  --accent-cyan: #06b6d4;
-  --accent-cyan-bg: rgba(6, 182, 212, 0.12);
-  --accent-cyan-ring: rgba(6, 182, 212, 0.25);
+  --accent-cyan: #22d3ee;
+  --accent-cyan-bg: rgba(34, 211, 238, 0.12);
+  --accent-cyan-ring: rgba(34, 211, 238, 0.25);
 
   /* ── Border System ────────────────────────────────────── */
-  --border-primary: #1e2535;
+  --border-primary: rgba(27, 31, 53, 0.5);
   --border-secondary: #2a3040;
   --border-hover: #3a4050;
+
+  /* ── Input System ─────────────────────────────────────── */
+  --input-bg: #0d121f;
+  --input-border: #1b2336;
+  --divider: #172230;
 
   /* ── Elevation (Shadows) ──────────────────────────────── */
   --elevation-0: none;
@@ -49,8 +56,8 @@
   --elevation-3: 0 8px 24px rgba(0, 0, 0, 0.5);
 
   /* ── Typography ───────────────────────────────────────── */
-  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
-  --font-mono: 'IBM Plex Mono', 'Menlo', monospace;
+  --font-sans: 'Lufga', system-ui, -apple-system, sans-serif;
+  --font-mono: 'Lufga', system-ui, -apple-system, sans-serif;
 
   --text-display-size: 24px;
   --text-heading-size: 16px;

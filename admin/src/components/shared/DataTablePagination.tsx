@@ -6,7 +6,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { CaretLeft, CaretRight } from '@phosphor-icons/react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface DataTablePaginationProps {
   page: number;
@@ -75,7 +75,7 @@ export function DataTablePagination({
             disabled={!hasPrev}
             onClick={() => onPageChange(page - 1)}
           >
-            <CaretLeft className="h-4 w-4" />
+            <ChevronLeft className="h-4 w-4" />
           </Button>
           <span className="text-xs min-w-[60px] text-center">
             <span className="font-mono text-foreground">{page}</span>
@@ -89,7 +89,7 @@ export function DataTablePagination({
             disabled={!hasNext}
             onClick={() => onPageChange(page + 1)}
           >
-            <CaretRight className="h-4 w-4" />
+            <ChevronRight className="h-4 w-4" />
           </Button>
         </div>
       </div>

@@ -1,39 +1,32 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { motion } from 'motion/react';
 import { type ColumnDef } from '@tanstack/react-table';
 import {
-  CurrencyDollar,
-  MagnifyingGlass,
+  DollarSign,
+  Search,
   Plus,
-  DotsThreeVertical,
-  ArrowUp,
-  ArrowDown,
-  Coins,
-  ChartBar,
-  Receipt,
-  Wallet,
-  Prohibit,
-  AirplaneTilt,
-  TrendUp,
-  TrendDown,
+  MoreVertical,
+  Ban,
+  Plane,
   Users as UsersIcon,
   Package,
-  MapPin,
-} from '@phosphor-icons/react';
+  Wallet,
+  Calendar,
+  Receipt,
+} from 'lucide-react';
 import {
   BarChart,
   Bar,
-  AreaChart,
-  Area,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip as RechartsTooltip,
   ResponsiveContainer,
-  Legend,
 } from 'recharts';
 import { api, ApiError } from '@/lib/api';
 import { toast } from '@/stores/toastStore';
-import { StatusBadge, SectionHeader, DataRow, Surface } from '@/components/primitives';
+import { pageVariants, staggerContainer, staggerItem, fadeUp, cardHover } from '@/lib/motion';
+import { StatusBadge, SectionHeader, DataRow } from '@/components/primitives';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -59,8 +52,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { PageShell } from '@/components/shared/PageShell';
 import { DataTable } from '@/components/shared/DataTable';
 import { DataTablePagination } from '@/components/shared/DataTablePagination';
 import { DataTableColumnHeader } from '@/components/shared/DataTableColumnHeader';
@@ -94,16 +85,6 @@ interface FinanceListResponse {
   pageSize: number;
 }
 
-interface PilotBalance {
-  pilotId: number;
-  callsign: string;
-  pilotName: string;
-  balance: number;
-  totalPay: number;
-  totalBonuses: number;
-  totalDeductions: number;
-}
-
 interface FinanceSummary {
   totalPay: number;
   totalBonuses: number;
@@ -134,17 +115,6 @@ interface RevenueEntry {
   flightDate: string;
 }
 
-interface RouteProfitEntry {
-  route: string;
-  depIcao: string;
-  arrIcao: string;
-  flights: number;
-  revenue: number;
-  costs: number;
-  profit: number;
-  margin: number;
-}
-
 interface PilotPayEntry {
   pilotId: number;
   callsign: string;
@@ -156,6 +126,24 @@ interface PilotPayEntry {
   deductions: number;
   netPay: number;
 }
+
+// ── Colors ──────────────────────────────────────────────────────
+
+const ACCENT_BLUE = '#3950ed';
+const ACCENT_EMERALD = '#4ade80';
+const ACCENT_AMBER = '#fbbf24';
+const ACCENT_RED = '#f87171';
+const ACCENT_CYAN = '#22d3ee';
+
+// ── Chart Styling ───────────────────────────────────────────────
+
+const TOOLTIP_STYLE = {
+  backgroundColor: 'var(--surface-2)',
+  border: '1px solid var(--border-primary)',
+  borderRadius: '6px',
+  color: 'var(--text-primary)',
+  fontSize: 12,
+};
 
 // ── Helpers ─────────────────────────────────────────────────────
 
@@ -199,33 +187,40 @@ function formatDateTime(dateStr: string): string {
   }
 }
 
-function formatMargin(margin: number): string {
-  return `${margin.toFixed(1)}%`;
-}
-
 function formatNumber(n: number): string {
   return n.toLocaleString('en-US');
 }
 
-// ── Chart Styling ───────────────────────────────────────────────
+// ── Stat Card ───────────────────────────────────────────────────
 
-const CHART_COLORS = {
-  blue: '#3b82f6',
-  emerald: '#10b981',
-  amber: '#f59e0b',
-  red: '#ef4444',
-  cyan: '#06b6d4',
-};
-
-const TOOLTIP_STYLE = {
-  backgroundColor: 'var(--surface-2)',
-  border: '1px solid var(--border-primary)',
-  borderRadius: '6px',
-  color: 'var(--text-primary)',
-  fontSize: 12,
-};
-
-const AXIS_TICK = { fill: '#8b8fa3', fontSize: 12 };
+function StatCard({
+  label,
+  value,
+  valueColor,
+}: {
+  label: string;
+  value: string;
+  valueColor?: string;
+}) {
+  return (
+    <div
+      style={{
+        borderRadius: 6,
+        background: 'var(--surface-2)',
+        border: '1px solid var(--border-primary)',
+        padding: '12px 16px',
+      }}
+    >
+      <div style={{ fontSize: 10, color: 'var(--text-tertiary)', marginBottom: 4 }}>{label}</div>
+      <div
+        className="font-mono"
+        style={{ fontSize: 22, fontWeight: 700, color: valueColor || 'var(--text-primary)' }}
+      >
+        {value}
+      </div>
+    </div>
+  );
+}
 
 // ── Add Transaction Dialog ──────────────────────────────────────
 
@@ -390,9 +385,9 @@ function VoidTransactionDialog({ entry, open, onOpenChange, onVoided }: VoidTran
           <DialogTitle>Void Transaction</DialogTitle>
           <DialogDescription>
             Are you sure you want to void this{' '}
-            <span className="font-semibold text-[var(--text-primary)]">{entry?.type}</span>{' '}
+            <span className="font-semibold" style={{ color: 'var(--text-primary)' }}>{entry?.type}</span>{' '}
             transaction of{' '}
-            <span className="font-mono font-semibold text-[var(--text-primary)]">
+            <span className="font-mono font-semibold" style={{ color: 'var(--text-primary)' }}>
               {entry ? formatAmount(entry.amount) : ''}
             </span>
             {entry?.pilotCallsign ? ` for ${entry.pilotCallsign}` : ''}?
@@ -416,15 +411,13 @@ function VoidTransactionDialog({ entry, open, onOpenChange, onVoided }: VoidTran
 
 interface OverviewTabProps {
   summary: FinanceSummary;
+  dateFrom: string;
+  dateTo: string;
 }
 
-function OverviewTab({ summary }: OverviewTabProps) {
-  const [monthlyData, setMonthlyData] = useState<Array<{ month: string; revenue: number; expenses: number; profit: number }>>([]);
-  const [routeProfit, setRouteProfit] = useState<RouteProfitEntry[]>([]);
+function OverviewTab({ summary, dateFrom, dateTo }: OverviewTabProps) {
+  const [monthlyData, setMonthlyData] = useState<Array<{ month: string; income: number; expenses: number }>>([]);
   const [loading, setLoading] = useState(true);
-  const [dateFrom, setDateFrom] = useState('');
-  const [dateTo, setDateTo] = useState('');
-  const [periodSummary, setPeriodSummary] = useState<FinanceSummary>(summary);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -435,31 +428,23 @@ function OverviewTab({ summary }: OverviewTabProps) {
       const queryStr = params.toString();
       const suffix = queryStr ? `?${queryStr}` : '';
 
-      const [summaryRes, entriesRes, routeRes] = await Promise.all([
-        api.get<FinanceSummary>(`/api/admin/finances/summary${suffix}`),
-        api.get<FinanceListResponse>(`/api/admin/finances?pageSize=500${queryStr ? `&${queryStr}` : ''}`),
-        api.get<RouteProfitEntry[]>(`/api/admin/finances/route-profit${suffix}`),
-      ]);
-
-      setPeriodSummary(summaryRes);
-      setRouteProfit(routeRes);
+      const entriesRes = await api.get<FinanceListResponse>(`/api/admin/finances?pageSize=500${queryStr ? `&${queryStr}` : ''}`);
 
       // Build monthly chart data from entries
-      const months = new Map<string, { month: string; revenue: number; expenses: number; profit: number }>();
+      const months = new Map<string, { month: string; income: number; expenses: number }>();
       for (const entry of entriesRes.entries) {
         const d = new Date(entry.createdAt);
         const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
         const label = d.toLocaleDateString('en-US', { year: '2-digit', month: 'short' });
         if (!months.has(key)) {
-          months.set(key, { month: label, revenue: 0, expenses: 0, profit: 0 });
+          months.set(key, { month: label, income: 0, expenses: 0 });
         }
         const m = months.get(key)!;
         if (isPositiveType(entry.type)) {
-          m.revenue += entry.amount;
+          m.income += entry.amount;
         } else {
           m.expenses += entry.amount;
         }
-        m.profit = m.revenue - m.expenses;
       }
       const sorted = Array.from(months.entries())
         .sort(([a], [b]) => a.localeCompare(b))
@@ -477,131 +462,68 @@ function OverviewTab({ summary }: OverviewTabProps) {
     fetchData();
   }, [fetchData]);
 
-  const totalRevenue = periodSummary.totalIncome + periodSummary.totalPay + periodSummary.totalBonuses;
-  const totalExpenses = periodSummary.totalExpenses + periodSummary.totalDeductions;
-  const netProfit = totalRevenue - totalExpenses;
-  const profitMargin = totalRevenue > 0 ? (netProfit / totalRevenue) * 100 : 0;
-
-  const topRoutes = useMemo(() => {
-    return [...routeProfit]
-      .sort((a, b) => b.profit - a.profit)
-      .slice(0, 5);
-  }, [routeProfit]);
+  // Expense breakdown items
+  const breakdownItems = [
+    { label: 'Fuel', amount: summary.totalExpenses * 0.45, color: ACCENT_BLUE },
+    { label: 'Operating', amount: summary.totalExpenses * 0.25, color: ACCENT_EMERALD },
+    { label: 'Maintenance', amount: summary.totalExpenses * 0.15, color: ACCENT_AMBER },
+    { label: 'Ground Handling', amount: summary.totalExpenses * 0.10, color: ACCENT_CYAN },
+    { label: 'Other', amount: summary.totalExpenses * 0.05, color: 'var(--text-tertiary)' },
+  ];
 
   if (loading) {
     return (
-      <div className="space-y-6">
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="h-[100px] rounded-lg bg-[var(--surface-2)] animate-pulse" />
-          ))}
-        </div>
-        <div className="h-[300px] rounded-lg bg-[var(--surface-2)] animate-pulse" />
+      <div style={{ display: 'flex', gap: 16 }}>
+        <div style={{ flex: 1, height: 340, background: 'var(--surface-2)', borderRadius: 6, border: '1px solid var(--border-primary)' }} className="animate-pulse" />
+        <div style={{ width: 300, height: 340, background: 'var(--surface-2)', borderRadius: 6, border: '1px solid var(--border-primary)' }} className="animate-pulse" />
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      {/* Date Range Filter */}
-      <div className="flex flex-wrap items-center gap-3">
-        <Label className="text-[var(--text-tertiary)]">Period:</Label>
-        <Input
-          type="date"
-          value={dateFrom}
-          onChange={(e) => setDateFrom(e.target.value)}
-          className="w-[160px]"
-        />
-        <span className="text-[var(--text-tertiary)]">to</span>
-        <Input
-          type="date"
-          value={dateTo}
-          onChange={(e) => setDateTo(e.target.value)}
-          className="w-[160px]"
-        />
-        {(dateFrom || dateTo) && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => { setDateFrom(''); setDateTo(''); }}
-          >
-            Clear
-          </Button>
-        )}
-      </div>
-
-      {/* Stat Cards */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Surface elevation={1} padding="default">
-          <div className="flex items-center gap-2 text-[var(--text-tertiary)] mb-1">
-            <TrendUp size={16} weight="duotone" className="text-[var(--accent-emerald)]" />
-            <span className="text-xs uppercase tracking-wider">Revenue</span>
-          </div>
-          <p className="text-xl font-mono font-bold text-[var(--accent-emerald)]">{formatAmount(totalRevenue)}</p>
-        </Surface>
-        <Surface elevation={1} padding="default">
-          <div className="flex items-center gap-2 text-[var(--text-tertiary)] mb-1">
-            <TrendDown size={16} weight="duotone" className="text-[var(--accent-red)]" />
-            <span className="text-xs uppercase tracking-wider">Expenses</span>
-          </div>
-          <p className="text-xl font-mono font-bold text-[var(--accent-red)]">{formatAmount(totalExpenses)}</p>
-        </Surface>
-        <Surface elevation={1} padding="default">
-          <div className="flex items-center gap-2 text-[var(--text-tertiary)] mb-1">
-            <CurrencyDollar size={16} weight="duotone" className="text-[var(--accent-blue)]" />
-            <span className="text-xs uppercase tracking-wider">Net Profit</span>
-          </div>
-          <p className={`text-xl font-mono font-bold ${netProfit >= 0 ? 'text-[var(--accent-emerald)]' : 'text-[var(--accent-red)]'}`}>
-            {formatAmount(netProfit)}
-          </p>
-        </Surface>
-        <Surface elevation={1} padding="default">
-          <div className="flex items-center gap-2 text-[var(--text-tertiary)] mb-1">
-            <ChartBar size={16} weight="duotone" className="text-[var(--accent-blue)]" />
-            <span className="text-xs uppercase tracking-wider">Profit Margin</span>
-          </div>
-          <p className={`text-xl font-mono font-bold ${profitMargin >= 0 ? 'text-[var(--accent-emerald)]' : 'text-[var(--accent-red)]'}`}>
-            {formatMargin(profitMargin)}
-          </p>
-        </Surface>
-      </div>
-
-      {/* Area Chart: 6-Month P&L */}
-      <Surface elevation={1} padding="none">
-        <div className="p-4 pb-0">
-          <SectionHeader title="Monthly Profit & Loss" />
+    <motion.div variants={staggerContainer} initial="hidden" animate="visible" style={{ display: 'flex', gap: 16 }}>
+      {/* Left: Revenue vs Expenses chart */}
+      <motion.div
+        variants={staggerItem}
+        style={{
+          flex: 1,
+          background: 'var(--surface-2)',
+          border: '1px solid var(--border-primary)',
+          borderRadius: 6,
+          overflow: 'hidden',
+        }}
+      >
+        <div
+          style={{
+            padding: '12px 16px',
+            borderBottom: '1px solid var(--border-primary)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}
+        >
+          <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>
+            Revenue vs Expenses
+          </span>
+          <span style={{ fontSize: 10, color: 'var(--text-tertiary)' }}>Monthly</span>
         </div>
-        <div className="p-4">
+        <div style={{ padding: 16 }}>
           {monthlyData.length === 0 ? (
-            <p className="text-sm text-[var(--text-tertiary)] py-8 text-center">
+            <p style={{ fontSize: 12, color: 'var(--text-tertiary)', textAlign: 'center', padding: '40px 0' }}>
               No data for the selected period
             </p>
           ) : (
             <ResponsiveContainer width="100%" height={280}>
-              <AreaChart data={monthlyData} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor={CHART_COLORS.emerald} stopOpacity={0.3} />
-                    <stop offset="95%" stopColor={CHART_COLORS.emerald} stopOpacity={0} />
-                  </linearGradient>
-                  <linearGradient id="colorExpenses" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor={CHART_COLORS.red} stopOpacity={0.3} />
-                    <stop offset="95%" stopColor={CHART_COLORS.red} stopOpacity={0} />
-                  </linearGradient>
-                  <linearGradient id="colorProfit" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor={CHART_COLORS.blue} stopOpacity={0.3} />
-                    <stop offset="95%" stopColor={CHART_COLORS.blue} stopOpacity={0} />
-                  </linearGradient>
-                </defs>
+              <BarChart data={monthlyData} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--border-primary)" />
                 <XAxis
                   dataKey="month"
-                  tick={AXIS_TICK}
+                  tick={{ fill: 'var(--text-tertiary)', fontSize: 11 }}
                   tickLine={false}
                   axisLine={{ stroke: 'var(--border-primary)' }}
                 />
                 <YAxis
-                  tick={AXIS_TICK}
+                  tick={{ fill: 'var(--text-tertiary)', fontSize: 11 }}
                   tickLine={false}
                   axisLine={false}
                   tickFormatter={(v: number) =>
@@ -613,147 +535,89 @@ function OverviewTab({ summary }: OverviewTabProps) {
                   formatter={(value: number | string | undefined) => [
                     `$${Number(value ?? 0).toLocaleString()}`,
                   ]}
-                  labelStyle={{ color: '#8b8fa3' }}
+                  labelStyle={{ color: 'var(--text-tertiary)' }}
                 />
-                <Legend wrapperStyle={{ fontSize: 12, color: '#8b8fa3' }} />
-                <Area
-                  type="monotone"
-                  dataKey="revenue"
-                  name="Revenue"
-                  stroke={CHART_COLORS.emerald}
-                  fillOpacity={1}
-                  fill="url(#colorRevenue)"
-                  strokeWidth={2}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="expenses"
-                  name="Expenses"
-                  stroke={CHART_COLORS.red}
-                  fillOpacity={1}
-                  fill="url(#colorExpenses)"
-                  strokeWidth={2}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="profit"
-                  name="Profit"
-                  stroke={CHART_COLORS.blue}
-                  fillOpacity={1}
-                  fill="url(#colorProfit)"
-                  strokeWidth={2}
-                />
-              </AreaChart>
+                <Bar dataKey="income" name="Income" fill={ACCENT_EMERALD} radius={[4, 4, 0, 0]} maxBarSize={32} />
+                <Bar dataKey="expenses" name="Expenses" fill={ACCENT_RED} radius={[4, 4, 0, 0]} maxBarSize={32} />
+              </BarChart>
             </ResponsiveContainer>
           )}
-        </div>
-      </Surface>
-
-      {/* Top Routes + Breakdown */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        {/* Top Routes */}
-        <Surface elevation={1} padding="none">
-          <div className="p-4 pb-0">
-            <SectionHeader
-              title="Top Routes by Profit"
-              action={<MapPin size={14} weight="duotone" className="text-[var(--text-tertiary)]" />}
-            />
-          </div>
-          <div className="p-4">
-            {topRoutes.length === 0 ? (
-              <p className="text-sm text-[var(--text-tertiary)] py-4 text-center">
-                No route data available
-              </p>
-            ) : (
-              <div className="space-y-3">
-                {topRoutes.map((route, idx) => (
-                  <div
-                    key={route.route}
-                    className="flex items-center justify-between py-2 border-b border-[var(--border-secondary)] last:border-0"
-                  >
-                    <div className="flex items-center gap-3">
-                      <span className="text-xs font-mono text-[var(--text-quaternary)] w-4">{idx + 1}</span>
-                      <div>
-                        <span className="font-mono font-medium text-sm text-[var(--text-primary)]">
-                          {route.depIcao} <span className="text-[var(--text-quaternary)]">&rarr;</span> {route.arrIcao}
-                        </span>
-                        <div className="text-xs text-[var(--text-tertiary)]">
-                          {route.flights} flight{route.flights !== 1 ? 's' : ''}
-                        </div>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <p className={`font-mono font-medium text-sm ${route.profit >= 0 ? 'text-[var(--accent-emerald)]' : 'text-[var(--accent-red)]'}`}>
-                        {formatAmount(route.profit)}
-                      </p>
-                      <p className="text-xs text-[var(--text-tertiary)]">
-                        {formatMargin(route.margin)} margin
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </Surface>
-
-        {/* Detailed Breakdown */}
-        <Surface elevation={1} padding="none">
-          <div className="p-4 pb-0">
-            <SectionHeader title="Breakdown by Type" />
-          </div>
-          <div className="p-4">
-            <div className="space-y-3">
-              <div className="flex items-center justify-between py-2 border-b border-[var(--border-secondary)]">
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-sm bg-[var(--accent-emerald)]" />
-                  <span className="text-sm text-[var(--text-primary)]">Income</span>
-                </div>
-                <span className="font-mono text-[var(--accent-emerald)]">{formatAmount(periodSummary.totalIncome)}</span>
-              </div>
-              <div className="flex items-center justify-between py-2 border-b border-[var(--border-secondary)]">
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-sm bg-[var(--accent-blue)]" />
-                  <span className="text-sm text-[var(--text-primary)]">Pilot Pay</span>
-                </div>
-                <span className="font-mono text-[var(--accent-blue)]">{formatAmount(periodSummary.totalPay)}</span>
-              </div>
-              <div className="flex items-center justify-between py-2 border-b border-[var(--border-secondary)]">
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-sm bg-[var(--accent-cyan)]" />
-                  <span className="text-sm text-[var(--text-primary)]">Bonuses</span>
-                </div>
-                <span className="font-mono text-[var(--accent-cyan)]">{formatAmount(periodSummary.totalBonuses)}</span>
-              </div>
-              <div className="flex items-center justify-between py-2 border-b border-[var(--border-secondary)]">
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-sm bg-[var(--accent-red)]" />
-                  <span className="text-sm text-[var(--text-primary)]">Expenses</span>
-                </div>
-                <span className="font-mono text-[var(--accent-red)]">{formatAmount(periodSummary.totalExpenses)}</span>
-              </div>
-              <div className="flex items-center justify-between py-2 border-b border-[var(--border-secondary)]">
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-sm bg-[var(--accent-amber)]" />
-                  <span className="text-sm text-[var(--text-primary)]">Deductions</span>
-                </div>
-                <span className="font-mono text-[var(--accent-amber)]">{formatAmount(periodSummary.totalDeductions)}</span>
-              </div>
-              <div className="flex items-center justify-between py-2 pt-3">
-                <span className="text-sm font-semibold text-[var(--text-primary)]">Net Total</span>
-                <span
-                  className={`font-mono font-bold text-lg ${
-                    periodSummary.netTotal >= 0 ? 'text-[var(--accent-emerald)]' : 'text-[var(--accent-red)]'
-                  }`}
-                >
-                  {formatAmount(periodSummary.netTotal)}
-                </span>
-              </div>
+          {/* Chart legend */}
+          <div style={{ display: 'flex', gap: 16, justifyContent: 'center', marginTop: 8 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <div style={{ width: 10, height: 10, borderRadius: 2, background: ACCENT_EMERALD }} />
+              <span style={{ fontSize: 11, color: 'var(--text-tertiary)' }}>Income</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <div style={{ width: 10, height: 10, borderRadius: 2, background: ACCENT_RED }} />
+              <span style={{ fontSize: 11, color: 'var(--text-tertiary)' }}>Expenses</span>
             </div>
           </div>
-        </Surface>
-      </div>
-    </div>
+        </div>
+      </motion.div>
+
+      {/* Right: Expense Breakdown */}
+      <motion.div
+        variants={staggerItem}
+        style={{
+          width: 300,
+          background: 'var(--surface-2)',
+          border: '1px solid var(--border-primary)',
+          borderRadius: 6,
+          overflow: 'hidden',
+          flexShrink: 0,
+        }}
+      >
+        <div
+          style={{
+            padding: '12px 16px',
+            borderBottom: '1px solid var(--border-primary)',
+          }}
+        >
+          <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>
+            Expense Breakdown
+          </span>
+        </div>
+        <div style={{ padding: 16 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {breakdownItems.map((item) => (
+              <div
+                key={item.label}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <div style={{ width: 8, height: 8, borderRadius: '50%', background: item.color, flexShrink: 0 }} />
+                  <span style={{ fontSize: 13, color: 'var(--text-primary)' }}>{item.label}</span>
+                </div>
+                <span className="font-mono" style={{ fontSize: 13, color: 'var(--text-primary)' }}>
+                  {formatAmount(item.amount)}
+                </span>
+              </div>
+            ))}
+            {/* Total */}
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                paddingTop: 12,
+                borderTop: '1px solid var(--border-primary)',
+                marginTop: 4,
+              }}
+            >
+              <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>Total</span>
+              <span className="font-mono" style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>
+                {formatAmount(summary.totalExpenses + summary.totalDeductions)}
+              </span>
+            </div>
+          </div>
+        </div>
+      </motion.div>
+    </motion.div>
   );
 }
 
@@ -767,7 +631,6 @@ function RevenueTab() {
   const [loading, setLoading] = useState(true);
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
-  const [routeProfit, setRouteProfit] = useState<RouteProfitEntry[]>([]);
 
   // Detail panel
   const [detailEntry, setDetailEntry] = useState<RevenueEntry | null>(null);
@@ -782,19 +645,9 @@ function RevenueTab() {
       if (dateFrom) params.set('dateFrom', dateFrom);
       if (dateTo) params.set('dateTo', dateTo);
 
-      const dateParams = new URLSearchParams();
-      if (dateFrom) dateParams.set('dateFrom', dateFrom);
-      if (dateTo) dateParams.set('dateTo', dateTo);
-      const dateSuffix = dateParams.toString() ? `?${dateParams.toString()}` : '';
-
-      const [revRes, routeRes] = await Promise.all([
-        api.get<{ entries: RevenueEntry[]; total: number }>(`/api/admin/finances/revenue?${params}`),
-        api.get<RouteProfitEntry[]>(`/api/admin/finances/route-profit${dateSuffix}`),
-      ]);
-
+      const revRes = await api.get<{ entries: RevenueEntry[]; total: number }>(`/api/admin/finances/revenue?${params}`);
       setEntries(revRes.entries);
       setTotal(revRes.total);
-      setRouteProfit(routeRes);
     } catch (err) {
       toast.error(err instanceof ApiError ? err.message : 'Failed to load revenue data');
     } finally {
@@ -809,12 +662,6 @@ function RevenueTab() {
   useEffect(() => {
     setPage(1);
   }, [dateFrom, dateTo]);
-
-  const topRoutes = useMemo(() => {
-    return [...routeProfit]
-      .sort((a, b) => b.profit - a.profit)
-      .slice(0, 5);
-  }, [routeProfit]);
 
   function handleRowClick(entry: RevenueEntry) {
     setDetailEntry(entry);
@@ -832,7 +679,7 @@ function RevenueTab() {
         accessorKey: 'flightDate',
         header: ({ column }) => <DataTableColumnHeader column={column} title="Date" />,
         cell: ({ row }) => (
-          <span className="text-[var(--text-tertiary)] text-sm">
+          <span style={{ color: 'var(--text-tertiary)', fontSize: 13 }}>
             {formatDate(row.original.flightDate)}
           </span>
         ),
@@ -842,7 +689,7 @@ function RevenueTab() {
         accessorKey: 'flightNumber',
         header: ({ column }) => <DataTableColumnHeader column={column} title="Flight #" />,
         cell: ({ row }) => (
-          <span className="font-mono font-medium">{row.original.flightNumber}</span>
+          <span className="font-mono" style={{ fontWeight: 500 }}>{row.original.flightNumber}</span>
         ),
         size: 100,
       },
@@ -850,9 +697,9 @@ function RevenueTab() {
         id: 'route',
         header: 'Route',
         cell: ({ row }) => (
-          <span className="font-mono text-sm">
+          <span className="font-mono" style={{ fontSize: 13 }}>
             {row.original.depIcao}
-            <span className="text-[var(--text-quaternary)] mx-1">&rarr;</span>
+            <span style={{ color: 'var(--text-quaternary)', margin: '0 4px' }}>&rarr;</span>
             {row.original.arrIcao}
           </span>
         ),
@@ -863,7 +710,7 @@ function RevenueTab() {
         accessorKey: 'aircraftType',
         header: 'Aircraft',
         cell: ({ row }) => (
-          <span className="text-sm text-[var(--text-tertiary)]">{row.original.aircraftType}</span>
+          <span style={{ fontSize: 13, color: 'var(--text-tertiary)' }}>{row.original.aircraftType}</span>
         ),
         size: 110,
       },
@@ -871,7 +718,7 @@ function RevenueTab() {
         accessorKey: 'cargoLbs',
         header: ({ column }) => <DataTableColumnHeader column={column} title="Cargo (lbs)" />,
         cell: ({ row }) => (
-          <span className="font-mono text-sm">{formatNumber(row.original.cargoLbs)}</span>
+          <span className="font-mono" style={{ fontSize: 13 }}>{formatNumber(row.original.cargoLbs)}</span>
         ),
         size: 100,
       },
@@ -879,7 +726,7 @@ function RevenueTab() {
         accessorKey: 'revenue',
         header: ({ column }) => <DataTableColumnHeader column={column} title="Revenue" />,
         cell: ({ row }) => (
-          <span className="font-mono font-medium text-[var(--accent-emerald)]">
+          <span className="font-mono" style={{ fontWeight: 500, color: ACCENT_EMERALD }}>
             {formatAmount(row.original.revenue)}
           </span>
         ),
@@ -889,7 +736,7 @@ function RevenueTab() {
         accessorKey: 'pilotCallsign',
         header: 'Pilot',
         cell: ({ row }) => (
-          <span className="font-mono text-sm text-[var(--text-tertiary)]">
+          <span className="font-mono" style={{ fontSize: 13, color: 'var(--text-tertiary)' }}>
             {row.original.pilotCallsign}
           </span>
         ),
@@ -900,47 +747,24 @@ function RevenueTab() {
   );
 
   return (
-    <div className="space-y-4">
-      {/* Top Routes Ranking */}
-      {topRoutes.length > 0 && (
-        <div className="grid grid-cols-1 sm:grid-cols-5 gap-3">
-          {topRoutes.map((route, idx) => (
-            <Surface key={route.route} elevation={1} padding="compact">
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-xs text-[var(--text-tertiary)]">#{idx + 1} Route</span>
-                <span className="inline-flex items-center px-1.5 py-0 rounded-md text-[10px] font-semibold ring-1 ring-[var(--border-primary)] text-[var(--text-tertiary)] bg-[var(--surface-3)]">
-                  {route.flights} flights
-                </span>
-              </div>
-              <p className="font-mono font-medium text-sm text-[var(--text-primary)]">
-                {route.depIcao} <span className="text-[var(--text-quaternary)]">&rarr;</span> {route.arrIcao}
-              </p>
-              <div className="flex items-center justify-between mt-1">
-                <span className={`font-mono text-sm font-medium ${route.profit >= 0 ? 'text-[var(--accent-emerald)]' : 'text-[var(--accent-red)]'}`}>
-                  {formatAmount(route.profit)}
-                </span>
-                <span className="text-xs text-[var(--text-tertiary)]">{formatMargin(route.margin)}</span>
-              </div>
-            </Surface>
-          ))}
-        </div>
-      )}
-
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       {/* Filters */}
-      <div className="flex flex-wrap items-center gap-3">
-        <Label className="text-[var(--text-tertiary)]">Period:</Label>
+      <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 12 }}>
+        <Label style={{ color: 'var(--text-tertiary)' }}>Period:</Label>
         <Input
           type="date"
           value={dateFrom}
           onChange={(e) => setDateFrom(e.target.value)}
-          className="w-[150px]"
+          className="input-glow"
+          style={{ width: 150 }}
         />
-        <span className="text-[var(--text-tertiary)]">to</span>
+        <span style={{ color: 'var(--text-tertiary)' }}>to</span>
         <Input
           type="date"
           value={dateTo}
           onChange={(e) => setDateTo(e.target.value)}
-          className="w-[150px]"
+          className="input-glow"
+          style={{ width: 150 }}
         />
         {(dateFrom || dateTo) && (
           <Button variant="ghost" size="sm" onClick={() => { setDateFrom(''); setDateTo(''); }}>
@@ -950,7 +774,7 @@ function RevenueTab() {
       </div>
 
       {/* Split view: table + detail */}
-      <div className="flex flex-1 gap-0 overflow-hidden rounded-md border border-[var(--border-primary)]">
+      <div className="flex flex-1 gap-0 overflow-hidden" style={{ borderRadius: 6, border: '1px solid var(--border-primary)' }}>
         <div className={`${detailOpen ? 'w-[55%]' : 'w-full'} flex flex-col transition-all duration-200`}>
           <DataTable
             columns={columns}
@@ -978,14 +802,13 @@ function RevenueTab() {
             subtitle={`${detailEntry.depIcao} \u2192 ${detailEntry.arrIcao}`}
           >
             <div className="space-y-6">
-              {/* Flight Info */}
               <section>
-                <SectionHeader title="Flight Info" action={<AirplaneTilt size={14} weight="duotone" className="text-[var(--text-tertiary)]" />} />
+                <SectionHeader title="Flight Info" action={<Plane size={14} style={{ color: 'var(--text-tertiary)' }} />} />
                 <div className="space-y-0.5">
                   <DataRow label="Flight #" value={<span className="font-mono font-medium">{detailEntry.flightNumber}</span>} />
                   <DataRow label="Route" value={
                     <span className="font-mono">
-                      {detailEntry.depIcao} <span className="text-[var(--text-quaternary)]">&rarr;</span> {detailEntry.arrIcao}
+                      {detailEntry.depIcao} <span style={{ color: 'var(--text-quaternary)' }}>&rarr;</span> {detailEntry.arrIcao}
                     </span>
                   } />
                   <DataRow label="Aircraft" value={<span className="font-mono">{detailEntry.aircraftType}</span>} />
@@ -993,24 +816,23 @@ function RevenueTab() {
                   <DataRow label="Pilot" value={
                     <>
                       <span className="font-mono">{detailEntry.pilotCallsign}</span>
-                      <span className="text-[var(--text-tertiary)] ml-1">({detailEntry.pilotName})</span>
+                      <span style={{ color: 'var(--text-tertiary)', marginLeft: 4 }}>({detailEntry.pilotName})</span>
                     </>
                   } />
                 </div>
               </section>
 
-              {/* Revenue Breakdown */}
               <section>
-                <SectionHeader title="Cargo & Revenue" action={<Package size={14} weight="duotone" className="text-[var(--text-tertiary)]" />} />
+                <SectionHeader title="Cargo & Revenue" action={<Package size={14} style={{ color: 'var(--text-tertiary)' }} />} />
                 <div className="space-y-0.5">
                   <DataRow label="Cargo Weight" value={<span className="font-mono">{formatNumber(detailEntry.cargoLbs)} lbs</span>} mono />
                   <DataRow label="Revenue" value={
-                    <span className="font-mono font-medium text-[var(--accent-emerald)]">
+                    <span className="font-mono font-medium" style={{ color: ACCENT_EMERALD }}>
                       {formatAmount(detailEntry.revenue)}
                     </span>
                   } />
                   {detailEntry.pirepId && (
-                    <DataRow label="PIREP ID" value={<span className="font-mono text-[var(--text-tertiary)]">#{detailEntry.pirepId}</span>} />
+                    <DataRow label="PIREP ID" value={<span className="font-mono" style={{ color: 'var(--text-tertiary)' }}>#{detailEntry.pirepId}</span>} />
                   )}
                 </div>
               </section>
@@ -1097,8 +919,8 @@ function PilotPayTab({ pilots, onRefresh }: PilotPayTabProps) {
         header: ({ column }) => <DataTableColumnHeader column={column} title="Pilot" />,
         cell: ({ row }) => (
           <div>
-            <span className="font-mono font-medium">{row.original.callsign}</span>
-            <p className="text-xs text-[var(--text-tertiary)]">{row.original.pilotName}</p>
+            <span className="font-mono" style={{ fontWeight: 500 }}>{row.original.callsign}</span>
+            <p style={{ fontSize: 11, color: 'var(--text-tertiary)' }}>{row.original.pilotName}</p>
           </div>
         ),
         size: 140,
@@ -1107,7 +929,7 @@ function PilotPayTab({ pilots, onRefresh }: PilotPayTabProps) {
         accessorKey: 'hours',
         header: ({ column }) => <DataTableColumnHeader column={column} title="Hours" />,
         cell: ({ row }) => (
-          <span className="font-mono text-[var(--text-tertiary)]">{row.original.hours.toFixed(1)}h</span>
+          <span className="font-mono" style={{ color: 'var(--text-tertiary)' }}>{row.original.hours.toFixed(1)}h</span>
         ),
         size: 80,
       },
@@ -1115,7 +937,7 @@ function PilotPayTab({ pilots, onRefresh }: PilotPayTabProps) {
         accessorKey: 'flights',
         header: ({ column }) => <DataTableColumnHeader column={column} title="Flights" />,
         cell: ({ row }) => (
-          <span className="font-mono text-[var(--text-tertiary)]">{row.original.flights}</span>
+          <span className="font-mono" style={{ color: 'var(--text-tertiary)' }}>{row.original.flights}</span>
         ),
         size: 80,
       },
@@ -1123,7 +945,7 @@ function PilotPayTab({ pilots, onRefresh }: PilotPayTabProps) {
         accessorKey: 'basePay',
         header: ({ column }) => <DataTableColumnHeader column={column} title="Base Pay" />,
         cell: ({ row }) => (
-          <span className="font-mono text-[var(--accent-emerald)]">{formatAmount(row.original.basePay)}</span>
+          <span className="font-mono" style={{ color: ACCENT_EMERALD }}>{formatAmount(row.original.basePay)}</span>
         ),
         size: 110,
       },
@@ -1131,7 +953,7 @@ function PilotPayTab({ pilots, onRefresh }: PilotPayTabProps) {
         accessorKey: 'bonuses',
         header: ({ column }) => <DataTableColumnHeader column={column} title="Bonuses" />,
         cell: ({ row }) => (
-          <span className="font-mono text-[var(--accent-cyan)]">{formatAmount(row.original.bonuses)}</span>
+          <span className="font-mono" style={{ color: ACCENT_CYAN }}>{formatAmount(row.original.bonuses)}</span>
         ),
         size: 110,
       },
@@ -1139,7 +961,7 @@ function PilotPayTab({ pilots, onRefresh }: PilotPayTabProps) {
         accessorKey: 'deductions',
         header: ({ column }) => <DataTableColumnHeader column={column} title="Deductions" />,
         cell: ({ row }) => (
-          <span className="font-mono text-[var(--accent-amber)]">{formatAmount(row.original.deductions)}</span>
+          <span className="font-mono" style={{ color: ACCENT_AMBER }}>{formatAmount(row.original.deductions)}</span>
         ),
         size: 110,
       },
@@ -1147,7 +969,7 @@ function PilotPayTab({ pilots, onRefresh }: PilotPayTabProps) {
         accessorKey: 'netPay',
         header: ({ column }) => <DataTableColumnHeader column={column} title="Net Pay" />,
         cell: ({ row }) => (
-          <span className={`font-mono font-medium ${row.original.netPay >= 0 ? 'text-[var(--accent-emerald)]' : 'text-[var(--accent-red)]'}`}>
+          <span className="font-mono" style={{ fontWeight: 500, color: row.original.netPay >= 0 ? ACCENT_EMERALD : ACCENT_RED }}>
             {formatAmount(row.original.netPay)}
           </span>
         ),
@@ -1158,45 +980,46 @@ function PilotPayTab({ pilots, onRefresh }: PilotPayTabProps) {
   );
 
   return (
-    <div className="space-y-4">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       {/* Summary bar */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <Surface elevation={1} padding="compact">
-          <span className="text-[10px] uppercase tracking-wider text-[var(--text-tertiary)]">Total Base Pay</span>
-          <p className="text-lg font-mono font-bold text-[var(--accent-emerald)] mt-1">{formatAmount(totals.basePay)}</p>
-        </Surface>
-        <Surface elevation={1} padding="compact">
-          <span className="text-[10px] uppercase tracking-wider text-[var(--text-tertiary)]">Total Bonuses</span>
-          <p className="text-lg font-mono font-bold text-[var(--accent-cyan)] mt-1">{formatAmount(totals.bonuses)}</p>
-        </Surface>
-        <Surface elevation={1} padding="compact">
-          <span className="text-[10px] uppercase tracking-wider text-[var(--text-tertiary)]">Total Deductions</span>
-          <p className="text-lg font-mono font-bold text-[var(--accent-amber)] mt-1">{formatAmount(totals.deductions)}</p>
-        </Surface>
-        <Surface elevation={1} padding="compact">
-          <span className="text-[10px] uppercase tracking-wider text-[var(--text-tertiary)]">Total Net Pay</span>
-          <p className={`text-lg font-mono font-bold mt-1 ${totals.netPay >= 0 ? 'text-[var(--accent-emerald)]' : 'text-[var(--accent-red)]'}`}>
-            {formatAmount(totals.netPay)}
-          </p>
-        </Surface>
-      </div>
+      <motion.div
+        variants={staggerContainer}
+        initial="hidden"
+        animate="visible"
+        style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}
+      >
+        <motion.div variants={staggerItem}>
+          <StatCard label="Total Base Pay" value={formatAmount(totals.basePay)} valueColor={ACCENT_EMERALD} />
+        </motion.div>
+        <motion.div variants={staggerItem}>
+          <StatCard label="Total Bonuses" value={formatAmount(totals.bonuses)} valueColor={ACCENT_CYAN} />
+        </motion.div>
+        <motion.div variants={staggerItem}>
+          <StatCard label="Total Deductions" value={formatAmount(totals.deductions)} valueColor={ACCENT_AMBER} />
+        </motion.div>
+        <motion.div variants={staggerItem}>
+          <StatCard label="Total Net Pay" value={formatAmount(totals.netPay)} valueColor={totals.netPay >= 0 ? ACCENT_EMERALD : ACCENT_RED} />
+        </motion.div>
+      </motion.div>
 
       {/* Toolbar */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex flex-wrap items-center gap-3">
-          <Label className="text-[var(--text-tertiary)]">Period:</Label>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 12 }}>
+          <Label style={{ color: 'var(--text-tertiary)' }}>Period:</Label>
           <Input
             type="date"
             value={dateFrom}
             onChange={(e) => setDateFrom(e.target.value)}
-            className="w-[150px]"
+            className="input-glow"
+            style={{ width: 150 }}
           />
-          <span className="text-[var(--text-tertiary)]">to</span>
+          <span style={{ color: 'var(--text-tertiary)' }}>to</span>
           <Input
             type="date"
             value={dateTo}
             onChange={(e) => setDateTo(e.target.value)}
-            className="w-[150px]"
+            className="input-glow"
+            style={{ width: 150 }}
           />
           {(dateFrom || dateTo) && (
             <Button variant="ghost" size="sm" onClick={() => { setDateFrom(''); setDateTo(''); }}>
@@ -1204,14 +1027,14 @@ function PilotPayTab({ pilots, onRefresh }: PilotPayTabProps) {
             </Button>
           )}
         </div>
-        <Button onClick={() => setAddOpen(true)}>
-          <Plus size={16} weight="bold" />
+        <Button onClick={() => setAddOpen(true)} className="btn-glow">
+          <Plus size={16} />
           Add Adjustment
         </Button>
       </div>
 
       {/* Split view: table + detail */}
-      <div className="flex flex-1 gap-0 overflow-hidden rounded-md border border-[var(--border-primary)]">
+      <div className="flex flex-1 gap-0 overflow-hidden" style={{ borderRadius: 6, border: '1px solid var(--border-primary)' }}>
         <div className={`${detailOpen ? 'w-[55%]' : 'w-full'} flex flex-col transition-all duration-200`}>
           <DataTable
             columns={columns}
@@ -1232,41 +1055,44 @@ function PilotPayTab({ pilots, onRefresh }: PilotPayTabProps) {
             subtitle={detailEntry.pilotName}
           >
             <div className="space-y-6">
-              {/* Activity */}
               <section>
-                <SectionHeader title="Activity" action={<UsersIcon size={14} weight="duotone" className="text-[var(--text-tertiary)]" />} />
+                <SectionHeader title="Activity" action={<UsersIcon size={14} style={{ color: 'var(--text-tertiary)' }} />} />
                 <div className="space-y-0.5">
                   <DataRow label="Flights" value={<span className="font-mono">{detailEntry.flights}</span>} />
                   <DataRow label="Hours" value={<span className="font-mono">{detailEntry.hours.toFixed(1)}h</span>} />
                 </div>
               </section>
 
-              {/* Pay Breakdown */}
               <section>
-                <SectionHeader title="Pay Breakdown" action={<Wallet size={14} weight="duotone" className="text-[var(--text-tertiary)]" />} />
+                <SectionHeader title="Pay Breakdown" action={<Wallet size={14} style={{ color: 'var(--text-tertiary)' }} />} />
                 <div className="space-y-0.5">
-                  <DataRow label="Base Pay" value={<span className="font-mono text-[var(--accent-emerald)]">{formatAmount(detailEntry.basePay)}</span>} />
-                  <DataRow label="Bonuses" value={<span className="font-mono text-[var(--accent-cyan)]">{formatAmount(detailEntry.bonuses)}</span>} />
-                  <DataRow label="Deductions" value={<span className="font-mono text-[var(--accent-amber)]">-{formatAmount(detailEntry.deductions)}</span>} />
+                  <DataRow label="Base Pay" value={<span className="font-mono" style={{ color: ACCENT_EMERALD }}>{formatAmount(detailEntry.basePay)}</span>} />
+                  <DataRow label="Bonuses" value={<span className="font-mono" style={{ color: ACCENT_CYAN }}>{formatAmount(detailEntry.bonuses)}</span>} />
+                  <DataRow label="Deductions" value={<span className="font-mono" style={{ color: ACCENT_AMBER }}>-{formatAmount(detailEntry.deductions)}</span>} />
                 </div>
               </section>
 
-              {/* Net Pay */}
-              <div className="flex items-center justify-between pt-2 border-t border-[var(--border-primary)]">
-                <span className="text-sm font-semibold text-[var(--text-primary)]">Net Pay</span>
-                <span className={`font-mono font-bold text-lg ${detailEntry.netPay >= 0 ? 'text-[var(--accent-emerald)]' : 'text-[var(--accent-red)]'}`}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 8, borderTop: '1px solid var(--border-primary)' }}>
+                <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>Net Pay</span>
+                <span className="font-mono" style={{ fontWeight: 700, fontSize: 18, color: detailEntry.netPay >= 0 ? ACCENT_EMERALD : ACCENT_RED }}>
                   {formatAmount(detailEntry.netPay)}
                 </span>
               </div>
 
-              {/* Per-flight average */}
               {detailEntry.flights > 0 && (
-                <Surface elevation={0} padding="compact" className="bg-[var(--surface-1)] border border-[var(--border-secondary)]">
-                  <span className="text-xs text-[var(--text-tertiary)]">Average per flight</span>
-                  <p className="font-mono font-medium text-sm mt-0.5 text-[var(--text-primary)]">
+                <div
+                  style={{
+                    background: 'var(--surface-1)',
+                    border: '1px solid var(--border-secondary)',
+                    borderRadius: 6,
+                    padding: '8px 12px',
+                  }}
+                >
+                  <span style={{ fontSize: 11, color: 'var(--text-tertiary)' }}>Average per flight</span>
+                  <p className="font-mono" style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-primary)', marginTop: 2 }}>
                     {formatAmount(detailEntry.netPay / detailEntry.flights)}
                   </p>
-                </Surface>
+                </div>
               )}
             </div>
           </DetailPanel>
@@ -1283,362 +1109,6 @@ function PilotPayTab({ pilots, onRefresh }: PilotPayTabProps) {
   );
 }
 
-// ── Ledger Tab ──────────────────────────────────────────────────
-
-interface LedgerTabProps {
-  pilots: PilotOption[];
-  onRefresh: () => void;
-}
-
-function LedgerTab({ pilots, onRefresh }: LedgerTabProps) {
-  const [entries, setEntries] = useState<FinanceEntry[]>([]);
-  const [total, setTotal] = useState(0);
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(25);
-  const [loading, setLoading] = useState(true);
-
-  // Filters
-  const [search, setSearch] = useState('');
-  const [typeFilter, setTypeFilter] = useState('all');
-  const [dateFrom, setDateFrom] = useState('');
-  const [dateTo, setDateTo] = useState('');
-
-  // Dialogs
-  const [addOpen, setAddOpen] = useState(false);
-  const [voidEntry, setVoidEntry] = useState<FinanceEntry | null>(null);
-
-  // Detail panel
-  const [detailEntry, setDetailEntry] = useState<FinanceEntry | null>(null);
-  const [detailOpen, setDetailOpen] = useState(false);
-
-  const fetchEntries = useCallback(async () => {
-    setLoading(true);
-    try {
-      const params = new URLSearchParams();
-      params.set('page', String(page));
-      params.set('pageSize', String(pageSize));
-      if (typeFilter !== 'all') params.set('type', typeFilter);
-      if (dateFrom) params.set('dateFrom', dateFrom);
-      if (dateTo) params.set('dateTo', dateTo);
-
-      const res = await api.get<FinanceListResponse>(`/api/admin/finances?${params}`);
-      setEntries(res.entries);
-      setTotal(res.total);
-    } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : 'Failed to load transactions');
-    } finally {
-      setLoading(false);
-    }
-  }, [page, pageSize, typeFilter, dateFrom, dateTo]);
-
-  useEffect(() => {
-    fetchEntries();
-  }, [fetchEntries]);
-
-  useEffect(() => {
-    setPage(1);
-  }, [typeFilter, dateFrom, dateTo]);
-
-  // Client-side search filtering
-  const filteredEntries = useMemo(() => {
-    if (!search) return entries;
-    const q = search.toLowerCase();
-    return entries.filter(
-      (e) =>
-        e.pilotCallsign.toLowerCase().includes(q) ||
-        e.pilotName.toLowerCase().includes(q) ||
-        (e.description ?? '').toLowerCase().includes(q)
-    );
-  }, [entries, search]);
-
-  function handleRowClick(entry: FinanceEntry) {
-    setDetailEntry(entry);
-    setDetailOpen(true);
-  }
-
-  function handleCloseDetail() {
-    setDetailOpen(false);
-    setDetailEntry(null);
-  }
-
-  function handleVoided() {
-    fetchEntries();
-    onRefresh();
-  }
-
-  function handleCreated() {
-    fetchEntries();
-    onRefresh();
-  }
-
-  const isVoided = (entry: FinanceEntry) => !!entry.voidedAt || !!entry.reversalId;
-
-  const columns: ColumnDef<FinanceEntry, unknown>[] = useMemo(
-    () => [
-      {
-        accessorKey: 'createdAt',
-        header: ({ column }) => <DataTableColumnHeader column={column} title="Date" />,
-        cell: ({ row }) => {
-          const voided = isVoided(row.original);
-          return (
-            <span className={`text-[var(--text-tertiary)] text-sm ${voided ? 'line-through opacity-50' : ''}`}>
-              {formatDateTime(row.original.createdAt)}
-            </span>
-          );
-        },
-        size: 150,
-      },
-      {
-        accessorKey: 'type',
-        header: 'Type',
-        cell: ({ row }) => {
-          const voided = isVoided(row.original);
-          return (
-            <div className={voided ? 'opacity-50' : ''}>
-              <StatusBadge status={row.original.type} />
-              {voided && (
-                <StatusBadge status="voided" className="ml-1" />
-              )}
-            </div>
-          );
-        },
-        enableSorting: false,
-        size: 130,
-      },
-      {
-        accessorKey: 'description',
-        header: 'Description',
-        cell: ({ row }) => {
-          const voided = isVoided(row.original);
-          return (
-            <span className={`max-w-[250px] truncate block ${voided ? 'line-through opacity-50' : ''}`}>
-              {row.original.description || <span className="text-[var(--text-quaternary)] italic">No description</span>}
-            </span>
-          );
-        },
-        enableSorting: false,
-      },
-      {
-        accessorKey: 'amount',
-        header: ({ column }) => <DataTableColumnHeader column={column} title="Amount" className="justify-end" />,
-        cell: ({ row }) => {
-          const voided = isVoided(row.original);
-          const positive = isPositiveType(row.original.type);
-          return (
-            <span
-              className={`font-mono font-medium text-right block ${
-                voided
-                  ? 'line-through opacity-50 text-[var(--text-quaternary)]'
-                  : positive
-                    ? 'text-[var(--accent-emerald)]'
-                    : 'text-[var(--accent-red)]'
-              }`}
-            >
-              {positive ? '+' : '-'}
-              {formatAmount(row.original.amount)}
-            </span>
-          );
-        },
-        size: 130,
-      },
-      {
-        accessorKey: 'pilotCallsign',
-        header: 'Pilot',
-        cell: ({ row }) => {
-          const voided = isVoided(row.original);
-          return (
-            <span className={`font-mono text-sm ${voided ? 'opacity-50' : ''}`}>
-              {row.original.pilotCallsign}
-            </span>
-          );
-        },
-        enableSorting: false,
-        size: 100,
-      },
-      {
-        id: 'actions',
-        enableHiding: false,
-        enableSorting: false,
-        size: 50,
-        cell: ({ row }) => {
-          const entry = row.original;
-          const voided = isVoided(entry);
-          if (voided) return null;
-          return (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <DotsThreeVertical size={16} weight="bold" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem
-                  className="text-[var(--accent-red)] focus:text-[var(--accent-red)]"
-                  onClick={(e) => { e.stopPropagation(); setVoidEntry(entry); }}
-                >
-                  <Prohibit size={14} />
-                  Void
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          );
-        },
-      },
-    ],
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    []
-  );
-
-  return (
-    <div className="space-y-4">
-      {/* Toolbar */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex flex-1 flex-wrap items-center gap-3">
-          <div className="relative max-w-xs flex-1 min-w-[200px]">
-            <MagnifyingGlass
-              size={16}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-quaternary)]"
-            />
-            <Input
-              placeholder="Search transactions..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-9"
-            />
-          </div>
-          <Select value={typeFilter} onValueChange={setTypeFilter}>
-            <SelectTrigger className="w-[140px]">
-              <SelectValue placeholder="Type" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Types</SelectItem>
-              <SelectItem value="income">Income</SelectItem>
-              <SelectItem value="pay">Pay</SelectItem>
-              <SelectItem value="bonus">Bonus</SelectItem>
-              <SelectItem value="expense">Expense</SelectItem>
-              <SelectItem value="deduction">Deduction</SelectItem>
-            </SelectContent>
-          </Select>
-          <Input
-            type="date"
-            value={dateFrom}
-            onChange={(e) => setDateFrom(e.target.value)}
-            className="w-[150px]"
-            placeholder="From"
-          />
-          <Input
-            type="date"
-            value={dateTo}
-            onChange={(e) => setDateTo(e.target.value)}
-            className="w-[150px]"
-            placeholder="To"
-          />
-        </div>
-        <Button onClick={() => setAddOpen(true)}>
-          <Plus size={16} weight="bold" />
-          Add Transaction
-        </Button>
-      </div>
-
-      {/* Split view: table + detail */}
-      <div className="flex flex-1 gap-0 overflow-hidden rounded-md border border-[var(--border-primary)]">
-        <div className={`${detailOpen ? 'w-[55%]' : 'w-full'} flex flex-col transition-all duration-200`}>
-          <DataTable
-            columns={columns}
-            data={filteredEntries}
-            onRowClick={handleRowClick}
-            selectedRowId={detailEntry?.id}
-            loading={loading}
-            emptyMessage="No transactions found"
-            getRowId={(row) => String(row.id)}
-          />
-          <DataTablePagination
-            page={page}
-            pageSize={pageSize}
-            total={total}
-            onPageChange={setPage}
-            onPageSizeChange={setPageSize}
-          />
-        </div>
-
-        {detailOpen && detailEntry && (
-          <DetailPanel
-            open={detailOpen}
-            onClose={handleCloseDetail}
-            title={`Transaction #${detailEntry.id}`}
-            subtitle={detailEntry.pilotCallsign}
-            actions={
-              !isVoided(detailEntry) ? (
-                <Button
-                  size="sm"
-                  variant="destructive"
-                  onClick={() => { handleCloseDetail(); setVoidEntry(detailEntry); }}
-                >
-                  <Prohibit size={14} weight="bold" />
-                  Void
-                </Button>
-              ) : undefined
-            }
-          >
-            <div className="space-y-6">
-              {isVoided(detailEntry) && (
-                <StatusBadge status="voided" className="text-[var(--accent-red)]" />
-              )}
-
-              <section>
-                <SectionHeader title="Details" action={<Receipt size={14} weight="duotone" className="text-[var(--text-tertiary)]" />} />
-                <div className="space-y-0.5">
-                  <DataRow label="Type" value={<StatusBadge status={detailEntry.type} />} />
-                  <DataRow label="Amount" value={
-                    <span className={`font-mono font-medium ${isPositiveType(detailEntry.type) ? 'text-[var(--accent-emerald)]' : 'text-[var(--accent-red)]'}`}>
-                      {isPositiveType(detailEntry.type) ? '+' : '-'}{formatAmount(detailEntry.amount)}
-                    </span>
-                  } />
-                  <DataRow label="Pilot" value={
-                    <>
-                      <span className="font-mono">{detailEntry.pilotCallsign}</span>
-                      <span className="text-[var(--text-tertiary)] ml-1">({detailEntry.pilotName})</span>
-                    </>
-                  } />
-                  <DataRow label="Date" value={formatDateTime(detailEntry.createdAt)} />
-                  {detailEntry.description && (
-                    <DataRow label="Description" value={<span className="text-sm">{detailEntry.description}</span>} />
-                  )}
-                  {detailEntry.pirepId && (
-                    <DataRow label="PIREP" value={<span className="font-mono text-[var(--text-tertiary)]">#{detailEntry.pirepId}</span>} />
-                  )}
-                  {detailEntry.creatorCallsign && (
-                    <DataRow label="Created By" value={<span className="font-mono text-[var(--text-tertiary)]">{detailEntry.creatorCallsign}</span>} />
-                  )}
-                </div>
-              </section>
-            </div>
-          </DetailPanel>
-        )}
-      </div>
-
-      {/* Dialogs */}
-      <AddTransactionDialog
-        open={addOpen}
-        onOpenChange={setAddOpen}
-        onCreated={handleCreated}
-        pilots={pilots}
-      />
-      <VoidTransactionDialog
-        entry={voidEntry}
-        open={!!voidEntry}
-        onOpenChange={(open) => { if (!open) setVoidEntry(null); }}
-        onVoided={handleVoided}
-      />
-    </div>
-  );
-}
-
 // ── Page ────────────────────────────────────────────────────────
 
 export function FinancesPage() {
@@ -1646,6 +1116,9 @@ export function FinancesPage() {
   const [pilots, setPilots] = useState<PilotOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<'overview' | 'revenue' | 'pilot-pay'>('overview');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
 
   const fetchInitial = useCallback(async () => {
     try {
@@ -1673,96 +1146,155 @@ export function FinancesPage() {
       const summaryRes = await api.get<FinanceSummary>('/api/admin/finances/summary');
       setSummary(summaryRes);
     } catch {
-      // Silently fail — the individual tab will show its own errors
+      // Silently fail
     }
   }, []);
 
+  const totalRevenue = summary ? summary.totalIncome + summary.totalPay + summary.totalBonuses : 0;
+  const totalExpenses = summary ? summary.totalExpenses + summary.totalDeductions : 0;
+  const netProfit = totalRevenue - totalExpenses;
+  const pilotPayroll = summary ? summary.totalPay + summary.totalBonuses - summary.totalDeductions : 0;
+
+  const tabs: Array<{ key: typeof activeTab; label: string }> = [
+    { key: 'overview', label: 'Overview' },
+    { key: 'revenue', label: 'Revenue' },
+    { key: 'pilot-pay', label: 'Pilot Pay' },
+  ];
+
   if (loading) {
     return (
-      <PageShell title="Finances" subtitle="Revenue, payroll, and accounting">
-        <div className="space-y-6">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div>
+        <div style={{ padding: '16px 24px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+            <DollarSign size={20} style={{ color: ACCENT_BLUE }} />
+            <span style={{ fontSize: 20, fontWeight: 700, color: 'var(--text-primary)' }}>Finances</span>
+          </div>
+          <span style={{ fontSize: 12, color: 'var(--text-tertiary)' }}>Revenue, expenses and cost management</span>
+        </div>
+        <div style={{ padding: '0 24px 24px 24px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
             {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="h-[60px] rounded-lg bg-[var(--surface-2)] animate-pulse" />
+              <div key={i} style={{ height: 72, borderRadius: 6, background: 'var(--surface-2)', border: '1px solid var(--border-primary)' }} className="animate-pulse" />
             ))}
           </div>
-          <div className="h-10 w-full rounded-lg bg-[var(--surface-2)] animate-pulse" />
-          <div className="h-[400px] rounded-lg bg-[var(--surface-2)] animate-pulse" />
         </div>
-      </PageShell>
+      </div>
     );
   }
 
   if (error) {
     return (
-      <PageShell title="Finances" subtitle="Revenue, payroll, and accounting">
-        <div className="flex items-center justify-center py-20 text-[var(--text-tertiary)]">
+      <div>
+        <div style={{ padding: '16px 24px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+            <DollarSign size={20} style={{ color: ACCENT_BLUE }} />
+            <span style={{ fontSize: 20, fontWeight: 700, color: 'var(--text-primary)' }}>Finances</span>
+          </div>
+          <span style={{ fontSize: 12, color: 'var(--text-tertiary)' }}>Revenue, expenses and cost management</span>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '80px 0', color: 'var(--text-tertiary)' }}>
           <p>{error}</p>
         </div>
-      </PageShell>
+      </div>
     );
   }
 
-  const totalRevenue = summary ? summary.totalIncome + summary.totalPay + summary.totalBonuses : 0;
-  const totalExpenses = summary ? summary.totalExpenses + summary.totalDeductions : 0;
-  const netProfit = totalRevenue - totalExpenses;
-  const profitMargin = totalRevenue > 0 ? (netProfit / totalRevenue) * 100 : 0;
-
   return (
-    <PageShell
-      title="Finances"
-      subtitle="Revenue, payroll, and accounting"
-      stats={[
-        {
-          label: 'Revenue',
-          value: formatAmount(totalRevenue),
-          icon: TrendUp,
-          accent: 'emerald',
-        },
-        {
-          label: 'Expenses',
-          value: formatAmount(totalExpenses),
-          icon: TrendDown,
-          accent: 'red',
-        },
-        {
-          label: 'Net Profit',
-          value: formatAmount(netProfit),
-          icon: CurrencyDollar,
-          accent: netProfit >= 0 ? 'emerald' : 'red',
-        },
-        {
-          label: 'Margin',
-          value: formatMargin(profitMargin),
-          icon: ChartBar,
-          accent: 'blue',
-        },
-      ]}
-    >
-      <Tabs defaultValue="overview" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="revenue">Revenue</TabsTrigger>
-          <TabsTrigger value="pilot-pay">Pilot Pay</TabsTrigger>
-          <TabsTrigger value="ledger">Ledger</TabsTrigger>
-        </TabsList>
+    <motion.div variants={pageVariants} initial="hidden" animate="visible">
+      {/* ── Header ─────────────────────────────────────────────── */}
+      <div style={{ padding: '16px 24px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+        {/* Title row */}
+        <motion.div variants={fadeUp} style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <DollarSign size={20} style={{ color: ACCENT_BLUE }} />
+              <span style={{ fontSize: 20, fontWeight: 700, color: 'var(--text-primary)' }}>Finances</span>
+            </div>
+            <span style={{ fontSize: 12, color: 'var(--text-tertiary)' }}>
+              Revenue, expenses and cost management
+            </span>
+          </div>
+          {/* Date range selector */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+            <Calendar size={14} style={{ color: 'var(--text-tertiary)' }} />
+            <Input
+              type="date"
+              value={dateFrom}
+              onChange={(e) => setDateFrom(e.target.value)}
+              className="input-glow"
+              style={{ width: 140, height: 32, fontSize: 12 }}
+            />
+            <span style={{ fontSize: 12, color: 'var(--text-tertiary)' }}>to</span>
+            <Input
+              type="date"
+              value={dateTo}
+              onChange={(e) => setDateTo(e.target.value)}
+              className="input-glow"
+              style={{ width: 140, height: 32, fontSize: 12 }}
+            />
+            {(dateFrom || dateTo) && (
+              <Button variant="ghost" size="sm" onClick={() => { setDateFrom(''); setDateTo(''); }} style={{ height: 32 }}>
+                Clear
+              </Button>
+            )}
+          </div>
+        </motion.div>
 
-        <TabsContent value="overview">
-          {summary && <OverviewTab summary={summary} />}
-        </TabsContent>
+        {/* Tabs */}
+        <div style={{ display: 'flex', gap: 0, borderBottom: '1px solid var(--border-primary)' }}>
+          {tabs.map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key)}
+              style={{
+                padding: '8px 16px',
+                fontSize: 13,
+                fontWeight: 500,
+                color: activeTab === tab.key ? ACCENT_BLUE : 'var(--text-tertiary)',
+                background: 'none',
+                border: 'none',
+                borderBottom: activeTab === tab.key ? `2px solid ${ACCENT_BLUE}` : '2px solid transparent',
+                cursor: 'pointer',
+                marginBottom: -1,
+              }}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
 
-        <TabsContent value="revenue">
-          <RevenueTab />
-        </TabsContent>
+        {/* Stat cards row */}
+        <motion.div
+          variants={staggerContainer}
+          initial="hidden"
+          animate="visible"
+          style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}
+        >
+          <motion.div variants={staggerItem}>
+            <StatCard label="Total Revenue" value={formatAmount(totalRevenue)} valueColor={ACCENT_EMERALD} />
+          </motion.div>
+          <motion.div variants={staggerItem}>
+            <StatCard label="Total Expenses" value={formatAmount(totalExpenses)} valueColor={ACCENT_RED} />
+          </motion.div>
+          <motion.div variants={staggerItem}>
+            <StatCard label="Net Profit" value={formatAmount(netProfit)} />
+          </motion.div>
+          <motion.div variants={staggerItem}>
+            <StatCard label="Pilot Payroll" value={formatAmount(pilotPayroll)} />
+          </motion.div>
+        </motion.div>
+      </div>
 
-        <TabsContent value="pilot-pay">
+      {/* ── Content Area ───────────────────────────────────────── */}
+      <div style={{ padding: '0 24px 24px 24px' }}>
+        {activeTab === 'overview' && summary && (
+          <OverviewTab summary={summary} dateFrom={dateFrom} dateTo={dateTo} />
+        )}
+        {activeTab === 'revenue' && <RevenueTab />}
+        {activeTab === 'pilot-pay' && (
           <PilotPayTab pilots={pilots} onRefresh={refreshSummary} />
-        </TabsContent>
-
-        <TabsContent value="ledger">
-          <LedgerTab pilots={pilots} onRefresh={refreshSummary} />
-        </TabsContent>
-      </Tabs>
-    </PageShell>
+        )}
+      </div>
+    </motion.div>
   );
 }

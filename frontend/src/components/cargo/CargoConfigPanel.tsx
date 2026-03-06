@@ -60,10 +60,10 @@ export function CargoConfigPanel() {
             onChange={(e) => setUseRealWorldCompanies(e.target.checked)}
             className="accent-blue-500"
           />
-          <span className="text-[10px] text-acars-muted font-sans">Include real-world company names</span>
+          <span className="text-[10px] text-acars-muted">Include real-world company names</span>
         </label>
 
-        <p className="text-[9px] text-acars-muted/60 font-sans">
+        <p className="text-[9px] text-acars-muted/60">
           Cargo generates automatically with OFP
         </p>
       </div>

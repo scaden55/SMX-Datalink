@@ -1,5 +1,4 @@
 @import './tokens.css';
-@import 'leaflet/dist/leaflet.css';
 
 @tailwind base;
 @tailwind components;
@@ -19,42 +18,42 @@
   }
 
   .dark {
-    /* Map shadcn HSL variables for component compatibility */
-    --background: 222 30% 7%;
-    --foreground: 220 10% 95%;
-    --card: 220 24% 11%;
-    --card-foreground: 220 10% 95%;
-    --popover: 220 24% 11%;
-    --popover-foreground: 220 10% 95%;
+    /* Map shadcn HSL variables → aligned to design tokens */
+    --background: 240 38% 3%;       /* ≈ --surface-0: #05060d */
+    --foreground: 228 32% 94%;      /* ≈ --text-primary: #eceef5 */
+    --card: 234 33% 5%;             /* ≈ --surface-1: #060812 */
+    --card-foreground: 228 32% 94%;
+    --popover: 228 33% 10%;         /* ≈ --surface-2 solid approx */
+    --popover-foreground: 228 32% 94%;
 
-    --primary: 217 91% 60%;
+    --primary: 232 85% 57%;         /* ≈ --accent-blue: #3950ed */
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 220 18% 13%;
-    --secondary-foreground: 220 10% 95%;
+    --secondary: 224 20% 12%;       /* ≈ --surface-3: #1c2230 */
+    --secondary-foreground: 228 32% 94%;
 
-    --muted: 220 16% 14%;
-    --muted-foreground: 225 8% 50%;
+    --muted: 224 20% 12%;
+    --muted-foreground: 215 12% 49%; /* ≈ --text-tertiary: #566270 */
 
-    --accent: 220 18% 13%;
-    --accent-foreground: 220 10% 95%;
+    --accent: 224 20% 12%;
+    --accent-foreground: 228 32% 94%;
 
-    --destructive: 0 84% 60%;
+    --destructive: 0 90% 65%;       /* ≈ --accent-red: #f87171 */
     --destructive-foreground: 0 0% 100%;
 
-    --border: 220 16% 16%;
-    --input: 220 18% 13%;
-    --ring: 217 91% 60%;
+    --border: 225 30% 15%;          /* ≈ --border-primary solid approx */
+    --input: 225 30% 9%;            /* ≈ --input-bg: #0d121f */
+    --ring: 232 85% 57%;            /* ≈ --accent-blue */
 
     /* Sidebar */
-    --sidebar-background: 222 30% 5%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 217 91% 60%;
+    --sidebar-background: 230 43% 5%;
+    --sidebar-foreground: 230 20% 93%;
+    --sidebar-primary: 234 84% 57%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 220 16% 14%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 220 16% 14%;
-    --sidebar-ring: 217 91% 60%;
+    --sidebar-accent: 234 84% 57% / 0.13;
+    --sidebar-accent-foreground: 225 93% 77%;
+    --sidebar-border: 225 30% 15%;
+    --sidebar-ring: 234 84% 57%;
   }
 
   * {
@@ -64,33 +63,160 @@
   body {
     @apply bg-background text-foreground font-sans antialiased;
     min-height: 100vh;
-    background-color: var(--surface-1);
+    background-color: var(--surface-0);
     color: var(--text-primary);
   }
 }
 
-/* ── Leaflet dark theme overrides ────────────────────── */
-.aircraft-tooltip {
-  background: var(--surface-0) !important;
-  border: 1px solid var(--border-primary) !important;
+/* ── Interactive card & row hover ───────────────────── */
+.card-interactive {
+  transition: border-color 200ms ease, box-shadow 200ms ease, transform 200ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.card-interactive:hover {
+  border-color: var(--border-hover) !important;
+  box-shadow: 0 4px 20px rgba(57, 80, 237, 0.06), 0 0 0 1px rgba(57, 80, 237, 0.08);
+}
+
+.row-interactive {
+  transition: background-color 150ms ease;
+}
+.row-interactive:hover {
+  background-color: rgba(57, 80, 237, 0.04);
+}
+
+/* ── Button hover tint ─────────────────────────────── */
+.btn-glow {
+  transition: background-color 150ms ease, color 150ms ease, border-color 150ms ease;
+}
+.btn-glow:hover {
+  background-color: rgba(57, 86, 237, 0.15);
+  border-color: rgba(57, 86, 237, 0.3);
+}
+
+/* ── Icon hover ────────────────────────────────────── */
+.icon-hover {
+  transition: color 150ms ease, transform 150ms ease;
+  cursor: pointer;
+}
+.icon-hover:hover {
   color: var(--text-primary) !important;
-  font-family: var(--font-mono);
-  font-size: var(--text-data-sm-size);
-  font-weight: 600;
-  padding: 2px 6px !important;
-  border-radius: var(--radius-sm) !important;
-  box-shadow: var(--elevation-2) !important;
+  transform: scale(1.1);
 }
-.aircraft-tooltip::before {
-  border-top-color: var(--surface-0) !important;
+
+/* ── Sidebar nav item hover ────────────────────────── */
+.nav-item-hover {
+  transition: background-color 150ms ease, color 150ms ease, border-left-color 150ms ease;
 }
-.leaflet-control-zoom a {
-  background: var(--surface-2) !important;
+.nav-item-hover:hover {
+  background-color: rgba(57, 86, 237, 0.12);
   color: var(--text-primary) !important;
-  border-color: var(--border-primary) !important;
+  border-left-color: var(--accent-blue) !important;
 }
-.leaflet-control-zoom a:hover {
-  background: var(--surface-3) !important;
+
+/* ── Sidebar logout hover (red tint) ─────────────── */
+.nav-logout-hover {
+  transition: background-color 150ms ease, color 150ms ease;
+}
+.nav-logout-hover:hover {
+  background-color: rgba(248, 113, 113, 0.08);
+  color: var(--accent-red) !important;
+}
+
+/* ── Badge pulse (for live indicators) ─────────────── */
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.6; transform: scale(1.4); }
+}
+.pulse-dot {
+  animation: pulse-dot 2s ease-in-out infinite;
+}
+
+/* ── Badge count bounce ────────────────────────────── */
+@keyframes badge-pop {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.15); }
+  100% { transform: scale(1); }
+}
+.badge-pop {
+  animation: badge-pop 300ms ease-out;
+}
+
+/* ── Subtle shimmer for loading states ─────────────── */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.shimmer {
+  background: linear-gradient(90deg, var(--surface-2) 25%, var(--surface-3) 50%, var(--surface-2) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.8s ease-in-out infinite;
+}
+
+/* ── Progress bar fill animation ───────────────────── */
+@keyframes bar-fill {
+  from { width: 0%; }
+}
+.bar-animate {
+  animation: bar-fill 800ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* ── Tab indicator slide ───────────────────────────── */
+.tab-item {
+  position: relative;
+  transition: color 150ms ease;
+}
+.tab-item::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--accent-blue);
+  transform: scaleX(0);
+  transition: transform 200ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.tab-item.active::after {
+  transform: scaleX(1);
+}
+
+/* ── Search input focus glow ───────────────────────── */
+.input-glow {
+  transition: border-color 200ms ease, box-shadow 200ms ease;
+}
+.input-glow:focus-within {
+  border-color: var(--accent-blue) !important;
+  box-shadow: 0 0 0 2px rgba(57, 80, 237, 0.15);
+}
+
+/* ── Chart line draw animation ─────────────────────── */
+@keyframes line-draw {
+  from { stroke-dashoffset: 1000; }
+  to { stroke-dashoffset: 0; }
+}
+.chart-line-draw {
+  stroke-dasharray: 1000;
+  animation: line-draw 1.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* ── Chart area fade ───────────────────────────────── */
+@keyframes area-fade {
+  from { opacity: 0; }
+  to { opacity: 0.8; }
+}
+.chart-area-fade {
+  animation: area-fade 1s ease-out 0.3s forwards;
+  opacity: 0;
+}
+
+/* ── Mini bar chart grow ───────────────────────────── */
+@keyframes bar-grow {
+  from { transform: scaleY(0); }
+  to { transform: scaleY(1); }
+}
+.bar-grow {
+  transform-origin: bottom;
+  animation: bar-grow 600ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 /* ── Scrollbar styling ──────────────────────────────── */

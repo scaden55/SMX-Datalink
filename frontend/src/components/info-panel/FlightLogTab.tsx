@@ -21,7 +21,7 @@ export function FlightLogTab() {
       <div className="panel p-3">
         <h4 className="data-label mb-2">Position & Flight</h4>
         <table className="w-full text-[11px]">
-          <tbody className="font-mono">
+          <tbody className="tabular-nums">
             <Row label="Phase" value={flight?.phase ?? '---'} highlight />
             <Row label="Altitude" value={formatAltitude(pos.altitude)} />
             <Row label="IAS" value={`${Math.round(pos.airspeedIndicated)} kts`} />
@@ -53,7 +53,7 @@ export function FlightLogTab() {
                 )}
               </tr>
             </thead>
-            <tbody className="font-mono">
+            <tbody className="tabular-nums">
               {engine?.engines && (
                 <>
                   <EngRow label="N1" values={engine.engines.map((e) => `${e.n1.toFixed(1)}%`)} />
@@ -71,7 +71,7 @@ export function FlightLogTab() {
         <div className="panel p-3">
           <h4 className="data-label mb-2">Fuel</h4>
           <table className="w-full text-[11px]">
-            <tbody className="font-mono">
+            <tbody className="tabular-nums">
               <Row label="Total" value={`${Math.round(fuel?.totalQuantityWeight ?? 0).toLocaleString()} lbs`} />
               <Row label="Quantity" value={`${Math.round(fuel?.totalQuantityGallons ?? 0).toLocaleString()} gal`} />
               <Row label="Capacity" value={`${Math.round(fuel?.totalCapacityGallons ?? 0).toLocaleString()} gal`} />
@@ -88,7 +88,7 @@ export function FlightLogTab() {
                     <th className="text-right font-medium">Cap (gal)</th>
                   </tr>
                 </thead>
-                <tbody className="font-mono">
+                <tbody className="tabular-nums">
                   {fuel.tanks.map((t) => (
                     <tr key={t.name} className="border-t border-acars-border">
                       <td className="py-0.5 text-acars-muted">{t.name}</td>
@@ -105,7 +105,7 @@ export function FlightLogTab() {
         <div className="panel p-3">
           <h4 className="data-label mb-2">Autopilot & Radios</h4>
           <table className="w-full text-[11px]">
-            <tbody className="font-mono">
+            <tbody className="tabular-nums">
               <Row label="AP Master" value={ap.master ? 'ON' : 'OFF'} highlight={ap.master} />
               <Row label="ALT" value={`${ap.altitudeTarget.toLocaleString()} ft`} />
               <Row label="HDG" value={formatHeading(ap.headingTarget)} />

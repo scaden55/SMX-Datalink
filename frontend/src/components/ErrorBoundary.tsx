@@ -38,7 +38,7 @@ export class ErrorBoundary extends Component<Props, State> {
               {this.state.error?.message || 'An unexpected error occurred'}
             </p>
             {this.state.componentStack && (
-              <pre className="text-left text-[10px] text-acars-muted/70 bg-acars-input border border-acars-border rounded p-3 max-h-48 overflow-auto whitespace-pre-wrap font-mono">
+              <pre className="text-left text-[10px] text-acars-muted/70 bg-acars-input border border-acars-border rounded p-3 max-h-48 overflow-auto whitespace-pre-wrap tabular-nums">
                 {this.state.componentStack}
               </pre>
             )}

@@ -19,7 +19,7 @@ export function PlanningGenerateBar({ onGenerate, onFetch, onStartFlight }: Prop
   const hasOFP = ofp !== null;
 
   return (
-    <div className="px-3 py-3 border-t border-acars-border space-y-2">
+    <div className="px-3 py-3 border-t border-white/[0.06] space-y-2">
       {hasOFP && ofp.times && (
         <div className="grid grid-cols-4 gap-1 text-center">
           <div>

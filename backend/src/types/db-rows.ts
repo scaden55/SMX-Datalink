@@ -336,6 +336,195 @@ export interface ComponentJoinRow extends AircraftComponentRow {
 }
 
 // ─────────────────────────────────────────────────────────────
+// finance-engine
+// ─────────────────────────────────────────────────────────────
+
+/** finance_aircraft_profiles JOIN fleet */
+export interface FinanceAircraftProfileRow {
+  id: number;
+  aircraft_id: number;
+  registration: string;
+  icao_type: string;
+  mtow_lbs: number | null;
+  cargo_capacity_lbs: number | null;
+  lease_type: string;
+  lease_monthly: number;
+  insurance_hull_value: number;
+  insurance_hull_pct: number;
+  insurance_liability: number;
+  insurance_war_risk: number;
+  base_fuel_gph: number;
+  payload_fuel_sensitivity: number;
+  maint_reserve_per_fh: number;
+  crew_per_diem: number;
+  crew_hotel_rate: number;
+  created_at: string;
+  updated_at: string;
+}
+
+/** finance_station_fees table — SELECT * shape */
+export interface FinanceStationFeesRow {
+  id: number;
+  icao: string;
+  landing_rate: number;
+  parking_rate: number;
+  ground_handling: number;
+  fuel_price_gal: number;
+  nav_fee_per_nm: number;
+  deice_fee: number;
+  uld_handling: number;
+  created_at: string;
+  updated_at: string;
+}
+
+/** finance_rate_config table — single row */
+export interface FinanceRateConfigRow {
+  id: number;
+  fuel_surcharge_pct: number;
+  security_fee: number;
+  charter_multiplier: number;
+  default_lane_rate: number;
+  valuation_charge_pct: number;
+  default_fuel_price: number;
+  updated_at: string;
+}
+
+/** finance_lane_rates table — SELECT * shape */
+export interface FinanceLaneRateRow {
+  id: number;
+  origin_icao: string;
+  dest_icao: string;
+  rate_per_lb: number;
+  created_at: string;
+}
+
+/** finance_commodity_rates table — SELECT * shape */
+export interface FinanceCommodityRateRow {
+  id: number;
+  category: string;
+  commodity_code: string;
+  commodity_name: string;
+  rate_per_lb: number;
+  hazmat: number;
+  temp_controlled: number;
+  created_at: string;
+  updated_at: string;
+}
+
+/** finance_maint_thresholds table — SELECT * shape */
+export interface FinanceMaintThresholdRow {
+  id: number;
+  check_type: string;
+  interval_hours: number | null;
+  interval_years: number | null;
+  cost_min: number;
+  cost_max: number;
+  downtime_days_min: number;
+  downtime_days_max: number;
+  created_at: string;
+}
+
+/** finance_rated_manifests table — SELECT * shape */
+export interface FinanceRatedManifestRow {
+  id: number;
+  cargo_manifest_id: number;
+  logbook_id: number | null;
+  total_revenue: number;
+  total_base_charge: number;
+  total_surcharges: number;
+  total_fuel_surcharge: number;
+  total_security_fees: number;
+  charter_multiplier: number;
+  yield_per_lb: number;
+  load_factor: number;
+  rated_at: string;
+}
+
+/** finance_rated_shipments table — SELECT * shape */
+export interface FinanceRatedShipmentRow {
+  id: number;
+  rated_manifest_id: number;
+  awb_number: string;
+  uld_id: string | null;
+  category_code: string;
+  actual_weight: number;
+  chargeable_weight: number;
+  base_charge: number;
+  commodity_surcharge: number;
+  fuel_surcharge: number;
+  security_fee: number;
+  valuation_charge: number;
+  total_charge: number;
+}
+
+/** finance_flight_pnl table — SELECT * shape */
+export interface FinanceFlightPnLRow {
+  id: number;
+  logbook_id: number;
+  rated_manifest_id: number | null;
+  cargo_revenue: number;
+  fuel_cost: number;
+  landing_fee: number;
+  parking_fee: number;
+  handling_fee: number;
+  nav_fee: number;
+  deice_fee: number;
+  uld_fee: number;
+  crew_cost: number;
+  total_variable_cost: number;
+  maint_reserve: number;
+  lease_alloc: number;
+  insurance_alloc: number;
+  total_fixed_alloc: number;
+  gross_profit: number;
+  margin_pct: number;
+  load_factor: number;
+  break_even_lf: number;
+  revenue_per_bh: number;
+  cost_per_bh: number;
+  block_hours: number;
+  payload_lbs: number;
+  event_id: number | null;
+  computed_at: string;
+}
+
+/** finance_flight_pnl JOIN logbook for display */
+export interface FinanceFlightPnLJoinRow extends FinanceFlightPnLRow {
+  flight_number: string;
+  dep_icao: string;
+  arr_icao: string;
+}
+
+/** finance_period_pnl table — SELECT * shape */
+export interface FinancePeriodPnLRow {
+  id: number;
+  period_type: string;
+  period_key: string;
+  total_revenue: number;
+  total_variable_cost: number;
+  total_fixed_cost: number;
+  ebitda: number;
+  ebitdar: number;
+  casm: number;
+  rasm: number;
+  avg_yield: number;
+  total_flights: number;
+  total_block_hours: number;
+  computed_at: string;
+}
+
+/** finance_events table — SELECT * shape */
+export interface FinanceEventRow {
+  id: number;
+  logbook_id: number | null;
+  event_type: string;
+  title: string;
+  description: string | null;
+  financial_impact: number;
+  created_at: string;
+}
+
+// ─────────────────────────────────────────────────────────────
 // exceedance.ts
 // ─────────────────────────────────────────────────────────────
 

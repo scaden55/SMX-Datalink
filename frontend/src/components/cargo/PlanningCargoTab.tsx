@@ -9,7 +9,7 @@ export function PlanningCargoTab() {
   if (generating) {
     return (
       <div className="flex items-center justify-center h-32">
-        <span className="text-[11px] text-acars-muted font-sans animate-pulse">Generating cargo manifest...</span>
+        <span className="text-[11px] text-acars-muted animate-pulse">Generating cargo manifest...</span>
       </div>
     );
   }
@@ -17,7 +17,7 @@ export function PlanningCargoTab() {
   if (!manifest) {
     return (
       <div className="flex items-center justify-center h-32">
-        <span className="text-[11px] text-acars-muted font-sans">Generate OFP to see cargo manifest</span>
+        <span className="text-[11px] text-acars-muted">Generate OFP to see cargo manifest</span>
       </div>
     );
   }

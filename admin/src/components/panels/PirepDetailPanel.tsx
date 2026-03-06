@@ -1,17 +1,17 @@
 import { useState } from 'react';
 import {
-  AirplaneTilt,
+  Plane,
   MapPin,
   Clock,
-  GasPump,
+  Fuel,
   Package,
   Users as UsersIcon,
   ArrowDown,
-  CheckCircle,
+  CheckCircle2,
   XCircle,
   Star,
   Globe,
-} from '@phosphor-icons/react';
+} from 'lucide-react';
 import { api, ApiError } from '@/lib/api';
 import { toast } from '@/stores/toastStore';
 import {
@@ -225,7 +225,7 @@ export function PirepDetailPanel({ pirep, open, onOpenChange, onReviewed }: Pire
               {/* ── Flight Info ─────────────────────────────── */}
               <section>
                 <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-2">
-                  <AirplaneTilt size={14} weight="duotone" />
+                  <Plane size={14} />
                   Flight Info
                 </h3>
                 <div className="space-y-0.5">
@@ -268,7 +268,7 @@ export function PirepDetailPanel({ pirep, open, onOpenChange, onReviewed }: Pire
               {/* ── Performance ──────────────────────────────── */}
               <section>
                 <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-2">
-                  <ArrowDown size={14} weight="duotone" />
+                  <ArrowDown size={14} />
                   Performance
                 </h3>
 
@@ -309,7 +309,7 @@ export function PirepDetailPanel({ pirep, open, onOpenChange, onReviewed }: Pire
               {/* ── Fuel ─────────────────────────────────────── */}
               <section>
                 <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-2">
-                  <GasPump size={14} weight="duotone" />
+                  <Fuel size={14} />
                   Fuel
                 </h3>
                 <div className="space-y-0.5">
@@ -341,7 +341,7 @@ export function PirepDetailPanel({ pirep, open, onOpenChange, onReviewed }: Pire
               {/* ── Load ──────────────────────────────────────── */}
               <section>
                 <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-2">
-                  <Package size={14} weight="duotone" />
+                  <Package size={14} />
                   Load
                 </h3>
                 <div className="space-y-0.5">
@@ -363,7 +363,7 @@ export function PirepDetailPanel({ pirep, open, onOpenChange, onReviewed }: Pire
                   <Separator />
                   <section>
                     <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-2">
-                      <Star size={14} weight="duotone" />
+                      <Star size={14} />
                       Score
                     </h3>
                     <div className="bg-muted/30 rounded-md p-4 text-center">
@@ -382,7 +382,7 @@ export function PirepDetailPanel({ pirep, open, onOpenChange, onReviewed }: Pire
                   <Separator />
                   <section>
                     <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-2">
-                      <Globe size={14} weight="duotone" />
+                      <Globe size={14} />
                       VATSIM
                     </h3>
                     <div className="space-y-0.5">
@@ -407,7 +407,7 @@ export function PirepDetailPanel({ pirep, open, onOpenChange, onReviewed }: Pire
                   <Separator />
                   <section>
                     <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-2">
-                      <Clock size={14} weight="duotone" />
+                      <Clock size={14} />
                       OOOI Timestamps
                     </h3>
                     <div className="grid grid-cols-4 gap-2 text-center">
@@ -498,7 +498,7 @@ export function PirepDetailPanel({ pirep, open, onOpenChange, onReviewed }: Pire
                           onClick={() => handleReview('approved')}
                           disabled={submitting}
                         >
-                          <CheckCircle size={16} weight="bold" />
+                          <CheckCircle2 size={16} />
                           Approve
                         </Button>
                         <Button
@@ -507,7 +507,7 @@ export function PirepDetailPanel({ pirep, open, onOpenChange, onReviewed }: Pire
                           onClick={() => handleReview('rejected')}
                           disabled={submitting}
                         >
-                          <XCircle size={16} weight="bold" />
+                          <XCircle size={16} />
                           Reject
                         </Button>
                       </div>

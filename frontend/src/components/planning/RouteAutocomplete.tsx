@@ -189,7 +189,7 @@ export function RouteAutocomplete({ value, onChange, placeholder }: Props) {
       {open && results.length > 0 && (
         <div
           ref={dropdownRef}
-          className="absolute z-50 left-0 right-0 mt-0.5 max-h-52 overflow-y-auto rounded-md border border-acars-border bg-acars-panel shadow-lg"
+          className="absolute z-50 left-0 right-0 mt-0.5 max-h-52 overflow-y-auto rounded-md border border-white/[0.06] bg-[#111111] shadow-lg"
         >
           {results.map((r, i) => (
             <button
@@ -211,17 +211,17 @@ export function RouteAutocomplete({ value, onChange, placeholder }: Props) {
               />
 
               {/* Ident */}
-              <span className="font-mono text-[12px] font-semibold text-acars-mono min-w-[52px]">
+              <span className="tabular-nums text-[12px] font-semibold text-acars-text min-w-[52px]">
                 {r.ident}
               </span>
 
               {/* Type badge */}
-              <span className="text-[10px] px-[3px] rounded-[2px] bg-acars-badge-bg text-acars-badge-text font-mono">
+              <span className="text-[10px] px-[3px] rounded-[2px] bg-acars-badge-bg text-acars-badge-text tabular-nums">
                 {TYPE_LABELS[r.type] ?? r.type}
               </span>
 
               {/* Name / frequency */}
-              <span className="text-[11px] text-acars-muted font-mono truncate ml-auto">
+              <span className="text-[11px] text-acars-muted tabular-nums truncate ml-auto">
                 {r.frequency ? `${r.frequency.toFixed(r.type === 'NDB' ? 0 : 2)}` : ''}
                 {r.name ? ` ${r.name}` : ''}
               </span>

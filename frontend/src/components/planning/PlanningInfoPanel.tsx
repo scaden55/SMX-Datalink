@@ -39,8 +39,8 @@ function AirportButton({ label, icao, color, active, onClick }: AirportButtonPro
       }`}
     >
       <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: color }} />
-      <span className="uppercase tracking-[0.08em] font-medium font-sans">{label}</span>
-      <span className="font-mono font-semibold text-acars-mono">{icao}</span>
+      <span className="uppercase tracking-[0.08em] font-medium">{label}</span>
+      <span className="tabular-nums font-semibold text-acars-text">{icao}</span>
     </button>
   );
 }
@@ -53,10 +53,10 @@ export function PlanningInfoPanel() {
   };
 
   return (
-    <div className="flex flex-col border-t border-acars-border flex-[2] min-h-0 bg-acars-panel">
+    <div className="flex flex-col border-t border-white/[0.06] flex-[2] min-h-0">
       <TabBar tabs={TABS} active={planningTab} onChange={setPlanningTab} />
       {planningTab === 'airport-info' && (
-        <div className="flex items-center gap-1 px-3 py-1 border-b border-acars-border bg-acars-bg/30">
+        <div className="flex items-center gap-1 px-3 py-1 border-b border-white/[0.06] bg-white/[0.02]">
           <AirportButton
             label="Orig"
             icao={form.origin}

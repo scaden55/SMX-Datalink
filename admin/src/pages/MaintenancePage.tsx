@@ -1,30 +1,21 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { type ColumnDef } from '@tanstack/react-table';
+import { motion } from 'motion/react';
 import {
-  Airplane,
   Wrench,
-  CalendarCheck,
-  ShieldWarning,
-  ListChecks,
-  GearSix,
-  MagnifyingGlass,
+  Search,
   Plus,
-  PencilSimple,
-  Trash,
-  DotsThreeVertical,
-  CheckCircle,
-  ArrowClockwise,
-  Warning,
-} from '@phosphor-icons/react';
+  Pencil,
+  Trash2,
+  MoreVertical,
+  CheckCircle2,
+  RotateCw,
+  AlertTriangle,
+  ChevronLeft,
+  ChevronRight,
+} from 'lucide-react';
 import { api, ApiError } from '@/lib/api';
 import { toast } from '@/stores/toastStore';
-
-import { PageShell } from '@/components/shared/PageShell';
-import { DataTable } from '@/components/shared/DataTable';
-import { DataTableColumnHeader } from '@/components/shared/DataTableColumnHeader';
-import { DataTablePagination } from '@/components/shared/DataTablePagination';
-import { DetailPanel } from '@/components/shared/DetailPanel';
-import { StatusBadge, SectionHeader, DataRow, Surface } from '@/components/primitives';
+import { pageVariants, staggerContainer, staggerItem, fadeUp, tableContainer, tableRow, cardHover } from '@/lib/motion';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -36,14 +27,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -59,18 +42,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 // ── Types (mirroring @acars/shared) ──────────────────────────
 
 type MaintenanceCheckType = 'A' | 'B' | 'C' | 'D';
 type MaintenanceLogType = 'A' | 'B' | 'C' | 'D' | 'LINE' | 'UNSCHEDULED' | 'AD' | 'MEL' | 'SFP';
 type MaintenanceLogStatus = 'scheduled' | 'in_progress' | 'completed' | 'deferred';
-type ADComplianceStatus = 'open' | 'complied' | 'recurring' | 'not_applicable';
-type MELCategory = 'A' | 'B' | 'C' | 'D';
-type MELStatus = 'open' | 'rectified' | 'expired';
-type ComponentType = 'ENGINE' | 'APU' | 'LANDING_GEAR' | 'PROP' | 'AVIONICS' | 'OTHER';
-type ComponentStatus = 'installed' | 'removed' | 'in_shop' | 'scrapped';
 
 interface CheckDueStatus {
   checkType: MaintenanceCheckType;
@@ -120,72 +97,7 @@ interface MaintenanceLogEntry {
   createdBy: number | null;
   createdAt: string;
   updatedAt: string;
-}
-
-interface MaintenanceCheckSchedule {
-  id: number;
-  icaoType: string;
-  checkType: MaintenanceCheckType;
-  intervalHours: number | null;
-  intervalCycles: number | null;
-  intervalMonths: number | null;
-  overflightPct: number;
-  estimatedDurationHours: number | null;
-  description: string | null;
-}
-
-interface AirworthinessDirective {
-  id: number;
-  aircraftId: number;
-  aircraftRegistration?: string;
-  adNumber: string;
-  title: string;
-  description: string | null;
-  complianceStatus: ADComplianceStatus;
-  complianceDate: string | null;
-  complianceMethod: string | null;
-  recurringIntervalHours: number | null;
-  nextDueHours: number | null;
-  nextDueDate: string | null;
-  createdBy: number | null;
-  createdAt: string;
-  updatedAt: string;
-}
-
-interface MELDeferral {
-  id: number;
-  aircraftId: number;
-  aircraftRegistration?: string;
-  itemNumber: string;
-  title: string;
-  category: MELCategory;
-  deferralDate: string;
-  expiryDate: string;
-  rectifiedDate: string | null;
-  status: MELStatus;
-  remarks: string | null;
-  createdBy: number | null;
-  createdAt: string;
-}
-
-interface AircraftComponent {
-  id: number;
-  aircraftId: number;
-  aircraftRegistration?: string;
-  componentType: ComponentType;
-  position: string | null;
-  serialNumber: string | null;
-  partNumber: string | null;
-  hoursSinceNew: number;
-  cyclesSinceNew: number;
-  hoursSinceOverhaul: number;
-  cyclesSinceOverhaul: number;
-  overhaulIntervalHours: number | null;
-  installedDate: string | null;
-  status: ComponentStatus;
-  remarks: string | null;
-  createdAt: string;
-  updatedAt: string;
+  durationHours?: number | null;
 }
 
 // ── Helpers ──────────────────────────────────────────────────
@@ -204,67 +116,139 @@ function formatHours(h: number | null): string {
   return h.toLocaleString('en-US', { maximumFractionDigits: 1 });
 }
 
-// ── Badge helpers ────────────────────────────────────────────
-
-function fleetStatusBadge(status: string) {
-  return <StatusBadge status={status} />;
-}
-
-function logStatusBadge(status: MaintenanceLogStatus) {
-  return <StatusBadge status={status} />;
-}
-
-function adStatusBadge(status: ADComplianceStatus) {
-  return <StatusBadge status={status} />;
-}
-
-function melStatusBadge(status: MELStatus) {
-  return <StatusBadge status={status} />;
-}
-
-function componentStatusBadge(status: ComponentStatus) {
-  return <StatusBadge status={status} />;
-}
-
-// ── Detail helper ────────────────────────────────────────────
-// Using DataRow from primitives; local alias for backward compat
-const DetailRow = ({ label, children }: { label: string; children: React.ReactNode }) => (
-  <DataRow label={label} value={children} />
-);
-
 function formatCurrency(v: number | null): string {
   if (v === null || v === undefined) return '--';
   return `$${v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
+// ── Badge Component ─────────────────────────────────────────
+
+function TypeBadge({ type }: { type: MaintenanceLogType }) {
+  const config: Record<string, { bg: string; text: string; label: string }> = {
+    A: { bg: 'var(--accent-blue-bg)', text: 'var(--accent-blue-bright)', label: 'A Check' },
+    B: { bg: 'var(--accent-emerald-bg)', text: 'var(--accent-emerald)', label: 'B Check' },
+    C: { bg: 'var(--accent-amber-bg)', text: 'var(--accent-amber)', label: 'C Check' },
+    D: { bg: 'var(--accent-red-bg)', text: 'var(--accent-red)', label: 'D Check' },
+    LINE: { bg: 'var(--accent-cyan-bg)', text: 'var(--accent-cyan)', label: 'Line' },
+    UNSCHEDULED: { bg: 'var(--accent-red-bg)', text: 'var(--accent-red)', label: 'Unscheduled' },
+    AD: { bg: 'var(--accent-amber-bg)', text: 'var(--accent-amber)', label: 'AD' },
+    MEL: { bg: 'var(--accent-blue-bg)', text: 'var(--accent-blue-bright)', label: 'MEL' },
+    SFP: { bg: 'var(--accent-cyan-bg)', text: 'var(--accent-cyan)', label: 'SFP' },
+  };
+  const c = config[type] ?? { bg: 'var(--surface-2)', text: 'var(--text-secondary)', label: type };
+  return (
+    <span
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        padding: '2px 8px',
+        borderRadius: 3,
+        fontSize: 11,
+        fontWeight: 600,
+        lineHeight: '16px',
+        background: c.bg,
+        color: c.text,
+        whiteSpace: 'nowrap',
+      }}
+    >
+      {c.label}
+    </span>
+  );
+}
+
+function StatusBadgeInline({ status }: { status: string }) {
+  const normalized = status.toLowerCase().replace(/_/g, ' ');
+  let bg = 'var(--surface-2)';
+  let text = 'var(--text-secondary)';
+
+  if (normalized === 'completed' || normalized === 'active' || normalized === 'ok') {
+    bg = 'var(--accent-emerald-bg)';
+    text = 'var(--accent-emerald)';
+  } else if (normalized === 'overdue' || normalized === 'critical' || normalized === 'expired') {
+    bg = 'var(--accent-red-bg)';
+    text = 'var(--accent-red)';
+  } else if (normalized === 'scheduled' || normalized === 'open' || normalized === 'complied') {
+    bg = 'var(--accent-blue-bg)';
+    text = 'var(--accent-blue-bright)';
+  } else if (normalized === 'in progress' || normalized === 'in_progress' || normalized === 'deferred' || normalized === 'maintenance' || normalized === 'warning') {
+    bg = 'var(--accent-amber-bg)';
+    text = 'var(--accent-amber)';
+  }
+
+  const label = normalized.charAt(0).toUpperCase() + normalized.slice(1);
+
+  return (
+    <span
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        padding: '2px 8px',
+        borderRadius: 3,
+        fontSize: 11,
+        fontWeight: 600,
+        lineHeight: '16px',
+        background: bg,
+        color: text,
+        whiteSpace: 'nowrap',
+      }}
+    >
+      {label}
+    </span>
+  );
+}
+
 // ── Skeleton ─────────────────────────────────────────────────
 
-function TabSkeleton() {
+function TableSkeleton() {
   return (
-    <div className="space-y-4">
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="h-[110px] rounded-md bg-[var(--surface-2)] animate-pulse" />
-        ))}
-      </div>
-      <div className="h-10 w-full rounded-md bg-[var(--surface-2)] animate-pulse" />
-      <div className="h-[400px] rounded-md bg-[var(--surface-2)] animate-pulse" />
+    <div style={{ padding: 24 }}>
+      {Array.from({ length: 8 }).map((_, i) => (
+        <div
+          key={i}
+          style={{
+            height: 42,
+            background: 'var(--surface-2)',
+            borderRadius: 4,
+            marginBottom: 4,
+            opacity: 0.5,
+          }}
+          className="animate-pulse"
+        />
+      ))}
     </div>
   );
 }
 
+// ── Column Header Style ──────────────────────────────────────
+
+const colHeaderStyle: React.CSSProperties = {
+  fontSize: 10,
+  fontWeight: 600,
+  letterSpacing: 0.8,
+  color: 'var(--text-tertiary)',
+  textTransform: 'uppercase',
+  padding: '10px 16px',
+  borderBottom: '1px solid var(--border-primary)',
+  userSelect: 'none',
+};
+
+const cellStyle: React.CSSProperties = {
+  padding: '10px 16px',
+  borderBottom: '1px solid var(--border-primary)',
+  fontSize: 12,
+  color: 'var(--text-secondary)',
+  verticalAlign: 'middle',
+};
+
 // ═══════════════════════════════════════════════════════════════
-// Tab 1: Fleet Status
+// Fleet Status Tab Content
 // ═══════════════════════════════════════════════════════════════
 
-function FleetStatusTab() {
+function FleetStatusContent() {
   const [fleet, setFleet] = useState<FleetMaintenanceStatus[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
-
-  // Detail panel
-  const [detailAircraft, setDetailAircraft] = useState<FleetMaintenanceStatus | null>(null);
-  const [detailOpen, setDetailOpen] = useState(false);
+  const [statusFilter, setStatusFilter] = useState('all');
 
   // Adjust hours dialog
   const [adjustTarget, setAdjustTarget] = useState<FleetMaintenanceStatus | null>(null);
@@ -287,15 +271,21 @@ function FleetStatusTab() {
   useEffect(() => { fetchFleet(); }, [fetchFleet]);
 
   const filtered = useMemo(() => {
-    if (!search) return fleet;
-    const q = search.toLowerCase();
-    return fleet.filter(
-      (a) =>
-        a.registration.toLowerCase().includes(q) ||
-        a.icaoType.toLowerCase().includes(q) ||
-        a.name.toLowerCase().includes(q),
-    );
-  }, [fleet, search]);
+    let list = fleet;
+    if (search) {
+      const q = search.toLowerCase();
+      list = list.filter(
+        (a) =>
+          a.registration.toLowerCase().includes(q) ||
+          a.icaoType.toLowerCase().includes(q) ||
+          a.name.toLowerCase().includes(q),
+      );
+    }
+    if (statusFilter !== 'all') {
+      list = list.filter((a) => a.status === statusFilter);
+    }
+    return list;
+  }, [fleet, search, statusFilter]);
 
   async function handleAdjustHours() {
     if (!adjustTarget || !adjustReason.trim()) return;
@@ -335,201 +325,200 @@ function FleetStatusTab() {
     }
   }
 
-  if (loading) return <TabSkeleton />;
-
-  function getCardAccent(aircraft: FleetMaintenanceStatus): 'red' | 'amber' | 'emerald' {
-    if (aircraft.hasOverdueChecks || aircraft.hasOverdueADs || aircraft.hasExpiredMEL)
-      return 'red';
-    if (aircraft.checksDue.some((c) => c.isInOverflight))
-      return 'amber';
-    return 'emerald';
+  function getFleetStatusLabel(aircraft: FleetMaintenanceStatus): string {
+    if (aircraft.hasOverdueChecks || aircraft.hasOverdueADs || aircraft.hasExpiredMEL) return 'Overdue';
+    if (aircraft.checksDue.some((c) => c.isInOverflight)) return 'Warning';
+    return aircraft.status;
   }
 
-  function handleCardClick(aircraft: FleetMaintenanceStatus) {
-    setDetailAircraft(aircraft);
-    setDetailOpen(true);
-  }
+  if (loading) return <TableSkeleton />;
 
   return (
-    <div className="space-y-6">
-      {/* Search */}
-      <div className="relative max-w-sm">
-        <MagnifyingGlass size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-tertiary)]" />
-        <Input
-          placeholder="Search registration, type..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="pl-9"
-        />
+    <>
+      {/* Filter Bar */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 10,
+          padding: '12px 24px',
+          borderBottom: '1px solid var(--border-primary)',
+        }}
+      >
+        <div style={{ position: 'relative', width: 220 }}>
+          <Search
+            size={14}
+            style={{
+              position: 'absolute',
+              left: 10,
+              top: '50%',
+              transform: 'translateY(-50%)',
+              color: 'var(--text-tertiary)',
+            }}
+          />
+          <input
+            type="text"
+            placeholder="Search aircraft..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="input-glow"
+            style={{
+              width: '100%',
+              height: 32,
+              paddingLeft: 30,
+              paddingRight: 10,
+              background: 'var(--input-bg)',
+              border: '1px solid var(--input-border)',
+              borderRadius: 6,
+              color: 'var(--text-primary)',
+              fontSize: 12,
+              outline: 'none',
+            }}
+          />
+        </div>
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger
+            style={{
+              width: 140,
+              height: 32,
+              background: 'var(--input-bg)',
+              border: '1px solid var(--input-border)',
+              borderRadius: 6,
+              color: 'var(--text-primary)',
+              fontSize: 12,
+            }}
+          >
+            <SelectValue placeholder="Status: All" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Status: All</SelectItem>
+            <SelectItem value="active">Active</SelectItem>
+            <SelectItem value="maintenance">Maintenance</SelectItem>
+            <SelectItem value="storage">Storage</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
-      <div className="flex gap-0 overflow-hidden">
-        {/* Fleet Cards */}
-        <div className={`${detailOpen ? 'w-[60%]' : 'w-full'} transition-all duration-200`}>
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+      {/* Table */}
+      <div style={{ overflowX: 'auto' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <thead>
+            <tr>
+              <th style={colHeaderStyle}>REGISTRATION</th>
+              <th style={colHeaderStyle}>TYPE</th>
+              <th style={colHeaderStyle}>NAME</th>
+              <th style={colHeaderStyle}>HOURS</th>
+              <th style={colHeaderStyle}>CYCLES</th>
+              <th style={colHeaderStyle}>NEXT CHECK</th>
+              <th style={colHeaderStyle}>REMAINING</th>
+              <th style={colHeaderStyle}>STATUS</th>
+              <th style={{ ...colHeaderStyle, width: 50 }} />
+            </tr>
+          </thead>
+          <motion.tbody variants={tableContainer} initial="hidden" animate="visible">
             {filtered.length === 0 ? (
-              <p className="col-span-full text-center py-10 text-[var(--text-tertiary)]">No aircraft found</p>
+              <tr>
+                <td
+                  colSpan={9}
+                  style={{ padding: '40px 16px', textAlign: 'center', color: 'var(--text-tertiary)', fontSize: 13 }}
+                >
+                  No aircraft found
+                </td>
+              </tr>
             ) : (
               filtered.map((aircraft) => (
-                <Surface
+                <motion.tr
                   key={aircraft.aircraftId}
-                  elevation={1}
-                  accent={getCardAccent(aircraft)}
-                  padding="none"
-                  className={`cursor-pointer hover:bg-[var(--surface-3)] transition-colors ${
-                    detailAircraft?.aircraftId === aircraft.aircraftId ? 'bg-[var(--accent-blue-bg)] ring-1 ring-[var(--accent-blue-ring)]' : ''
-                  }`}
-                  onClick={() => handleCardClick(aircraft)}
+                  variants={tableRow}
+                  style={{ cursor: 'default' }}
+                  onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = 'var(--surface-2)'; }}
+                  onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
                 >
-                  <div className="p-4 pb-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-base font-mono font-semibold text-[var(--text-primary)]">{aircraft.registration}</span>
-                      <div className="flex items-center gap-2">
-                        {(aircraft.hasOverdueChecks || aircraft.hasOverdueADs || aircraft.hasExpiredMEL) && (
-                          <Warning size={16} weight="fill" className="text-[var(--accent-red)]" />
+                  <td style={{ ...cellStyle, fontWeight: 600, color: 'var(--text-primary)', fontFamily: 'var(--font-mono)' }}>
+                    {aircraft.registration}
+                  </td>
+                  <td style={cellStyle}>
+                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11 }}>{aircraft.icaoType}</span>
+                  </td>
+                  <td style={{ ...cellStyle, color: 'var(--text-secondary)', fontSize: 11 }}>
+                    {aircraft.name}
+                  </td>
+                  <td style={{ ...cellStyle, fontFamily: 'var(--font-mono)' }}>
+                    {formatHours(aircraft.totalHours)}
+                  </td>
+                  <td style={{ ...cellStyle, fontFamily: 'var(--font-mono)' }}>
+                    {aircraft.totalCycles.toLocaleString()}
+                  </td>
+                  <td style={cellStyle}>
+                    {aircraft.nextCheckType ? (
+                      <TypeBadge type={aircraft.nextCheckType as MaintenanceLogType} />
+                    ) : (
+                      <span style={{ color: 'var(--text-tertiary)' }}>--</span>
+                    )}
+                  </td>
+                  <td style={{ ...cellStyle, fontFamily: 'var(--font-mono)' }}>
+                    {aircraft.nextCheckDueIn !== null ? (
+                      <span
+                        style={{
+                          color:
+                            aircraft.hasOverdueChecks
+                              ? 'var(--accent-red)'
+                              : aircraft.checksDue.some((c) => c.isInOverflight)
+                              ? 'var(--accent-amber)'
+                              : 'var(--text-secondary)',
+                        }}
+                      >
+                        {formatHours(aircraft.nextCheckDueIn)} hrs
+                      </span>
+                    ) : (
+                      '--'
+                    )}
+                  </td>
+                  <td style={cellStyle}>
+                    <StatusBadgeInline status={getFleetStatusLabel(aircraft)} />
+                  </td>
+                  <td style={cellStyle}>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <button
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            cursor: 'pointer',
+                            padding: 4,
+                            borderRadius: 4,
+                            color: 'var(--text-tertiary)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                          }}
+                        >
+                          <MoreVertical size={16} />
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem
+                          onClick={() => {
+                            setAdjustTarget(aircraft);
+                            setAdjustHours(aircraft.totalHours.toString());
+                            setAdjustCycles(aircraft.totalCycles.toString());
+                          }}
+                        >
+                          <Pencil size={14} /> Adjust Hours
+                        </DropdownMenuItem>
+                        {aircraft.status === 'maintenance' && (
+                          <DropdownMenuItem onClick={() => handleReturnToService(aircraft)}>
+                            <RotateCw size={14} /> Return to Service
+                          </DropdownMenuItem>
                         )}
-                        {fleetStatusBadge(aircraft.status)}
-                      </div>
-                    </div>
-                    <p className="text-sm text-[var(--text-tertiary)]">{aircraft.name} ({aircraft.icaoType})</p>
-                  </div>
-                  <div className="px-4 pb-4 space-y-3">
-                    <div className="grid grid-cols-2 gap-2 text-sm">
-                      <div>
-                        <p className="text-[var(--text-tertiary)]">Total Hours</p>
-                        <p className="font-mono font-medium text-[var(--text-primary)]">{formatHours(aircraft.totalHours)}</p>
-                      </div>
-                      <div>
-                        <p className="text-[var(--text-tertiary)]">Total Cycles</p>
-                        <p className="font-mono font-medium text-[var(--text-primary)]">{aircraft.totalCycles.toLocaleString()}</p>
-                      </div>
-                    </div>
-
-                    {/* Check status indicators */}
-                    {aircraft.checksDue.length > 0 && (
-                      <div className="space-y-1">
-                        {aircraft.checksDue.map((check) => (
-                          <div key={check.checkType} className="flex items-center justify-between text-xs">
-                            <span className="font-medium text-[var(--text-secondary)]">{check.checkType}-Check</span>
-                            <span className={
-                              check.isOverdue
-                                ? 'text-[var(--accent-red)] font-medium'
-                                : check.isInOverflight
-                                ? 'text-[var(--accent-amber)]'
-                                : 'text-[var(--text-tertiary)]'
-                            }>
-                              {check.isOverdue
-                                ? 'OVERDUE'
-                                : check.remainingHours !== null
-                                ? `${formatHours(check.remainingHours)} hrs remaining`
-                                : '--'}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-
-                    {aircraft.nextCheckType && (
-                      <p className="text-xs text-[var(--text-tertiary)]">
-                        Next: {aircraft.nextCheckType}-Check in {formatHours(aircraft.nextCheckDueIn)} hrs
-                      </p>
-                    )}
-                  </div>
-                </Surface>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </td>
+                </motion.tr>
               ))
             )}
-          </div>
-        </div>
-
-        {/* Detail Panel */}
-        {detailOpen && detailAircraft && (
-          <DetailPanel
-            open={detailOpen}
-            onClose={() => { setDetailOpen(false); setDetailAircraft(null); }}
-            title={detailAircraft.registration}
-            subtitle={`${detailAircraft.name} (${detailAircraft.icaoType})`}
-            actions={
-              <>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-7 text-xs"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setAdjustTarget(detailAircraft);
-                    setAdjustHours(detailAircraft.totalHours.toString());
-                    setAdjustCycles(detailAircraft.totalCycles.toString());
-                  }}
-                >
-                  <PencilSimple size={12} /> Adjust Hours
-                </Button>
-                {detailAircraft.status === 'maintenance' && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-7 text-xs"
-                    onClick={() => handleReturnToService(detailAircraft)}
-                  >
-                    <ArrowClockwise size={12} /> Return to Service
-                  </Button>
-                )}
-              </>
-            }
-          >
-            <div className="space-y-4">
-              <div className="space-y-1">
-                <DetailRow label="Status">{fleetStatusBadge(detailAircraft.status)}</DetailRow>
-                <DetailRow label="Total Hours"><span className="font-mono">{formatHours(detailAircraft.totalHours)}</span></DetailRow>
-                <DetailRow label="Total Cycles"><span className="font-mono">{detailAircraft.totalCycles.toLocaleString()}</span></DetailRow>
-              </div>
-
-              {detailAircraft.checksDue.length > 0 && (
-                <div>
-                  <SectionHeader title="Checks Due" />
-                  <div className="space-y-2">
-                    {detailAircraft.checksDue.map((check) => (
-                      <div key={check.checkType} className="rounded-md bg-[var(--surface-1)] p-2.5 border border-[var(--border-secondary)]">
-                        <div className="flex items-center justify-between mb-1">
-                          <span className="text-sm font-medium">{check.checkType}-Check</span>
-                          {check.isOverdue ? (
-                            <StatusBadge status="overdue" />
-                          ) : check.isInOverflight ? (
-                            <StatusBadge status="overflight" />
-                          ) : (
-                            <StatusBadge status="ok" />
-                          )}
-                        </div>
-                        <div className="grid grid-cols-2 gap-1 text-xs text-[var(--text-tertiary)]">
-                          {check.remainingHours !== null && (
-                            <span>Hrs remaining: <span className="font-mono text-[var(--text-primary)]">{formatHours(check.remainingHours)}</span></span>
-                          )}
-                          {check.remainingCycles !== null && (
-                            <span>Cycles remaining: <span className="font-mono text-[var(--text-primary)]">{check.remainingCycles}</span></span>
-                          )}
-                          {check.dueAtDate && (
-                            <span>Due by: <span className="text-[var(--text-primary)]">{formatDate(check.dueAtDate)}</span></span>
-                          )}
-                          <span>Overflight: <span className="font-mono text-[var(--text-primary)]">{check.overflightPct}%</span></span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {detailAircraft.hasOverdueADs && (
-                <div className="rounded-md bg-[var(--accent-red-bg)] border border-[var(--accent-red-ring)] p-2.5">
-                  <p className="text-xs text-[var(--accent-red)] font-medium">Overdue ADs on this aircraft</p>
-                </div>
-              )}
-              {detailAircraft.hasExpiredMEL && (
-                <div className="rounded-md bg-[var(--accent-red-bg)] border border-[var(--accent-red-ring)] p-2.5">
-                  <p className="text-xs text-[var(--accent-red)] font-medium">Expired MEL items on this aircraft</p>
-                </div>
-              )}
-            </div>
-          </DetailPanel>
-        )}
+          </motion.tbody>
+        </table>
       </div>
 
       {/* Adjust Hours Dialog */}
@@ -570,32 +559,27 @@ function FleetStatusTab() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </>
   );
 }
 
 // ═══════════════════════════════════════════════════════════════
-// Tab 2: Maintenance Log
+// Maintenance Log Tab Content
 // ═══════════════════════════════════════════════════════════════
 
-function MaintenanceLogTab() {
+function MaintenanceLogContent({ onOpenCreate }: { onOpenCreate: () => void }) {
   const [entries, setEntries] = useState<MaintenanceLogEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(50);
+  const [pageSize] = useState(25);
 
   // Filters
   const [search, setSearch] = useState('');
-  const [typeFilter, setTypeFilter] = useState('all');
+  const [dateFilter, setDateFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
 
-  // Detail panel
-  const [detailEntry, setDetailEntry] = useState<MaintenanceLogEntry | null>(null);
-  const [detailOpen, setDetailOpen] = useState(false);
-
   // Dialogs
-  const [createOpen, setCreateOpen] = useState(false);
   const [editEntry, setEditEntry] = useState<MaintenanceLogEntry | null>(null);
   const [deleteEntry, setDeleteEntry] = useState<MaintenanceLogEntry | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
@@ -615,7 +599,6 @@ function MaintenanceLogTab() {
       const params = new URLSearchParams();
       params.set('page', page.toString());
       params.set('pageSize', pageSize.toString());
-      if (typeFilter !== 'all') params.set('checkType', typeFilter);
       if (statusFilter !== 'all') params.set('status', statusFilter);
 
       const res = await api.get<{ entries: MaintenanceLogEntry[]; total: number; page: number; pageSize: number }>(
@@ -628,20 +611,33 @@ function MaintenanceLogTab() {
     } finally {
       setLoading(false);
     }
-  }, [page, typeFilter, statusFilter]);
+  }, [page, pageSize, statusFilter]);
 
   useEffect(() => { fetchEntries(); }, [fetchEntries]);
 
   const filtered = useMemo(() => {
-    if (!search) return entries;
-    const q = search.toLowerCase();
-    return entries.filter(
-      (e) =>
-        e.title.toLowerCase().includes(q) ||
-        (e.aircraftRegistration?.toLowerCase().includes(q) ?? false) ||
-        (e.performedBy?.toLowerCase().includes(q) ?? false),
-    );
-  }, [entries, search]);
+    let list = entries;
+    if (search) {
+      const q = search.toLowerCase();
+      list = list.filter(
+        (e) =>
+          e.title.toLowerCase().includes(q) ||
+          (e.aircraftRegistration?.toLowerCase().includes(q) ?? false) ||
+          (e.performedBy?.toLowerCase().includes(q) ?? false),
+      );
+    }
+    if (dateFilter !== 'all') {
+      const now = new Date();
+      list = list.filter((e) => {
+        const d = new Date(e.createdAt);
+        if (dateFilter === '7d') return now.getTime() - d.getTime() < 7 * 86400000;
+        if (dateFilter === '30d') return now.getTime() - d.getTime() < 30 * 86400000;
+        if (dateFilter === '90d') return now.getTime() - d.getTime() < 90 * 86400000;
+        return true;
+      });
+    }
+    return list;
+  }, [entries, search, dateFilter]);
 
   function resetForm() {
     setFormAircraftId('');
@@ -662,30 +658,6 @@ function MaintenanceLogTab() {
     setFormPerformedBy(entry.performedBy ?? '');
     setFormStatus(entry.status);
     setFormCost(entry.cost?.toString() ?? '');
-  }
-
-  async function handleCreate() {
-    if (!formAircraftId || !formTitle.trim()) return;
-    setFormLoading(true);
-    try {
-      await api.post('/api/admin/maintenance/log', {
-        aircraftId: parseInt(formAircraftId),
-        checkType: formCheckType,
-        title: formTitle.trim(),
-        description: formDescription.trim() || undefined,
-        performedBy: formPerformedBy.trim() || undefined,
-        status: formStatus,
-        cost: formCost ? parseFloat(formCost) : undefined,
-      });
-      toast.success('Log entry created');
-      setCreateOpen(false);
-      resetForm();
-      fetchEntries();
-    } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : 'Failed to create log entry');
-    } finally {
-      setFormLoading(false);
-    }
   }
 
   async function handleUpdate() {
@@ -739,231 +711,277 @@ function MaintenanceLogTab() {
   const logTypes: MaintenanceLogType[] = ['A', 'B', 'C', 'D', 'LINE', 'UNSCHEDULED', 'AD', 'MEL', 'SFP'];
   const logStatuses: MaintenanceLogStatus[] = ['scheduled', 'in_progress', 'completed', 'deferred'];
 
-  // Keep detail panel in sync
-  useEffect(() => {
-    if (detailEntry) {
-      const updated = filtered.find((e) => e.id === detailEntry.id);
-      if (updated) setDetailEntry(updated);
-      else { setDetailEntry(null); setDetailOpen(false); }
-    }
-  }, [filtered]); // eslint-disable-line react-hooks/exhaustive-deps
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
-  const logColumns: ColumnDef<MaintenanceLogEntry, unknown>[] = useMemo(() => [
-    {
-      accessorKey: 'createdAt',
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Date" />,
-      cell: ({ row }) => <span className="text-[var(--text-tertiary)]">{formatDate(row.original.createdAt)}</span>,
-      size: 100,
-    },
-    {
-      accessorKey: 'aircraftRegistration',
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Aircraft" />,
-      cell: ({ row }) => <span className="font-mono">{row.original.aircraftRegistration ?? `#${row.original.aircraftId}`}</span>,
-      size: 100,
-    },
-    {
-      accessorKey: 'checkType',
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Type" />,
-      cell: ({ row }) => {
-        const type = row.original.checkType;
-        return <StatusBadge status={type === 'A' || type === 'B' || type === 'LINE' || type === 'UNSCHEDULED' ? 'warning' : 'info'} label={type} />;
-      },
-      size: 90,
-    },
-    {
-      accessorKey: 'title',
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Title" />,
-      cell: ({ row }) => <span className="max-w-[200px] truncate block">{row.original.title}</span>,
-    },
-    {
-      accessorKey: 'performedBy',
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Performed By" />,
-      cell: ({ row }) => <span className="text-[var(--text-tertiary)]">{row.original.performedBy ?? '--'}</span>,
-      size: 120,
-    },
-    {
-      accessorKey: 'cost',
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Cost" />,
-      cell: ({ row }) => <span className="font-mono">{formatCurrency(row.original.cost)}</span>,
-      size: 90,
-    },
-    {
-      accessorKey: 'status',
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Status" />,
-      cell: ({ row }) => logStatusBadge(row.original.status),
-      size: 110,
-    },
-    {
-      id: 'actions',
-      enableHiding: false,
-      enableSorting: false,
-      size: 50,
-      cell: ({ row }) => {
-        const entry = row.original;
-        return (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => e.stopPropagation()}>
-                <DotsThreeVertical size={16} weight="bold" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => openEdit(entry)}>
-                <PencilSimple size={14} /> Edit
-              </DropdownMenuItem>
-              {entry.status !== 'completed' && (
-                <DropdownMenuItem onClick={() => handleComplete(entry)}>
-                  <CheckCircle size={14} className="text-[var(--accent-emerald)]" /> Complete
-                </DropdownMenuItem>
-              )}
-              <DropdownMenuSeparator />
-              <DropdownMenuItem className="text-[var(--accent-red)] focus:text-[var(--accent-red)]" onClick={() => setDeleteEntry(entry)}>
-                <Trash size={14} /> Delete
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        );
-      },
-    },
-  ], []);
-
-  function handleLogRowClick(entry: MaintenanceLogEntry) {
-    setDetailEntry(entry);
-    setDetailOpen(true);
-  }
-
-  if (loading) return <TabSkeleton />;
+  if (loading) return <TableSkeleton />;
 
   return (
-    <div className="space-y-4">
-      {/* Toolbar */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex flex-1 items-center gap-3">
-          <div className="relative max-w-sm flex-1">
-            <MagnifyingGlass size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-tertiary)]" />
-            <Input placeholder="Search entries..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
-          </div>
-          <Select value={typeFilter} onValueChange={(v) => { setTypeFilter(v); setPage(1); }}>
-            <SelectTrigger className="w-[150px]">
-              <SelectValue placeholder="Type" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Types</SelectItem>
-              {logTypes.map((t) => (
-                <SelectItem key={t} value={t}>{t}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setPage(1); }}>
-            <SelectTrigger className="w-[150px]">
-              <SelectValue placeholder="Status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Status</SelectItem>
-              {logStatuses.map((s) => (
-                <SelectItem key={s} value={s}>{s.replace('_', ' ')}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <Button onClick={() => { resetForm(); setCreateOpen(true); }}>
-          <Plus size={16} weight="bold" />
-          Add Entry
-        </Button>
-      </div>
-
-      {/* Split view: DataTable + detail panel */}
-      <div className="flex flex-1 gap-0 overflow-hidden rounded-md border border-[var(--border-primary)]">
-        <div className={`${detailOpen ? 'w-[55%]' : 'w-full'} flex flex-col transition-all duration-200`}>
-          <DataTable
-            columns={logColumns}
-            data={filtered}
-            onRowClick={handleLogRowClick}
-            selectedRowId={detailEntry?.id}
-            loading={false}
-            emptyMessage="No log entries found"
-            getRowId={(row) => String(row.id)}
+    <>
+      {/* Filter Bar */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 10,
+          padding: '12px 24px',
+          borderBottom: '1px solid var(--border-primary)',
+        }}
+      >
+        <div style={{ position: 'relative', width: 220 }}>
+          <Search
+            size={14}
+            style={{
+              position: 'absolute',
+              left: 10,
+              top: '50%',
+              transform: 'translateY(-50%)',
+              color: 'var(--text-tertiary)',
+            }}
+          />
+          <input
+            type="text"
+            placeholder="Search entries..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="input-glow"
+            style={{
+              width: '100%',
+              height: 32,
+              paddingLeft: 30,
+              paddingRight: 10,
+              background: 'var(--input-bg)',
+              border: '1px solid var(--input-border)',
+              borderRadius: 6,
+              color: 'var(--text-primary)',
+              fontSize: 12,
+              outline: 'none',
+            }}
           />
         </div>
-        {detailOpen && detailEntry && (
-          <DetailPanel
-            open={detailOpen}
-            onClose={() => { setDetailOpen(false); setDetailEntry(null); }}
-            title={detailEntry.title}
-            subtitle={`${detailEntry.checkType} -- ${detailEntry.aircraftRegistration ?? `#${detailEntry.aircraftId}`}`}
-            actions={
-              <>
-                <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => openEdit(detailEntry)}>
-                  <PencilSimple size={12} /> Edit
-                </Button>
-                {detailEntry.status !== 'completed' && (
-                  <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => handleComplete(detailEntry)}>
-                    <CheckCircle size={12} className="text-[var(--accent-emerald)]" /> Complete
-                  </Button>
-                )}
-              </>
-            }
+        <Select value={dateFilter} onValueChange={setDateFilter}>
+          <SelectTrigger
+            style={{
+              width: 130,
+              height: 32,
+              background: 'var(--input-bg)',
+              border: '1px solid var(--input-border)',
+              borderRadius: 6,
+              color: 'var(--text-primary)',
+              fontSize: 12,
+            }}
           >
-            <div className="space-y-4">
-              <div className="space-y-1">
-                <DetailRow label="Status">{logStatusBadge(detailEntry.status)}</DetailRow>
-                <DetailRow label="Type"><StatusBadge status={detailEntry.checkType === 'A' || detailEntry.checkType === 'B' || detailEntry.checkType === 'LINE' || detailEntry.checkType === 'UNSCHEDULED' ? 'warning' : 'info'} label={detailEntry.checkType} /></DetailRow>
-                <DetailRow label="Aircraft"><span className="font-mono">{detailEntry.aircraftRegistration ?? `#${detailEntry.aircraftId}`}</span></DetailRow>
-                <DetailRow label="Date">{formatDate(detailEntry.createdAt)}</DetailRow>
-                <DetailRow label="Performed By">{detailEntry.performedBy ?? '--'}</DetailRow>
-                <DetailRow label="Cost"><span className="font-mono">{formatCurrency(detailEntry.cost)}</span></DetailRow>
-                {detailEntry.hoursAtCheck !== null && (
-                  <DetailRow label="Hours at Check"><span className="font-mono">{formatHours(detailEntry.hoursAtCheck)}</span></DetailRow>
-                )}
-                {detailEntry.cyclesAtCheck !== null && (
-                  <DetailRow label="Cycles at Check"><span className="font-mono">{detailEntry.cyclesAtCheck}</span></DetailRow>
-                )}
-              </div>
-              {detailEntry.description && (
-                <div>
-                  <SectionHeader title="Description" />
-                  <p className="text-sm whitespace-pre-wrap">{detailEntry.description}</p>
-                </div>
-              )}
-              {detailEntry.sfpDestination && (
-                <div className="space-y-1">
-                  <DetailRow label="SFP Destination">{detailEntry.sfpDestination}</DetailRow>
-                  <DetailRow label="SFP Expiry">{formatDate(detailEntry.sfpExpiry)}</DetailRow>
-                </div>
-              )}
-            </div>
-          </DetailPanel>
-        )}
+            <SelectValue placeholder="Date: All" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Date: All</SelectItem>
+            <SelectItem value="7d">Last 7 days</SelectItem>
+            <SelectItem value="30d">Last 30 days</SelectItem>
+            <SelectItem value="90d">Last 90 days</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setPage(1); }}>
+          <SelectTrigger
+            style={{
+              width: 140,
+              height: 32,
+              background: 'var(--input-bg)',
+              border: '1px solid var(--input-border)',
+              borderRadius: 6,
+              color: 'var(--text-primary)',
+              fontSize: 12,
+            }}
+          >
+            <SelectValue placeholder="Status: All" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Status: All</SelectItem>
+            {logStatuses.map((s) => (
+              <SelectItem key={s} value={s}>
+                {s.charAt(0).toUpperCase() + s.slice(1).replace('_', ' ')}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Table */}
+      <div style={{ overflowX: 'auto' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <thead>
+            <tr>
+              <th style={colHeaderStyle}>DATE</th>
+              <th style={colHeaderStyle}>AIRCRAFT</th>
+              <th style={colHeaderStyle}>TYPE</th>
+              <th style={colHeaderStyle}>DESCRIPTION</th>
+              <th style={colHeaderStyle}>COST</th>
+              <th style={colHeaderStyle}>DURATION</th>
+              <th style={colHeaderStyle}>STATUS</th>
+              <th style={{ ...colHeaderStyle, width: 50 }} />
+            </tr>
+          </thead>
+          <motion.tbody variants={tableContainer} initial="hidden" animate="visible">
+            {filtered.length === 0 ? (
+              <tr>
+                <td
+                  colSpan={8}
+                  style={{ padding: '40px 16px', textAlign: 'center', color: 'var(--text-tertiary)', fontSize: 13 }}
+                >
+                  No log entries found
+                </td>
+              </tr>
+            ) : (
+              filtered.map((entry) => (
+                <motion.tr
+                  key={entry.id}
+                  variants={tableRow}
+                  style={{ cursor: 'default' }}
+                  onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = 'var(--surface-2)'; }}
+                  onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
+                >
+                  <td style={{ ...cellStyle, color: 'var(--text-tertiary)', fontSize: 11 }}>
+                    {formatDate(entry.createdAt)}
+                  </td>
+                  <td style={{ ...cellStyle, fontWeight: 600, color: 'var(--text-primary)', fontSize: 12, fontFamily: 'var(--font-mono)' }}>
+                    {entry.aircraftRegistration ?? `#${entry.aircraftId}`}
+                  </td>
+                  <td style={cellStyle}>
+                    <TypeBadge type={entry.checkType} />
+                  </td>
+                  <td
+                    style={{
+                      ...cellStyle,
+                      color: 'var(--text-secondary)',
+                      fontSize: 11,
+                      maxWidth: 260,
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    {entry.title}
+                  </td>
+                  <td style={{ ...cellStyle, color: 'var(--text-secondary)', fontSize: 11, fontFamily: 'var(--font-mono)' }}>
+                    {formatCurrency(entry.cost)}
+                  </td>
+                  <td style={{ ...cellStyle, color: 'var(--text-secondary)', fontFamily: 'var(--font-mono)' }}>
+                    {entry.durationHours != null ? `${formatHours(entry.durationHours)}h` : '--'}
+                  </td>
+                  <td style={cellStyle}>
+                    <StatusBadgeInline status={entry.status} />
+                  </td>
+                  <td style={cellStyle}>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <button
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            cursor: 'pointer',
+                            padding: 4,
+                            borderRadius: 4,
+                            color: 'var(--text-tertiary)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                          }}
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <MoreVertical size={16} />
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => openEdit(entry)}>
+                          <Pencil size={14} /> Edit
+                        </DropdownMenuItem>
+                        {entry.status !== 'completed' && (
+                          <DropdownMenuItem onClick={() => handleComplete(entry)}>
+                            <CheckCircle2 size={14} className="text-[var(--accent-emerald)]" /> Complete
+                          </DropdownMenuItem>
+                        )}
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          className="text-[var(--accent-red)] focus:text-[var(--accent-red)]"
+                          onClick={() => setDeleteEntry(entry)}
+                        >
+                          <Trash2 size={14} /> Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </td>
+                </motion.tr>
+              ))
+            )}
+          </motion.tbody>
+        </table>
       </div>
 
       {/* Pagination */}
-      <DataTablePagination
-        page={page}
-        pageSize={pageSize}
-        total={total}
-        onPageChange={setPage}
-        onPageSizeChange={setPageSize}
-      />
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '12px 24px',
+          borderTop: '1px solid var(--border-primary)',
+          fontSize: 12,
+          color: 'var(--text-tertiary)',
+        }}
+      >
+        <span>
+          {total === 0 ? 'No results' : `${(page - 1) * pageSize + 1}--${Math.min(page * pageSize, total)} of ${total}`}
+        </span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+          <button
+            disabled={page <= 1}
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            style={{
+              background: 'none',
+              border: '1px solid var(--border-primary)',
+              borderRadius: 4,
+              padding: '4px 8px',
+              cursor: page <= 1 ? 'not-allowed' : 'pointer',
+              color: page <= 1 ? 'var(--text-quaternary)' : 'var(--text-secondary)',
+              display: 'flex',
+              alignItems: 'center',
+              opacity: page <= 1 ? 0.5 : 1,
+            }}
+          >
+            <ChevronLeft size={14} />
+          </button>
+          <span style={{ padding: '0 8px', color: 'var(--text-secondary)', fontSize: 12 }}>
+            {page} / {totalPages}
+          </span>
+          <button
+            disabled={page >= totalPages}
+            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+            style={{
+              background: 'none',
+              border: '1px solid var(--border-primary)',
+              borderRadius: 4,
+              padding: '4px 8px',
+              cursor: page >= totalPages ? 'not-allowed' : 'pointer',
+              color: page >= totalPages ? 'var(--text-quaternary)' : 'var(--text-secondary)',
+              display: 'flex',
+              alignItems: 'center',
+              opacity: page >= totalPages ? 0.5 : 1,
+            }}
+          >
+            <ChevronRight size={14} />
+          </button>
+        </div>
+      </div>
 
-      {/* Create / Edit Dialog */}
+      {/* Edit Dialog */}
       <Dialog
-        open={createOpen || !!editEntry}
-        onOpenChange={(open) => { if (!open) { setCreateOpen(false); setEditEntry(null); resetForm(); } }}
+        open={!!editEntry}
+        onOpenChange={(open) => { if (!open) { setEditEntry(null); resetForm(); } }}
       >
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>{editEntry ? 'Edit Log Entry' : 'New Log Entry'}</DialogTitle>
-            <DialogDescription>
-              {editEntry ? 'Update this maintenance log entry.' : 'Create a new maintenance log entry.'}
-            </DialogDescription>
+            <DialogTitle>Edit Log Entry</DialogTitle>
+            <DialogDescription>Update this maintenance log entry.</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-2">
-            {!editEntry && (
-              <div className="space-y-2">
-                <Label>Aircraft ID *</Label>
-                <Input type="number" value={formAircraftId} onChange={(e) => setFormAircraftId(e.target.value)} placeholder="Aircraft ID" />
-              </div>
-            )}
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Check Type *</Label>
@@ -1008,11 +1026,11 @@ function MaintenanceLogTab() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => { setCreateOpen(false); setEditEntry(null); resetForm(); }} disabled={formLoading}>
+            <Button variant="outline" onClick={() => { setEditEntry(null); resetForm(); }} disabled={formLoading}>
               Cancel
             </Button>
-            <Button onClick={editEntry ? handleUpdate : handleCreate} disabled={formLoading || !formTitle.trim() || (!editEntry && !formAircraftId)}>
-              {formLoading ? 'Saving...' : editEntry ? 'Update' : 'Create'}
+            <Button onClick={handleUpdate} disabled={formLoading || !formTitle.trim()}>
+              {formLoading ? 'Saving...' : 'Update'}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1035,1726 +1053,126 @@ function MaintenanceLogTab() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </>
   );
 }
 
 // ═══════════════════════════════════════════════════════════════
-// Tab 3: Check Schedules
+// Create Entry Dialog (shared)
 // ═══════════════════════════════════════════════════════════════
 
-function CheckSchedulesTab() {
-  const [schedules, setSchedules] = useState<MaintenanceCheckSchedule[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState('');
-
-  // Dialogs
-  const [createOpen, setCreateOpen] = useState(false);
-  const [editSchedule, setEditSchedule] = useState<MaintenanceCheckSchedule | null>(null);
-  const [deleteSchedule, setDeleteSchedule] = useState<MaintenanceCheckSchedule | null>(null);
-  const [deleteLoading, setDeleteLoading] = useState(false);
-
-  // Form
-  const [formIcaoType, setFormIcaoType] = useState('');
-  const [formCheckType, setFormCheckType] = useState<MaintenanceCheckType>('A');
-  const [formIntervalHours, setFormIntervalHours] = useState('');
-  const [formIntervalCycles, setFormIntervalCycles] = useState('');
-  const [formIntervalMonths, setFormIntervalMonths] = useState('');
-  const [formOverflightPct, setFormOverflightPct] = useState('10');
-  const [formEstDuration, setFormEstDuration] = useState('');
+function CreateEntryDialog({ open, onClose, onCreated }: { open: boolean; onClose: () => void; onCreated: () => void }) {
+  const [formAircraftId, setFormAircraftId] = useState('');
+  const [formCheckType, setFormCheckType] = useState<MaintenanceLogType>('LINE');
+  const [formTitle, setFormTitle] = useState('');
   const [formDescription, setFormDescription] = useState('');
+  const [formPerformedBy, setFormPerformedBy] = useState('');
+  const [formStatus, setFormStatus] = useState<MaintenanceLogStatus>('scheduled');
+  const [formCost, setFormCost] = useState('');
   const [formLoading, setFormLoading] = useState(false);
 
-  const fetchSchedules = useCallback(async () => {
-    try {
-      const res = await api.get<{ schedules: MaintenanceCheckSchedule[] }>('/api/admin/maintenance/check-schedules');
-      setSchedules(res.schedules);
-    } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : 'Failed to load check schedules');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => { fetchSchedules(); }, [fetchSchedules]);
-
-  const filtered = useMemo(() => {
-    if (!search) return schedules;
-    const q = search.toLowerCase();
-    return schedules.filter(
-      (s) => s.icaoType.toLowerCase().includes(q) || s.checkType.toLowerCase().includes(q),
-    );
-  }, [schedules, search]);
+  const logTypes: MaintenanceLogType[] = ['A', 'B', 'C', 'D', 'LINE', 'UNSCHEDULED', 'AD', 'MEL', 'SFP'];
+  const logStatuses: MaintenanceLogStatus[] = ['scheduled', 'in_progress', 'completed', 'deferred'];
 
   function resetForm() {
-    setFormIcaoType('');
-    setFormCheckType('A');
-    setFormIntervalHours('');
-    setFormIntervalCycles('');
-    setFormIntervalMonths('');
-    setFormOverflightPct('10');
-    setFormEstDuration('');
+    setFormAircraftId('');
+    setFormCheckType('LINE');
+    setFormTitle('');
     setFormDescription('');
-  }
-
-  function openEdit(s: MaintenanceCheckSchedule) {
-    setEditSchedule(s);
-    setFormIcaoType(s.icaoType);
-    setFormCheckType(s.checkType);
-    setFormIntervalHours(s.intervalHours?.toString() ?? '');
-    setFormIntervalCycles(s.intervalCycles?.toString() ?? '');
-    setFormIntervalMonths(s.intervalMonths?.toString() ?? '');
-    setFormOverflightPct(s.overflightPct.toString());
-    setFormEstDuration(s.estimatedDurationHours?.toString() ?? '');
-    setFormDescription(s.description ?? '');
+    setFormPerformedBy('');
+    setFormStatus('scheduled');
+    setFormCost('');
   }
 
   async function handleCreate() {
-    if (!formIcaoType.trim()) return;
+    if (!formAircraftId || !formTitle.trim()) return;
     setFormLoading(true);
     try {
-      await api.post('/api/admin/maintenance/check-schedules', {
-        icaoType: formIcaoType.trim().toUpperCase(),
+      await api.post('/api/admin/maintenance/log', {
+        aircraftId: parseInt(formAircraftId),
         checkType: formCheckType,
-        intervalHours: formIntervalHours ? parseFloat(formIntervalHours) : undefined,
-        intervalCycles: formIntervalCycles ? parseInt(formIntervalCycles) : undefined,
-        intervalMonths: formIntervalMonths ? parseInt(formIntervalMonths) : undefined,
-        overflightPct: parseFloat(formOverflightPct) || 10,
-        estimatedDurationHours: formEstDuration ? parseFloat(formEstDuration) : undefined,
-        description: formDescription.trim() || undefined,
-      });
-      toast.success('Check schedule created');
-      setCreateOpen(false);
-      resetForm();
-      fetchSchedules();
-    } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : 'Failed to create check schedule');
-    } finally {
-      setFormLoading(false);
-    }
-  }
-
-  async function handleUpdate() {
-    if (!editSchedule) return;
-    setFormLoading(true);
-    try {
-      await api.patch(`/api/admin/maintenance/check-schedules/${editSchedule.id}`, {
-        intervalHours: formIntervalHours ? parseFloat(formIntervalHours) : undefined,
-        intervalCycles: formIntervalCycles ? parseInt(formIntervalCycles) : undefined,
-        intervalMonths: formIntervalMonths ? parseInt(formIntervalMonths) : undefined,
-        overflightPct: parseFloat(formOverflightPct) || 10,
-        estimatedDurationHours: formEstDuration ? parseFloat(formEstDuration) : undefined,
-        description: formDescription.trim() || undefined,
-      });
-      toast.success('Check schedule updated');
-      setEditSchedule(null);
-      resetForm();
-      fetchSchedules();
-    } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : 'Failed to update check schedule');
-    } finally {
-      setFormLoading(false);
-    }
-  }
-
-  async function handleDelete() {
-    if (!deleteSchedule) return;
-    setDeleteLoading(true);
-    try {
-      await api.delete(`/api/admin/maintenance/check-schedules/${deleteSchedule.id}`);
-      toast.success('Check schedule deleted');
-      setDeleteSchedule(null);
-      fetchSchedules();
-    } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : 'Failed to delete check schedule');
-    } finally {
-      setDeleteLoading(false);
-    }
-  }
-
-  const checkTypes: MaintenanceCheckType[] = ['A', 'B', 'C', 'D'];
-
-  const scheduleColumns: ColumnDef<MaintenanceCheckSchedule, unknown>[] = useMemo(() => [
-    {
-      accessorKey: 'icaoType',
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Aircraft Type" />,
-      cell: ({ row }) => <span className="font-mono font-medium">{row.original.icaoType}</span>,
-      size: 110,
-    },
-    {
-      accessorKey: 'checkType',
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Check Type" />,
-      cell: ({ row }) => {
-        const type = row.original.checkType;
-        return <StatusBadge status={type === 'A' || type === 'B' ? 'warning' : 'info'} label={`${type}-Check`} />;
-      },
-      size: 110,
-    },
-    {
-      accessorKey: 'intervalHours',
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Interval Hours" />,
-      cell: ({ row }) => <span className="font-mono">{formatHours(row.original.intervalHours)}</span>,
-    },
-    {
-      accessorKey: 'intervalCycles',
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Interval Cycles" />,
-      cell: ({ row }) => <span className="font-mono">{row.original.intervalCycles?.toLocaleString() ?? '--'}</span>,
-    },
-    {
-      accessorKey: 'intervalMonths',
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Interval Months" />,
-      cell: ({ row }) => <span className="font-mono">{row.original.intervalMonths ?? '--'}</span>,
-    },
-    {
-      accessorKey: 'overflightPct',
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Overflight %" />,
-      cell: ({ row }) => <span className="font-mono">{row.original.overflightPct}%</span>,
-    },
-    {
-      accessorKey: 'description',
-      header: 'Description',
-      cell: ({ row }) => <span className="text-[var(--text-tertiary)] max-w-[200px] truncate block">{row.original.description ?? '--'}</span>,
-    },
-    {
-      id: 'actions',
-      enableHiding: false,
-      enableSorting: false,
-      size: 50,
-      cell: ({ row }) => {
-        const s = row.original;
-        return (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => e.stopPropagation()}>
-                <DotsThreeVertical size={16} weight="bold" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => openEdit(s)}>
-                <PencilSimple size={14} /> Edit
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem className="text-[var(--accent-red)] focus:text-[var(--accent-red)]" onClick={() => setDeleteSchedule(s)}>
-                <Trash size={14} /> Delete
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        );
-      },
-    },
-  ], []);
-
-  if (loading) return <TabSkeleton />;
-
-  return (
-    <div className="space-y-4">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="relative max-w-sm flex-1">
-          <MagnifyingGlass size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-tertiary)]" />
-          <Input placeholder="Search by ICAO type or check type..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
-        </div>
-        <Button onClick={() => { resetForm(); setCreateOpen(true); }}>
-          <Plus size={16} weight="bold" /> Add Schedule
-        </Button>
-      </div>
-
-      <DataTable
-        columns={scheduleColumns}
-        data={filtered}
-        loading={false}
-        emptyMessage="No check schedules found"
-        getRowId={(row) => String(row.id)}
-      />
-
-      {/* Create / Edit Dialog */}
-      <Dialog
-        open={createOpen || !!editSchedule}
-        onOpenChange={(open) => { if (!open) { setCreateOpen(false); setEditSchedule(null); resetForm(); } }}
-      >
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>{editSchedule ? 'Edit Check Schedule' : 'New Check Schedule'}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-2">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>ICAO Type *</Label>
-                <Input
-                  value={formIcaoType}
-                  onChange={(e) => setFormIcaoType(e.target.value)}
-                  placeholder="e.g. B738"
-                  disabled={!!editSchedule}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Check Type *</Label>
-                <Select value={formCheckType} onValueChange={(v) => setFormCheckType(v as MaintenanceCheckType)} disabled={!!editSchedule}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {checkTypes.map((t) => (
-                      <SelectItem key={t} value={t}>{t}-Check</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div className="grid grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <Label>Interval (hrs)</Label>
-                <Input type="number" step="0.1" value={formIntervalHours} onChange={(e) => setFormIntervalHours(e.target.value)} />
-              </div>
-              <div className="space-y-2">
-                <Label>Interval (cycles)</Label>
-                <Input type="number" step="1" value={formIntervalCycles} onChange={(e) => setFormIntervalCycles(e.target.value)} />
-              </div>
-              <div className="space-y-2">
-                <Label>Interval (months)</Label>
-                <Input type="number" step="1" value={formIntervalMonths} onChange={(e) => setFormIntervalMonths(e.target.value)} />
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Overflight %</Label>
-                <Input type="number" step="1" value={formOverflightPct} onChange={(e) => setFormOverflightPct(e.target.value)} />
-              </div>
-              <div className="space-y-2">
-                <Label>Est. Duration (hrs)</Label>
-                <Input type="number" step="0.1" value={formEstDuration} onChange={(e) => setFormEstDuration(e.target.value)} />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label>Description</Label>
-              <Textarea value={formDescription} onChange={(e) => setFormDescription(e.target.value)} rows={2} />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => { setCreateOpen(false); setEditSchedule(null); resetForm(); }} disabled={formLoading}>
-              Cancel
-            </Button>
-            <Button
-              onClick={editSchedule ? handleUpdate : handleCreate}
-              disabled={formLoading || (!editSchedule && !formIcaoType.trim())}
-            >
-              {formLoading ? 'Saving...' : editSchedule ? 'Update' : 'Create'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Delete Confirm */}
-      <Dialog open={!!deleteSchedule} onOpenChange={(open) => { if (!open) setDeleteSchedule(null); }}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Delete Check Schedule</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to delete the {deleteSchedule?.checkType}-Check schedule for {deleteSchedule?.icaoType}?
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteSchedule(null)} disabled={deleteLoading}>Cancel</Button>
-            <Button variant="destructive" onClick={handleDelete} disabled={deleteLoading}>
-              {deleteLoading ? 'Deleting...' : 'Delete'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </div>
-  );
-}
-
-// ═══════════════════════════════════════════════════════════════
-// Tab 4: Airworthiness Directives
-// ═══════════════════════════════════════════════════════════════
-
-function AirworthinessDirectivesTab() {
-  const [directives, setDirectives] = useState<AirworthinessDirective[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [total, setTotal] = useState(0);
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(50);
-
-  const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
-
-  // Dialogs
-  const [createOpen, setCreateOpen] = useState(false);
-  const [editAD, setEditAD] = useState<AirworthinessDirective | null>(null);
-  const [deleteAD, setDeleteAD] = useState<AirworthinessDirective | null>(null);
-  const [deleteLoading, setDeleteLoading] = useState(false);
-
-  // Form
-  const [formAircraftId, setFormAircraftId] = useState('');
-  const [formAdNumber, setFormAdNumber] = useState('');
-  const [formTitle, setFormTitle] = useState('');
-  const [formDescription, setFormDescription] = useState('');
-  const [formComplianceStatus, setFormComplianceStatus] = useState<ADComplianceStatus>('open');
-  const [formComplianceDate, setFormComplianceDate] = useState('');
-  const [formComplianceMethod, setFormComplianceMethod] = useState('');
-  const [formRecurringHours, setFormRecurringHours] = useState('');
-  const [formNextDueHours, setFormNextDueHours] = useState('');
-  const [formNextDueDate, setFormNextDueDate] = useState('');
-  const [formLoading, setFormLoading] = useState(false);
-
-  const fetchADs = useCallback(async () => {
-    try {
-      const params = new URLSearchParams();
-      params.set('page', page.toString());
-      params.set('pageSize', pageSize.toString());
-      if (statusFilter !== 'all') params.set('status', statusFilter);
-
-      const res = await api.get<{ directives: AirworthinessDirective[]; total: number; page: number; pageSize: number }>(
-        `/api/admin/maintenance/ads?${params.toString()}`,
-      );
-      setDirectives(res.directives);
-      setTotal(res.total);
-    } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : 'Failed to load airworthiness directives');
-    } finally {
-      setLoading(false);
-    }
-  }, [page, statusFilter]);
-
-  useEffect(() => { fetchADs(); }, [fetchADs]);
-
-  const filtered = useMemo(() => {
-    if (!search) return directives;
-    const q = search.toLowerCase();
-    return directives.filter(
-      (ad) =>
-        ad.adNumber.toLowerCase().includes(q) ||
-        ad.title.toLowerCase().includes(q) ||
-        (ad.aircraftRegistration?.toLowerCase().includes(q) ?? false),
-    );
-  }, [directives, search]);
-
-  function resetForm() {
-    setFormAircraftId('');
-    setFormAdNumber('');
-    setFormTitle('');
-    setFormDescription('');
-    setFormComplianceStatus('open');
-    setFormComplianceDate('');
-    setFormComplianceMethod('');
-    setFormRecurringHours('');
-    setFormNextDueHours('');
-    setFormNextDueDate('');
-  }
-
-  function openEdit(ad: AirworthinessDirective) {
-    setEditAD(ad);
-    setFormAircraftId(ad.aircraftId.toString());
-    setFormAdNumber(ad.adNumber);
-    setFormTitle(ad.title);
-    setFormDescription(ad.description ?? '');
-    setFormComplianceStatus(ad.complianceStatus);
-    setFormComplianceDate(ad.complianceDate ?? '');
-    setFormComplianceMethod(ad.complianceMethod ?? '');
-    setFormRecurringHours(ad.recurringIntervalHours?.toString() ?? '');
-    setFormNextDueHours(ad.nextDueHours?.toString() ?? '');
-    setFormNextDueDate(ad.nextDueDate ?? '');
-  }
-
-  async function handleCreate() {
-    if (!formAircraftId || !formAdNumber.trim() || !formTitle.trim()) return;
-    setFormLoading(true);
-    try {
-      await api.post('/api/admin/maintenance/ads', {
-        aircraftId: parseInt(formAircraftId),
-        adNumber: formAdNumber.trim(),
         title: formTitle.trim(),
         description: formDescription.trim() || undefined,
-        complianceStatus: formComplianceStatus,
-        complianceDate: formComplianceDate || undefined,
-        complianceMethod: formComplianceMethod.trim() || undefined,
-        recurringIntervalHours: formRecurringHours ? parseFloat(formRecurringHours) : undefined,
-        nextDueHours: formNextDueHours ? parseFloat(formNextDueHours) : undefined,
-        nextDueDate: formNextDueDate || undefined,
-      });
-      toast.success('Airworthiness directive created');
-      setCreateOpen(false);
-      resetForm();
-      fetchADs();
-    } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : 'Failed to create AD');
-    } finally {
-      setFormLoading(false);
-    }
-  }
-
-  async function handleUpdate() {
-    if (!editAD) return;
-    setFormLoading(true);
-    try {
-      await api.patch(`/api/admin/maintenance/ads/${editAD.id}`, {
-        adNumber: formAdNumber.trim(),
-        title: formTitle.trim(),
-        description: formDescription.trim() || undefined,
-        complianceStatus: formComplianceStatus,
-        complianceDate: formComplianceDate || undefined,
-        complianceMethod: formComplianceMethod.trim() || undefined,
-        recurringIntervalHours: formRecurringHours ? parseFloat(formRecurringHours) : undefined,
-        nextDueHours: formNextDueHours ? parseFloat(formNextDueHours) : undefined,
-        nextDueDate: formNextDueDate || undefined,
-      });
-      toast.success('Airworthiness directive updated');
-      setEditAD(null);
-      resetForm();
-      fetchADs();
-    } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : 'Failed to update AD');
-    } finally {
-      setFormLoading(false);
-    }
-  }
-
-  async function handleDelete() {
-    if (!deleteAD) return;
-    setDeleteLoading(true);
-    try {
-      await api.delete(`/api/admin/maintenance/ads/${deleteAD.id}`);
-      toast.success('Airworthiness directive deleted');
-      setDeleteAD(null);
-      fetchADs();
-    } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : 'Failed to delete AD');
-    } finally {
-      setDeleteLoading(false);
-    }
-  }
-
-  const adStatuses: ADComplianceStatus[] = ['open', 'complied', 'recurring', 'not_applicable'];
-
-  const adColumns: ColumnDef<AirworthinessDirective, unknown>[] = useMemo(() => [
-    {
-      accessorKey: 'adNumber',
-      header: ({ column }) => <DataTableColumnHeader column={column} title="AD Number" />,
-      cell: ({ row }) => <span className="font-mono font-medium">{row.original.adNumber}</span>,
-      size: 120,
-    },
-    {
-      accessorKey: 'aircraftRegistration',
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Aircraft" />,
-      cell: ({ row }) => <span className="font-mono">{row.original.aircraftRegistration ?? `#${row.original.aircraftId}`}</span>,
-      size: 100,
-    },
-    {
-      accessorKey: 'title',
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Title" />,
-      cell: ({ row }) => <span className="max-w-[200px] truncate block">{row.original.title}</span>,
-    },
-    {
-      accessorKey: 'complianceStatus',
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Status" />,
-      cell: ({ row }) => adStatusBadge(row.original.complianceStatus),
-      size: 110,
-    },
-    {
-      accessorKey: 'complianceDate',
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Compliance Date" />,
-      cell: ({ row }) => <span className="text-[var(--text-tertiary)]">{formatDate(row.original.complianceDate)}</span>,
-      size: 120,
-    },
-    {
-      accessorKey: 'nextDueDate',
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Next Due" />,
-      cell: ({ row }) => <span className="text-[var(--text-tertiary)]">{formatDate(row.original.nextDueDate)}</span>,
-      size: 100,
-    },
-    {
-      id: 'actions',
-      enableHiding: false,
-      enableSorting: false,
-      size: 50,
-      cell: ({ row }) => {
-        const ad = row.original;
-        return (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => e.stopPropagation()}>
-                <DotsThreeVertical size={16} weight="bold" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => openEdit(ad)}>
-                <PencilSimple size={14} /> Edit
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem className="text-[var(--accent-red)] focus:text-[var(--accent-red)]" onClick={() => setDeleteAD(ad)}>
-                <Trash size={14} /> Delete
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        );
-      },
-    },
-  ], []);
-
-  if (loading) return <TabSkeleton />;
-
-  return (
-    <div className="space-y-4">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex flex-1 items-center gap-3">
-          <div className="relative max-w-sm flex-1">
-            <MagnifyingGlass size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-tertiary)]" />
-            <Input placeholder="Search AD number, title, aircraft..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
-          </div>
-          <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setPage(1); }}>
-            <SelectTrigger className="w-[160px]">
-              <SelectValue placeholder="Status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Status</SelectItem>
-              {adStatuses.map((s) => (
-                <SelectItem key={s} value={s}>{s.replace('_', ' ')}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <Button onClick={() => { resetForm(); setCreateOpen(true); }}>
-          <Plus size={16} weight="bold" /> Add AD
-        </Button>
-      </div>
-
-      <DataTable
-        columns={adColumns}
-        data={filtered}
-        loading={false}
-        emptyMessage="No airworthiness directives found"
-        getRowId={(row) => String(row.id)}
-      />
-
-      <DataTablePagination
-        page={page}
-        pageSize={pageSize}
-        total={total}
-        onPageChange={setPage}
-        onPageSizeChange={setPageSize}
-      />
-
-      {/* Create / Edit Dialog */}
-      <Dialog
-        open={createOpen || !!editAD}
-        onOpenChange={(open) => { if (!open) { setCreateOpen(false); setEditAD(null); resetForm(); } }}
-      >
-        <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{editAD ? 'Edit Airworthiness Directive' : 'New Airworthiness Directive'}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-2">
-            {!editAD && (
-              <div className="space-y-2">
-                <Label>Aircraft ID *</Label>
-                <Input type="number" value={formAircraftId} onChange={(e) => setFormAircraftId(e.target.value)} />
-              </div>
-            )}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>AD Number *</Label>
-                <Input value={formAdNumber} onChange={(e) => setFormAdNumber(e.target.value)} placeholder="e.g. 2024-0123" />
-              </div>
-              <div className="space-y-2">
-                <Label>Compliance Status</Label>
-                <Select value={formComplianceStatus} onValueChange={(v) => setFormComplianceStatus(v as ADComplianceStatus)}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {adStatuses.map((s) => (
-                      <SelectItem key={s} value={s}>{s.replace('_', ' ')}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label>Title *</Label>
-              <Input value={formTitle} onChange={(e) => setFormTitle(e.target.value)} />
-            </div>
-            <div className="space-y-2">
-              <Label>Description</Label>
-              <Textarea value={formDescription} onChange={(e) => setFormDescription(e.target.value)} rows={2} />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Compliance Date</Label>
-                <Input type="date" value={formComplianceDate} onChange={(e) => setFormComplianceDate(e.target.value)} />
-              </div>
-              <div className="space-y-2">
-                <Label>Compliance Method</Label>
-                <Input value={formComplianceMethod} onChange={(e) => setFormComplianceMethod(e.target.value)} />
-              </div>
-            </div>
-            <div className="grid grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <Label>Recurring (hrs)</Label>
-                <Input type="number" value={formRecurringHours} onChange={(e) => setFormRecurringHours(e.target.value)} />
-              </div>
-              <div className="space-y-2">
-                <Label>Next Due (hrs)</Label>
-                <Input type="number" value={formNextDueHours} onChange={(e) => setFormNextDueHours(e.target.value)} />
-              </div>
-              <div className="space-y-2">
-                <Label>Next Due Date</Label>
-                <Input type="date" value={formNextDueDate} onChange={(e) => setFormNextDueDate(e.target.value)} />
-              </div>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => { setCreateOpen(false); setEditAD(null); resetForm(); }} disabled={formLoading}>
-              Cancel
-            </Button>
-            <Button
-              onClick={editAD ? handleUpdate : handleCreate}
-              disabled={formLoading || !formTitle.trim() || !formAdNumber.trim() || (!editAD && !formAircraftId)}
-            >
-              {formLoading ? 'Saving...' : editAD ? 'Update' : 'Create'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Delete Confirm */}
-      <Dialog open={!!deleteAD} onOpenChange={(open) => { if (!open) setDeleteAD(null); }}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Delete Airworthiness Directive</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to delete AD {deleteAD?.adNumber}? This cannot be undone.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteAD(null)} disabled={deleteLoading}>Cancel</Button>
-            <Button variant="destructive" onClick={handleDelete} disabled={deleteLoading}>
-              {deleteLoading ? 'Deleting...' : 'Delete'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </div>
-  );
-}
-
-// ═══════════════════════════════════════════════════════════════
-// Tab 5: MEL Deferrals
-// ═══════════════════════════════════════════════════════════════
-
-function MELDeferralsTab() {
-  const [deferrals, setDeferrals] = useState<MELDeferral[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [total, setTotal] = useState(0);
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(50);
-
-  const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [categoryFilter, setCategoryFilter] = useState('all');
-
-  // Dialogs
-  const [createOpen, setCreateOpen] = useState(false);
-  const [editMEL, setEditMEL] = useState<MELDeferral | null>(null);
-  const [deleteMEL, setDeleteMEL] = useState<MELDeferral | null>(null);
-  const [deleteLoading, setDeleteLoading] = useState(false);
-
-  // Form
-  const [formAircraftId, setFormAircraftId] = useState('');
-  const [formItemNumber, setFormItemNumber] = useState('');
-  const [formTitle, setFormTitle] = useState('');
-  const [formCategory, setFormCategory] = useState<MELCategory>('C');
-  const [formDeferralDate, setFormDeferralDate] = useState('');
-  const [formExpiryDate, setFormExpiryDate] = useState('');
-  const [formStatus, setFormStatus] = useState<MELStatus>('open');
-  const [formRectifiedDate, setFormRectifiedDate] = useState('');
-  const [formRemarks, setFormRemarks] = useState('');
-  const [formLoading, setFormLoading] = useState(false);
-
-  const fetchMEL = useCallback(async () => {
-    try {
-      const params = new URLSearchParams();
-      params.set('page', page.toString());
-      params.set('pageSize', pageSize.toString());
-      if (statusFilter !== 'all') params.set('status', statusFilter);
-      if (categoryFilter !== 'all') params.set('category', categoryFilter);
-
-      const res = await api.get<{ deferrals: MELDeferral[]; total: number; page: number; pageSize: number }>(
-        `/api/admin/maintenance/mel?${params.toString()}`,
-      );
-      setDeferrals(res.deferrals);
-      setTotal(res.total);
-    } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : 'Failed to load MEL deferrals');
-    } finally {
-      setLoading(false);
-    }
-  }, [page, statusFilter, categoryFilter]);
-
-  useEffect(() => { fetchMEL(); }, [fetchMEL]);
-
-  const filtered = useMemo(() => {
-    if (!search) return deferrals;
-    const q = search.toLowerCase();
-    return deferrals.filter(
-      (m) =>
-        m.itemNumber.toLowerCase().includes(q) ||
-        m.title.toLowerCase().includes(q) ||
-        (m.aircraftRegistration?.toLowerCase().includes(q) ?? false),
-    );
-  }, [deferrals, search]);
-
-  function resetForm() {
-    setFormAircraftId('');
-    setFormItemNumber('');
-    setFormTitle('');
-    setFormCategory('C');
-    setFormDeferralDate('');
-    setFormExpiryDate('');
-    setFormStatus('open');
-    setFormRectifiedDate('');
-    setFormRemarks('');
-  }
-
-  function openEdit(mel: MELDeferral) {
-    setEditMEL(mel);
-    setFormAircraftId(mel.aircraftId.toString());
-    setFormItemNumber(mel.itemNumber);
-    setFormTitle(mel.title);
-    setFormCategory(mel.category);
-    setFormDeferralDate(mel.deferralDate);
-    setFormExpiryDate(mel.expiryDate);
-    setFormStatus(mel.status);
-    setFormRectifiedDate(mel.rectifiedDate ?? '');
-    setFormRemarks(mel.remarks ?? '');
-  }
-
-  async function handleCreate() {
-    if (!formAircraftId || !formItemNumber.trim() || !formTitle.trim() || !formDeferralDate || !formExpiryDate) return;
-    setFormLoading(true);
-    try {
-      await api.post('/api/admin/maintenance/mel', {
-        aircraftId: parseInt(formAircraftId),
-        itemNumber: formItemNumber.trim(),
-        title: formTitle.trim(),
-        category: formCategory,
-        deferralDate: formDeferralDate,
-        expiryDate: formExpiryDate,
-        remarks: formRemarks.trim() || undefined,
-      });
-      toast.success('MEL deferral created');
-      setCreateOpen(false);
-      resetForm();
-      fetchMEL();
-    } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : 'Failed to create MEL deferral');
-    } finally {
-      setFormLoading(false);
-    }
-  }
-
-  async function handleUpdate() {
-    if (!editMEL) return;
-    setFormLoading(true);
-    try {
-      await api.patch(`/api/admin/maintenance/mel/${editMEL.id}`, {
-        itemNumber: formItemNumber.trim(),
-        title: formTitle.trim(),
-        category: formCategory,
-        deferralDate: formDeferralDate,
-        expiryDate: formExpiryDate,
+        performedBy: formPerformedBy.trim() || undefined,
         status: formStatus,
-        rectifiedDate: formRectifiedDate || undefined,
-        remarks: formRemarks.trim() || undefined,
+        cost: formCost ? parseFloat(formCost) : undefined,
       });
-      toast.success('MEL deferral updated');
-      setEditMEL(null);
+      toast.success('Log entry created');
       resetForm();
-      fetchMEL();
+      onClose();
+      onCreated();
     } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : 'Failed to update MEL deferral');
+      toast.error(err instanceof ApiError ? err.message : 'Failed to create log entry');
     } finally {
       setFormLoading(false);
     }
   }
-
-  async function handleRectify(mel: MELDeferral) {
-    try {
-      await api.patch(`/api/admin/maintenance/mel/${mel.id}`, {
-        status: 'rectified',
-        rectifiedDate: new Date().toISOString().split('T')[0],
-      });
-      toast.success(`MEL ${mel.itemNumber} rectified`);
-      fetchMEL();
-    } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : 'Failed to rectify MEL');
-    }
-  }
-
-  async function handleDelete() {
-    if (!deleteMEL) return;
-    setDeleteLoading(true);
-    try {
-      await api.delete(`/api/admin/maintenance/mel/${deleteMEL.id}`);
-      toast.success('MEL deferral deleted');
-      setDeleteMEL(null);
-      fetchMEL();
-    } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : 'Failed to delete MEL deferral');
-    } finally {
-      setDeleteLoading(false);
-    }
-  }
-
-  const melCategories: MELCategory[] = ['A', 'B', 'C', 'D'];
-  const melStatuses: MELStatus[] = ['open', 'rectified', 'expired'];
-
-  const melColumns: ColumnDef<MELDeferral, unknown>[] = useMemo(() => [
-    {
-      accessorKey: 'itemNumber',
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Item #" />,
-      cell: ({ row }) => <span className="font-mono font-medium">{row.original.itemNumber}</span>,
-      size: 100,
-    },
-    {
-      accessorKey: 'aircraftRegistration',
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Aircraft" />,
-      cell: ({ row }) => <span className="font-mono">{row.original.aircraftRegistration ?? `#${row.original.aircraftId}`}</span>,
-      size: 100,
-    },
-    {
-      accessorKey: 'title',
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Title" />,
-      cell: ({ row }) => <span className="max-w-[200px] truncate block">{row.original.title}</span>,
-    },
-    {
-      accessorKey: 'category',
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Category" />,
-      cell: ({ row }) => {
-        const cat = row.original.category;
-        return <StatusBadge status={cat === 'A' ? 'critical' : cat === 'B' ? 'warning' : 'info'} label={`Cat ${cat}`} />;
-      },
-      size: 90,
-    },
-    {
-      accessorKey: 'deferralDate',
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Deferral Date" />,
-      cell: ({ row }) => <span className="text-[var(--text-tertiary)]">{formatDate(row.original.deferralDate)}</span>,
-      size: 110,
-    },
-    {
-      accessorKey: 'expiryDate',
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Expiry Date" />,
-      cell: ({ row }) => <span className="text-[var(--text-tertiary)]">{formatDate(row.original.expiryDate)}</span>,
-      size: 110,
-    },
-    {
-      accessorKey: 'status',
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Status" />,
-      cell: ({ row }) => melStatusBadge(row.original.status),
-      size: 100,
-    },
-    {
-      id: 'actions',
-      enableHiding: false,
-      enableSorting: false,
-      size: 50,
-      cell: ({ row }) => {
-        const mel = row.original;
-        return (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => e.stopPropagation()}>
-                <DotsThreeVertical size={16} weight="bold" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => openEdit(mel)}>
-                <PencilSimple size={14} /> Edit
-              </DropdownMenuItem>
-              {mel.status === 'open' && (
-                <DropdownMenuItem onClick={() => handleRectify(mel)}>
-                  <CheckCircle size={14} className="text-[var(--accent-emerald)]" /> Rectify
-                </DropdownMenuItem>
-              )}
-              <DropdownMenuSeparator />
-              <DropdownMenuItem className="text-[var(--accent-red)] focus:text-[var(--accent-red)]" onClick={() => setDeleteMEL(mel)}>
-                <Trash size={14} /> Delete
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        );
-      },
-    },
-  ], []);
-
-  if (loading) return <TabSkeleton />;
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex flex-1 items-center gap-3">
-          <div className="relative max-w-sm flex-1">
-            <MagnifyingGlass size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-tertiary)]" />
-            <Input placeholder="Search item, title, aircraft..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
+    <Dialog open={open} onOpenChange={(o) => { if (!o) { resetForm(); onClose(); } }}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle>New Log Entry</DialogTitle>
+          <DialogDescription>Create a new maintenance log entry.</DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4 py-2">
+          <div className="space-y-2">
+            <Label>Aircraft ID *</Label>
+            <Input type="number" value={formAircraftId} onChange={(e) => setFormAircraftId(e.target.value)} placeholder="Aircraft ID" />
           </div>
-          <Select value={categoryFilter} onValueChange={(v) => { setCategoryFilter(v); setPage(1); }}>
-            <SelectTrigger className="w-[130px]">
-              <SelectValue placeholder="Category" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Categories</SelectItem>
-              {melCategories.map((c) => (
-                <SelectItem key={c} value={c}>Category {c}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setPage(1); }}>
-            <SelectTrigger className="w-[130px]">
-              <SelectValue placeholder="Status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Status</SelectItem>
-              {melStatuses.map((s) => (
-                <SelectItem key={s} value={s}>{s}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Check Type *</Label>
+              <Select value={formCheckType} onValueChange={(v) => setFormCheckType(v as MaintenanceLogType)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {logTypes.map((t) => (
+                    <SelectItem key={t} value={t}>{t}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Status</Label>
+              <Select value={formStatus} onValueChange={(v) => setFormStatus(v as MaintenanceLogStatus)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {logStatuses.map((s) => (
+                    <SelectItem key={s} value={s}>{s.replace('_', ' ')}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label>Title *</Label>
+            <Input value={formTitle} onChange={(e) => setFormTitle(e.target.value)} placeholder="Maintenance action title" />
+          </div>
+          <div className="space-y-2">
+            <Label>Description</Label>
+            <Textarea value={formDescription} onChange={(e) => setFormDescription(e.target.value)} rows={3} />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Performed By</Label>
+              <Input value={formPerformedBy} onChange={(e) => setFormPerformedBy(e.target.value)} placeholder="Technician name" />
+            </div>
+            <div className="space-y-2">
+              <Label>Cost</Label>
+              <Input type="number" step="0.01" value={formCost} onChange={(e) => setFormCost(e.target.value)} placeholder="0.00" />
+            </div>
+          </div>
         </div>
-        <Button onClick={() => { resetForm(); setCreateOpen(true); }}>
-          <Plus size={16} weight="bold" /> Add Deferral
-        </Button>
-      </div>
-
-      <DataTable
-        columns={melColumns}
-        data={filtered}
-        loading={false}
-        emptyMessage="No MEL deferrals found"
-        getRowId={(row) => String(row.id)}
-      />
-
-      <DataTablePagination
-        page={page}
-        pageSize={pageSize}
-        total={total}
-        onPageChange={setPage}
-        onPageSizeChange={setPageSize}
-      />
-
-      {/* Create / Edit Dialog */}
-      <Dialog
-        open={createOpen || !!editMEL}
-        onOpenChange={(open) => { if (!open) { setCreateOpen(false); setEditMEL(null); resetForm(); } }}
-      >
-        <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{editMEL ? 'Edit MEL Deferral' : 'New MEL Deferral'}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-2">
-            {!editMEL && (
-              <div className="space-y-2">
-                <Label>Aircraft ID *</Label>
-                <Input type="number" value={formAircraftId} onChange={(e) => setFormAircraftId(e.target.value)} />
-              </div>
-            )}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Item Number *</Label>
-                <Input value={formItemNumber} onChange={(e) => setFormItemNumber(e.target.value)} placeholder="e.g. 28-01" />
-              </div>
-              <div className="space-y-2">
-                <Label>Category *</Label>
-                <Select value={formCategory} onValueChange={(v) => setFormCategory(v as MELCategory)}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {melCategories.map((c) => (
-                      <SelectItem key={c} value={c}>Category {c}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label>Title *</Label>
-              <Input value={formTitle} onChange={(e) => setFormTitle(e.target.value)} />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Deferral Date *</Label>
-                <Input type="date" value={formDeferralDate} onChange={(e) => setFormDeferralDate(e.target.value)} />
-              </div>
-              <div className="space-y-2">
-                <Label>Expiry Date *</Label>
-                <Input type="date" value={formExpiryDate} onChange={(e) => setFormExpiryDate(e.target.value)} />
-              </div>
-            </div>
-            {editMEL && (
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Status</Label>
-                  <Select value={formStatus} onValueChange={(v) => setFormStatus(v as MELStatus)}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {melStatuses.map((s) => (
-                        <SelectItem key={s} value={s}>{s}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>Rectified Date</Label>
-                  <Input type="date" value={formRectifiedDate} onChange={(e) => setFormRectifiedDate(e.target.value)} />
-                </div>
-              </div>
-            )}
-            <div className="space-y-2">
-              <Label>Remarks</Label>
-              <Textarea value={formRemarks} onChange={(e) => setFormRemarks(e.target.value)} rows={2} />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => { setCreateOpen(false); setEditMEL(null); resetForm(); }} disabled={formLoading}>
-              Cancel
-            </Button>
-            <Button
-              onClick={editMEL ? handleUpdate : handleCreate}
-              disabled={
-                formLoading ||
-                !formTitle.trim() ||
-                !formItemNumber.trim() ||
-                !formDeferralDate ||
-                !formExpiryDate ||
-                (!editMEL && !formAircraftId)
-              }
-            >
-              {formLoading ? 'Saving...' : editMEL ? 'Update' : 'Create'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Delete Confirm */}
-      <Dialog open={!!deleteMEL} onOpenChange={(open) => { if (!open) setDeleteMEL(null); }}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Delete MEL Deferral</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to delete MEL item {deleteMEL?.itemNumber}? This cannot be undone.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteMEL(null)} disabled={deleteLoading}>Cancel</Button>
-            <Button variant="destructive" onClick={handleDelete} disabled={deleteLoading}>
-              {deleteLoading ? 'Deleting...' : 'Delete'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </div>
-  );
-}
-
-// ═══════════════════════════════════════════════════════════════
-// Tab 6: Components
-// ═══════════════════════════════════════════════════════════════
-
-function ComponentsTab() {
-  const [components, setComponents] = useState<AircraftComponent[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  const [search, setSearch] = useState('');
-  const [typeFilter, setTypeFilter] = useState('all');
-  const [statusFilter, setStatusFilter] = useState('all');
-
-  // Detail panel
-  const [selectedComp, setSelectedComp] = useState<AircraftComponent | null>(null);
-  const [detailOpen, setDetailOpen] = useState(false);
-
-  // Dialogs
-  const [createOpen, setCreateOpen] = useState(false);
-  const [editComp, setEditComp] = useState<AircraftComponent | null>(null);
-  const [deleteComp, setDeleteComp] = useState<AircraftComponent | null>(null);
-  const [deleteLoading, setDeleteLoading] = useState(false);
-
-  // Form
-  const [formAircraftId, setFormAircraftId] = useState('');
-  const [formCompType, setFormCompType] = useState<ComponentType>('ENGINE');
-  const [formPosition, setFormPosition] = useState('');
-  const [formSerial, setFormSerial] = useState('');
-  const [formPartNumber, setFormPartNumber] = useState('');
-  const [formHSN, setFormHSN] = useState('0');
-  const [formCSN, setFormCSN] = useState('0');
-  const [formHSO, setFormHSO] = useState('0');
-  const [formCSO, setFormCSO] = useState('0');
-  const [formOvhInterval, setFormOvhInterval] = useState('');
-  const [formInstalledDate, setFormInstalledDate] = useState('');
-  const [formStatus, setFormStatus] = useState<ComponentStatus>('installed');
-  const [formRemarks, setFormRemarks] = useState('');
-  const [formLoading, setFormLoading] = useState(false);
-
-  const fetchComponents = useCallback(async () => {
-    try {
-      const params = new URLSearchParams();
-      if (typeFilter !== 'all') params.set('componentType', typeFilter);
-      if (statusFilter !== 'all') params.set('status', statusFilter);
-
-      const res = await api.get<{ components: AircraftComponent[] }>(
-        `/api/admin/maintenance/components?${params.toString()}`,
-      );
-      setComponents(res.components);
-    } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : 'Failed to load components');
-    } finally {
-      setLoading(false);
-    }
-  }, [typeFilter, statusFilter]);
-
-  useEffect(() => { fetchComponents(); }, [fetchComponents]);
-
-  const filtered = useMemo(() => {
-    if (!search) return components;
-    const q = search.toLowerCase();
-    return components.filter(
-      (c) =>
-        (c.partNumber?.toLowerCase().includes(q) ?? false) ||
-        (c.serialNumber?.toLowerCase().includes(q) ?? false) ||
-        c.componentType.toLowerCase().includes(q) ||
-        (c.aircraftRegistration?.toLowerCase().includes(q) ?? false) ||
-        (c.position?.toLowerCase().includes(q) ?? false),
-    );
-  }, [components, search]);
-
-  // Keep detail panel in sync with filtered data
-  useEffect(() => {
-    if (selectedComp) {
-      const updated = filtered.find((c) => c.id === selectedComp.id);
-      if (updated) setSelectedComp(updated);
-      else { setSelectedComp(null); setDetailOpen(false); }
-    }
-  }, [filtered]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  function resetForm() {
-    setFormAircraftId('');
-    setFormCompType('ENGINE');
-    setFormPosition('');
-    setFormSerial('');
-    setFormPartNumber('');
-    setFormHSN('0');
-    setFormCSN('0');
-    setFormHSO('0');
-    setFormCSO('0');
-    setFormOvhInterval('');
-    setFormInstalledDate('');
-    setFormStatus('installed');
-    setFormRemarks('');
-  }
-
-  function openEdit(c: AircraftComponent) {
-    setEditComp(c);
-    setFormAircraftId(c.aircraftId.toString());
-    setFormCompType(c.componentType);
-    setFormPosition(c.position ?? '');
-    setFormSerial(c.serialNumber ?? '');
-    setFormPartNumber(c.partNumber ?? '');
-    setFormHSN(c.hoursSinceNew.toString());
-    setFormCSN(c.cyclesSinceNew.toString());
-    setFormHSO(c.hoursSinceOverhaul.toString());
-    setFormCSO(c.cyclesSinceOverhaul.toString());
-    setFormOvhInterval(c.overhaulIntervalHours?.toString() ?? '');
-    setFormInstalledDate(c.installedDate ?? '');
-    setFormStatus(c.status);
-    setFormRemarks(c.remarks ?? '');
-  }
-
-  async function handleCreate() {
-    if (!formAircraftId) return;
-    setFormLoading(true);
-    try {
-      await api.post('/api/admin/maintenance/components', {
-        aircraftId: parseInt(formAircraftId),
-        componentType: formCompType,
-        position: formPosition.trim() || undefined,
-        serialNumber: formSerial.trim() || undefined,
-        partNumber: formPartNumber.trim() || undefined,
-        hoursSinceNew: parseFloat(formHSN) || 0,
-        cyclesSinceNew: parseInt(formCSN) || 0,
-        hoursSinceOverhaul: parseFloat(formHSO) || 0,
-        cyclesSinceOverhaul: parseInt(formCSO) || 0,
-        overhaulIntervalHours: formOvhInterval ? parseFloat(formOvhInterval) : undefined,
-        installedDate: formInstalledDate || undefined,
-        status: formStatus,
-        remarks: formRemarks.trim() || undefined,
-      });
-      toast.success('Component created');
-      setCreateOpen(false);
-      resetForm();
-      fetchComponents();
-    } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : 'Failed to create component');
-    } finally {
-      setFormLoading(false);
-    }
-  }
-
-  async function handleUpdate() {
-    if (!editComp) return;
-    setFormLoading(true);
-    try {
-      await api.patch(`/api/admin/maintenance/components/${editComp.id}`, {
-        componentType: formCompType,
-        position: formPosition.trim() || undefined,
-        serialNumber: formSerial.trim() || undefined,
-        partNumber: formPartNumber.trim() || undefined,
-        hoursSinceNew: parseFloat(formHSN) || 0,
-        cyclesSinceNew: parseInt(formCSN) || 0,
-        hoursSinceOverhaul: parseFloat(formHSO) || 0,
-        cyclesSinceOverhaul: parseInt(formCSO) || 0,
-        overhaulIntervalHours: formOvhInterval ? parseFloat(formOvhInterval) : undefined,
-        installedDate: formInstalledDate || undefined,
-        status: formStatus,
-        remarks: formRemarks.trim() || undefined,
-      });
-      toast.success('Component updated');
-      setEditComp(null);
-      resetForm();
-      fetchComponents();
-    } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : 'Failed to update component');
-    } finally {
-      setFormLoading(false);
-    }
-  }
-
-  async function handleDelete() {
-    if (!deleteComp) return;
-    setDeleteLoading(true);
-    try {
-      await api.delete(`/api/admin/maintenance/components/${deleteComp.id}`);
-      toast.success('Component deleted');
-      setDeleteComp(null);
-      fetchComponents();
-    } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : 'Failed to delete component');
-    } finally {
-      setDeleteLoading(false);
-    }
-  }
-
-  async function handleOverhaul(comp: AircraftComponent) {
-    try {
-      await api.patch(`/api/admin/maintenance/components/${comp.id}`, {
-        hoursSinceOverhaul: 0,
-        cyclesSinceOverhaul: 0,
-        status: 'installed',
-      });
-      toast.success('Component overhauled');
-      fetchComponents();
-    } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : 'Failed to overhaul component');
-    }
-  }
-
-  async function handleRemoveComponent(comp: AircraftComponent) {
-    try {
-      await api.patch(`/api/admin/maintenance/components/${comp.id}`, {
-        status: 'removed',
-      });
-      toast.success('Component removed');
-      fetchComponents();
-    } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : 'Failed to remove component');
-    }
-  }
-
-  const componentTypes: ComponentType[] = ['ENGINE', 'APU', 'LANDING_GEAR', 'PROP', 'AVIONICS', 'OTHER'];
-  const componentStatuses: ComponentStatus[] = ['installed', 'removed', 'in_shop', 'scrapped'];
-
-  function remainingHoursValue(c: AircraftComponent): number | null {
-    if (!c.overhaulIntervalHours) return null;
-    return c.overhaulIntervalHours - c.hoursSinceOverhaul;
-  }
-
-  function overhaulUsedPct(c: AircraftComponent): number | null {
-    if (!c.overhaulIntervalHours || c.overhaulIntervalHours <= 0) return null;
-    return Math.min((c.hoursSinceOverhaul / c.overhaulIntervalHours) * 100, 100);
-  }
-
-  function handleCompRowClick(comp: AircraftComponent) {
-    setSelectedComp(comp);
-    setDetailOpen(true);
-  }
-
-  const componentColumns: ColumnDef<AircraftComponent, unknown>[] = useMemo(() => [
-    {
-      accessorKey: 'partNumber',
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Part #" />,
-      cell: ({ row }) => <span className="font-mono font-medium">{row.original.partNumber ?? '--'}</span>,
-      size: 100,
-    },
-    {
-      accessorKey: 'serialNumber',
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Serial #" />,
-      cell: ({ row }) => <span className="font-mono">{row.original.serialNumber ?? '--'}</span>,
-      size: 100,
-    },
-    {
-      accessorKey: 'componentType',
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Type" />,
-      cell: ({ row }) => <StatusBadge status="info" label={row.original.componentType.replace('_', ' ')} />,
-      size: 120,
-    },
-    {
-      id: 'aircraft',
-      accessorFn: (row) => row.aircraftRegistration ?? `#${row.aircraftId}`,
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Aircraft" />,
-      cell: ({ row }) => <span className="font-mono">{row.original.aircraftRegistration ?? `#${row.original.aircraftId}`}</span>,
-      size: 100,
-    },
-    {
-      accessorKey: 'position',
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Position" />,
-      cell: ({ row }) => <span className="text-[var(--text-tertiary)]">{row.original.position ?? '--'}</span>,
-    },
-    {
-      id: 'hso',
-      accessorFn: (row) => row.hoursSinceOverhaul,
-      header: ({ column }) => <DataTableColumnHeader column={column} title="HSO" />,
-      cell: ({ row }) => <span className="font-mono">{formatHours(row.original.hoursSinceOverhaul)}</span>,
-      size: 100,
-    },
-    {
-      id: 'remaining',
-      accessorFn: (row) => remainingHoursValue(row),
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Remaining" />,
-      cell: ({ row }) => {
-        const remaining = remainingHoursValue(row.original);
-        if (remaining === null) return <span className="font-mono text-[var(--text-tertiary)]">--</span>;
-        const color = remaining < 0
-          ? 'text-[var(--accent-red)]'
-          : remaining < 100
-          ? 'text-[var(--accent-red)]'
-          : remaining < 500
-          ? 'text-[var(--accent-amber)]'
-          : 'text-[var(--accent-emerald)]';
-        return <span className={`font-mono ${color}`}>{formatHours(remaining)}</span>;
-      },
-      size: 100,
-    },
-    {
-      accessorKey: 'status',
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Status" />,
-      cell: ({ row }) => componentStatusBadge(row.original.status),
-      size: 100,
-    },
-    {
-      id: 'actions',
-      enableHiding: false,
-      enableSorting: false,
-      size: 50,
-      cell: ({ row }) => {
-        const comp = row.original;
-        return (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => e.stopPropagation()}>
-                <DotsThreeVertical size={16} weight="bold" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => openEdit(comp)}>
-                <PencilSimple size={14} /> Edit
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleOverhaul(comp)}>
-                <ArrowClockwise size={14} className="text-[var(--accent-blue)]" /> Overhaul
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem className="text-[var(--accent-red)] focus:text-[var(--accent-red)]" onClick={() => setDeleteComp(comp)}>
-                <Trash size={14} /> Delete
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        );
-      },
-    },
-  ], []);
-
-  if (loading) return <TabSkeleton />;
-
-  return (
-    <div className="space-y-4">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex flex-1 items-center gap-3">
-          <div className="relative max-w-sm flex-1">
-            <MagnifyingGlass size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-tertiary)]" />
-            <Input placeholder="Search part, serial, aircraft..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
-          </div>
-          <Select value={typeFilter} onValueChange={setTypeFilter}>
-            <SelectTrigger className="w-[160px]">
-              <SelectValue placeholder="Type" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Types</SelectItem>
-              {componentTypes.map((t) => (
-                <SelectItem key={t} value={t}>{t.replace('_', ' ')}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-[130px]">
-              <SelectValue placeholder="Status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Status</SelectItem>
-              {componentStatuses.map((s) => (
-                <SelectItem key={s} value={s}>{s.replace('_', ' ')}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <Button onClick={() => { resetForm(); setCreateOpen(true); }}>
-          <Plus size={16} weight="bold" /> Add Component
-        </Button>
-      </div>
-
-      {/* Split view: DataTable + detail panel */}
-      <div className="flex flex-1 gap-0 overflow-hidden rounded-md border border-[var(--border-primary)]">
-        <div className={`${detailOpen ? 'w-[55%]' : 'w-full'} flex flex-col transition-all duration-200`}>
-          <DataTable
-            columns={componentColumns}
-            data={filtered}
-            onRowClick={handleCompRowClick}
-            selectedRowId={selectedComp?.id}
-            loading={false}
-            emptyMessage="No components found"
-            getRowId={(row) => String(row.id)}
-          />
-        </div>
-        {detailOpen && selectedComp && (
-          <DetailPanel
-            open={detailOpen}
-            onClose={() => { setDetailOpen(false); setSelectedComp(null); }}
-            title={selectedComp.partNumber ?? selectedComp.serialNumber ?? `Component #${selectedComp.id}`}
-            subtitle={`${selectedComp.componentType.replace('_', ' ')} -- ${selectedComp.aircraftRegistration ?? `Aircraft #${selectedComp.aircraftId}`}`}
-            actions={
-              <>
-                <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => openEdit(selectedComp)}>
-                  <PencilSimple size={12} /> Edit
-                </Button>
-                <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => handleOverhaul(selectedComp)}>
-                  <ArrowClockwise size={12} className="text-[var(--accent-blue)]" /> Overhaul
-                </Button>
-                {selectedComp.status === 'installed' && (
-                  <Button variant="outline" size="sm" className="h-7 text-xs text-[var(--accent-red)] hover:text-[var(--accent-red)]" onClick={() => handleRemoveComponent(selectedComp)}>
-                    <Trash size={12} /> Remove
-                  </Button>
-                )}
-              </>
-            }
-          >
-            <div className="space-y-4">
-              {/* Identity */}
-              <div>
-                <SectionHeader title="Identity" />
-                <div className="space-y-1">
-                  <DetailRow label="Type"><StatusBadge status="info" label={selectedComp.componentType.replace('_', ' ')} /></DetailRow>
-                  <DetailRow label="Part #"><span className="font-mono">{selectedComp.partNumber ?? '--'}</span></DetailRow>
-                  <DetailRow label="Serial #"><span className="font-mono">{selectedComp.serialNumber ?? '--'}</span></DetailRow>
-                  <DetailRow label="Position">{selectedComp.position ?? '--'}</DetailRow>
-                </div>
-              </div>
-
-              {/* Aircraft */}
-              <div>
-                <SectionHeader title="Aircraft" />
-                <div className="space-y-1">
-                  <DetailRow label="Registration"><span className="font-mono">{selectedComp.aircraftRegistration ?? '--'}</span></DetailRow>
-                  <DetailRow label="Aircraft ID"><span className="font-mono">{selectedComp.aircraftId}</span></DetailRow>
-                </div>
-              </div>
-
-              {/* Hours / Cycles */}
-              <div>
-                <SectionHeader title="Hours / Cycles" />
-                <div className="space-y-1">
-                  <DetailRow label="HSN"><span className="font-mono">{formatHours(selectedComp.hoursSinceNew)}</span></DetailRow>
-                  <DetailRow label="CSN"><span className="font-mono">{selectedComp.cyclesSinceNew.toLocaleString()}</span></DetailRow>
-                  <DetailRow label="HSO"><span className="font-mono">{formatHours(selectedComp.hoursSinceOverhaul)}</span></DetailRow>
-                  <DetailRow label="CSO"><span className="font-mono">{selectedComp.cyclesSinceOverhaul.toLocaleString()}</span></DetailRow>
-                </div>
-              </div>
-
-              {/* Overhaul */}
-              <div>
-                <SectionHeader title="Overhaul" />
-                <div className="space-y-1">
-                  <DetailRow label="Interval"><span className="font-mono">{selectedComp.overhaulIntervalHours ? `${formatHours(selectedComp.overhaulIntervalHours)} hrs` : '--'}</span></DetailRow>
-                  <DetailRow label="Remaining">
-                    {(() => {
-                      const remaining = remainingHoursValue(selectedComp);
-                      if (remaining === null) return <span className="text-[var(--text-tertiary)]">--</span>;
-                      const color = remaining < 0 ? 'text-[var(--accent-red)]' : remaining < 100 ? 'text-[var(--accent-red)]' : remaining < 500 ? 'text-[var(--accent-amber)]' : 'text-[var(--accent-emerald)]';
-                      return <span className={`font-mono ${color}`}>{formatHours(remaining)} hrs</span>;
-                    })()}
-                  </DetailRow>
-                </div>
-                {/* Progress bar */}
-                {(() => {
-                  const pct = overhaulUsedPct(selectedComp);
-                  if (pct === null) return null;
-                  const barColor = pct > 90 ? 'bg-[var(--accent-red)]' : pct > 70 ? 'bg-[var(--accent-amber)]' : 'bg-[var(--accent-emerald)]';
-                  return (
-                    <div className="mt-2">
-                      <div className="flex items-center justify-between text-xs text-[var(--text-tertiary)] mb-1">
-                        <span>Overhaul usage</span>
-                        <span className="font-mono">{pct.toFixed(1)}%</span>
-                      </div>
-                      <div className="h-2 rounded-sm bg-[var(--surface-1)] overflow-hidden">
-                        <div
-                          className={`h-full rounded-sm transition-all ${barColor}`}
-                          style={{ width: `${Math.min(pct, 100)}%` }}
-                        />
-                      </div>
-                    </div>
-                  );
-                })()}
-              </div>
-
-              {/* Status */}
-              <div>
-                <SectionHeader title="Status" />
-                <div className="space-y-1">
-                  <DetailRow label="Status">{componentStatusBadge(selectedComp.status)}</DetailRow>
-                  <DetailRow label="Installed">{formatDate(selectedComp.installedDate)}</DetailRow>
-                </div>
-                {selectedComp.remarks && (
-                  <div className="mt-2">
-                    <p className="text-xs text-[var(--text-tertiary)] mb-1">Remarks</p>
-                    <p className="text-sm whitespace-pre-wrap">{selectedComp.remarks}</p>
-                  </div>
-                )}
-              </div>
-            </div>
-          </DetailPanel>
-        )}
-      </div>
-
-      {/* Create / Edit Dialog */}
-      <Dialog
-        open={createOpen || !!editComp}
-        onOpenChange={(open) => { if (!open) { setCreateOpen(false); setEditComp(null); resetForm(); } }}
-      >
-        <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{editComp ? 'Edit Component' : 'New Component'}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-2">
-            {!editComp && (
-              <div className="space-y-2">
-                <Label>Aircraft ID *</Label>
-                <Input type="number" value={formAircraftId} onChange={(e) => setFormAircraftId(e.target.value)} />
-              </div>
-            )}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Component Type *</Label>
-                <Select value={formCompType} onValueChange={(v) => setFormCompType(v as ComponentType)}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {componentTypes.map((t) => (
-                      <SelectItem key={t} value={t}>{t.replace('_', ' ')}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>Status</Label>
-                <Select value={formStatus} onValueChange={(v) => setFormStatus(v as ComponentStatus)}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {componentStatuses.map((s) => (
-                      <SelectItem key={s} value={s}>{s.replace('_', ' ')}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Part Number</Label>
-                <Input value={formPartNumber} onChange={(e) => setFormPartNumber(e.target.value)} />
-              </div>
-              <div className="space-y-2">
-                <Label>Serial Number</Label>
-                <Input value={formSerial} onChange={(e) => setFormSerial(e.target.value)} />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label>Position</Label>
-              <Input value={formPosition} onChange={(e) => setFormPosition(e.target.value)} placeholder="e.g. Left Engine, Nose Gear" />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Hours Since New</Label>
-                <Input type="number" step="0.1" value={formHSN} onChange={(e) => setFormHSN(e.target.value)} />
-              </div>
-              <div className="space-y-2">
-                <Label>Cycles Since New</Label>
-                <Input type="number" step="1" value={formCSN} onChange={(e) => setFormCSN(e.target.value)} />
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Hours Since Overhaul</Label>
-                <Input type="number" step="0.1" value={formHSO} onChange={(e) => setFormHSO(e.target.value)} />
-              </div>
-              <div className="space-y-2">
-                <Label>Cycles Since Overhaul</Label>
-                <Input type="number" step="1" value={formCSO} onChange={(e) => setFormCSO(e.target.value)} />
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Overhaul Interval (hrs)</Label>
-                <Input type="number" step="0.1" value={formOvhInterval} onChange={(e) => setFormOvhInterval(e.target.value)} />
-              </div>
-              <div className="space-y-2">
-                <Label>Installed Date</Label>
-                <Input type="date" value={formInstalledDate} onChange={(e) => setFormInstalledDate(e.target.value)} />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label>Remarks</Label>
-              <Textarea value={formRemarks} onChange={(e) => setFormRemarks(e.target.value)} rows={2} />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => { setCreateOpen(false); setEditComp(null); resetForm(); }} disabled={formLoading}>
-              Cancel
-            </Button>
-            <Button
-              onClick={editComp ? handleUpdate : handleCreate}
-              disabled={formLoading || (!editComp && !formAircraftId)}
-            >
-              {formLoading ? 'Saving...' : editComp ? 'Update' : 'Create'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Delete Confirm */}
-      <Dialog open={!!deleteComp} onOpenChange={(open) => { if (!open) setDeleteComp(null); }}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Delete Component</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to delete {deleteComp?.componentType} {deleteComp?.partNumber ?? deleteComp?.serialNumber ?? `#${deleteComp?.id}`}? This cannot be undone.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteComp(null)} disabled={deleteLoading}>Cancel</Button>
-            <Button variant="destructive" onClick={handleDelete} disabled={deleteLoading}>
-              {deleteLoading ? 'Deleting...' : 'Delete'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => { resetForm(); onClose(); }} disabled={formLoading}>
+            Cancel
+          </Button>
+          <Button onClick={handleCreate} disabled={formLoading || !formTitle.trim() || !formAircraftId}>
+            {formLoading ? 'Saving...' : 'Create'}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -2763,67 +1181,125 @@ function ComponentsTab() {
 // ═══════════════════════════════════════════════════════════════
 
 export function MaintenancePage() {
-  const [activeTab, setActiveTab] = useState('fleet');
-
-  // Track which tabs have been visited to enable lazy loading
-  const [visited, setVisited] = useState<Set<string>>(new Set(['fleet']));
-
-  function handleTabChange(value: string) {
-    setActiveTab(value);
-    setVisited((prev) => {
-      if (prev.has(value)) return prev;
-      const next = new Set(prev);
-      next.add(value);
-      return next;
-    });
-  }
+  const [activeTab, setActiveTab] = useState<'fleet' | 'log'>('fleet');
+  const [createOpen, setCreateOpen] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   return (
-    <PageShell
-      title="Maintenance"
-      subtitle="Fleet maintenance and compliance"
+    <motion.div
+      variants={pageVariants}
+      initial="hidden"
+      animate="visible"
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        height: '100%',
+        background: 'var(--surface-0)',
+        color: 'var(--text-primary)',
+      }}
     >
-      <Tabs value={activeTab} onValueChange={handleTabChange}>
-        <TabsList className="mb-6 flex-wrap h-auto gap-1">
-          <TabsTrigger value="fleet" className="gap-1.5">
-            <Airplane size={14} /> Fleet Status
-          </TabsTrigger>
-          <TabsTrigger value="log" className="gap-1.5">
-            <Wrench size={14} /> Maintenance Log
-          </TabsTrigger>
-          <TabsTrigger value="checks" className="gap-1.5">
-            <CalendarCheck size={14} /> Check Schedules
-          </TabsTrigger>
-          <TabsTrigger value="ads" className="gap-1.5">
-            <ShieldWarning size={14} /> ADs
-          </TabsTrigger>
-          <TabsTrigger value="mel" className="gap-1.5">
-            <ListChecks size={14} /> MEL
-          </TabsTrigger>
-          <TabsTrigger value="components" className="gap-1.5">
-            <GearSix size={14} /> Components
-          </TabsTrigger>
-        </TabsList>
+      {/* ── Page Header ──────────────────────────────────────── */}
+      <motion.div
+        variants={fadeUp}
+        style={{
+          padding: '16px 24px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 16,
+        }}
+      >
+        {/* Title Row */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <Wrench size={20} style={{ color: 'var(--accent-blue)' }} />
+          <span style={{ fontSize: 20, fontWeight: 700, color: 'var(--text-primary)' }}>
+            Maintenance
+          </span>
+          <div style={{ flex: 1 }} />
+          <button
+            onClick={() => setCreateOpen(true)}
+            className="btn-glow"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+              padding: '8px 16px',
+              background: 'var(--accent-blue)',
+              color: '#fff',
+              border: 'none',
+              borderRadius: 6,
+              fontSize: 13,
+              fontWeight: 600,
+              cursor: 'pointer',
+              transition: 'opacity 120ms',
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.opacity = '0.85'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.opacity = '1'; }}
+          >
+            <Plus size={14} />
+            Log Entry
+          </button>
+        </div>
 
-        <TabsContent value="fleet">
-          {visited.has('fleet') && <FleetStatusTab />}
-        </TabsContent>
-        <TabsContent value="log">
-          {visited.has('log') && <MaintenanceLogTab />}
-        </TabsContent>
-        <TabsContent value="checks">
-          {visited.has('checks') && <CheckSchedulesTab />}
-        </TabsContent>
-        <TabsContent value="ads">
-          {visited.has('ads') && <AirworthinessDirectivesTab />}
-        </TabsContent>
-        <TabsContent value="mel">
-          {visited.has('mel') && <MELDeferralsTab />}
-        </TabsContent>
-        <TabsContent value="components">
-          {visited.has('components') && <ComponentsTab />}
-        </TabsContent>
-      </Tabs>
-    </PageShell>
+        {/* Tabs */}
+        <div
+          style={{
+            display: 'flex',
+            gap: 0,
+            borderBottom: '1px solid var(--border-primary)',
+          }}
+        >
+          <button
+            onClick={() => setActiveTab('fleet')}
+            style={{
+              background: 'none',
+              border: 'none',
+              borderBottom: activeTab === 'fleet' ? '2px solid var(--accent-blue)' : '2px solid transparent',
+              padding: '8px 16px',
+              fontSize: 13,
+              fontWeight: 500,
+              color: activeTab === 'fleet' ? 'var(--accent-blue-bright)' : 'var(--text-tertiary)',
+              cursor: 'pointer',
+              transition: 'color 120ms',
+            }}
+          >
+            Fleet Status
+          </button>
+          <button
+            onClick={() => setActiveTab('log')}
+            style={{
+              background: 'none',
+              border: 'none',
+              borderBottom: activeTab === 'log' ? '2px solid var(--accent-blue)' : '2px solid transparent',
+              padding: '8px 16px',
+              fontSize: 13,
+              fontWeight: 500,
+              color: activeTab === 'log' ? 'var(--accent-blue-bright)' : 'var(--text-tertiary)',
+              cursor: 'pointer',
+              transition: 'color 120ms',
+            }}
+          >
+            Maintenance Log
+          </button>
+        </div>
+      </motion.div>
+
+      {/* ── Tab Content ──────────────────────────────────────── */}
+      <div style={{ flex: 1, overflow: 'auto' }}>
+        {activeTab === 'fleet' && <FleetStatusContent />}
+        {activeTab === 'log' && (
+          <MaintenanceLogContent
+            key={refreshKey}
+            onOpenCreate={() => setCreateOpen(true)}
+          />
+        )}
+      </div>
+
+      {/* ── Create Entry Dialog ──────────────────────────────── */}
+      <CreateEntryDialog
+        open={createOpen}
+        onClose={() => setCreateOpen(false)}
+        onCreated={() => setRefreshKey((k) => k + 1)}
+      />
+    </motion.div>
   );
 }

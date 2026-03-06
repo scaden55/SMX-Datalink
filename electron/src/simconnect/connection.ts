@@ -42,7 +42,7 @@ export class SimConnectManager extends EventEmitter implements ISimConnectManage
     const entry: DiagEvent = { ts: new Date().toISOString(), level, msg };
     this._diagLog.push(entry);
     if (this._diagLog.length > DIAG_MAX) this._diagLog.shift();
-    console.log(`[SimConnect:${level}] ${msg}`);
+    try { console.log(`[SimConnect:${level}] ${msg}`); } catch { /* EPIPE if pipe closed */ }
     this.emit('diagnostic', entry);
   }
 

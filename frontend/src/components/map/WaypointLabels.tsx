@@ -80,7 +80,7 @@ export function WaypointLabels() {
               permanent
               direction="top"
               offset={[0, -6]}
-              className="!bg-transparent !border-none !shadow-none !text-[10px] !text-blue-400 !font-mono !p-0"
+              className="!bg-transparent !border-none !shadow-none !text-[10px] !text-blue-400 !tabular-nums !p-0"
             >
               {wp.ident}
             </Tooltip>

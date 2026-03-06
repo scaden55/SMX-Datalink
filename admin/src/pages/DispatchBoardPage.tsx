@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
+import { motion } from 'motion/react';
 import type { ActiveFlightHeartbeat, TelemetrySnapshot, AcarsMessagePayload, TrackPoint, FlightExceedance } from '@acars/shared';
 import { useAuthStore } from '@/stores/authStore';
 import { useSocketStore } from '@/stores/socketStore';
@@ -10,7 +11,7 @@ import { FlightDetailPanel } from '@/components/dispatch/FlightDetailPanel';
 
 export function DispatchBoardPage() {
   const accessToken = useAuthStore((s) => s.accessToken);
-  const { connect, connected, connecting, socket } = useSocketStore();
+  const { connected, connecting, socket, acquire } = useSocketStore();
 
   const [flights, setFlights] = useState<ActiveFlightHeartbeat[]>([]);
   const [selectedFlight, setSelectedFlight] = useState<ActiveFlightHeartbeat | null>(null);
@@ -21,12 +22,10 @@ export function DispatchBoardPage() {
   // Track current selected bid for dispatch:subscribe / unsubscribe
   const selectedBidRef = useRef<number | null>(null);
 
-  // Connect socket on mount if not already connected
+  // Connect socket on mount, disconnect when leaving page (via refcount)
   useEffect(() => {
-    if (accessToken && !connected) {
-      connect(accessToken);
-    }
-  }, [accessToken, connected, connect]);
+    if (accessToken) return acquire(accessToken);
+  }, [accessToken, acquire]);
 
   // Subscribe to livemap on socket connect
   useSocket<ActiveFlightHeartbeat[]>('flights:active', (data) => {
@@ -54,12 +53,10 @@ export function DispatchBoardPage() {
       selectedBidRef.current = null;
     }
 
-    // If we have a selected flight, find its userId to use as bidId
-    // ActiveFlightHeartbeat has userId which serves as the bid identifier
-    if (selectedFlight) {
-      const bidId = selectedFlight.userId;
-      selectedBidRef.current = bidId;
-      socket.emit('dispatch:subscribe', bidId);
+    // Subscribe using the actual bid ID (populated by backend from active_bids table)
+    if (selectedFlight?.bidId) {
+      selectedBidRef.current = selectedFlight.bidId;
+      socket.emit('dispatch:subscribe', selectedFlight.bidId);
     }
 
     return () => {
@@ -82,7 +79,7 @@ export function DispatchBoardPage() {
 
   // Listen for track points
   useSocket<{ bidId: number; point: TrackPoint }>('track:point', (data) => {
-    if (selectedFlight && data.bidId === selectedFlight.userId) {
+    if (selectedFlight?.bidId && data.bidId === selectedFlight.bidId) {
       setTrail((prev) => [...prev, data.point]);
     }
   });
@@ -100,12 +97,22 @@ export function DispatchBoardPage() {
     setTrail([]);
   }, []);
 
-  const bidId = selectedFlight?.userId ?? null;
+  const bidId = selectedFlight?.bidId ?? null;
 
   return (
-    <div className="-m-6 flex h-[calc(100vh-3.5rem)]">
+    <motion.div
+      className="-m-6 flex h-[calc(100vh-3.5rem)]"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+    >
       {/* Left panel — Flight list (25%) */}
-      <div className="w-1/4 min-w-[240px] max-w-[360px] shrink-0">
+      <motion.div
+        className="w-1/4 min-w-[240px] max-w-[360px] shrink-0"
+        initial={{ x: -20, opacity: 0 }}
+        animate={{ x: 0, opacity: 1 }}
+        transition={{ duration: 0.4, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
+      >
         <FlightListPanel
           flights={flights}
           selectedCallsign={selectedFlight?.callsign ?? null}
@@ -113,10 +120,15 @@ export function DispatchBoardPage() {
           connected={connected}
           connecting={connecting}
         />
-      </div>
+      </motion.div>
 
       {/* Center — Map (50%) */}
-      <div className="flex-1 relative">
+      <motion.div
+        className="flex-1 relative"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.5, delay: 0.2 }}
+      >
         <FlightMap
           flights={flights}
           selectedCallsign={selectedFlight?.callsign ?? null}
@@ -124,10 +136,15 @@ export function DispatchBoardPage() {
           trail={trail}
         />
         {/* Connection indicator */}
-        <div className="absolute top-3 right-3 z-[1000] flex items-center gap-1.5 rounded bg-[var(--surface-0)]/80 px-2.5 py-1 text-xs">
+        <motion.div
+          className="absolute top-3 right-3 z-[1000] flex items-center gap-1.5 rounded bg-[var(--surface-0)]/80 px-2.5 py-1 text-xs"
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5, duration: 0.3 }}
+        >
           <span className={`inline-block h-2 w-2 rounded-full ${
             connected
-              ? 'bg-[var(--accent-emerald)]'
+              ? 'bg-[var(--accent-emerald)] pulse-dot'
               : connecting
                 ? 'bg-[var(--accent-amber)] animate-pulse'
                 : 'bg-[var(--accent-red)]'
@@ -139,18 +156,23 @@ export function DispatchBoardPage() {
                 ? 'Connecting...'
                 : 'Offline'
           }</span>
-        </div>
-      </div>
+        </motion.div>
+      </motion.div>
 
       {/* Right panel — Flight detail (25%) */}
-      <div className="w-1/4 min-w-[280px] max-w-[400px] shrink-0">
+      <motion.div
+        className="w-1/4 min-w-[280px] max-w-[400px] shrink-0"
+        initial={{ x: 20, opacity: 0 }}
+        animate={{ x: 0, opacity: 1 }}
+        transition={{ duration: 0.4, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
+      >
         <FlightDetailPanel
           flight={selectedFlight}
           telemetry={telemetry}
           bidId={bidId}
           messages={messages}
         />
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 }

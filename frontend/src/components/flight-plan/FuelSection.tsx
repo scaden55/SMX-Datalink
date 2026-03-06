@@ -29,7 +29,7 @@ export function FuelSection({ totalWeight, fuelPct, ofpFuel }: FuelSectionProps)
     summaryParts.push(`Live: ${fmt(totalWeight)} lbs`);
   }
 
-  const boxCls = "bg-acars-input border border-acars-border text-[11px] font-mono rounded-md px-1.5 py-0.5 w-full truncate";
+  const boxCls = "bg-acars-input border border-acars-border text-[11px] tabular-nums rounded-md px-1.5 py-0.5 w-full truncate";
 
   return (
     <CollapsibleSection
@@ -61,7 +61,7 @@ export function FuelSection({ totalWeight, fuelPct, ofpFuel }: FuelSectionProps)
             {totalWeight !== null ? `${fmt(totalWeight)} lbs` : '---'}
           </div>
           {fuelPct !== null && (
-            <span className="text-[9px] font-sans text-[#454a52]">{Math.round(fuelPct)}%</span>
+            <span className="text-[9px] text-[#454a52]">{Math.round(fuelPct)}%</span>
           )}
         </div>
         <div className="flex flex-col min-w-0 flex-1">

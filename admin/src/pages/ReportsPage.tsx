@@ -1,10 +1,12 @@
 import { type CSSProperties, useCallback, useEffect, useMemo, useState } from 'react';
+import { motion } from 'motion/react';
 import {
-  CalendarBlank,
-  ArrowCounterClockwise,
-  DownloadSimple,
+  BarChart3,
+  Calendar,
+  RotateCcw,
+  Download,
   Printer,
-} from '@phosphor-icons/react';
+} from 'lucide-react';
 import {
   BarChart,
   Bar,
@@ -16,14 +18,12 @@ import {
   Cell,
   PieChart,
   Pie,
-  Legend,
-  ReferenceLine,
 } from 'recharts';
 import { api, ApiError } from '@/lib/api';
 import { toast } from '@/stores/toastStore';
+import { pageVariants, staggerContainer, staggerItem, fadeUp, cardHover } from '@/lib/motion';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Surface, SectionHeader } from '@/components/primitives';
 
 // ── Types ───────────────────────────────────────────────────────
 
@@ -63,23 +63,20 @@ interface RoutePopularityEntry {
   avgLandingRate: number;
 }
 
-interface RouteProfitabilityEntry {
-  route: string;
-  depIcao: string;
-  arrIcao: string;
-  flights: number;
-  revenue: number;
-  costs: number;
-  profit: number;
-  margin: number;
-}
-
 interface FleetUtilizationEntry {
   registration: string;
   aircraftType: string;
   months: Array<{ month: string; hours: number }>;
   totalHours: number;
 }
+
+// ── Chart Colors ────────────────────────────────────────────────
+
+const ACCENT_BLUE = '#3950ed';
+const ACCENT_EMERALD = '#4ade80';
+const ACCENT_AMBER = '#fbbf24';
+const ACCENT_RED = '#f87171';
+const ACCENT_CYAN = '#22d3ee';
 
 // ── Tooltip style constant ──────────────────────────────────────
 
@@ -104,52 +101,93 @@ function defaultDateRange(): { from: string; to: string } {
 }
 
 function getLandingRateColor(range: string): string {
-  // Green for soft landings, amber for medium, red for hard
   const lower = parseInt(range.split('-')[0], 10);
-  if (isNaN(lower)) return '#3b82f6';
-  if (lower < 200) return '#22c55e';  // soft / good
-  if (lower < 400) return '#f59e0b';  // medium
-  return '#ef4444';                    // hard
+  if (isNaN(lower)) return ACCENT_BLUE;
+  if (lower < 200) return ACCENT_EMERALD;
+  if (lower < 400) return ACCENT_AMBER;
+  return ACCENT_RED;
 }
 
-function getOnTimeColor(pct: number): string {
-  if (pct >= 90) return '#22c55e';
-  if (pct >= 70) return '#f59e0b';
-  return '#ef4444';
-}
+// ── Card wrapper ────────────────────────────────────────────────
 
-// Fleet utilization color palette — distinct colors for each aircraft
-const FLEET_COLORS = [
-  '#3b82f6', '#22c55e', '#f59e0b', '#ef4444', '#06b6d4',
-  '#ec4899', '#84cc16', '#f97316', '#14b8a6', '#facc15',
-  '#38bdf8', '#fb923c', '#4ade80', '#f43f5e', '#0ea5e9',
-];
+function ChartCard({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div
+      style={{
+        background: 'var(--surface-2)',
+        border: '1px solid var(--border-primary)',
+        borderRadius: 6,
+        display: 'flex',
+        flexDirection: 'column',
+        overflow: 'hidden',
+      }}
+    >
+      {/* Card header */}
+      <div
+        style={{
+          padding: '12px 16px',
+          borderBottom: '1px solid var(--border-primary)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+        }}
+      >
+        <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>
+          {title}
+        </span>
+        <span style={{ fontSize: 10, color: 'var(--text-tertiary)' }}>
+          Last 12 Months
+        </span>
+      </div>
+      {/* Card body */}
+      <div style={{ padding: 16, flex: 1, minHeight: 0 }}>{children}</div>
+    </div>
+  );
+}
 
 // ── Skeleton ────────────────────────────────────────────────────
 
 function ReportsPageSkeleton() {
   return (
-    <div className="space-y-6">
-      {/* Date range bar skeleton */}
-      <div className="h-12 w-full bg-[var(--surface-2)] rounded-md animate-pulse" />
-      {/* Chart grid skeleton */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        {Array.from({ length: 7 }).map((_, i) => (
-          <div key={i} className="h-[360px] bg-[var(--surface-2)] rounded-md animate-pulse" />
+    <div style={{ padding: '0 24px 24px 24px' }}>
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(3, 1fr)',
+          gap: 16,
+        }}
+      >
+        {Array.from({ length: 6 }).map((_, i) => (
+          <div
+            key={i}
+            style={{
+              height: 340,
+              background: 'var(--surface-2)',
+              borderRadius: 6,
+              border: '1px solid var(--border-primary)',
+            }}
+            className="animate-pulse"
+          />
         ))}
       </div>
     </div>
   );
 }
 
-// ── Flight Hours Chart ──────────────────────────────────────────
+// ── 1. Flight Hours by Pilot — horizontal bar ───────────────────
 
 function FlightHoursChart({ data }: { data: FlightHoursEntry[] }) {
   const chartData = useMemo(
     () =>
       data
         .sort((a, b) => b.hours - a.hours)
-        .slice(0, 20)
+        .slice(0, 10)
         .map((d) => ({
           name: d.callsign || d.name,
           hours: Math.round(d.hours * 10) / 10,
@@ -160,70 +198,60 @@ function FlightHoursChart({ data }: { data: FlightHoursEntry[] }) {
 
   if (chartData.length === 0) {
     return (
-      <p className="text-sm text-[var(--text-tertiary)] py-10 text-center">
+      <p style={{ fontSize: 12, color: 'var(--text-tertiary)', textAlign: 'center', padding: '40px 0' }}>
         No data for this period
       </p>
     );
   }
 
-  const chartHeight = Math.max(260, chartData.length * 32);
-
   return (
-    <ResponsiveContainer width="100%" height={chartHeight}>
+    <ResponsiveContainer width="100%" height={260}>
       <BarChart
         data={chartData}
         layout="vertical"
-        margin={{ top: 5, right: 20, left: 10, bottom: 5 }}
+        margin={{ top: 0, right: 16, left: 0, bottom: 0 }}
       >
         <CartesianGrid strokeDasharray="3 3" stroke="var(--border-primary)" horizontal={false} />
         <XAxis
           type="number"
-          tick={{ fill: 'var(--text-tertiary)', fontSize: 12 }}
+          tick={{ fill: 'var(--text-tertiary)', fontSize: 11 }}
           tickLine={false}
           axisLine={{ stroke: 'var(--border-primary)' }}
-          label={{
-            value: 'Hours',
-            position: 'insideBottomRight',
-            offset: -5,
-            fill: 'var(--text-tertiary)',
-            fontSize: 11,
-          }}
         />
         <YAxis
           type="category"
           dataKey="name"
-          tick={{ fill: 'var(--text-primary)', fontSize: 12 }}
+          tick={{ fill: 'var(--text-primary)', fontSize: 11 }}
           tickLine={false}
           axisLine={false}
-          width={90}
+          width={80}
         />
         <Tooltip
           contentStyle={TOOLTIP_STYLE}
-          labelStyle={{ color: 'var(--text-tertiary)' }}
-          cursor={{ fill: 'rgba(59,130,246,0.08)' }}
+          cursor={{ fill: 'rgba(57,80,237,0.08)' }}
           content={({ active, payload, label }) => {
             if (!active || !payload?.length) return null;
             const d = payload[0].payload as { hours: number; flights: number };
             return (
               <div style={TOOLTIP_STYLE} className="px-3 py-2">
-                <p className="font-medium text-[var(--text-primary)] mb-1">{label}</p>
-                <p className="text-[var(--text-tertiary)]">
-                  Hours: <span className="font-mono text-[var(--text-primary)]">{d.hours.toFixed(1)}</span>
+                <p style={{ fontWeight: 500, color: 'var(--text-primary)', marginBottom: 4 }}>{label}</p>
+                <p style={{ color: 'var(--text-tertiary)' }}>
+                  Hours: <span className="font-mono" style={{ color: 'var(--text-primary)' }}>{d.hours.toFixed(1)}</span>
                 </p>
-                <p className="text-[var(--text-tertiary)]">
-                  Flights: <span className="font-mono text-[var(--text-primary)]">{d.flights}</span>
+                <p style={{ color: 'var(--text-tertiary)' }}>
+                  Flights: <span className="font-mono" style={{ color: 'var(--text-primary)' }}>{d.flights}</span>
                 </p>
               </div>
             );
           }}
         />
-        <Bar dataKey="hours" fill="#3b82f6" radius={[0, 4, 4, 0]} maxBarSize={28} />
+        <Bar dataKey="hours" fill={ACCENT_BLUE} radius={[0, 4, 4, 0]} maxBarSize={24} />
       </BarChart>
     </ResponsiveContainer>
   );
 }
 
-// ── Landing Rate Distribution ───────────────────────────────────
+// ── 2. Landing Rate Distribution — vertical bar (green/amber/red) ──
 
 function LandingRateChart({ data }: { data: LandingRateData }) {
   const chartData = useMemo(
@@ -233,7 +261,257 @@ function LandingRateChart({ data }: { data: LandingRateData }) {
 
   if (chartData.length === 0) {
     return (
-      <p className="text-sm text-[var(--text-tertiary)] py-10 text-center">
+      <p style={{ fontSize: 12, color: 'var(--text-tertiary)', textAlign: 'center', padding: '40px 0' }}>
+        No data for this period
+      </p>
+    );
+  }
+
+  return (
+    <ResponsiveContainer width="100%" height={260}>
+      <BarChart data={chartData} margin={{ top: 0, right: 8, left: 0, bottom: 0 }}>
+        <CartesianGrid strokeDasharray="3 3" stroke="var(--border-primary)" />
+        <XAxis
+          dataKey="range"
+          tick={{ fill: 'var(--text-tertiary)', fontSize: 10 }}
+          tickLine={false}
+          axisLine={{ stroke: 'var(--border-primary)' }}
+        />
+        <YAxis
+          tick={{ fill: 'var(--text-tertiary)', fontSize: 11 }}
+          tickLine={false}
+          axisLine={false}
+          allowDecimals={false}
+        />
+        <Tooltip
+          contentStyle={TOOLTIP_STYLE}
+          formatter={(value: number | string | undefined) => [`${value ?? 0} landings`, 'Count']}
+          labelStyle={{ color: 'var(--text-tertiary)' }}
+          cursor={{ fill: 'rgba(57,80,237,0.08)' }}
+        />
+        <Bar dataKey="count" radius={[4, 4, 0, 0]} maxBarSize={36}>
+          {chartData.map((entry, idx) => (
+            <Cell key={idx} fill={entry.fill} />
+          ))}
+        </Bar>
+      </BarChart>
+    </ResponsiveContainer>
+  );
+}
+
+// ── 3. On-Time Performance — donut/ring chart ───────────────────
+
+function OnTimeChart({ data }: { data: OnTimeData }) {
+  const cancelled = data.totalFlights - data.onTimeCount - data.lateCount;
+  const pieData = useMemo(
+    () => [
+      { name: 'On Time', value: data.onTimeCount, fill: ACCENT_EMERALD },
+      { name: 'Delayed', value: data.lateCount, fill: ACCENT_AMBER },
+      ...(cancelled > 0 ? [{ name: 'Cancelled', value: cancelled, fill: ACCENT_RED }] : []),
+    ],
+    [data.onTimeCount, data.lateCount, cancelled],
+  );
+
+  if (data.totalFlights === 0) {
+    return (
+      <p style={{ fontSize: 12, color: 'var(--text-tertiary)', textAlign: 'center', padding: '40px 0' }}>
+        No data for this period
+      </p>
+    );
+  }
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+      <ResponsiveContainer width="100%" height={180}>
+        <PieChart>
+          <Pie
+            data={pieData}
+            cx="50%"
+            cy="50%"
+            innerRadius={50}
+            outerRadius={75}
+            dataKey="value"
+            nameKey="name"
+            startAngle={90}
+            endAngle={-270}
+            stroke="transparent"
+          >
+            {pieData.map((entry, idx) => (
+              <Cell key={idx} fill={entry.fill} />
+            ))}
+          </Pie>
+          <Tooltip
+            contentStyle={TOOLTIP_STYLE}
+            formatter={(value: number | string | undefined) => [`${value ?? 0} flights`]}
+          />
+        </PieChart>
+      </ResponsiveContainer>
+      {/* Legend row */}
+      <div style={{ display: 'flex', gap: 16, justifyContent: 'center' }}>
+        {pieData.map((d) => (
+          <div key={d.name} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <div style={{ width: 8, height: 8, borderRadius: '50%', background: d.fill }} />
+            <span style={{ fontSize: 11, color: 'var(--text-tertiary)' }}>
+              {d.name} ({d.value})
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── 4. Fuel Efficiency by Route — horizontal stacked bar ────────
+
+function FuelEfficiencyChart({ data }: { data: FuelEfficiencyEntry[] }) {
+  const chartData = useMemo(
+    () =>
+      data.slice(0, 10).map((d) => ({
+        flight: d.flightNumber,
+        planned: Math.round(d.fuelPlanned),
+        actual: Math.round(d.fuelUsed),
+      })),
+    [data],
+  );
+
+  if (chartData.length === 0) {
+    return (
+      <p style={{ fontSize: 12, color: 'var(--text-tertiary)', textAlign: 'center', padding: '40px 0' }}>
+        No data for this period
+      </p>
+    );
+  }
+
+  return (
+    <ResponsiveContainer width="100%" height={260}>
+      <BarChart
+        data={chartData}
+        layout="vertical"
+        margin={{ top: 0, right: 16, left: 0, bottom: 0 }}
+      >
+        <CartesianGrid strokeDasharray="3 3" stroke="var(--border-primary)" horizontal={false} />
+        <XAxis
+          type="number"
+          tick={{ fill: 'var(--text-tertiary)', fontSize: 11 }}
+          tickLine={false}
+          axisLine={{ stroke: 'var(--border-primary)' }}
+          tickFormatter={(v: number) =>
+            v >= 1000 ? `${(v / 1000).toFixed(0)}k` : `${v}`
+          }
+        />
+        <YAxis
+          type="category"
+          dataKey="flight"
+          tick={{ fill: 'var(--text-primary)', fontSize: 11 }}
+          tickLine={false}
+          axisLine={false}
+          width={80}
+        />
+        <Tooltip
+          contentStyle={TOOLTIP_STYLE}
+          cursor={{ fill: 'rgba(57,80,237,0.08)' }}
+          content={({ active, payload, label }) => {
+            if (!active || !payload?.length) return null;
+            const d = payload[0].payload as { planned: number; actual: number };
+            return (
+              <div style={TOOLTIP_STYLE} className="px-3 py-2">
+                <p style={{ fontWeight: 500, color: 'var(--text-primary)', marginBottom: 4 }}>{label}</p>
+                <p style={{ color: 'var(--text-tertiary)' }}>
+                  Planned: <span className="font-mono" style={{ color: ACCENT_BLUE }}>{d.planned.toLocaleString()} lbs</span>
+                </p>
+                <p style={{ color: 'var(--text-tertiary)' }}>
+                  Actual: <span className="font-mono" style={{ color: ACCENT_AMBER }}>{d.actual.toLocaleString()} lbs</span>
+                </p>
+              </div>
+            );
+          }}
+        />
+        <Bar dataKey="planned" name="Planned" fill={ACCENT_BLUE} radius={[0, 4, 4, 0]} maxBarSize={12} stackId="fuel" />
+        <Bar dataKey="actual" name="Actual" fill={ACCENT_AMBER} radius={[0, 4, 4, 0]} maxBarSize={12} stackId="fuel2" />
+      </BarChart>
+    </ResponsiveContainer>
+  );
+}
+
+// ── 5. Route Popularity — bar chart ─────────────────────────────
+
+function RoutePopularityChart({ data }: { data: RoutePopularityEntry[] }) {
+  const chartData = useMemo(
+    () =>
+      data
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 10)
+        .map((d) => ({
+          route: `${d.depIcao}-${d.arrIcao}`,
+          count: d.count,
+        })),
+    [data],
+  );
+
+  if (chartData.length === 0) {
+    return (
+      <p style={{ fontSize: 12, color: 'var(--text-tertiary)', textAlign: 'center', padding: '40px 0' }}>
+        No data for this period
+      </p>
+    );
+  }
+
+  return (
+    <ResponsiveContainer width="100%" height={260}>
+      <BarChart data={chartData} margin={{ top: 0, right: 8, left: 0, bottom: 0 }}>
+        <CartesianGrid strokeDasharray="3 3" stroke="var(--border-primary)" />
+        <XAxis
+          dataKey="route"
+          tick={{ fill: 'var(--text-tertiary)', fontSize: 10 }}
+          tickLine={false}
+          axisLine={{ stroke: 'var(--border-primary)' }}
+          angle={-45}
+          textAnchor="end"
+          height={50}
+        />
+        <YAxis
+          tick={{ fill: 'var(--text-tertiary)', fontSize: 11 }}
+          tickLine={false}
+          axisLine={false}
+          allowDecimals={false}
+        />
+        <Tooltip
+          contentStyle={TOOLTIP_STYLE}
+          formatter={(value: number | string | undefined) => [`${value ?? 0} flights`, 'Count']}
+          labelStyle={{ color: 'var(--text-tertiary)' }}
+          cursor={{ fill: 'rgba(57,80,237,0.08)' }}
+        />
+        <Bar dataKey="count" fill={ACCENT_BLUE} radius={[4, 4, 0, 0]} maxBarSize={36} />
+      </BarChart>
+    </ResponsiveContainer>
+  );
+}
+
+// ── 6. Fleet Utilization — stacked horizontal bar (Flying vs Ground) ──
+
+function FleetUtilizationChart({ data }: { data: FleetUtilizationEntry[] }) {
+  const chartData = useMemo(() => {
+    // Max possible hours per month: ~720 (30*24). Use a simpler approach:
+    // totalHours = flying time, ground = (months.length * 200) - totalHours (capped at 0)
+    return data
+      .sort((a, b) => b.totalHours - a.totalHours)
+      .slice(0, 10)
+      .map((ac) => {
+        const maxHours = Math.max(ac.months.length, 1) * 200;
+        const flying = Math.round(ac.totalHours * 10) / 10;
+        const ground = Math.max(0, Math.round((maxHours - ac.totalHours) * 10) / 10);
+        return {
+          name: ac.registration,
+          type: ac.aircraftType,
+          flying,
+          ground,
+        };
+      });
+  }, [data]);
+
+  if (chartData.length === 0) {
+    return (
+      <p style={{ fontSize: 12, color: 'var(--text-tertiary)', textAlign: 'center', padding: '40px 0' }}>
         No data for this period
       </p>
     );
@@ -242,515 +520,62 @@ function LandingRateChart({ data }: { data: LandingRateData }) {
   return (
     <div>
       <ResponsiveContainer width="100%" height={260}>
-        <BarChart data={chartData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="var(--border-primary)" />
+        <BarChart
+          data={chartData}
+          layout="vertical"
+          margin={{ top: 0, right: 16, left: 0, bottom: 0 }}
+        >
+          <CartesianGrid strokeDasharray="3 3" stroke="var(--border-primary)" horizontal={false} />
           <XAxis
-            dataKey="range"
+            type="number"
             tick={{ fill: 'var(--text-tertiary)', fontSize: 11 }}
             tickLine={false}
             axisLine={{ stroke: 'var(--border-primary)' }}
-            label={{
-              value: 'ft/min',
-              position: 'insideBottomRight',
-              offset: -5,
-              fill: 'var(--text-tertiary)',
-              fontSize: 11,
-            }}
           />
           <YAxis
-            tick={{ fill: 'var(--text-tertiary)', fontSize: 12 }}
+            type="category"
+            dataKey="name"
+            tick={{ fill: 'var(--text-primary)', fontSize: 11 }}
             tickLine={false}
             axisLine={false}
-            allowDecimals={false}
-            label={{
-              value: 'Landings',
-              angle: -90,
-              position: 'insideLeft',
-              fill: 'var(--text-tertiary)',
-              fontSize: 11,
+            width={80}
+          />
+          <Tooltip
+            contentStyle={TOOLTIP_STYLE}
+            cursor={{ fill: 'rgba(57,80,237,0.08)' }}
+            content={({ active, payload, label }) => {
+              if (!active || !payload?.length) return null;
+              const d = payload[0].payload as { flying: number; ground: number; type: string };
+              return (
+                <div style={TOOLTIP_STYLE} className="px-3 py-2">
+                  <p style={{ fontWeight: 500, color: 'var(--text-primary)', marginBottom: 4 }}>{label}</p>
+                  <p style={{ color: 'var(--text-tertiary)', fontSize: 11, marginBottom: 2 }}>{d.type}</p>
+                  <p style={{ color: 'var(--text-tertiary)' }}>
+                    Flying: <span className="font-mono" style={{ color: ACCENT_EMERALD }}>{d.flying} hrs</span>
+                  </p>
+                  <p style={{ color: 'var(--text-tertiary)' }}>
+                    Ground: <span className="font-mono" style={{ color: 'var(--text-tertiary)' }}>{d.ground} hrs</span>
+                  </p>
+                </div>
+              );
             }}
           />
-          <Tooltip
-            contentStyle={TOOLTIP_STYLE}
-            formatter={(value: number | string | undefined) => [`${value ?? 0} landings`, 'Count']}
-            labelStyle={{ color: 'var(--text-tertiary)' }}
-            cursor={{ fill: 'rgba(59,130,246,0.08)' }}
-          />
-          <Bar dataKey="count" radius={[4, 4, 0, 0]} maxBarSize={40}>
-            {chartData.map((entry, idx) => (
-              <Cell key={idx} fill={entry.fill} />
-            ))}
-          </Bar>
+          <Bar dataKey="flying" name="Flying" fill={ACCENT_EMERALD} stackId="util" radius={[0, 0, 0, 0]} maxBarSize={20} />
+          <Bar dataKey="ground" name="Ground" fill="var(--border-primary)" stackId="util" radius={[0, 4, 4, 0]} maxBarSize={20} />
         </BarChart>
       </ResponsiveContainer>
-      {/* Stats row */}
-      <div className="grid grid-cols-3 gap-4 mt-4 pt-4 border-t border-[var(--border-primary)]">
-        <div className="text-center">
-          <p className="text-xs text-[var(--text-tertiary)] mb-1">Average</p>
-          <p className="font-mono text-sm font-semibold text-[var(--text-primary)]">
-            {Math.round(data.average)} ft/min
-          </p>
+      {/* Legend */}
+      <div style={{ display: 'flex', gap: 16, justifyContent: 'center', marginTop: 8 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <div style={{ width: 10, height: 10, borderRadius: 2, background: ACCENT_EMERALD }} />
+          <span style={{ fontSize: 11, color: 'var(--text-tertiary)' }}>Flying</span>
         </div>
-        <div className="text-center">
-          <p className="text-xs text-[var(--text-tertiary)] mb-1">Best</p>
-          <p className="font-mono text-sm font-semibold text-[var(--accent-emerald)]">
-            {Math.round(data.best)} ft/min
-          </p>
-        </div>
-        <div className="text-center">
-          <p className="text-xs text-[var(--text-tertiary)] mb-1">Worst</p>
-          <p className="font-mono text-sm font-semibold text-[var(--accent-red)]">
-            {Math.round(data.worst)} ft/min
-          </p>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <div style={{ width: 10, height: 10, borderRadius: 2, background: 'var(--border-primary)' }} />
+          <span style={{ fontSize: 11, color: 'var(--text-tertiary)' }}>Ground</span>
         </div>
       </div>
     </div>
-  );
-}
-
-// ── Fuel Efficiency Chart ───────────────────────────────────────
-
-function FuelEfficiencyChart({ data }: { data: FuelEfficiencyEntry[] }) {
-  const chartData = useMemo(
-    () =>
-      data.slice(-20).map((d) => ({
-        flight: d.flightNumber,
-        planned: Math.round(d.fuelPlanned),
-        actual: Math.round(d.fuelUsed),
-        efficiency: d.efficiency,
-      })),
-    [data],
-  );
-
-  if (chartData.length === 0) {
-    return (
-      <p className="text-sm text-[var(--text-tertiary)] py-10 text-center">
-        No data for this period
-      </p>
-    );
-  }
-
-  return (
-    <ResponsiveContainer width="100%" height={300}>
-      <BarChart data={chartData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
-        <CartesianGrid strokeDasharray="3 3" stroke="var(--border-primary)" />
-        <XAxis
-          dataKey="flight"
-          tick={{ fill: 'var(--text-tertiary)', fontSize: 11 }}
-          tickLine={false}
-          axisLine={{ stroke: 'var(--border-primary)' }}
-          angle={-45}
-          textAnchor="end"
-          height={60}
-        />
-        <YAxis
-          tick={{ fill: 'var(--text-tertiary)', fontSize: 12 }}
-          tickLine={false}
-          axisLine={false}
-          tickFormatter={(v: number) =>
-            v >= 1000 ? `${(v / 1000).toFixed(0)}k` : `${v}`
-          }
-          label={{
-            value: 'lbs',
-            angle: -90,
-            position: 'insideLeft',
-            fill: 'var(--text-tertiary)',
-            fontSize: 11,
-          }}
-        />
-        <Tooltip
-          contentStyle={TOOLTIP_STYLE}
-          labelStyle={{ color: 'var(--text-tertiary)' }}
-          content={({ active, payload, label }) => {
-            if (!active || !payload?.length) return null;
-            const d = payload[0].payload as {
-              planned: number;
-              actual: number;
-              efficiency: number;
-            };
-            return (
-              <div style={TOOLTIP_STYLE} className="px-3 py-2">
-                <p className="font-medium text-[var(--text-primary)] mb-1">{label}</p>
-                <p className="text-[var(--text-tertiary)]">
-                  Planned: <span className="font-mono text-[var(--accent-blue)]">{d.planned.toLocaleString()} lbs</span>
-                </p>
-                <p className="text-[var(--text-tertiary)]">
-                  Actual: <span className="font-mono text-[var(--accent-amber)]">{d.actual.toLocaleString()} lbs</span>
-                </p>
-                <p className="text-[var(--text-tertiary)]">
-                  Efficiency: <span className="font-mono text-[var(--text-primary)]">{d.efficiency.toFixed(1)}%</span>
-                </p>
-              </div>
-            );
-          }}
-        />
-        <Legend wrapperStyle={{ fontSize: 12, color: 'var(--text-tertiary)' }} />
-        <Bar dataKey="planned" name="Planned" fill="#3b82f6" radius={[4, 4, 0, 0]} maxBarSize={20} />
-        <Bar dataKey="actual" name="Actual" fill="#f59e0b" radius={[4, 4, 0, 0]} maxBarSize={20} />
-      </BarChart>
-    </ResponsiveContainer>
-  );
-}
-
-// ── On-Time Performance ─────────────────────────────────────────
-
-function OnTimeCard({ data }: { data: OnTimeData }) {
-  const color = getOnTimeColor(data.percentage);
-
-  const pieData = useMemo(
-    () => [
-      { name: 'On Time', value: data.onTimeCount },
-      { name: 'Late', value: data.lateCount },
-    ],
-    [data.onTimeCount, data.lateCount],
-  );
-
-  const PIE_COLORS = ['#22c55e', '#ef4444'];
-
-  if (data.totalFlights === 0) {
-    return (
-      <p className="text-sm text-[var(--text-tertiary)] py-10 text-center">
-        No data for this period
-      </p>
-    );
-  }
-
-  return (
-    <div className="flex flex-col items-center gap-4">
-      {/* Donut chart */}
-      <ResponsiveContainer width="100%" height={200}>
-        <PieChart>
-          <Pie
-            data={pieData}
-            cx="50%"
-            cy="50%"
-            innerRadius={55}
-            outerRadius={80}
-            dataKey="value"
-            nameKey="name"
-            startAngle={90}
-            endAngle={-270}
-            stroke="transparent"
-          >
-            {pieData.map((_, idx) => (
-              <Cell key={idx} fill={PIE_COLORS[idx]} />
-            ))}
-          </Pie>
-          <Tooltip
-            contentStyle={TOOLTIP_STYLE}
-            formatter={(value: number | string | undefined) => [`${value ?? 0} flights`]}
-          />
-          <Legend wrapperStyle={{ fontSize: 12, color: 'var(--text-tertiary)' }} />
-        </PieChart>
-      </ResponsiveContainer>
-
-      {/* Big percentage */}
-      <div className="text-center -mt-2">
-        <p className="font-mono text-4xl font-bold" style={{ color }}>
-          {data.percentage.toFixed(1)}%
-        </p>
-        <p className="text-xs text-[var(--text-tertiary)] mt-1">On-Time Rate</p>
-      </div>
-
-      {/* Stats row */}
-      <div className="grid grid-cols-3 gap-4 w-full pt-4 border-t border-[var(--border-primary)]">
-        <div className="text-center">
-          <p className="text-xs text-[var(--text-tertiary)] mb-1">On Time</p>
-          <p className="font-mono text-sm font-semibold text-[var(--accent-emerald)]">
-            {data.onTimeCount}
-          </p>
-        </div>
-        <div className="text-center">
-          <p className="text-xs text-[var(--text-tertiary)] mb-1">Late</p>
-          <p className="font-mono text-sm font-semibold text-[var(--accent-red)]">
-            {data.lateCount}
-          </p>
-        </div>
-        <div className="text-center">
-          <p className="text-xs text-[var(--text-tertiary)] mb-1">Total</p>
-          <p className="font-mono text-sm font-semibold text-[var(--text-primary)]">
-            {data.totalFlights}
-          </p>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ── Route Popularity Chart ──────────────────────────────────────
-
-function RoutePopularityChart({ data }: { data: RoutePopularityEntry[] }) {
-  const chartData = useMemo(
-    () =>
-      data
-        .sort((a, b) => b.count - a.count)
-        .slice(0, 15)
-        .map((d) => ({
-          route: `${d.depIcao} → ${d.arrIcao}`,
-          count: d.count,
-          avgLandingRate: d.avgLandingRate,
-        })),
-    [data],
-  );
-
-  if (chartData.length === 0) {
-    return (
-      <p className="text-sm text-[var(--text-tertiary)] py-10 text-center">
-        No data for this period
-      </p>
-    );
-  }
-
-  const chartHeight = Math.max(260, chartData.length * 32);
-
-  return (
-    <ResponsiveContainer width="100%" height={chartHeight}>
-      <BarChart
-        data={chartData}
-        layout="vertical"
-        margin={{ top: 5, right: 20, left: 10, bottom: 5 }}
-      >
-        <CartesianGrid strokeDasharray="3 3" stroke="var(--border-primary)" horizontal={false} />
-        <XAxis
-          type="number"
-          tick={{ fill: 'var(--text-tertiary)', fontSize: 12 }}
-          tickLine={false}
-          axisLine={{ stroke: 'var(--border-primary)' }}
-          allowDecimals={false}
-          label={{
-            value: 'Flights',
-            position: 'insideBottomRight',
-            offset: -5,
-            fill: 'var(--text-tertiary)',
-            fontSize: 11,
-          }}
-        />
-        <YAxis
-          type="category"
-          dataKey="route"
-          tick={{ fill: 'var(--text-primary)', fontSize: 12 }}
-          tickLine={false}
-          axisLine={false}
-          width={110}
-        />
-        <Tooltip
-          contentStyle={TOOLTIP_STYLE}
-          labelStyle={{ color: 'var(--text-tertiary)' }}
-          cursor={{ fill: 'rgba(59,130,246,0.08)' }}
-          content={({ active, payload, label }) => {
-            if (!active || !payload?.length) return null;
-            const d = payload[0].payload as { count: number; avgLandingRate: number };
-            return (
-              <div style={TOOLTIP_STYLE} className="px-3 py-2">
-                <p className="font-medium text-[var(--text-primary)] mb-1">{label}</p>
-                <p className="text-[var(--text-tertiary)]">
-                  Flights: <span className="font-mono text-[var(--text-primary)]">{d.count}</span>
-                </p>
-                <p className="text-[var(--text-tertiary)]">
-                  Avg Landing Rate:{' '}
-                  <span className="font-mono text-[var(--text-primary)]">
-                    {Math.round(d.avgLandingRate)} ft/min
-                  </span>
-                </p>
-              </div>
-            );
-          }}
-        />
-        <Bar dataKey="count" fill="#3b82f6" radius={[0, 4, 4, 0]} maxBarSize={28} />
-      </BarChart>
-    </ResponsiveContainer>
-  );
-}
-
-// ── Route Profitability Chart ────────────────────────────────────
-
-function RouteProfitabilityChart({ data }: { data: RouteProfitabilityEntry[] }) {
-  const chartData = useMemo(
-    () =>
-      data.slice(0, 15).map((d) => ({
-        route: `${d.depIcao}-${d.arrIcao}`,
-        profit: Math.round(d.profit),
-        revenue: Math.round(d.revenue),
-        costs: Math.round(d.costs),
-        flights: d.flights,
-        margin: d.margin,
-      })),
-    [data],
-  );
-
-  if (chartData.length === 0) {
-    return (
-      <p className="text-sm text-[var(--text-tertiary)] py-10 text-center">
-        No data for this period
-      </p>
-    );
-  }
-
-  const chartHeight = Math.max(260, chartData.length * 32);
-
-  return (
-    <ResponsiveContainer width="100%" height={chartHeight}>
-      <BarChart
-        data={chartData}
-        layout="vertical"
-        margin={{ top: 5, right: 20, left: 10, bottom: 5 }}
-      >
-        <CartesianGrid strokeDasharray="3 3" stroke="var(--border-primary)" horizontal={false} />
-        <XAxis
-          type="number"
-          tick={{ fill: 'var(--text-tertiary)', fontSize: 12 }}
-          tickLine={false}
-          axisLine={{ stroke: 'var(--border-primary)' }}
-          tickFormatter={(v: number) =>
-            v >= 1000 || v <= -1000 ? `$${(v / 1000).toFixed(0)}k` : `$${v}`
-          }
-          label={{
-            value: 'Profit ($)',
-            position: 'insideBottomRight',
-            offset: -5,
-            fill: 'var(--text-tertiary)',
-            fontSize: 11,
-          }}
-        />
-        <YAxis
-          type="category"
-          dataKey="route"
-          tick={{ fill: 'var(--text-primary)', fontSize: 12 }}
-          tickLine={false}
-          axisLine={false}
-          width={90}
-        />
-        <ReferenceLine x={0} stroke="var(--text-tertiary)" strokeDasharray="3 3" />
-        <Tooltip
-          contentStyle={TOOLTIP_STYLE}
-          labelStyle={{ color: 'var(--text-tertiary)' }}
-          cursor={{ fill: 'rgba(59,130,246,0.08)' }}
-          content={({ active, payload, label }) => {
-            if (!active || !payload?.length) return null;
-            const d = payload[0].payload as {
-              revenue: number;
-              costs: number;
-              profit: number;
-              flights: number;
-              margin: number;
-            };
-            return (
-              <div style={TOOLTIP_STYLE} className="px-3 py-2">
-                <p className="font-medium text-[var(--text-primary)] mb-1">{label}</p>
-                <p className="text-[var(--text-tertiary)]">
-                  Flights: <span className="font-mono text-[var(--text-primary)]">{d.flights}</span>
-                </p>
-                <p className="text-[var(--text-tertiary)]">
-                  Revenue: <span className="font-mono text-[var(--accent-emerald)]">${d.revenue.toLocaleString()}</span>
-                </p>
-                <p className="text-[var(--text-tertiary)]">
-                  Costs: <span className="font-mono text-[var(--accent-red)]">${d.costs.toLocaleString()}</span>
-                </p>
-                <p className="text-[var(--text-tertiary)]">
-                  Profit: <span className="font-mono text-[var(--text-primary)]">${d.profit.toLocaleString()}</span>
-                </p>
-                <p className="text-[var(--text-tertiary)]">
-                  Margin: <span className="font-mono text-[var(--text-primary)]">{d.margin}%</span>
-                </p>
-              </div>
-            );
-          }}
-        />
-        <Bar dataKey="profit" radius={[0, 4, 4, 0]} maxBarSize={28}>
-          {chartData.map((entry, idx) => (
-            <Cell key={idx} fill={entry.profit >= 0 ? '#22c55e' : '#ef4444'} />
-          ))}
-        </Bar>
-      </BarChart>
-    </ResponsiveContainer>
-  );
-}
-
-// ── Fleet Utilization Chart ─────────────────────────────────────
-
-function FleetUtilizationChart({ data }: { data: FleetUtilizationEntry[] }) {
-  // Transform data: X axis = month, each aircraft = a bar in the group
-  const { chartData, aircraft } = useMemo(() => {
-    // Collect all unique months across all aircraft, sorted chronologically
-    const monthSet = new Set<string>();
-    for (const ac of data) {
-      for (const m of ac.months) {
-        monthSet.add(m.month);
-      }
-    }
-    const months = Array.from(monthSet).sort();
-
-    // Build rows: one row per month, with a key per aircraft registration
-    const rows = months.map((month) => {
-      const row: Record<string, string | number> = { month };
-      for (const ac of data) {
-        const found = ac.months.find((m) => m.month === month);
-        row[ac.registration] = found ? found.hours : 0;
-      }
-      return row;
-    });
-
-    // List of aircraft (sorted by total hours desc, take top 10 to avoid clutter)
-    const acList = data
-      .sort((a, b) => b.totalHours - a.totalHours)
-      .slice(0, 10)
-      .map((ac) => ac.registration);
-
-    return { chartData: rows, aircraft: acList };
-  }, [data]);
-
-  if (chartData.length === 0 || aircraft.length === 0) {
-    return (
-      <p className="text-sm text-[var(--text-tertiary)] py-10 text-center">
-        No data for this period
-      </p>
-    );
-  }
-
-  return (
-    <ResponsiveContainer width="100%" height={340}>
-      <BarChart data={chartData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
-        <CartesianGrid strokeDasharray="3 3" stroke="var(--border-primary)" />
-        <XAxis
-          dataKey="month"
-          tick={{ fill: 'var(--text-tertiary)', fontSize: 11 }}
-          tickLine={false}
-          axisLine={{ stroke: 'var(--border-primary)' }}
-        />
-        <YAxis
-          tick={{ fill: 'var(--text-tertiary)', fontSize: 12 }}
-          tickLine={false}
-          axisLine={false}
-          label={{
-            value: 'Hours',
-            angle: -90,
-            position: 'insideLeft',
-            fill: 'var(--text-tertiary)',
-            fontSize: 11,
-          }}
-        />
-        <Tooltip
-          contentStyle={TOOLTIP_STYLE}
-          labelStyle={{ color: 'var(--text-tertiary)' }}
-          cursor={{ fill: 'rgba(59,130,246,0.08)' }}
-          formatter={(value: number | string | undefined, name?: string) => [
-            `${value ?? 0} hrs`,
-            name ?? '',
-          ]}
-        />
-        <Legend wrapperStyle={{ fontSize: 12, color: 'var(--text-tertiary)' }} />
-        {aircraft.map((reg, idx) => (
-          <Bar
-            key={reg}
-            dataKey={reg}
-            name={reg}
-            fill={FLEET_COLORS[idx % FLEET_COLORS.length]}
-            radius={[4, 4, 0, 0]}
-            maxBarSize={20}
-          />
-        ))}
-      </BarChart>
-    </ResponsiveContainer>
   );
 }
 
@@ -758,7 +583,6 @@ function FleetUtilizationChart({ data }: { data: FleetUtilizationEntry[] }) {
 
 const PRINT_STYLES = `
 @media print {
-  /* Hide sidebar and navigation */
   [data-sidebar],
   nav,
   header,
@@ -766,8 +590,6 @@ const PRINT_STYLES = `
   .no-print {
     display: none !important;
   }
-
-  /* Full width content */
   [data-sidebar-inset],
   main,
   .flex-1 {
@@ -776,37 +598,17 @@ const PRINT_STYLES = `
     width: 100% !important;
     max-width: 100% !important;
   }
-
-  /* White background for print */
-  body,
-  html,
-  * {
+  body, html, * {
     background: white !important;
     color: black !important;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
-
-  /* Keep chart colors */
   .recharts-bar-rectangle,
   .recharts-pie-sector,
   .recharts-cell {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
-  }
-
-  /* Surface borders for print */
-  [class*="rounded-lg"] {
-    border: 1px solid #ccc !important;
-    page-break-inside: avoid;
-    break-inside: avoid;
-    margin-bottom: 16px !important;
-  }
-
-  /* Page breaks between chart sections */
-  .print-break-before {
-    page-break-before: always;
-    break-before: page;
   }
 }
 `;
@@ -819,12 +621,10 @@ function buildCsv(
   fuelEfficiency: FuelEfficiencyEntry[],
   onTime: OnTimeData | null,
   routePopularity: RoutePopularityEntry[],
-  routeProfitability: RouteProfitabilityEntry[],
   fleetUtilization: FleetUtilizationEntry[],
 ): string {
   const lines: string[] = [];
 
-  // Flight Hours
   lines.push('=== Flight Hours by Pilot ===');
   lines.push('Callsign,Name,Hours,Flights');
   for (const r of flightHours) {
@@ -832,7 +632,6 @@ function buildCsv(
   }
   lines.push('');
 
-  // Landing Rates
   if (landingRates) {
     lines.push('=== Landing Rate Distribution ===');
     lines.push('Range,Count');
@@ -845,7 +644,6 @@ function buildCsv(
     lines.push('');
   }
 
-  // Fuel Efficiency
   lines.push('=== Fuel Efficiency ===');
   lines.push('Flight Number,Fuel Planned,Fuel Used,Efficiency %');
   for (const r of fuelEfficiency) {
@@ -853,7 +651,6 @@ function buildCsv(
   }
   lines.push('');
 
-  // On-Time
   if (onTime) {
     lines.push('=== On-Time Performance ===');
     lines.push('Metric,Value');
@@ -864,7 +661,6 @@ function buildCsv(
     lines.push('');
   }
 
-  // Route Popularity
   lines.push('=== Route Popularity ===');
   lines.push('Route,Departure,Arrival,Count,Avg Landing Rate');
   for (const r of routePopularity) {
@@ -874,17 +670,6 @@ function buildCsv(
   }
   lines.push('');
 
-  // Route Profitability
-  lines.push('=== Route Profitability ===');
-  lines.push('Route,Departure,Arrival,Flights,Revenue,Costs,Profit,Margin %');
-  for (const r of routeProfitability) {
-    lines.push(
-      `${r.depIcao}-${r.arrIcao},${r.depIcao},${r.arrIcao},${r.flights},${r.revenue},${r.costs},${r.profit},${r.margin}`,
-    );
-  }
-  lines.push('');
-
-  // Fleet Utilization
   lines.push('=== Fleet Utilization ===');
   lines.push('Registration,Aircraft Type,Total Hours');
   for (const r of fleetUtilization) {
@@ -919,7 +704,6 @@ export function ReportsPage() {
   const [fuelEfficiency, setFuelEfficiency] = useState<FuelEfficiencyEntry[]>([]);
   const [onTime, setOnTime] = useState<OnTimeData | null>(null);
   const [routePopularity, setRoutePopularity] = useState<RoutePopularityEntry[]>([]);
-  const [routeProfitability, setRouteProfitability] = useState<RouteProfitabilityEntry[]>([]);
   const [fleetUtilization, setFleetUtilization] = useState<FleetUtilizationEntry[]>([]);
 
   const fetchReports = useCallback(async (from: string, to: string) => {
@@ -927,13 +711,12 @@ export function ReportsPage() {
     setError(null);
     try {
       const qs = `from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`;
-      const [fh, lr, fe, ot, rp, rpf, fu] = await Promise.all([
+      const [fh, lr, fe, ot, rp, fu] = await Promise.all([
         api.get<FlightHoursEntry[]>(`/api/admin/reports/flight-hours?${qs}`),
         api.get<LandingRateData>(`/api/admin/reports/landing-rates?${qs}`),
         api.get<FuelEfficiencyEntry[]>(`/api/admin/reports/fuel-efficiency?${qs}`),
         api.get<OnTimeData>(`/api/admin/reports/on-time?${qs}`),
         api.get<RoutePopularityEntry[]>(`/api/admin/reports/route-popularity?${qs}`),
-        api.get<RouteProfitabilityEntry[]>(`/api/admin/reports/route-profitability?${qs}`),
         api.get<FleetUtilizationEntry[]>(`/api/admin/reports/fleet-utilization?${qs}`),
       ]);
       setFlightHours(Array.isArray(fh) ? fh : []);
@@ -941,7 +724,6 @@ export function ReportsPage() {
       setFuelEfficiency(Array.isArray(fe) ? fe : []);
       setOnTime(ot);
       setRoutePopularity(Array.isArray(rp) ? rp : []);
-      setRouteProfitability(Array.isArray(rpf) ? rpf : []);
       setFleetUtilization(Array.isArray(fu) ? fu : []);
     } catch (err) {
       const message = err instanceof ApiError ? err.message : 'Failed to load reports';
@@ -952,7 +734,6 @@ export function ReportsPage() {
     }
   }, []);
 
-  // Initial fetch
   useEffect(() => {
     fetchReports(dateFrom, dateTo);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -984,7 +765,6 @@ export function ReportsPage() {
       fuelEfficiency,
       onTime,
       routePopularity,
-      routeProfitability,
       fleetUtilization,
     );
     const filename = `sma-reports_${dateFrom}_${dateTo}.csv`;
@@ -998,8 +778,17 @@ export function ReportsPage() {
 
   if (loading) {
     return (
-      <div className="p-6">
-        <h1 className="text-2xl font-semibold mb-6">Reports</h1>
+      <div>
+        {/* Header */}
+        <div style={{ padding: '16px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <BarChart3 size={20} style={{ color: ACCENT_BLUE }} />
+              <span style={{ fontSize: 20, fontWeight: 700, color: 'var(--text-primary)' }}>Reports &amp; Analytics</span>
+            </div>
+            <span style={{ fontSize: 12, color: 'var(--text-tertiary)' }}>Real-time and historical analytics</span>
+          </div>
+        </div>
         <ReportsPageSkeleton />
       </div>
     );
@@ -1007,9 +796,15 @@ export function ReportsPage() {
 
   if (error) {
     return (
-      <div className="p-6">
-        <h1 className="text-2xl font-semibold mb-6">Reports</h1>
-        <div className="flex items-center justify-center py-20 text-[var(--text-tertiary)]">
+      <div>
+        <div style={{ padding: '16px 24px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <BarChart3 size={20} style={{ color: ACCENT_BLUE }} />
+            <span style={{ fontSize: 20, fontWeight: 700, color: 'var(--text-primary)' }}>Reports &amp; Analytics</span>
+          </div>
+          <span style={{ fontSize: 12, color: 'var(--text-tertiary)' }}>Real-time and historical analytics</span>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '80px 0', color: 'var(--text-tertiary)' }}>
           <p>{error}</p>
         </div>
       </div>
@@ -1017,113 +812,140 @@ export function ReportsPage() {
   }
 
   return (
-    <div className="p-6">
-      {/* Inject print styles */}
+    <motion.div variants={pageVariants} initial="hidden" animate="visible">
       <style dangerouslySetInnerHTML={{ __html: PRINT_STYLES }} />
 
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6">
-        <h1 className="text-2xl font-semibold">Reports</h1>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={handlePrint} className="gap-2 no-print">
-            <Printer size={16} weight="bold" />
-            Print Report
-          </Button>
-          <Button variant="outline" onClick={handleExportCsv} className="gap-2 no-print">
-            <DownloadSimple size={16} weight="bold" />
-            Export CSV
-          </Button>
+      {/* ── Header ─────────────────────────────────────────────── */}
+      <motion.div
+        variants={fadeUp}
+        style={{
+          padding: '16px 24px',
+          display: 'flex',
+          alignItems: 'flex-start',
+          justifyContent: 'space-between',
+          gap: 16,
+        }}
+      >
+        {/* Left: title + subtitle */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <BarChart3 size={20} style={{ color: ACCENT_BLUE }} />
+            <span style={{ fontSize: 20, fontWeight: 700, color: 'var(--text-primary)' }}>
+              Reports &amp; Analytics
+            </span>
+          </div>
+          <span style={{ fontSize: 12, color: 'var(--text-tertiary)' }}>
+            Real-time and historical analytics
+          </span>
         </div>
-      </div>
 
-      {/* Date Range Picker */}
-      <Surface elevation={1} padding="compact" className="mb-6 no-print">
-        <div className="flex flex-wrap items-center gap-3">
-          <CalendarBlank size={18} className="text-[var(--text-tertiary)]" />
-          <span className="text-[var(--text-tertiary)] text-sm">From</span>
+        {/* Right: date range + actions */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }} className="no-print">
+          <Calendar size={14} style={{ color: 'var(--text-tertiary)' }} />
           <Input
             type="date"
             value={dateFrom}
             onChange={(e) => setDateFrom(e.target.value)}
-            className="w-[160px] bg-[var(--surface-3)] border-[var(--border-secondary)]"
+            className="w-[140px] input-glow"
+            style={{ height: 32, fontSize: 12 }}
           />
-          <span className="text-[var(--text-tertiary)] text-sm">To</span>
+          <span style={{ fontSize: 12, color: 'var(--text-tertiary)' }}>to</span>
           <Input
             type="date"
             value={dateTo}
             onChange={(e) => setDateTo(e.target.value)}
-            className="w-[160px] bg-[var(--surface-3)] border-[var(--border-secondary)]"
+            className="w-[140px] input-glow"
+            style={{ height: 32, fontSize: 12 }}
           />
-          <Button onClick={handleApply} size="sm">
+          <Button size="sm" onClick={handleApply} className="btn-glow" style={{ height: 32 }}>
             Apply
           </Button>
-          <Button variant="ghost" size="sm" onClick={handleReset} className="gap-1">
-            <ArrowCounterClockwise size={14} />
-            Reset
+          <Button variant="ghost" size="sm" onClick={handleReset} style={{ height: 32 }}>
+            <RotateCcw size={14} />
+          </Button>
+          <div style={{ width: 1, height: 20, background: 'var(--border-primary)' }} />
+          <Button variant="outline" size="sm" onClick={handleExportCsv} className="btn-glow" style={{ height: 32, gap: 6 }}>
+            <Download size={14} />
+            Export CSV
+          </Button>
+          <Button variant="outline" size="sm" onClick={handlePrint} className="btn-glow" style={{ height: 32, gap: 6 }}>
+            <Printer size={14} />
+            Print
           </Button>
         </div>
-      </Surface>
+      </motion.div>
 
       {/* Print-only date range header */}
-      <div className="hidden print:block mb-4 text-sm text-[var(--text-tertiary)]">
+      <div className="hidden print:block" style={{ padding: '0 24px', marginBottom: 12, fontSize: 12, color: 'var(--text-tertiary)' }}>
         Report period: {dateFrom} to {dateTo}
       </div>
 
-      {/* Chart Grid */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+      {/* ── 2x3 Chart Grid ─────────────────────────────────────── */}
+      <motion.div
+        variants={staggerContainer}
+        initial="hidden"
+        animate="visible"
+        style={{
+          padding: '0 24px 24px 24px',
+          display: 'grid',
+          gridTemplateColumns: 'repeat(3, 1fr)',
+          gap: 16,
+        }}
+      >
         {/* 1. Flight Hours by Pilot */}
-        <Surface elevation={1}>
-          <SectionHeader title="Flight Hours by Pilot" />
-          <FlightHoursChart data={flightHours} />
-        </Surface>
+        <motion.div variants={staggerItem}>
+          <ChartCard title="Flight Hours by Pilot">
+            <FlightHoursChart data={flightHours} />
+          </ChartCard>
+        </motion.div>
 
         {/* 2. Landing Rate Distribution */}
-        <Surface elevation={1}>
-          <SectionHeader title="Landing Rate Distribution" />
-          {landingRates ? (
-            <LandingRateChart data={landingRates} />
-          ) : (
-            <p className="text-sm text-[var(--text-tertiary)] py-10 text-center">
-              No data for this period
-            </p>
-          )}
-        </Surface>
+        <motion.div variants={staggerItem}>
+          <ChartCard title="Landing Rate Distribution">
+            {landingRates ? (
+              <LandingRateChart data={landingRates} />
+            ) : (
+              <p style={{ fontSize: 12, color: 'var(--text-tertiary)', textAlign: 'center', padding: '40px 0' }}>
+                No data for this period
+              </p>
+            )}
+          </ChartCard>
+        </motion.div>
 
-        {/* 3. Fuel Efficiency */}
-        <Surface elevation={1}>
-          <SectionHeader title="Fuel Efficiency" />
-          <FuelEfficiencyChart data={fuelEfficiency} />
-        </Surface>
+        {/* 3. On-Time Performance */}
+        <motion.div variants={staggerItem}>
+          <ChartCard title="On-Time Performance">
+            {onTime ? (
+              <OnTimeChart data={onTime} />
+            ) : (
+              <p style={{ fontSize: 12, color: 'var(--text-tertiary)', textAlign: 'center', padding: '40px 0' }}>
+                No data for this period
+              </p>
+            )}
+          </ChartCard>
+        </motion.div>
 
-        {/* 4. On-Time Performance */}
-        <Surface elevation={1}>
-          <SectionHeader title="On-Time Performance" />
-          {onTime ? (
-            <OnTimeCard data={onTime} />
-          ) : (
-            <p className="text-sm text-[var(--text-tertiary)] py-10 text-center">
-              No data for this period
-            </p>
-          )}
-        </Surface>
+        {/* 4. Fuel Efficiency by Route */}
+        <motion.div variants={staggerItem}>
+          <ChartCard title="Fuel Efficiency by Route">
+            <FuelEfficiencyChart data={fuelEfficiency} />
+          </ChartCard>
+        </motion.div>
 
-        {/* 5. Route Popularity — full width */}
-        <Surface elevation={1} className="lg:col-span-2">
-          <SectionHeader title="Route Popularity" />
-          <RoutePopularityChart data={routePopularity} />
-        </Surface>
+        {/* 5. Route Popularity */}
+        <motion.div variants={staggerItem}>
+          <ChartCard title="Route Popularity">
+            <RoutePopularityChart data={routePopularity} />
+          </ChartCard>
+        </motion.div>
 
-        {/* 6. Route Profitability — full width */}
-        <Surface elevation={1} className="lg:col-span-2 print-break-before">
-          <SectionHeader title="Route Profitability" />
-          <RouteProfitabilityChart data={routeProfitability} />
-        </Surface>
-
-        {/* 7. Fleet Utilization — full width */}
-        <Surface elevation={1} className="lg:col-span-2">
-          <SectionHeader title="Fleet Utilization" />
-          <FleetUtilizationChart data={fleetUtilization} />
-        </Surface>
-      </div>
-    </div>
+        {/* 6. Fleet Utilization */}
+        <motion.div variants={staggerItem}>
+          <ChartCard title="Fleet Utilization">
+            <FleetUtilizationChart data={fleetUtilization} />
+          </ChartCard>
+        </motion.div>
+      </motion.div>
+    </motion.div>
   );
 }

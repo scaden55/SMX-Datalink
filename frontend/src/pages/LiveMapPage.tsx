@@ -150,28 +150,28 @@ function FlightsSidebar({
                   <div className="flex items-center gap-1.5">
                     <ArrowsDownUp className="w-3 h-3 text-acars-muted shrink-0" />
                     <span className="text-acars-muted">ALT</span>
-                    <span className="ml-auto text-acars-text font-mono tabular-nums">
+                    <span className="ml-auto text-acars-text tabular-nums">
                       {Math.round(aircraft.position.altitude).toLocaleString()}ft
                     </span>
                   </div>
                   <div className="flex items-center gap-1.5">
                     <Gauge className="w-3 h-3 text-acars-muted shrink-0" />
                     <span className="text-acars-muted">GS</span>
-                    <span className="ml-auto text-acars-text font-mono tabular-nums">
+                    <span className="ml-auto text-acars-text tabular-nums">
                       {Math.round(aircraft.position.groundSpeed)}kt
                     </span>
                   </div>
                   <div className="flex items-center gap-1.5">
                     <NavigationArrow className="w-3 h-3 text-acars-muted shrink-0" />
                     <span className="text-acars-muted">HDG</span>
-                    <span className="ml-auto text-acars-text font-mono tabular-nums">
+                    <span className="ml-auto text-acars-text tabular-nums">
                       {Math.round(aircraft.position.heading).toString().padStart(3, '0')}&deg;
                     </span>
                   </div>
                   <div className="flex items-center gap-1.5">
                     <AirplaneTilt className="w-3 h-3 text-acars-muted shrink-0" />
                     <span className="text-acars-muted">PHS</span>
-                    <span className="ml-auto text-acars-text font-mono tabular-nums text-sky-400">
+                    <span className="ml-auto text-acars-text tabular-nums text-sky-400">
                       {flight?.phase?.replace('_', ' ') ?? '—'}
                     </span>
                   </div>
@@ -202,13 +202,13 @@ function FlightsSidebar({
                   }`}
                 >
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-semibold text-acars-text font-mono">{bid.flightNumber}</span>
-                    <span className="text-[10px] text-acars-muted font-mono">{bid.aircraftType}</span>
+                    <span className="text-xs font-semibold text-acars-text tabular-nums">{bid.flightNumber}</span>
+                    <span className="text-[10px] text-acars-muted tabular-nums">{bid.aircraftType}</span>
                   </div>
                   <div className="flex items-center gap-1.5 mt-0.5">
-                    <span className="text-[11px] font-mono text-acars-text">{bid.depIcao}</span>
+                    <span className="text-[11px] tabular-nums text-acars-text">{bid.depIcao}</span>
                     <span className="text-[10px] text-acars-muted">→</span>
-                    <span className="text-[11px] font-mono text-acars-text">{bid.arrIcao}</span>
+                    <span className="text-[11px] tabular-nums text-acars-text">{bid.arrIcao}</span>
                     <span className="ml-auto text-[10px] text-acars-muted truncate max-w-[90px]">
                       {bid.pilotCallsign}
                     </span>
@@ -329,7 +329,7 @@ function LiveAircraftMarker({
     const safePhase = flight?.phase ? esc(flight.phase.replace('_', ' ')) : '';
 
     const popupContent = `
-      <div style="font-family: Inter, system-ui, sans-serif; font-feature-settings: 'tnum'; font-size: 11px; color: #e6e9ee; background: var(--bg-panel); padding: 8px 10px; border-radius: 6px; line-height: 1.6; min-width: 140px; border: 1px solid var(--border-panel);">
+      <div style="font-family: Lufga, system-ui, sans-serif; font-feature-settings: 'tnum'; font-size: 11px; color: #e6e9ee; background: var(--bg-panel); padding: 8px 10px; border-radius: 6px; line-height: 1.6; min-width: 140px; border: 1px solid var(--border-panel);">
         <div style="font-weight: 600; color: #79c0ff; margin-bottom: 4px;">${safeAtcId}</div>
         <div>ALT: <span style="color: #e6e9ee;">${Math.round(aircraft.position.altitude).toLocaleString()} ft</span></div>
         <div>GS: <span style="color: #e6e9ee;">${Math.round(aircraft.position.groundSpeed)} kt</span></div>
@@ -721,7 +721,7 @@ export function LiveMapPage() {
             icon={getActiveFlightIcon(af.heading)}
           >
             <Tooltip direction="top" offset={[0, -14]} opacity={0.95}>
-              <span className="font-mono text-xs">{af.callsign} · FL{Math.round(af.altitude / 100)}</span>
+              <span className="tabular-nums text-xs">{af.callsign} · FL{Math.round(af.altitude / 100)}</span>
             </Tooltip>
           </Marker>
         ))}
