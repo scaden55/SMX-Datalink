@@ -1,6 +1,6 @@
 {
   "name": "@acars/electron",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "SMX ACARS Desktop Client",
   "author": "SMX Virtual Airlines",
   "private": true,
@@ -21,7 +21,7 @@
   "devDependencies": {
     "@types/node": "^22.12.0",
     "cross-env": "^10.1.0",
-    "electron": "^33.4.11",
+    "electron": "33.4.11",
     "electron-builder": "^25.1.8",
     "typescript": "^5.7.3"
   },
