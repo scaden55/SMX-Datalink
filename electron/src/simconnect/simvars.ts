@@ -38,6 +38,7 @@ export const POSITION_VARS: SimVarDefinition[] = [
   { name: 'PLANE BANK DEGREES', units: 'degrees', dataType: SimConnectDataType.FLOAT64 },
   { name: 'PLANE ALT ABOVE GROUND', units: 'feet', dataType: SimConnectDataType.FLOAT64 },
   { name: 'TOTAL WEIGHT', units: 'pounds', dataType: SimConnectDataType.FLOAT64 },
+  { name: 'G FORCE', units: 'GForce', dataType: SimConnectDataType.FLOAT64 },
 ];
 
 /** Engine SimVars (per-engine, indexed with :1, :2, etc.) */

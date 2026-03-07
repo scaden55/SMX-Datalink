@@ -11,6 +11,7 @@ export interface AircraftPosition {
   bank: number; // degrees
   altitudeAgl: number;   // feet above ground level (radar altimeter)
   totalWeight: number;   // current gross weight in pounds
+  gForce: number;        // current G-load (1.0 = level flight)
 }
 
 export interface AutopilotState {

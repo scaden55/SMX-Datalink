@@ -43,7 +43,7 @@ export function TopBar() {
             onClick={() => setViewMode(m.value)}
             className={`px-3 py-0.5 text-[10px] uppercase transition-colors ${
               viewMode === m.value
-                ? 'bg-[#1b2b3d] text-[#93c5fd]'
+                ? 'bg-[#3b5bdb]/15 text-[#6b8aff]'
                 : 'bg-acars-input text-acars-muted hover:text-acars-text'
             }`}
           >

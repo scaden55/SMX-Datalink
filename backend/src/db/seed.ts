@@ -1,5 +1,6 @@
 import bcrypt from 'bcryptjs';
 import { getDb } from './index.js';
+import { logger } from '../lib/logger.js';
 
 export function seedDatabase(): void {
   const db = getDb();
@@ -13,7 +14,7 @@ export function seedDatabase(): void {
       VALUES (?, ?, ?, ?, ?, ?, ?)
     `);
     insertUser.run('admin@smavirtual.com', 'SMX-001', passwordHash, 'Admin', 'User', 'admin', 'Captain');
-    console.log('[Seed] Admin user created: admin@smavirtual.com');
+    logger.info('Seed', 'Admin user created: admin@smavirtual.com');
   }
 
   // ── Airports (95 SMA route airports from oa_airports) ─────────
@@ -101,7 +102,7 @@ export function seedDatabase(): void {
         const oa = lookupOa.get(lookupCode) as OaRow | undefined;
 
         if (!oa || oa.latitude_deg == null) {
-          console.log(`[Seed] WARNING: Airport ${icao} not found in oa_airports — skipping`);
+          logger.warn('Seed', `Airport ${icao} not found in oa_airports — skipping`);
           continue;
         }
 
@@ -120,6 +121,6 @@ export function seedDatabase(): void {
     });
 
     const count = txn();
-    console.log(`[Seed] ${count} airports created from oa_airports`);
+    logger.info('Seed', `${count} airports created from oa_airports`);
   }
 }

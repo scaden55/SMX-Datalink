@@ -3,7 +3,8 @@ import { FlightPhase, PhaseThresholds } from '@acars/shared';
 interface PhaseInput {
   groundSpeed: number;
   verticalSpeed: number;
-  altitude: number;
+  altitude: number;       // MSL — used for cruise/climb thresholds
+  altitudeAgl: number;    // AGL — used for approach/landing thresholds
   simOnGround: boolean;
   gearHandlePosition: boolean;
   engineN1: number;
@@ -45,8 +46,27 @@ export class FlightPhaseService {
   }
 
   private evaluate(input: PhaseInput): FlightPhase {
-    const { groundSpeed, verticalSpeed, altitude, simOnGround, gearHandlePosition, engineN1, parkingBrake } = input;
+    const { groundSpeed, verticalSpeed, altitude, altitudeAgl, simOnGround, gearHandlePosition, engineN1, parkingBrake } = input;
     const T = PhaseThresholds;
+
+    // ── Global safety nets (override any stuck state) ────────
+    // On the ground + slow = definitely not flying
+    if (simOnGround && groundSpeed < T.TAXI_IN_SPEED) {
+      if (this.currentPhase === FlightPhase.DESCENT
+        || this.currentPhase === FlightPhase.APPROACH
+        || this.currentPhase === FlightPhase.CRUISE
+        || this.currentPhase === FlightPhase.CLIMB) {
+        return FlightPhase.TAXI_IN;
+      }
+    }
+    // On the ground + fast = just landed (rollout)
+    if (simOnGround && groundSpeed >= T.TAXI_IN_SPEED) {
+      if (this.currentPhase === FlightPhase.DESCENT
+        || this.currentPhase === FlightPhase.CRUISE
+        || this.currentPhase === FlightPhase.CLIMB) {
+        return FlightPhase.LANDING;
+      }
+    }
 
     switch (this.currentPhase) {
       case FlightPhase.PREFLIGHT:
@@ -90,14 +110,14 @@ export class FlightPhaseService {
         if (Math.abs(verticalSpeed) < T.CRUISE_VS_BAND && altitude > 15000) {
           return FlightPhase.CRUISE;
         }
-        if (altitude < T.APPROACH_ALTITUDE_AGL && gearHandlePosition) {
+        if (altitudeAgl < T.APPROACH_ALTITUDE_AGL && gearHandlePosition) {
           return FlightPhase.APPROACH;
         }
         return FlightPhase.DESCENT;
 
       case FlightPhase.APPROACH:
         if (simOnGround) return FlightPhase.LANDING;
-        if (verticalSpeed > T.CLIMB_VS && altitude > T.APPROACH_ALTITUDE_AGL) {
+        if (verticalSpeed > T.CLIMB_VS && altitudeAgl > T.APPROACH_ALTITUDE_AGL) {
           return FlightPhase.CLIMB; // go-around
         }
         return FlightPhase.APPROACH;

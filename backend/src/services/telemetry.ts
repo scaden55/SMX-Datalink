@@ -16,13 +16,16 @@ import { FlightPhaseService } from './flight-phase.js';
 /**
  * Aggregates all SimConnect data into a single telemetry state.
  * Caches the latest values for REST API access and Socket.io broadcast.
+ *
+ * Performance: caches FlightData result and only re-evaluates the FSM
+ * when position or flight state actually changes (dirty flag pattern).
  */
 export class TelemetryService {
   private position: AircraftPosition = {
     latitude: 0, longitude: 0, altitude: 0, heading: 0,
     airspeedIndicated: 0, airspeedTrue: 0, groundSpeed: 0,
     verticalSpeed: 0, pitch: 0, bank: 0,
-    altitudeAgl: 0, totalWeight: 0,
+    altitudeAgl: 0, totalWeight: 0, gForce: 1,
   };
 
   private autopilot: AutopilotState = {
@@ -56,6 +59,10 @@ export class TelemetryService {
 
   private phaseService: FlightPhaseService;
 
+  // Dirty flag: set when position or flightState changes, cleared on FSM eval
+  private phaseDirty = true;
+  private cachedFlightData: FlightData | null = null;
+
   constructor(private simConnect: ISimConnectManager) {
     this.phaseService = new FlightPhaseService();
     this.wireEvents();
@@ -64,6 +71,7 @@ export class TelemetryService {
   private wireEvents(): void {
     this.simConnect.on('positionUpdate', (data: AircraftPosition) => {
       this.position = data;
+      this.phaseDirty = true;
     });
 
     this.simConnect.on('autopilotUpdate', (data: AutopilotState) => {
@@ -84,6 +92,7 @@ export class TelemetryService {
 
     this.simConnect.on('engineUpdate', (data: EngineData) => {
       this.engine = data;
+      this.phaseDirty = true; // engineN1 affects phase detection
     });
 
     this.simConnect.on('fuelUpdate', (data: FuelData) => {
@@ -92,6 +101,7 @@ export class TelemetryService {
 
     this.simConnect.on('flightStateUpdate', (data: Omit<FlightData, 'phase'>) => {
       this.flightState = data;
+      this.phaseDirty = true;
     });
 
     this.simConnect.on('paused', (isPaused: boolean) => {
@@ -121,17 +131,21 @@ export class TelemetryService {
   }
 
   getFlightData(): FlightData {
-    const phase = this.phaseService.update({
-      groundSpeed: this.position.groundSpeed,
-      verticalSpeed: this.position.verticalSpeed,
-      altitude: this.position.altitude,
-      simOnGround: this.flightState.simOnGround,
-      gearHandlePosition: this.flightState.gearHandlePosition,
-      engineN1: this.engine.engines[0]?.n1 ?? 0,
-      parkingBrake: this.flightState.parkingBrake,
-    });
-
-    return { ...this.flightState, phase };
+    if (this.phaseDirty || !this.cachedFlightData) {
+      const phase = this.phaseService.update({
+        groundSpeed: this.position.groundSpeed,
+        verticalSpeed: this.position.verticalSpeed,
+        altitude: this.position.altitude,
+        altitudeAgl: this.position.altitudeAgl,
+        simOnGround: this.flightState.simOnGround,
+        gearHandlePosition: this.flightState.gearHandlePosition,
+        engineN1: this.engine.engines[0]?.n1 ?? 0,
+        parkingBrake: this.flightState.parkingBrake,
+      });
+      this.cachedFlightData = { ...this.flightState, phase };
+      this.phaseDirty = false;
+    }
+    return this.cachedFlightData;
   }
 
   getSnapshot(): TelemetrySnapshot {

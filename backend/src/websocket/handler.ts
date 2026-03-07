@@ -19,14 +19,19 @@ type AcarsSocket = Socket<ClientToServerEvents, ServerToClientEvents> & {
   user?: AuthPayload;
 };
 
+// Socket.io room names for broadcast groups
+const ROOM_TELEMETRY = 'sub:telemetry';
+const ROOM_VATSIM = 'sub:vatsim';
+const ROOM_LIVEMAP = 'sub:livemap';
+
 /**
  * Sets up Socket.io WebSocket server for real-time telemetry broadcast.
- * Clients subscribe/unsubscribe to control data flow.
  *
- * Key design decisions:
- * - Per-socket subscription tracking (Set) instead of global counter to prevent count drift
- * - Dispatch room auth checks bid ownership before allowing join
- * - Phase change detection only runs when subscribers exist
+ * Performance design:
+ * - Socket.io rooms for broadcast groups (no per-socket loops)
+ * - Cached flights array invalidated on mutation
+ * - Prepared statements cached at setup (not per-event)
+ * - Numeric timestamps internally to avoid Date parsing
  */
 export function setupWebSocket(
   httpServer: HttpServer,
@@ -44,31 +49,62 @@ export function setupWebSocket(
 
   let broadcastInterval: ReturnType<typeof setInterval> | null = null;
   let phaseCheckInterval: ReturnType<typeof setInterval> | null = null;
+
+  // Subscriber tracking (Sets kept for count-based logic: cap checks, stopBroadcast)
   const telemetrySubscribers = new Set<string>();
   const vatsimSubscribers = new Set<string>();
   const livemapSubscribers = new Set<string>();
+
   const activeFlights = new Map<number, ActiveFlightHeartbeat>();
   const flightObservers = new Map<number, Set<string>>();
   const pilotSockets = new Map<number, string>();
+
   const trackService = new TrackService();
   const vatsimTrackService = new VatsimTrackService();
   const exceedanceService = new ExceedanceService();
   const maintenanceService = new MaintenanceService();
 
-  // Cache the active bid query for track recording
-  const findActiveBid = () =>
-    getDb().prepare(
+  // Memory leak guard: cap subscriber/flight Sets to prevent unbounded growth
+  const MAX_SUBSCRIBERS = 500;
+  const MAX_ACTIVE_FLIGHTS = 200;
+
+  // ── Cached flights array — invalidated on any activeFlights mutation ──
+  let cachedFlightsArray: ActiveFlightHeartbeat[] | null = null;
+  function getFlightsArray(): ActiveFlightHeartbeat[] {
+    if (!cachedFlightsArray) {
+      cachedFlightsArray = Array.from(activeFlights.values());
+    }
+    return cachedFlightsArray;
+  }
+  function invalidateFlightsCache(): void {
+    cachedFlightsArray = null;
+  }
+
+  // ── Prepared statements — cached once after DB init ──
+  const stmts = {
+    findActiveBid: () => getDb().prepare(
       `SELECT ab.id AS bid_id, ab.user_id AS pilot_id
        FROM active_bids ab
        WHERE ab.flight_plan_phase IN ('active', 'airborne')
        LIMIT 1`,
-    );
-
-  // Look up a pilot's active bid by user_id (for dispatch telemetry relay)
-  const findActiveBidByUser = () =>
-    getDb().prepare(
+    ),
+    findActiveBidByUser: () => getDb().prepare(
       `SELECT id FROM active_bids WHERE user_id = ? AND flight_plan_phase IN ('active', 'airborne') LIMIT 1`,
-    );
+    ),
+    bidOwner: () => getDb().prepare('SELECT user_id FROM active_bids WHERE id = ?'),
+    bidAircraft: () => getDb().prepare(
+      `SELECT ab.aircraft_id, f.registration FROM active_bids ab
+       JOIN fleet f ON f.id = ab.aircraft_id
+       WHERE ab.id = ? AND ab.aircraft_id IS NOT NULL`,
+    ),
+  };
+
+  // Broadcast flights to livemap room
+  function broadcastFlights(): void {
+    if (livemapSubscribers.size > 0) {
+      io.to(ROOM_LIVEMAP).emit('flights:active', getFlightsArray());
+    }
+  }
 
   // Wire up VATSIM broadcast callbacks
   if (vatsimService) {
@@ -77,15 +113,12 @@ export function setupWebSocket(
       try { vatsimTrackService.recordSnapshot(snapshot.pilots); } catch { /* non-critical */ }
 
       if (vatsimSubscribers.size > 0) {
-        const event = {
+        io.to(ROOM_VATSIM).emit('vatsim:update', {
           pilots: snapshot.pilots,
           controllers: snapshot.controllers,
           atis: snapshot.atis,
           updatedAt: snapshot.updatedAt,
-        };
-        for (const sid of vatsimSubscribers) {
-          io.to(sid).emit('vatsim:update', event);
-        }
+        });
       }
     });
 
@@ -100,7 +133,11 @@ export function setupWebSocket(
     broadcastInterval = setInterval(() => {
       if (simConnect.connected) {
         const snapshot = telemetry.getSnapshot();
-        io.emit('telemetry:update', snapshot);
+
+        // Emit only to telemetry subscribers via room
+        if (telemetrySubscribers.size > 0) {
+          io.to(ROOM_TELEMETRY).emit('telemetry:update', snapshot);
+        }
 
         // Track airborne VS for landing rate capture
         if (flightEventTracker) {
@@ -112,7 +149,7 @@ export function setupWebSocket(
 
         // Record track point for active flight (throttled inside TrackService)
         try {
-          const bid = findActiveBid().get() as { bid_id: number; pilot_id: number } | undefined;
+          const bid = stmts.findActiveBid().get() as { bid_id: number; pilot_id: number } | undefined;
           if (bid) {
             const pos = snapshot.aircraft.position;
             const recorded = trackService.record(
@@ -199,9 +236,6 @@ export function setupWebSocket(
   const authService = new AuthService();
   const messageService = new MessageService();
 
-  // Pre-prepare the bid ownership query once (not per-event)
-  const bidOwnerStmt = () => getDb().prepare('SELECT user_id FROM active_bids WHERE id = ?');
-
   io.use((socket, next) => {
     const token = socket.handshake.auth?.token as string | undefined;
     if (token) {
@@ -232,7 +266,10 @@ export function setupWebSocket(
     socket.emit('connection:status', status);
 
     socket.on('telemetry:subscribe', () => {
+      if (!socket.user) return;
+      if (telemetrySubscribers.size >= MAX_SUBSCRIBERS) return;
       telemetrySubscribers.add(socket.id);
+      socket.join(ROOM_TELEMETRY);
       startBroadcast();
       // If this subscriber is NOT a pilot with an active flight,
       // they're an observer — signal all active pilots to start relaying
@@ -255,6 +292,7 @@ export function setupWebSocket(
 
     socket.on('telemetry:unsubscribe', () => {
       telemetrySubscribers.delete(socket.id);
+      socket.leave(ROOM_TELEMETRY);
       // Remove from all observer sets and signal relay:stop if needed
       for (const [pilotUserId, observers] of flightObservers) {
         observers.delete(socket.id);
@@ -275,7 +313,7 @@ export function setupWebSocket(
 
       // Verify user owns this bid, or is admin/dispatcher
       if (user.role !== 'admin' && user.role !== 'dispatcher') {
-        const bid = bidOwnerStmt().get(bidId) as { user_id: number } | undefined;
+        const bid = stmts.bidOwner().get(bidId) as { user_id: number } | undefined;
         if (!bid || bid.user_id !== user.userId) return;
       }
 
@@ -294,7 +332,7 @@ export function setupWebSocket(
 
       // Verify sender owns this bid, or is admin/dispatcher
       if (user.role !== 'admin' && user.role !== 'dispatcher') {
-        const bid = bidOwnerStmt().get(data.bidId) as { user_id: number } | undefined;
+        const bid = stmts.bidOwner().get(data.bidId) as { user_id: number } | undefined;
         if (!bid || bid.user_id !== user.userId) return;
       }
 
@@ -306,11 +344,15 @@ export function setupWebSocket(
 
     // VATSIM live data subscription
     socket.on('vatsim:subscribe', () => {
+      if (!socket.user) return;
+      if (vatsimSubscribers.size >= MAX_SUBSCRIBERS) return;
       vatsimSubscribers.add(socket.id);
+      socket.join(ROOM_VATSIM);
     });
 
     socket.on('vatsim:unsubscribe', () => {
       vatsimSubscribers.delete(socket.id);
+      socket.leave(ROOM_VATSIM);
     });
 
     // ── Active flight relay ──────────────────────────────────────
@@ -321,7 +363,7 @@ export function setupWebSocket(
       // Look up the pilot's active bid ID so admin dispatch board can subscribe to the correct room
       let bidId: number | undefined;
       try {
-        const bid = findActiveBidByUser().get(socket.user.userId) as { id: number } | undefined;
+        const bid = stmts.findActiveBidByUser().get(socket.user.userId) as { id: number } | undefined;
         bidId = bid?.id;
       } catch { /* non-critical */ }
 
@@ -338,12 +380,13 @@ export function setupWebSocket(
         phase: String(data.phase || 'unknown').slice(0, 32),
         timestamp: new Date().toISOString(),
       };
-      activeFlights.set(socket.user.userId, sanitized);
-      pilotSockets.set(socket.user.userId, socket.id);
-      const flights = Array.from(activeFlights.values());
-      for (const sid of livemapSubscribers) {
-        io.to(sid).emit('flights:active', flights);
+      // Guard against unbounded growth — only allow updates for existing entries or if under cap
+      if (activeFlights.has(socket.user.userId) || activeFlights.size < MAX_ACTIVE_FLIGHTS) {
+        activeFlights.set(socket.user.userId, sanitized);
+        invalidateFlightsCache();
       }
+      pilotSockets.set(socket.user.userId, socket.id);
+      broadcastFlights();
     });
 
     socket.on('flight:telemetry', (snapshot: TelemetrySnapshot) => {
@@ -357,7 +400,7 @@ export function setupWebSocket(
 
       // Relay telemetry to dispatch room subscribers watching this pilot's flight
       try {
-        const bid = findActiveBidByUser().get(socket.user.userId) as { id: number } | undefined;
+        const bid = stmts.findActiveBidByUser().get(socket.user.userId) as { id: number } | undefined;
         if (bid) {
           io.to(`bid:${bid.id}`).emit('dispatch:telemetry', snapshot);
         }
@@ -371,10 +414,8 @@ export function setupWebSocket(
       activeFlights.delete(socket.user.userId);
       pilotSockets.delete(socket.user.userId);
       flightObservers.delete(socket.user.userId);
-      const flights = Array.from(activeFlights.values());
-      for (const sid of livemapSubscribers) {
-        io.to(sid).emit('flights:active', flights);
-      }
+      invalidateFlightsCache();
+      broadcastFlights();
     });
 
     socket.on('flight:exceedance', (data: ExceedanceEvent) => {
@@ -388,18 +429,14 @@ export function setupWebSocket(
       if (typeof data.unit !== 'string' || typeof data.phase !== 'string' || typeof data.message !== 'string') return;
 
       try {
-        const bid = findActiveBidByUser().get(socket.user.userId) as { id: number } | undefined;
+        const bid = stmts.findActiveBidByUser().get(socket.user.userId) as { id: number } | undefined;
         if (!bid) return;
         const exceedance = exceedanceService.insert(bid.id, socket.user.userId, data);
 
         // Auto-create maintenance inspection for hard landings
         if (data.type === 'HARD_LANDING') {
           try {
-            const bidRow = getDb().prepare(
-              `SELECT ab.aircraft_id, f.registration FROM active_bids ab
-               JOIN fleet f ON f.id = ab.aircraft_id
-               WHERE ab.id = ? AND ab.aircraft_id IS NOT NULL`,
-            ).get(bid.id) as { aircraft_id: number; registration: string } | undefined;
+            const bidRow = stmts.bidAircraft().get(bid.id) as { aircraft_id: number; registration: string } | undefined;
 
             if (bidRow) {
               maintenanceService.createLog({
@@ -423,12 +460,16 @@ export function setupWebSocket(
     });
 
     socket.on('livemap:subscribe', () => {
+      if (!socket.user) return;
+      if (livemapSubscribers.size >= MAX_SUBSCRIBERS) return;
       livemapSubscribers.add(socket.id);
-      socket.emit('flights:active', Array.from(activeFlights.values()));
+      socket.join(ROOM_LIVEMAP);
+      socket.emit('flights:active', getFlightsArray());
     });
 
     socket.on('livemap:unsubscribe', () => {
       livemapSubscribers.delete(socket.id);
+      socket.leave(ROOM_LIVEMAP);
     });
 
     socket.on('disconnect', () => {
@@ -438,11 +479,8 @@ export function setupWebSocket(
         activeFlights.delete(socket.user.userId);
         pilotSockets.delete(socket.user.userId);
         flightObservers.delete(socket.user.userId);
-        // Broadcast updated list so livemap removes the disconnected pilot
-        const flights = Array.from(activeFlights.values());
-        for (const sid of livemapSubscribers) {
-          io.to(sid).emit('flights:active', flights);
-        }
+        invalidateFlightsCache();
+        broadcastFlights();
       }
       // Remove from all observer sets and signal relay:stop if needed
       for (const [pilotUserId, observers] of flightObservers) {
@@ -454,11 +492,46 @@ export function setupWebSocket(
           }
         }
       }
+      // Socket.io automatically removes from rooms on disconnect,
+      // but we still track our own Sets for cap logic
       livemapSubscribers.delete(socket.id);
       telemetrySubscribers.delete(socket.id);
       vatsimSubscribers.delete(socket.id);
       stopBroadcast();
     });
+  });
+
+  // Stale flight cleanup — remove heartbeats older than 2 minutes (runs every 60s)
+  const STALE_FLIGHT_MS = 2 * 60 * 1000;
+  const staleCleanupInterval = setInterval(() => {
+    const now = Date.now();
+    let cleaned = false;
+    for (const [userId, flight] of activeFlights) {
+      const age = now - new Date(flight.timestamp).getTime();
+      if (age > STALE_FLIGHT_MS) {
+        activeFlights.delete(userId);
+        pilotSockets.delete(userId);
+        flightObservers.delete(userId);
+        cleaned = true;
+        logger.info('WebSocket', `Cleaned stale flight for user ${userId} (${Math.round(age / 1000)}s old)`);
+      }
+    }
+    if (cleaned) {
+      invalidateFlightsCache();
+      broadcastFlights();
+    }
+  }, 60_000);
+  staleCleanupInterval.unref();
+
+  // Expose metrics for health endpoint
+  (io as any).__getMetrics = () => ({
+    connectedSockets: io.sockets.sockets.size,
+    telemetrySubscribers: telemetrySubscribers.size,
+    vatsimSubscribers: vatsimSubscribers.size,
+    livemapSubscribers: livemapSubscribers.size,
+    activeFlights: activeFlights.size,
+    flightObservers: flightObservers.size,
+    pilotSockets: pilotSockets.size,
   });
 
   return io;

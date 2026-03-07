@@ -22,7 +22,7 @@ export class AuthService {
   }
 
   verifyAccessToken(token: string): AuthPayload {
-    return jwt.verify(token, config.jwtSecret) as AuthPayload;
+    return jwt.verify(token, config.jwtSecret, { algorithms: ['HS256'] }) as AuthPayload;
   }
 
   generateRefreshToken(userId: number): string {
@@ -68,23 +68,6 @@ export class AuthService {
     });
 
     return txn();
-  }
-
-  /** @deprecated Use validateAndRevokeRefreshToken for atomic operation */
-  validateRefreshToken(token: string): { userId: number } | null {
-    const hash = createHash('sha256').update(token).digest('hex');
-
-    const row = getDb().prepare(`
-      SELECT user_id, expires_at FROM refresh_tokens WHERE token_hash = ?
-    `).get(hash) as { user_id: number; expires_at: string } | undefined;
-
-    if (!row) return null;
-    if (new Date(row.expires_at) < new Date()) {
-      getDb().prepare('DELETE FROM refresh_tokens WHERE token_hash = ?').run(hash);
-      return null;
-    }
-
-    return { userId: row.user_id };
   }
 
   revokeRefreshToken(token: string): void {

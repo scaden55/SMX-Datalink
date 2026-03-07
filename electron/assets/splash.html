@@ -5,6 +5,25 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SMX ACARS</title>
   <style>
+    @font-face {
+      font-family: 'Lufga';
+      src: url('fonts/Lufga-Regular.woff') format('woff');
+      font-weight: 400;
+      font-style: normal;
+    }
+    @font-face {
+      font-family: 'Lufga';
+      src: url('fonts/Lufga-Medium.woff') format('woff');
+      font-weight: 500;
+      font-style: normal;
+    }
+    @font-face {
+      font-family: 'Lufga';
+      src: url('fonts/Lufga-SemiBold.woff') format('woff');
+      font-weight: 600;
+      font-style: normal;
+    }
+
     * {
       margin: 0;
       padding: 0;
@@ -12,7 +31,7 @@
     }
 
     body {
-      background: #1a1a1a;
+      background: transparent;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -20,19 +39,35 @@
       overflow: hidden;
       -webkit-app-region: drag;
       user-select: none;
-      font-family: 'Segoe UI', system-ui, sans-serif;
+      font-family: 'Lufga', system-ui, sans-serif;
+      -webkit-font-smoothing: antialiased;
     }
 
     .card {
       width: 340px;
       height: 400px;
-      background: linear-gradient(to top right, #000000, #1B1B1C);
-      border-radius: 24px;
+      background: #0a0a0a;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 16px;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
       position: relative;
+      overflow: hidden;
+    }
+
+    /* Subtle blue radial glow behind card content */
+    .card::before {
+      content: '';
+      position: absolute;
+      top: 30%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 280px;
+      height: 280px;
+      background: radial-gradient(ellipse at center, rgba(59, 91, 219, 0.08) 0%, transparent 70%);
+      pointer-events: none;
     }
 
     .logo {
@@ -40,49 +75,71 @@
       height: 64px;
       object-fit: contain;
       margin-bottom: 32px;
+      position: relative;
+      z-index: 1;
     }
 
-    /* ── Loading bar (default state) ──────────────── */
+    /* ── Loading bar ──────────────────────────────── */
     .progress-track {
       width: 100px;
-      height: 3px;
-      background: #1f1f1f;
-      border-radius: 2px;
+      height: 2px;
+      background: rgba(255, 255, 255, 0.06);
+      border-radius: 1px;
       overflow: hidden;
+      position: relative;
+      z-index: 1;
     }
 
     .progress-fill {
       height: 100%;
       width: 100%;
-      background: #ffffff;
-      border-radius: 2px;
+      background: #3b5bdb;
+      border-radius: 1px;
       transform-origin: left;
-      animation: loading-slide 1.2s ease-in-out infinite;
+      animation: loading-slide 1.4s cubic-bezier(0.4, 0, 0.2, 1) infinite;
     }
 
     @keyframes loading-slide {
-      0% { transform: translateX(-100%); }
-      50% { transform: translateX(0%); }
+      0%   { transform: translateX(-100%); }
+      50%  { transform: translateX(0%); }
       100% { transform: translateX(100%); }
     }
 
     .version {
       position: absolute;
-      bottom: 24px;
-      font-size: 11px;
+      bottom: 20px;
+      font-size: 10px;
+      font-weight: 500;
       color: #4a4a4a;
-      letter-spacing: 0.5px;
+      letter-spacing: 0.06em;
+      z-index: 1;
     }
 
-    /* ── Update available state ────────────────────── */
-    .state { display: flex; flex-direction: column; align-items: center; }
+    /* ── States ───────────────────────────────────── */
+    .state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+      z-index: 1;
+    }
     .state.hidden { display: none; }
 
+    /* ── Update available ─────────────────────────── */
     .update-msg {
-      font-size: 13px;
-      color: #e6e6e6;
-      margin-bottom: 16px;
+      font-size: 12px;
+      font-weight: 500;
+      color: #f0f0f0;
+      margin-bottom: 6px;
       text-align: center;
+    }
+
+    .update-sub {
+      font-size: 10px;
+      color: #4a4a4a;
+      margin-bottom: 20px;
+      text-align: center;
+      letter-spacing: 0.02em;
     }
 
     .button-row {
@@ -91,69 +148,79 @@
       align-items: center;
     }
 
+    /* ── Buttons ──────────────────────────────────── */
     .btn {
       -webkit-app-region: no-drag;
       cursor: pointer;
-      font-family: inherit;
-      font-size: 12px;
-      font-weight: 500;
-      padding: 7px 18px;
+      font-family: 'Lufga', system-ui, sans-serif;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 7px 20px;
       border-radius: 6px;
       border: none;
       outline: none;
-      transition: background 0.15s ease, opacity 0.15s ease;
+      transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+      letter-spacing: 0.01em;
     }
 
-    .btn:active { opacity: 0.8; }
+    .btn:active {
+      transform: scale(0.98);
+    }
 
     .btn-primary {
-      background: #ffffff;
-      color: #0a0a0a;
+      background: linear-gradient(135deg, #3b5bdb 0%, #2b4bc0 100%);
+      color: #ffffff;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3), 0 2px 8px rgba(59, 91, 219, 0.20);
     }
-    .btn-primary:hover { background: #e0e0e0; }
+    .btn-primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3), 0 4px 16px rgba(59, 91, 219, 0.35);
+    }
 
     .btn-ghost {
-      background: transparent;
-      color: #666;
-      border: 1px solid #2a2a2a;
+      background: rgba(59, 91, 219, 0.10);
+      color: rgba(59, 91, 219, 0.8);
+      border: 1px solid rgba(59, 91, 219, 0.20);
     }
     .btn-ghost:hover {
-      color: #e6e6e6;
-      border-color: #555;
+      background: rgba(59, 91, 219, 0.18);
+      color: #3b5bdb;
+      border-color: rgba(59, 91, 219, 0.40);
     }
 
-    /* ── Downloading state ─────────────────────────── */
+    /* ── Downloading ──────────────────────────────── */
     .dl-progress-track {
-      width: 180px;
-      height: 3px;
-      background: #1f1f1f;
-      border-radius: 2px;
+      width: 200px;
+      height: 2px;
+      background: rgba(255, 255, 255, 0.06);
+      border-radius: 1px;
       overflow: hidden;
     }
 
     .dl-progress-fill {
       height: 100%;
       width: 0%;
-      background: #ffffff;
-      border-radius: 2px;
-      transition: width 0.3s ease;
+      background: linear-gradient(90deg, #3b5bdb, #5b7bf7);
+      border-radius: 1px;
+      transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
     .status {
-      margin-top: 12px;
-      font-size: 11px;
-      color: #4a4a4a;
-      letter-spacing: 0.3px;
+      margin-top: 14px;
+      font-size: 10px;
+      font-weight: 500;
+      color: #7a7a7a;
+      letter-spacing: 0.04em;
     }
 
-    /* ── Installing spinner ────────────────────────── */
+    /* ── Installing spinner ───────────────────────── */
     .spinner {
-      width: 20px;
-      height: 20px;
-      border: 2px solid #1f1f1f;
-      border-top-color: #ffffff;
+      width: 18px;
+      height: 18px;
+      border: 2px solid rgba(59, 91, 219, 0.15);
+      border-top-color: #3b5bdb;
       border-radius: 50%;
-      animation: spin 0.7s linear infinite;
+      animation: spin 0.8s linear infinite;
     }
 
     @keyframes spin {
@@ -161,13 +228,32 @@
     }
 
     /* ── Error state ──────────────────────────────── */
+    .error-container {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 14px;
+      border-radius: 6px;
+      background: rgba(239, 68, 68, 0.08);
+      border: 1px solid rgba(239, 68, 68, 0.15);
+      margin-bottom: 16px;
+      max-width: 260px;
+    }
+
+    .error-dot {
+      width: 6px;
+      height: 6px;
+      min-width: 6px;
+      border-radius: 50%;
+      background: #ef4444;
+    }
+
     .error-msg {
-      font-size: 12px;
-      color: #f87171;
-      margin-bottom: 14px;
-      text-align: center;
+      font-size: 11px;
+      font-weight: 500;
+      color: #ef4444;
+      text-align: left;
       line-height: 1.4;
-      max-width: 240px;
     }
   </style>
 </head>
@@ -184,7 +270,8 @@
 
     <!-- State: update-available -->
     <div id="state-update" class="state hidden">
-      <div class="update-msg">Version <span id="update-version"></span> available</div>
+      <div class="update-msg">Update Available</div>
+      <div class="update-sub">Version <span id="update-version"></span> is ready</div>
       <div class="button-row">
         <button id="btn-download" class="btn btn-primary">Download</button>
         <button id="btn-skip" class="btn btn-ghost">Skip</button>
@@ -194,7 +281,7 @@
     <!-- State: downloading -->
     <div id="state-downloading" class="state hidden">
       <div class="dl-progress-track"><div id="progress-fill" class="dl-progress-fill"></div></div>
-      <div class="status"><span id="dl-percent">0</span>% &mdash; Downloading</div>
+      <div class="status"><span id="dl-percent">0</span>% — Downloading</div>
     </div>
 
     <!-- State: installing -->
@@ -205,7 +292,10 @@
 
     <!-- State: error -->
     <div id="state-error" class="state hidden">
-      <div class="error-msg" id="error-text">Update failed</div>
+      <div class="error-container">
+        <div class="error-dot"></div>
+        <div class="error-msg" id="error-text">Update failed</div>
+      </div>
       <button id="btn-continue" class="btn btn-ghost">Continue</button>
     </div>
 

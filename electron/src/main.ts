@@ -43,13 +43,12 @@ function createSplash(): void {
     width: 400,
     height: 460,
     frame: false,
-    transparent: false,
+    transparent: true,
     resizable: false,
     movable: false,
     center: true,
     alwaysOnTop: true,
     skipTaskbar: true,
-    backgroundColor: '#1a1a1a',
     show: false,
     webPreferences: {
       contextIsolation: true,
@@ -500,6 +499,7 @@ app.whenReady().then(async () => {
           groundSpeed: position.groundSpeed ?? 0,
           verticalSpeed: position.verticalSpeed ?? 0,
           altitude: position.altitude ?? 0,
+          altitudeAgl: position.altitudeAgl ?? 0,
           simOnGround: (flightState.simOnGround as boolean) ?? true,
           gearHandlePosition: (flightState.gearHandlePosition as boolean) ?? false,
           engineN1: engines[0]?.n1 ?? 0,
@@ -523,6 +523,7 @@ app.whenReady().then(async () => {
           bank: position.bank ?? 0,
           altitudeAgl: position.altitudeAgl ?? 0,
           totalWeight: position.totalWeight ?? 0,
+          gForce: position.gForce ?? 1,
         };
         const exceedanceEvents = exceedanceDetector.check(
           exceedancePosition,

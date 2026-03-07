@@ -201,33 +201,42 @@ export class VatsimService {
         vatsim_connected: number;
       }>;
 
-      for (const row of rows) {
-        const pilot = this.findPilotOnVatsim(row.pilot_callsign, row.dep_icao, row.arr_icao);
-        const nowConnected = pilot !== null;
-        const wasConnected = row.vatsim_connected === 1;
+      // Batch all status changes in a single transaction for performance
+      const updateStmt = db.prepare(`
+        UPDATE active_bids
+        SET vatsim_connected = ?, vatsim_callsign = ?, vatsim_cid = ?
+        WHERE id = ?
+      `);
+      const changedStatuses: VatsimFlightStatus[] = [];
 
-        if (nowConnected !== wasConnected) {
-          db.prepare(`
-            UPDATE active_bids
-            SET vatsim_connected = ?, vatsim_callsign = ?, vatsim_cid = ?
-            WHERE id = ?
-          `).run(
-            nowConnected ? 1 : 0,
-            pilot?.callsign ?? null,
-            pilot?.cid ?? null,
-            row.bid_id,
-          );
+      const batchUpdate = db.transaction(() => {
+        for (const row of rows) {
+          const pilot = this.findPilotOnVatsim(row.pilot_callsign, row.dep_icao, row.arr_icao);
+          const nowConnected = pilot !== null;
+          const wasConnected = row.vatsim_connected === 1;
 
-          const status: VatsimFlightStatus = {
-            bidId: row.bid_id,
-            vatsimConnected: nowConnected,
-            vatsimCallsign: pilot?.callsign ?? null,
-            vatsimCid: pilot?.cid ?? null,
-          };
-
-          if (this.onFlightStatus) {
-            this.onFlightStatus(status);
+          if (nowConnected !== wasConnected) {
+            updateStmt.run(
+              nowConnected ? 1 : 0,
+              pilot?.callsign ?? null,
+              pilot?.cid ?? null,
+              row.bid_id,
+            );
+            changedStatuses.push({
+              bidId: row.bid_id,
+              vatsimConnected: nowConnected,
+              vatsimCallsign: pilot?.callsign ?? null,
+              vatsimCid: pilot?.cid ?? null,
+            });
           }
+        }
+      });
+      batchUpdate();
+
+      // Emit status events after transaction completes
+      if (this.onFlightStatus) {
+        for (const status of changedStatuses) {
+          this.onFlightStatus(status);
         }
       }
     } catch (err) {

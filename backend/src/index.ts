@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
+import hpp from 'hpp';
 import rateLimit from 'express-rate-limit';
 import { createServer } from 'http';
 import { dirname, join } from 'path';
@@ -72,6 +73,7 @@ app.use(helmet());
 // CORS
 app.use(cors({ origin: config.corsOrigin }));
 app.use(express.json({ limit: config.maxBodySize }));
+app.use(hpp());
 
 // Rate limiting on auth endpoints — 15 requests per 15 minutes per IP
 const authLimiter = rateLimit({
@@ -116,8 +118,7 @@ app.get('/', (_req, res) => {
   res.json({ name: 'SMX ACARS API', version: '1.0.0', status: 'online' });
 });
 
-// REST API routes
-app.use('/api', healthRouter(simConnect));
+// REST API routes (health registered after WebSocket setup — see below)
 app.use('/api', aircraftRouter(telemetry, config.simconnectEnabled));
 app.use('/api', flightRouter(telemetry, config.simconnectEnabled));
 app.use('/api', fuelRouter(telemetry, config.simconnectEnabled));
@@ -155,6 +156,9 @@ app.use('/api', vatsimRouter(vatsimService));
 
 // WebSocket
 const io = setupWebSocket(httpServer, telemetry, simConnect, vatsimService, flightEventTracker);
+
+// Health router (registered after io so it can expose socket metrics)
+app.use('/api', healthRouter(simConnect, io));
 
 // Register dispatch router with io for real-time broadcasts
 app.use('/api', dispatchRouter(io, telemetry, flightEventTracker));
@@ -285,3 +289,14 @@ function shutdown(): void {
 
 process.on('SIGINT', shutdown);
 process.on('SIGTERM', shutdown);
+
+// Catch unhandled errors so they don't crash the server silently
+process.on('uncaughtException', (err) => {
+  logger.error('Process', 'Uncaught exception', err);
+  // Exit after logging — process is in an unknown state
+  shutdown();
+});
+
+process.on('unhandledRejection', (reason) => {
+  logger.error('Process', 'Unhandled promise rejection', reason);
+});

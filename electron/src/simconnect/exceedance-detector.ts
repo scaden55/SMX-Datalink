@@ -68,6 +68,11 @@ export class ExceedanceDetector {
   private lastAirborneVs = 0;
   private lastAirbornePitch = 0;
   private lastAirborneTotalWeight = 0;
+  private lastAirborneGForce = 1;
+
+  /** G-force and VS at the moment of touchdown (exposed for UI display) */
+  public touchdownGForce = 0;
+  public touchdownVs = 0;
 
   /** Set the aircraft ICAO type for limit lookups. Call when aircraft info arrives. */
   setAircraftType(icaoType: string): void {
@@ -91,6 +96,7 @@ export class ExceedanceDetector {
       this.lastAirborneVs = position.verticalSpeed;
       this.lastAirbornePitch = position.pitch;
       this.lastAirborneTotalWeight = position.totalWeight;
+      this.lastAirborneGForce = position.gForce;
     }
 
     // Overspeed: continuous check while airborne
@@ -156,6 +162,10 @@ export class ExceedanceDetector {
     // Only check on touchdown (transition to LANDING)
     if (current !== 'LANDING') return events;
 
+    // Snapshot touchdown values for UI display
+    this.touchdownVs = Math.round(this.lastAirborneVs);
+    this.touchdownGForce = Math.round(this.lastAirborneGForce * 100) / 100;
+
     const limits = AircraftLimits[this.aircraftType] ?? DEFAULT_AIRCRAFT_LIMIT;
     const now = new Date().toISOString();
 
@@ -172,7 +182,7 @@ export class ExceedanceDetector {
         threshold: ExceedanceThresholds.HARD_LANDING_FPM,
         unit: 'fpm',
         phase: current,
-        message: `Hard landing: ${Math.round(this.lastAirborneVs)} fpm (limit: ${ExceedanceThresholds.HARD_LANDING_FPM} fpm)`,
+        message: `Hard landing: ${Math.round(this.lastAirborneVs)} fpm / ${this.touchdownGForce}G (limit: ${ExceedanceThresholds.HARD_LANDING_FPM} fpm)`,
         detectedAt: now,
       });
     }

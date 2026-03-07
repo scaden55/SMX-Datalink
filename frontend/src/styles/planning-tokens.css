@@ -69,7 +69,7 @@
 
   /* ── Scrollbar ────────────────────────────────────────── */
   --scrollbar-thumb: rgba(255, 255, 255, 0.06);
-  --scrollbar-track: #000000;
+  --scrollbar-track: transparent;
 
   /* ── shadcn/ui HSL Variables ─────────────────────────── */
   --background: 0 0% 0%;

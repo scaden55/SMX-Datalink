@@ -29,6 +29,7 @@ export function readPosition(data: RawBuffer): AircraftPosition {
     bank: data.readFloat64(),
     altitudeAgl: data.readFloat64(),
     totalWeight: data.readFloat64(),
+    gForce: data.readFloat64(),
   };
 }
 

@@ -6,7 +6,7 @@
   "private": true,
   "main": "dist/main.js",
   "scripts": {
-    "dev": "tsc && ELECTRON_RUN_AS_NODE= electron .",
+    "dev": "tsc && node scripts/launch-dev.js",
     "build": "tsc",
     "package": "electron-builder --win",
     "package:dir": "electron-builder --win --dir"
@@ -20,6 +20,7 @@
   },
   "devDependencies": {
     "@types/node": "^22.12.0",
+    "cross-env": "^10.1.0",
     "electron": "^33.4.11",
     "electron-builder": "^25.1.8",
     "typescript": "^5.7.3"

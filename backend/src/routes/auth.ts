@@ -81,14 +81,12 @@ export function authRouter(): Router {
         return;
       }
 
+      // Always run bcrypt even for missing users to prevent timing-based account enumeration
+      const DUMMY_HASH = '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy';
       const user = userService.findByEmail(email);
-      if (!user || !user.is_active) {
-        res.status(401).json({ error: 'Invalid credentials' });
-        return;
-      }
-
-      const valid = await authService.verifyPassword(password, user.password_hash);
-      if (!valid) {
+      const hashToCheck = (user && user.is_active) ? user.password_hash : DUMMY_HASH;
+      const valid = await authService.verifyPassword(password, hashToCheck);
+      if (!user || !user.is_active || !valid) {
         res.status(401).json({ error: 'Invalid credentials' });
         return;
       }

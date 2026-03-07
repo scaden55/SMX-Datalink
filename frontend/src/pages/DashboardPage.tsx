@@ -27,8 +27,10 @@ import 'leaflet/dist/leaflet.css';
 import { api } from '../lib/api';
 import { toast } from '../stores/toastStore';
 import { useAuthStore } from '../stores/authStore';
+import { useSocketStore } from '../stores/socketStore';
 import type {
   ActiveBidEntry,
+  ActiveFlightHeartbeat,
   AllBidsResponse,
   LeaderboardEntry,
   LeaderboardResponse,
@@ -48,49 +50,76 @@ function formatDuration(min: number): string {
   return `${h}h ${String(m).padStart(2, '0')}m`;
 }
 
+// ─── Phase helpers ──────────────────────────────────────────────
+
+const PHASE_COLORS: Record<string, string> = {
+  PREFLIGHT:  'text-[var(--text-label)] bg-white/[0.04]',
+  TAXI_OUT:   'text-amber-400 bg-amber-500/10',
+  TAKEOFF:    'text-blue-400 bg-blue-500/10',
+  CLIMB:      'text-blue-400 bg-blue-500/10',
+  CRUISE:     'text-emerald-400 bg-emerald-500/10',
+  DESCENT:    'text-cyan-400 bg-cyan-500/10',
+  APPROACH:   'text-amber-400 bg-amber-500/10',
+  LANDING:    'text-amber-400 bg-amber-500/10',
+  TAXI_IN:    'text-amber-400 bg-amber-500/10',
+  PARKED:     'text-[var(--text-label)] bg-white/[0.04]',
+};
+
+function phaseLabel(phase: string): string {
+  return phase.replace('_', ' ');
+}
+
 // ─── Bid Route Card ─────────────────────────────────────────────
 
-function BidRouteCard({ bid }: { bid: ActiveBidEntry }) {
+function BidRouteCard({ bid, phase }: { bid: ActiveBidEntry; phase?: string }) {
   const navigate = useNavigate();
+  const phaseStyle = phase ? PHASE_COLORS[phase] ?? PHASE_COLORS.PREFLIGHT : '';
 
   return (
     <div
-      className="flex items-center gap-4 px-4 py-3 rounded-lg bg-white/[0.02] border border-white/[0.04] hover:bg-white/[0.04] transition-colors cursor-pointer"
+      className="flex items-center gap-3 px-3 py-2 rounded-md bg-white/[0.02] border border-white/[0.04] hover:bg-white/[0.04] transition-colors cursor-pointer"
       onClick={() => navigate('/planning')}
     >
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 mb-1">
-          <span className="text-[10px] font-semibold text-[#6b8aff] tabular-nums">{bid.flightNumber}</span>
-          <span className="text-[10px] text-[var(--text-label)]">{bid.aircraftType}</span>
-        </div>
-        <div className="flex items-center gap-3">
-          <div className="text-center">
-            <span className="text-[15px] font-semibold text-white tracking-wide">{bid.depIcao}</span>
+      {/* Flight number + route */}
+      <div className="flex-1 min-w-0 flex items-center gap-3">
+        <span className="text-[10px] font-semibold text-[#6b8aff] tabular-nums w-16 shrink-0">{bid.flightNumber}</span>
+        <div className="flex items-center gap-2 flex-1 min-w-0">
+          <span className="text-[12px] font-semibold text-white tracking-wide">{bid.depIcao}</span>
+          <div className="flex-1 flex items-center gap-1">
+            <div className="flex-1 h-px bg-white/[0.08]" />
+            <Airplane className="w-3 h-3 text-[#6b8aff]/40 shrink-0 rotate-90" weight="light" />
+            <div className="flex-1 h-px bg-white/[0.08]" />
           </div>
-          <div className="flex-1 flex items-center gap-1.5">
-            <div className="flex-1 h-px bg-white/10" />
-            <Airplane className="w-3.5 h-3.5 text-[#6b8aff]/60 shrink-0 rotate-90" weight="light" />
-            <div className="flex-1 h-px bg-white/10" />
-          </div>
-          <div className="text-center">
-            <span className="text-[15px] font-semibold text-white tracking-wide">{bid.arrIcao}</span>
-          </div>
-        </div>
-        <div className="flex items-center gap-3 mt-1">
-          <span className="text-[10px] text-[var(--text-label)] tabular-nums">{bid.depTime}Z</span>
-          <span className="text-[10px] text-[var(--text-label)] tabular-nums">{formatDuration(bid.flightTimeMin)}</span>
+          <span className="text-[12px] font-semibold text-white tracking-wide">{bid.arrIcao}</span>
         </div>
       </div>
-      <div className="flex items-center gap-1.5 shrink-0">
-        <span className="text-[10px] text-[var(--text-secondary)]">{bid.pilotCallsign}</span>
-      </div>
+
+      {/* Aircraft type */}
+      <span className="text-[9px] text-[var(--text-label)] tabular-nums shrink-0">{bid.aircraftType}</span>
+
+      {/* Duration */}
+      <span className="text-[9px] text-[var(--text-label)] tabular-nums shrink-0">{formatDuration(bid.flightTimeMin)}</span>
+
+      {/* Phase badge */}
+      {phase ? (
+        <span className={`text-[8px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded shrink-0 ${phaseStyle}`}>
+          {phaseLabel(phase)}
+        </span>
+      ) : (
+        <span className="text-[8px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded shrink-0 text-[var(--text-label)] bg-white/[0.04]">
+          Idle
+        </span>
+      )}
+
+      {/* Pilot callsign */}
+      <span className="text-[9px] text-[var(--text-secondary)] shrink-0">{bid.pilotCallsign}</span>
     </div>
   );
 }
 
 // ─── Active Bids Card ───────────────────────────────────────────
 
-function ActiveBidsCard({ bids, isAdmin, onBidRemoved }: { bids: ActiveBidEntry[]; isAdmin: boolean; onBidRemoved: () => void }) {
+function ActiveBidsCard({ bids, isAdmin, onBidRemoved, activeFlights }: { bids: ActiveBidEntry[]; isAdmin: boolean; onBidRemoved: () => void; activeFlights: ActiveFlightHeartbeat[] }) {
   const navigate = useNavigate();
 
   const handleForceRemove = async (bidId: number, e: React.MouseEvent) => {
@@ -105,9 +134,15 @@ function ActiveBidsCard({ bids, isAdmin, onBidRemoved }: { bids: ActiveBidEntry[
     }
   };
 
+  // Build a lookup of bidId → phase from active flights
+  const phaseByBid = new Map<number, string>();
+  for (const flight of activeFlights) {
+    if (flight.bidId) phaseByBid.set(flight.bidId, flight.phase);
+  }
+
   return (
     <div className="gradient-card flex flex-col">
-      <div className="flex items-center justify-between px-5 py-3.5">
+      <div className="flex items-center justify-between px-4 py-3">
         <div className="flex items-center gap-2.5">
           <h3 className="text-[14px] font-semibold text-white">Active Bids</h3>
           <span className="inline-flex items-center justify-center min-w-[20px] h-[20px] rounded-full bg-[#3b5bdb]/20 text-[10px] font-semibold text-[#6b8aff] tabular-nums px-1.5">
@@ -122,7 +157,7 @@ function ActiveBidsCard({ bids, isAdmin, onBidRemoved }: { bids: ActiveBidEntry[
         </button>
       </div>
       {bids.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-12 px-6">
+        <div className="flex flex-col items-center justify-center py-10 px-6">
           <CalendarDots className="w-10 h-10 text-white/10 mb-3" weight="light" />
           <p className="text-[13px] font-medium text-white/50 mb-1">No Active Cargo Runs</p>
           <p className="text-[11px] text-[var(--text-label)] mb-4">No pilots currently have active bids</p>
@@ -134,14 +169,14 @@ function ActiveBidsCard({ bids, isAdmin, onBidRemoved }: { bids: ActiveBidEntry[
           </button>
         </div>
       ) : (
-        <div className="px-4 pb-4 space-y-2">
+        <div className="px-3 pb-3 space-y-1">
           {bids.map((bid) => (
             <div key={bid.id} className="relative group">
-              <BidRouteCard bid={bid} />
+              <BidRouteCard bid={bid} phase={phaseByBid.get(bid.id)} />
               {isAdmin && (
                 <button
                   onClick={(e) => handleForceRemove(bid.id, e)}
-                  className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-red-500/10 text-[var(--text-label)] hover:text-red-400 transition-all"
+                  className="absolute top-1.5 right-1.5 opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-red-500/10 text-[var(--text-label)] hover:text-red-400 transition-all"
                   title="Force remove this bid (admin only)"
                 >
                   <Trash className="w-3 h-3" weight="light" />
@@ -637,15 +672,35 @@ function NewsFeed() {
 export function DashboardPage() {
   const [bids, setBids] = useState<ActiveBidEntry[]>([]);
   const [recentFlights, setRecentFlights] = useState<LogbookEntry[]>([]);
+  const [activeFlights, setActiveFlights] = useState<ActiveFlightHeartbeat[]>([]);
   const [loading, setLoading] = useState(true);
   const user = useAuthStore(s => s.user);
   const isAdmin = user?.role === 'admin';
+  const socket = useSocketStore(s => s.socket);
 
   const fetchBids = useCallback(() => {
     api.get<AllBidsResponse>('/api/bids/all')
       .then(data => setBids(data.bids))
       .catch(() => {});
   }, []);
+
+  // Subscribe to flights:active for real-time phase data
+  useEffect(() => {
+    if (!socket) return;
+
+    socket.emit('telemetry:subscribe');
+
+    const handleActiveFlights = (flights: ActiveFlightHeartbeat[]) => {
+      setActiveFlights(flights);
+    };
+
+    socket.on('flights:active', handleActiveFlights);
+
+    return () => {
+      socket.off('flights:active', handleActiveFlights);
+      socket.emit('telemetry:unsubscribe');
+    };
+  }, [socket]);
 
   useEffect(() => {
     setLoading(true);
@@ -676,7 +731,7 @@ export function DashboardPage() {
       <QuickActions />
 
       {/* Row 2: Active Bids — primary operational view (full width) */}
-      <ActiveBidsCard bids={bids} isAdmin={!!isAdmin} onBidRemoved={fetchBids} />
+      <ActiveBidsCard bids={bids} isAdmin={!!isAdmin} onBidRemoved={fetchBids} activeFlights={activeFlights} />
 
       {/* Row 3: Network Map (full width, hero) */}
       <NetworkMapPreview />
