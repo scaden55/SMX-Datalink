@@ -118,12 +118,26 @@ app.get('/', (_req, res) => {
   res.json({ name: 'SMX ACARS API', version: '1.0.0', status: 'online' });
 });
 
-// REST API routes (health registered after WebSocket setup — see below)
+// VATSIM service (created early so routers can reference it)
+const vatsimService = new VatsimService(config.vatsim);
+
+// WebSocket (created early so routers that need `io` can be registered in order)
+const io = setupWebSocket(httpServer, telemetry, simConnect, vatsimService, flightEventTracker);
+
+// ── REST API routes ──────────────────────────────────────────────
+// IMPORTANT: Registration order matters! Routers with exact paths (e.g. /airports,
+// /fleet, /bids/my) must be registered BEFORE routers with param wildcards
+// (e.g. /airports/:icao) to prevent the wildcard from shadowing the exact match.
+
+app.use('/api', healthRouter(simConnect, io));
+app.use('/api', authRouter());
+app.use('/api', scheduleRouter(io));          // /airports, /fleet, /bids/*, /schedules/*
+app.use('/api', dispatchRouter(io, telemetry, flightEventTracker)); // /dispatch/flights/*
+app.use('/api', fleetManageRouter(io));       // /fleet/manage/*
 app.use('/api', aircraftRouter(telemetry, config.simconnectEnabled));
 app.use('/api', flightRouter(telemetry, config.simconnectEnabled));
 app.use('/api', fuelRouter(telemetry, config.simconnectEnabled));
 app.use('/api', engineRouter(telemetry, config.simconnectEnabled));
-app.use('/api', authRouter());
 app.use('/api', flightPlanRouter());
 app.use('/api', faaRouter());
 app.use('/api', logbookRouter());
@@ -144,30 +158,12 @@ app.use('/api', adminNotificationsRouter());
 app.use('/api', adminSearchRouter());
 app.use('/api', adminFinanceEngineRouter());
 app.use('/api', notificationsRouter());
-app.use('/api', airportDetailRouter());
+app.use('/api', airportDetailRouter());       // /airports/:icao (AFTER scheduleRouter's /airports)
 app.use('/api', trackRouter());
 app.use('/api', navdataRouter());
 app.use('/api', regulatoryRouter());
 app.use('/api', cargoRouter());
-
-// VATSIM service
-const vatsimService = new VatsimService(config.vatsim);
 app.use('/api', vatsimRouter(vatsimService));
-
-// WebSocket
-const io = setupWebSocket(httpServer, telemetry, simConnect, vatsimService, flightEventTracker);
-
-// Health router (registered after io so it can expose socket metrics)
-app.use('/api', healthRouter(simConnect, io));
-
-// Register dispatch router with io for real-time broadcasts
-app.use('/api', dispatchRouter(io, telemetry, flightEventTracker));
-
-// Register schedule router with io for bid:expired notifications
-app.use('/api', scheduleRouter(io));
-
-// Register fleet router with io for real-time fleet updates
-app.use('/api', fleetManageRouter(io));
 
 // Serve admin frontend static files
 const __filename = fileURLToPath(import.meta.url);

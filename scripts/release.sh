@@ -178,7 +178,7 @@ pm2 save
 
 echo "[deploy] Waiting for server to be ready..."
 for i in $(seq 1 15); do
-  CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3001/api/stats 2>/dev/null || echo "000")
+  CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3001/api/health 2>/dev/null || echo "000")
   if [ "$CODE" = "200" ]; then
     echo "[deploy] Server healthy (HTTP 200 after ${i}s)"
     exit 0
