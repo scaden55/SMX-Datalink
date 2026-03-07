@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 import { Minus, Square, X, Copy } from '@phosphor-icons/react';
 import { NavSidebar } from './NavSidebar';
 import { HeaderBar } from './HeaderBar';
@@ -63,9 +63,11 @@ export function MainShell() {
   useSocket();
 
   const user = useAuthStore((s) => s.user);
+  const location = useLocation();
   const devMode = useUIStore((s) => s.devMode);
   const setDevMode = useUIStore((s) => s.setDevMode);
   const toggleDebugOverlay = useUIStore((s) => s.toggleDebugOverlay);
+  const isFullscreenPage = location.pathname === '/livemap';
 
   // Dev mode defaults off for non-admin users
   useEffect(() => {
@@ -140,7 +142,7 @@ export function MainShell() {
         {/* Window controls (min/max/close) */}
         <WindowControls />
 
-        <HeaderBar />
+        {!isFullscreenPage && <HeaderBar />}
         <main className="flex-1 overflow-auto">
           <Outlet />
         </main>

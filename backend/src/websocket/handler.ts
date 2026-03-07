@@ -306,7 +306,7 @@ export function setupWebSocket(
       stopBroadcast();
     });
 
-    // Dispatch room management — verify bid ownership
+    // Dispatch room management — verify bid ownership + trigger relay
     socket.on('dispatch:subscribe', (bidId: number) => {
       const user = socket.user;
       if (!user) return;
@@ -318,11 +318,48 @@ export function setupWebSocket(
       }
 
       socket.join(`bid:${bidId}`);
+
+      // Look up the bid's pilot and trigger relay:start so their Electron
+      // begins sending full telemetry (flight:telemetry) to the server
+      const bid = stmts.bidOwner().get(bidId) as { user_id: number } | undefined;
+      if (bid) {
+        const pilotUserId = bid.user_id;
+        const pilotSocketId = pilotSockets.get(pilotUserId);
+        if (pilotSocketId && pilotUserId !== user.userId) {
+          let observers = flightObservers.get(pilotUserId);
+          if (!observers) {
+            observers = new Set();
+            flightObservers.set(pilotUserId, observers);
+          }
+          const wasEmpty = observers.size === 0;
+          observers.add(socket.id);
+          if (wasEmpty) {
+            io.to(pilotSocketId).emit('relay:start');
+          }
+        }
+      }
+
       logger.info('WebSocket', `${socket.id} joined bid:${bidId}`);
     });
 
     socket.on('dispatch:unsubscribe', (bidId: number) => {
       socket.leave(`bid:${bidId}`);
+
+      // Clean up relay observer for this bid's pilot
+      const bid = stmts.bidOwner().get(bidId) as { user_id: number } | undefined;
+      if (bid) {
+        const pilotUserId = bid.user_id;
+        const observers = flightObservers.get(pilotUserId);
+        if (observers) {
+          observers.delete(socket.id);
+          if (observers.size === 0) {
+            const pilotSocketId = pilotSockets.get(pilotUserId);
+            if (pilotSocketId) {
+              io.to(pilotSocketId).emit('relay:stop');
+            }
+          }
+        }
+      }
     });
 
     // Real-time message sending via WebSocket — verify bid ownership

@@ -994,7 +994,7 @@ export function SchedulePage() {
             </select>
 
             {/* MagnifyingGlass */}
-            <div className="relative flex-1 max-w-[240px]">
+            <div className="relative flex-1 min-w-[200px]">
               <MagnifyingGlass className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-acars-muted" />
               <input
                 type="text"
