@@ -205,10 +205,8 @@ export class PirepService {
 
       const logbookId = result.lastInsertRowid as number;
 
-      // Mark bid as completed
-      db.prepare(
-        "UPDATE active_bids SET flight_plan_phase = 'completed' WHERE id = ?",
-      ).run(bidId);
+      // Delete the bid — flight is complete, logbook entry carries all data
+      db.prepare('DELETE FROM active_bids WHERE id = ?').run(bidId);
 
       // Link exceedances to the logbook entry
       exceedanceService.linkToLogbook(bidId, logbookId);

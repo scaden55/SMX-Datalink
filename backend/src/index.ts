@@ -168,7 +168,7 @@ app.use('/api', vatsimRouter(vatsimService));
 // Serve admin frontend static files
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-const adminDistPath = join(__dirname, '../../admin-dist');
+const adminDistPath = join(__dirname, '../admin-dist');
 app.use('/admin', express.static(adminDistPath));
 app.get('/admin/*', (_req, res) => {
   res.sendFile(join(adminDistPath, 'index.html'));
