@@ -76,20 +76,39 @@ export function PlanningGenerateBar({ onGenerate, onFetch, onStartFlight }: Prop
             </DropdownMenu>
           </div>
         ) : (
-          /* Simple button: Generate OFP */
-          <button
-            onClick={onGenerate}
-            disabled={simbriefLoading}
-            className="flex-1 btn-primary btn-md"
-            title="Generate OFP via SimBrief"
-          >
-            {simbriefLoading
-              ? <SpinnerGap className="w-3.5 h-3.5 animate-spin" />
-              : <Lightning className="w-3.5 h-3.5" />}
-            {simbriefLoading
-              ? (window.electronAPI?.isElectron ? 'Waiting for SimBrief...' : 'Loading OFP...')
-              : 'Generate OFP'}
-          </button>
+          /* Split button: Generate OFP (primary) + dropdown for Fetch Existing */
+          <div className="flex flex-1 min-w-0">
+            <button
+              onClick={onGenerate}
+              disabled={simbriefLoading}
+              className="flex-1 btn-primary btn-md rounded-r-none"
+              title="Generate OFP via SimBrief"
+            >
+              {simbriefLoading
+                ? <SpinnerGap className="w-3.5 h-3.5 animate-spin" />
+                : <Lightning className="w-3.5 h-3.5" />}
+              {simbriefLoading
+                ? (window.electronAPI?.isElectron ? 'Waiting for SimBrief...' : 'Loading OFP...')
+                : 'Generate OFP'}
+            </button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  disabled={simbriefLoading}
+                  className="btn-primary btn-md rounded-l-none border-l border-white/15 px-2"
+                  title="More OFP options"
+                >
+                  <CaretDown className="w-3.5 h-3.5" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" side="top" sideOffset={6}>
+                <DropdownMenuItem onClick={onFetch} className="gap-2">
+                  <ArrowsClockwise className="w-3.5 h-3.5" />
+                  Fetch Existing OFP
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         )}
         {activeBidId && hasOFP && (
           <button

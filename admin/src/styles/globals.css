@@ -18,42 +18,42 @@
   }
 
   .dark {
-    /* Map shadcn HSL variables → aligned to design tokens */
-    --background: 240 38% 3%;       /* ≈ --surface-0: #05060d */
-    --foreground: 228 32% 94%;      /* ≈ --text-primary: #eceef5 */
-    --card: 234 33% 5%;             /* ≈ --surface-1: #060812 */
-    --card-foreground: 228 32% 94%;
-    --popover: 228 33% 10%;         /* ≈ --surface-2 solid approx */
-    --popover-foreground: 228 32% 94%;
+    /* Map shadcn HSL variables — matched to pilot frontend */
+    --background: 0 0% 0%;              /* #000000 */
+    --foreground: 0 0% 94%;             /* #f0f0f0 */
+    --card: 0 0% 2%;                    /* #050505 */
+    --card-foreground: 0 0% 94%;
+    --popover: 0 0% 7%;                 /* #111111 */
+    --popover-foreground: 0 0% 94%;
 
-    --primary: 232 85% 57%;         /* ≈ --accent-blue: #3950ed */
+    --primary: 227 68% 54%;             /* #3b5bdb */
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 224 20% 12%;       /* ≈ --surface-3: #1c2230 */
-    --secondary-foreground: 228 32% 94%;
+    --secondary: 0 0% 7%;               /* #111111 */
+    --secondary-foreground: 0 0% 94%;
 
-    --muted: 224 20% 12%;
-    --muted-foreground: 215 12% 49%; /* ≈ --text-tertiary: #566270 */
+    --muted: 0 0% 7%;
+    --muted-foreground: 0 0% 29%;       /* #4a4a4a */
 
-    --accent: 224 20% 12%;
-    --accent-foreground: 228 32% 94%;
+    --accent: 0 0% 7%;
+    --accent-foreground: 0 0% 94%;
 
-    --destructive: 0 90% 65%;       /* ≈ --accent-red: #f87171 */
+    --destructive: 0 90% 65%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 225 30% 15%;          /* ≈ --border-primary solid approx */
-    --input: 225 30% 9%;            /* ≈ --input-bg: #0d121f */
-    --ring: 232 85% 57%;            /* ≈ --accent-blue */
+    --border: 0 0% 100% / 0.06;         /* rgba(255,255,255,0.06) */
+    --input: 0 0% 7%;                   /* #111111 */
+    --ring: 227 68% 54%;                /* #3b5bdb */
 
     /* Sidebar */
-    --sidebar-background: 230 43% 5%;
-    --sidebar-foreground: 230 20% 93%;
-    --sidebar-primary: 234 84% 57%;
+    --sidebar-background: 0 0% 2%;
+    --sidebar-foreground: 0 0% 94%;
+    --sidebar-primary: 227 68% 54%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 234 84% 57% / 0.13;
-    --sidebar-accent-foreground: 225 93% 77%;
-    --sidebar-border: 225 30% 15%;
-    --sidebar-ring: 234 84% 57%;
+    --sidebar-accent: 227 68% 54% / 0.13;
+    --sidebar-accent-foreground: 227 68% 75%;
+    --sidebar-border: 0 0% 100% / 0.06;
+    --sidebar-ring: 227 68% 54%;
   }
 
   * {
@@ -74,14 +74,14 @@
 }
 .card-interactive:hover {
   border-color: var(--border-hover) !important;
-  box-shadow: 0 4px 20px rgba(57, 80, 237, 0.06), 0 0 0 1px rgba(57, 80, 237, 0.08);
+  box-shadow: 0 4px 20px rgba(59, 91, 219, 0.06), 0 0 0 1px rgba(59, 91, 219, 0.08);
 }
 
 .row-interactive {
   transition: background-color 150ms ease;
 }
 .row-interactive:hover {
-  background-color: rgba(57, 80, 237, 0.04);
+  background-color: rgba(59, 91, 219, 0.04);
 }
 
 /* ── Button hover tint ─────────────────────────────── */
@@ -89,8 +89,8 @@
   transition: background-color 150ms ease, color 150ms ease, border-color 150ms ease;
 }
 .btn-glow:hover {
-  background-color: rgba(57, 86, 237, 0.15);
-  border-color: rgba(57, 86, 237, 0.3);
+  background-color: rgba(59, 91, 219, 0.15);
+  border-color: rgba(59, 91, 219, 0.3);
 }
 
 /* ── Icon hover ────────────────────────────────────── */
@@ -108,7 +108,7 @@
   transition: background-color 150ms ease, color 150ms ease, border-left-color 150ms ease;
 }
 .nav-item-hover:hover {
-  background-color: rgba(57, 86, 237, 0.12);
+  background-color: rgba(59, 91, 219, 0.12);
   color: var(--text-primary) !important;
   border-left-color: var(--accent-blue) !important;
 }
@@ -186,7 +186,7 @@
 }
 .input-glow:focus-within {
   border-color: var(--accent-blue) !important;
-  box-shadow: 0 0 0 2px rgba(57, 80, 237, 0.15);
+  box-shadow: 0 0 0 2px rgba(59, 91, 219, 0.15);
 }
 
 /* ── Chart line draw animation ─────────────────────── */
@@ -228,9 +228,9 @@
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: var(--border-secondary);
+  background: rgba(255, 255, 255, 0.06);
   border-radius: var(--radius-full);
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--border-hover);
+  background: rgba(255, 255, 255, 0.12);
 }

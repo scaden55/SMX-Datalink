@@ -23,6 +23,7 @@ export interface LogbookEntry {
   paxCount: number;
   cargoLbs: number;
   landingRateFpm: number | null;
+  landingGForce: number | null;
   score: number | null;
   status: LogbookStatus;
   remarks: string | null;

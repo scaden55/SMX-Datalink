@@ -149,7 +149,7 @@ function formatDaysOfWeek(days: string): string {
 const typeBadgeStyle = (type: string): React.CSSProperties => {
   if (type === 'cargo') return {
     padding: '2px 8px', borderRadius: 3, fontSize: 10, fontWeight: 600, fontFamily: 'inherit',
-    background: 'rgba(57,86,237,0.13)', color: 'var(--accent-blue-bright)',
+    background: 'rgba(59,91,219,0.13)', color: 'var(--accent-blue-bright)',
   };
   if (type === 'charter') return {
     padding: '2px 8px', borderRadius: 3, fontSize: 10, fontWeight: 600, fontFamily: 'inherit',
@@ -1069,7 +1069,7 @@ function ChartersTab() {
                   <td style={{ padding: '10px 16px' }}>
                     <span style={{
                       padding: '2px 8px', borderRadius: 3, fontSize: 10, fontWeight: 600,
-                      background: 'rgba(57,86,237,0.13)', color: 'var(--accent-blue-bright)',
+                      background: 'rgba(59,91,219,0.13)', color: 'var(--accent-blue-bright)',
                     }}>
                       {event.eventType.toUpperCase()}
                     </span>
@@ -1525,7 +1525,7 @@ function FlightsTabInner({ triggerCreate }: { triggerCreate: number }) {
                 top: '100%',
                 left: 0,
                 marginTop: 4,
-                background: '#0d121f',
+                background: 'var(--input-bg)',
                 border: '1px solid var(--input-border)',
                 borderRadius: 6,
                 overflow: 'hidden',
@@ -1544,7 +1544,7 @@ function FlightsTabInner({ triggerCreate }: { triggerCreate: number }) {
                     padding: '8px 12px',
                     fontSize: 12,
                     color: typeFilter === val ? 'var(--text-primary)' : 'var(--text-secondary)',
-                    background: typeFilter === val ? 'rgba(57,86,237,0.13)' : 'transparent',
+                    background: typeFilter === val ? 'rgba(59,91,219,0.13)' : 'transparent',
                     border: 'none',
                     cursor: 'pointer',
                     fontFamily: 'inherit',
@@ -1586,7 +1586,7 @@ function FlightsTabInner({ triggerCreate }: { triggerCreate: number }) {
                 top: '100%',
                 left: 0,
                 marginTop: 4,
-                background: '#0d121f',
+                background: 'var(--input-bg)',
                 border: '1px solid var(--input-border)',
                 borderRadius: 6,
                 overflow: 'hidden',
@@ -1605,7 +1605,7 @@ function FlightsTabInner({ triggerCreate }: { triggerCreate: number }) {
                     padding: '8px 12px',
                     fontSize: 12,
                     color: activeFilter === val ? 'var(--text-primary)' : 'var(--text-secondary)',
-                    background: activeFilter === val ? 'rgba(57,86,237,0.13)' : 'transparent',
+                    background: activeFilter === val ? 'rgba(59,91,219,0.13)' : 'transparent',
                     border: 'none',
                     cursor: 'pointer',
                     fontFamily: 'inherit',
@@ -1808,7 +1808,7 @@ function FlightsTabInner({ triggerCreate }: { triggerCreate: number }) {
                     height: 28,
                     borderRadius: 4,
                     border: pageNum === currentPage ? '1px solid var(--accent-blue)' : '1px solid var(--border-primary)',
-                    background: pageNum === currentPage ? 'rgba(57,86,237,0.13)' : 'transparent',
+                    background: pageNum === currentPage ? 'rgba(59,91,219,0.13)' : 'transparent',
                     color: pageNum === currentPage ? 'var(--accent-blue-bright)' : 'var(--text-secondary)',
                     cursor: 'pointer',
                     fontSize: 11,

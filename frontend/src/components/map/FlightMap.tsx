@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { MapContainer, TileLayer, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import { useDispatchTelemetry } from '../../hooks/useDispatchTelemetry';
+import { useDispatchEdit } from '../../contexts/DispatchEditContext';
 import { useFlightPlanStore } from '../../stores/flightPlanStore';
 import { AircraftMarker } from './AircraftMarker';
 import { RoutePolyline } from './RoutePolyline';
@@ -32,8 +33,23 @@ function FitRoute() {
   return null;
 }
 
+/** Center map on aircraft when position first becomes available. */
+function FollowAircraft({ lat, lon }: { lat: number; lon: number }) {
+  const map = useMap();
+  const centeredRef = useRef(false);
+
+  useEffect(() => {
+    if (centeredRef.current) return;
+    centeredRef.current = true;
+    map.setView([lat, lon], 7, { animate: true });
+  }, [map, lat, lon]);
+
+  return null;
+}
+
 export function FlightMap() {
   const { aircraft, connected } = useDispatchTelemetry();
+  const { isOwnFlight } = useDispatchEdit();
 
   return (
     <div className="relative h-full w-full">
@@ -60,8 +76,11 @@ export function FlightMap() {
           />
         )}
 
-        {/* Auto-fit route bounds */}
+        {/* Auto-fit route bounds, then center on aircraft when live */}
         <FitRoute />
+        {connected && aircraft && (
+          <FollowAircraft lat={aircraft.position.latitude} lon={aircraft.position.longitude} />
+        )}
 
         {/* Route polyline */}
         <RoutePolyline />
@@ -73,8 +92,8 @@ export function FlightMap() {
         <GroundChartOverlay />
       </MapContainer>
 
-      {/* Sim-disconnected badge — small indicator, doesn't hide the route */}
-      {!connected && (
+      {/* Sim-disconnected badge — only show for own flights (observing uses heartbeat, not SimConnect) */}
+      {!connected && isOwnFlight && (
         <div className="absolute top-2 right-2 z-[1001] bg-acars-panel/90 border border-acars-border rounded-md px-2.5 py-1.5 flex items-center gap-2">
           <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
           <span className="text-[10px] text-acars-muted">Sim Offline</span>

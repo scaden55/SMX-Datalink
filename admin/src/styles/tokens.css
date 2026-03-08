@@ -1,27 +1,28 @@
 /* ═══════════════════════════════════════════════════════════
    SMA ACARS Admin — Design Tokens
    Single source of truth for all visual constants.
+   Matched to pilot frontend design system.
    ═══════════════════════════════════════════════════════════ */
 
 :root {
   /* ── Surface Colors (4-tier depth system) ─────────────── */
-  --surface-0: #05060d;
-  --surface-1: #060812;
-  --surface-2: rgba(15, 19, 36, 0.5);
-  --surface-3: #1c2230;
+  --surface-0: #000000;
+  --surface-1: #050505;
+  --surface-2: transparent;
+  --surface-3: #111111;
 
   /* ── Text Hierarchy ───────────────────────────────────── */
-  --text-primary: #eceef5;
-  --text-secondary: #8793a1;
-  --text-tertiary: #566270;
-  --text-quaternary: #3a4250;
+  --text-primary: #f0f0f0;
+  --text-secondary: #7a7a7a;
+  --text-tertiary: #4a4a4a;
+  --text-quaternary: #3a3a3a;
 
   /* ── Semantic Accent Colors ───────────────────────────── */
-  --accent-blue: #3950ed;
-  --accent-blue-bright: #8ca4fa;
-  --accent-blue-dim: rgba(57, 86, 237, 0.13);
-  --accent-blue-bg: rgba(57, 86, 237, 0.12);
-  --accent-blue-ring: rgba(57, 86, 237, 0.25);
+  --accent-blue: #3b5bdb;
+  --accent-blue-bright: #6b8aff;
+  --accent-blue-dim: rgba(59, 91, 219, 0.13);
+  --accent-blue-bg: rgba(59, 91, 219, 0.12);
+  --accent-blue-ring: rgba(59, 91, 219, 0.25);
 
   --accent-emerald: #4ade80;
   --accent-emerald-bg: rgba(74, 222, 128, 0.12);
@@ -40,14 +41,14 @@
   --accent-cyan-ring: rgba(34, 211, 238, 0.25);
 
   /* ── Border System ────────────────────────────────────── */
-  --border-primary: rgba(27, 31, 53, 0.5);
-  --border-secondary: #2a3040;
-  --border-hover: #3a4050;
+  --border-primary: rgba(255, 255, 255, 0.06);
+  --border-secondary: rgba(255, 255, 255, 0.08);
+  --border-hover: rgba(255, 255, 255, 0.12);
 
   /* ── Input System ─────────────────────────────────────── */
-  --input-bg: #0d121f;
-  --input-border: #1b2336;
-  --divider: #172230;
+  --input-bg: #111111;
+  --input-border: rgba(255, 255, 255, 0.08);
+  --divider: rgba(255, 255, 255, 0.06);
 
   /* ── Elevation (Shadows) ──────────────────────────────── */
   --elevation-0: none;

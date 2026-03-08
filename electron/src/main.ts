@@ -557,7 +557,6 @@ app.whenReady().then(async () => {
           timestamp: new Date().toISOString(),
         };
         mainWindow!.webContents.send(IpcChannels.SIM_TELEMETRY, snapshot);
-        vpsRelay?.sendTelemetry(snapshot);
       }, 200);
     }
   });

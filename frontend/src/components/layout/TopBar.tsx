@@ -1,9 +1,11 @@
-import { useTelemetry } from '../../hooks/useTelemetry';
+import { useDispatchTelemetry } from '../../hooks/useDispatchTelemetry';
+import { useDispatchEdit } from '../../contexts/DispatchEditContext';
 import { useUIStore, type ViewMode } from '../../stores/uiStore';
 import { Badge } from '../common/Badge';
 
 export function TopBar() {
-  const { flight, connectionStatus } = useTelemetry();
+  const { flight, connectionStatus, connected } = useDispatchTelemetry();
+  const { isOwnFlight } = useDispatchEdit();
   const viewMode = useUIStore((s) => s.viewMode);
   const setViewMode = useUIStore((s) => s.setViewMode);
 
@@ -22,13 +24,17 @@ export function TopBar() {
         </span>
         <div className="flex items-center gap-2">
           <Badge variant="blue">ACARS</Badge>
-          {connectionStatus.connected ? (
-            <Badge variant="green">
-              {connectionStatus.simulator.toUpperCase()}
-            </Badge>
-          ) : (
-            <Badge variant="red">DISCONNECTED</Badge>
-          )}
+          {isOwnFlight ? (
+            connectionStatus.connected ? (
+              <Badge variant="green">
+                {connectionStatus.simulator.toUpperCase()}
+              </Badge>
+            ) : (
+              <Badge variant="red">DISCONNECTED</Badge>
+            )
+          ) : connected ? (
+            <Badge variant="green">LIVE</Badge>
+          ) : null}
           {flight && (
             <Badge variant="amber">{flight.phase?.replace('_', ' ') ?? 'IDLE'}</Badge>
           )}

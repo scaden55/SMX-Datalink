@@ -4,11 +4,15 @@ import { authMiddleware } from '../middleware/auth.js';
 import type { LogbookFilters, LogbookStatus } from '@acars/shared';
 import { logger } from '../lib/logger.js';
 import { ExceedanceService } from '../services/exceedance.js';
+import { FinanceService } from '../services/finance.js';
+import { FinanceEngineStore } from '../services/finance-engine/store.js';
 
 export function logbookRouter(): Router {
   const router = Router();
   const service = new LogbookService();
   const exceedanceService = new ExceedanceService();
+  const financeService = new FinanceService();
+  const financeStore = new FinanceEngineStore();
 
   // GET /api/logbook — paginated list (auth required)
   // Pilots can only see their own entries; admins/dispatchers can see all
@@ -97,6 +101,68 @@ export function logbookRouter(): Router {
     } catch (err) {
       logger.error('Logbook', 'Exceedances fetch error', err);
       res.status(500).json({ error: 'Failed to fetch exceedances' });
+    }
+  });
+
+  // GET /api/logbook/:id/finances — financial summary for a flight
+  router.get('/logbook/:id/finances', authMiddleware, (req, res) => {
+    try {
+      const id = parseInt(req.params.id as string, 10);
+      if (isNaN(id)) {
+        res.status(400).json({ error: 'Invalid logbook entry ID' });
+        return;
+      }
+
+      const entry = service.findById(id);
+      if (!entry) {
+        res.status(404).json({ error: 'Logbook entry not found' });
+        return;
+      }
+
+      const isPrivileged = req.user!.role === 'admin' || req.user!.role === 'dispatcher';
+      if (!isPrivileged && entry.userId !== req.user!.userId) {
+        res.status(404).json({ error: 'Logbook entry not found' });
+        return;
+      }
+
+      // Try finance engine P&L first (detailed breakdown)
+      const pnl = financeStore.getFlightPnL(id);
+      if (pnl) {
+        res.json({
+          source: 'engine',
+          cargoRevenue: pnl.cargo_revenue,
+          fuelCost: pnl.fuel_cost,
+          landingFee: pnl.landing_fee,
+          parkingFee: pnl.parking_fee,
+          handlingFee: pnl.handling_fee,
+          navFee: pnl.nav_fee,
+          deiceFee: pnl.deice_fee,
+          uldFee: pnl.uld_fee,
+          crewCost: pnl.crew_cost,
+          totalVariableCost: pnl.total_variable_cost,
+          maintReserve: pnl.maint_reserve,
+          leaseAlloc: pnl.lease_alloc,
+          insuranceAlloc: pnl.insurance_alloc,
+          totalFixedAlloc: pnl.total_fixed_alloc,
+          grossProfit: pnl.gross_profit,
+          marginPct: pnl.margin_pct,
+          loadFactor: pnl.load_factor,
+          blockHours: pnl.block_hours,
+          payloadLbs: pnl.payload_lbs,
+        });
+        return;
+      }
+
+      // Fallback: simple pay entry from finances table
+      const pay = financeService.findByPirepId(id);
+      res.json({
+        source: 'simple',
+        pilotPay: pay?.amount ?? null,
+        description: pay?.description ?? null,
+      });
+    } catch (err) {
+      logger.error('Logbook', 'Finances fetch error', err);
+      res.status(500).json({ error: 'Failed to fetch flight finances' });
     }
   });
 

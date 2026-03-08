@@ -29,6 +29,13 @@ export class FinanceService {
     return result.lastInsertRowid as number;
   }
 
+  findByPirepId(pirepId: number): { amount: number; description: string | null } | null {
+    const row = getDb().prepare(
+      'SELECT amount, description FROM finances WHERE pirep_id = ? LIMIT 1',
+    ).get(pirepId) as { amount: number; description: string | null } | undefined;
+    return row ?? null;
+  }
+
   findAll(filters?: FinanceFilters, page = 1, pageSize = 50): { entries: FinanceEntry[]; total: number } {
     const conditions: string[] = [];
     const params: unknown[] = [];

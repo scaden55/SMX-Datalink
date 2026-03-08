@@ -170,6 +170,7 @@ export function dispatchRouter(
         remarks?: string;
         clientFlightEvents?: {
           landingRateFpm: number | null;
+          landingGForce: number | null;
           takeoffFuelLbs: number | null;
           takeoffTime: string | null;
           oooiOut: string | null;
@@ -189,7 +190,7 @@ export function dispatchRouter(
       );
 
       // Prefer server-side data; fall back to client-provided events (VPS path)
-      const nullEvents = { landingRateFpm: null, takeoffFuelLbs: null, takeoffTime: null,
+      const nullEvents = { landingRateFpm: null, landingGForce: null, takeoffFuelLbs: null, takeoffTime: null,
         oooiOut: null, oooiOff: null, oooiOn: null, oooiIn: null };
       const flightEvents = hasServerData
         ? serverEvents!

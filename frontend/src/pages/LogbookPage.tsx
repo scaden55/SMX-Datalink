@@ -47,18 +47,18 @@ function formatDateTime(iso: string): string {
   return `${formatDate(iso)} ${formatTime(iso)}`;
 }
 
-function landingRateColor(fpm: number | null): string {
-  if (fpm == null) return 'text-acars-muted';
-  const abs = Math.abs(fpm);
-  if (abs <= 150) return 'text-emerald-400';
-  if (abs <= 250) return 'text-amber-400';
+function gForceColor(g: number | null): string {
+  if (g == null) return 'text-acars-muted';
+  const abs = Math.abs(g);
+  if (abs <= 1.5) return 'text-emerald-400';
+  if (abs <= 1.8) return 'text-amber-400';
   return 'text-red-400';
 }
 
 function scoreColor(score: number | null): string {
   if (score == null) return 'text-acars-muted';
-  if (score >= 90) return 'text-emerald-400';
-  if (score >= 75) return 'text-amber-400';
+  if (score >= 85) return 'text-emerald-400';
+  if (score >= 60) return 'text-amber-400';
   return 'text-red-400';
 }
 
@@ -141,7 +141,7 @@ export function LogbookPage() {
       case 'aircraft': return dir * a.aircraftType.localeCompare(b.aircraftType);
       case 'duration': return dir * (a.flightTimeMin - b.flightTimeMin);
       case 'block': return dir * ((a.blockTimeMin ?? a.flightTimeMin) - (b.blockTimeMin ?? b.flightTimeMin));
-      case 'landing': return dir * ((a.landingRateFpm ?? 0) - (b.landingRateFpm ?? 0));
+      case 'landing': return dir * ((a.landingGForce ?? a.landingRateFpm ?? 0) - (b.landingGForce ?? b.landingRateFpm ?? 0));
       case 'score': return dir * ((a.score ?? 0) - (b.score ?? 0));
       default: return 0;
     }
@@ -349,8 +349,8 @@ export function LogbookPage() {
                     </span>
                   </td>
                   <td className="text-right px-3 py-2.5">
-                    <span className={`tabular-nums font-semibold ${landingRateColor(entry.landingRateFpm)}`}>
-                      {entry.landingRateFpm != null ? `${entry.landingRateFpm} fpm` : '—'}
+                    <span className={`tabular-nums font-semibold ${gForceColor(entry.landingGForce)}`}>
+                      {entry.landingGForce != null ? `${entry.landingGForce.toFixed(2)}G` : entry.landingRateFpm != null ? `${entry.landingRateFpm} fpm` : '—'}
                     </span>
                   </td>
                   <td className="text-right px-3 py-2.5">

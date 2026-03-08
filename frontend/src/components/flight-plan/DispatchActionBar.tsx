@@ -58,6 +58,7 @@ export function DispatchActionBar() {
           remarks: remarks.trim() || undefined,
           clientFlightEvents: {
             landingRateFpm: events.landingRateFpm,
+            landingGForce: events.landingGForce,
             takeoffFuelLbs: events.takeoffFuelLbs,
             takeoffTime: events.takeoffTime,
             oooiOut: events.oooiOut,

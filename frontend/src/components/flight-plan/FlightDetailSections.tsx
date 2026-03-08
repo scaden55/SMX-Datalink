@@ -7,6 +7,7 @@ import type { SimBriefOFP, FlightPlanFormData } from '@acars/shared';
 interface FlightDetailSectionsProps {
   ofp?: SimBriefOFP | null;
   formData?: FlightPlanFormData | null;
+  pilotName?: string;
 }
 
 function fmt(val: number | string | undefined | null): string {
@@ -253,7 +254,7 @@ function ReadOnlyField({ label, value, warn }: { label: string; value: string; w
 
 /* ── Main component ─────────────────────────────────────────────── */
 
-export function FlightDetailSections({ ofp, formData }: FlightDetailSectionsProps) {
+export function FlightDetailSections({ ofp, formData, pilotName }: FlightDetailSectionsProps) {
   const { aircraft } = useDispatchTelemetry();
   const { editableFields, canEdit, canEditFuel, canEditMEL, canEditRoute, onFieldChange, releasedFields } = useDispatchEdit();
   const flightPlan = useFlightPlanStore((s) => s.flightPlan);
@@ -357,7 +358,7 @@ export function FlightDetailSections({ ofp, formData }: FlightDetailSectionsProp
           />
           <EditableField
             label="Pilot in Command"
-            value={editableFields.pic ?? formData?.pic ?? ''}
+            value={editableFields.pic ?? formData?.pic ?? ofp?.pilotName ?? pilotName ?? ''}
             fieldKey="pic"
             canEdit={canEdit}
             onFieldChange={onFieldChange}

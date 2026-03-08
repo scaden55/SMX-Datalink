@@ -129,7 +129,7 @@ interface PilotPayEntry {
 
 // ── Colors ──────────────────────────────────────────────────────
 
-const ACCENT_BLUE = '#3950ed';
+const ACCENT_BLUE = '#3b5bdb';
 const ACCENT_EMERALD = '#4ade80';
 const ACCENT_AMBER = '#fbbf24';
 const ACCENT_RED = '#f87171';

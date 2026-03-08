@@ -38,9 +38,6 @@ export interface ServerToClientEvents {
   'track:point': (data: { bidId: number; point: TrackPoint }) => void;
   'flight:completed': (data: { bidId: number; logbookId: number }) => void;
   'dispatch:released': (data: { bidId: number; changedFields: string[] }) => void;
-  'dispatch:telemetry': (data: TelemetrySnapshot) => void;
-  'relay:start': () => void;
-  'relay:stop': () => void;
   'flights:active': (flights: ActiveFlightHeartbeat[]) => void;
   'bid:expired': (data: { bidId: number; flightNumber: string; reason: 'expired' | 'admin_removed' }) => void;
   'dispatch:exceedance': (data: FlightExceedance) => void;
@@ -56,7 +53,6 @@ export interface ClientToServerEvents {
   'vatsim:subscribe': () => void;
   'vatsim:unsubscribe': () => void;
   'flight:heartbeat': (data: ActiveFlightHeartbeat) => void;
-  'flight:telemetry': (data: TelemetrySnapshot) => void;
   'flight:ended': () => void;
   'flight:exceedance': (data: ExceedanceEvent) => void;
   'livemap:subscribe': () => void;

@@ -213,17 +213,24 @@ export function useSimBrief() {
 
       const ofp = jsonNormalize(parseSimBriefResponse(json));
 
-      // Validate OFP route matches the active bid
+      // Validate OFP route matches the active bid — warn but allow override
       const currentForm = useFlightPlanStore.getState().form;
+      const mismatches: string[] = [];
       if (currentForm.origin && ofp.origin && currentForm.origin !== ofp.origin) {
-        throw new Error(
-          `OFP origin (${ofp.origin}) doesn't match your bid origin (${currentForm.origin}). Generate a new OFP for this route first.`
-        );
+        mismatches.push(`Origin: OFP has ${ofp.origin}, bid has ${currentForm.origin}`);
       }
       if (currentForm.destination && ofp.destination && currentForm.destination !== ofp.destination) {
-        throw new Error(
-          `OFP destination (${ofp.destination}) doesn't match your bid destination (${currentForm.destination}). Generate a new OFP for this route first.`
+        mismatches.push(`Destination: OFP has ${ofp.destination}, bid has ${currentForm.destination}`);
+      }
+      if (mismatches.length > 0) {
+        const proceed = window.confirm(
+          `The fetched OFP doesn't match your current bid:\n\n${mismatches.join('\n')}\n\nDo you want to use this OFP anyway?`
         );
+        if (!proceed) {
+          setSimbriefLoading(false);
+          return;
+        }
+        toast.warning(`OFP airport mismatch: ${mismatches.join('; ')}`);
       }
 
       const formFields = ofpToFormFields(ofp);

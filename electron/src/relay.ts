@@ -12,7 +12,6 @@ interface RelayConfig {
 export class VpsRelay {
   private socket: Socket | null = null;
   private heartbeatTimer: ReturnType<typeof setInterval> | null = null;
-  private relaying = false;
   private latestPosition: { latitude: number; longitude: number; altitude: number; heading: number; groundSpeed: number } | null = null;
   private latestAircraftType = '';
   private latestPhase = 'unknown';
@@ -39,20 +38,9 @@ export class VpsRelay {
       this.startHeartbeat();
     });
 
-    this.socket.on('relay:start', () => {
-      console.log('[Relay] Observer watching — starting full telemetry relay');
-      this.relaying = true;
-    });
-
-    this.socket.on('relay:stop', () => {
-      console.log('[Relay] No observers — stopping full telemetry relay');
-      this.relaying = false;
-    });
-
     this.socket.on('disconnect', () => {
       console.log('[Relay] Disconnected from VPS');
       this.stopHeartbeat();
-      this.relaying = false;
     });
 
     // Listen to SimConnect updates for heartbeat data
@@ -64,12 +52,6 @@ export class VpsRelay {
     };
     this.simConnect.on('positionUpdate', this.onPositionUpdate);
     this.simConnect.on('aircraftInfoUpdate', this.onAircraftInfoUpdate);
-  }
-
-  sendTelemetry(snapshot: unknown): void {
-    if (this.relaying && this.socket?.connected) {
-      this.socket.emit('flight:telemetry', snapshot as any);
-    }
   }
 
   updatePhase(phase: string): void {
@@ -96,7 +78,6 @@ export class VpsRelay {
     this.stopHeartbeat();
     this.socket?.disconnect();
     this.socket = null;
-    this.relaying = false;
     // Remove SimConnect listeners to prevent accumulation across restarts
     if (this.onPositionUpdate) {
       this.simConnect.removeListener('positionUpdate', this.onPositionUpdate);

@@ -474,26 +474,7 @@ export function LiveMapPage() {
   const bidTrack = useTrackStore((s) => s.selectedBidTrack);
   const ofpSteps = useTrackStore((s) => s.ofpSteps);
 
-  // Subscribe to livemap channel only while this page is mounted
-  useEffect(() => {
-    if (!socket) return;
-
-    // Subscribe now if already connected
-    if (socket.connected) {
-      socket.emit('livemap:subscribe');
-    }
-
-    // Also subscribe on reconnect
-    const onConnect = () => {
-      socket.emit('livemap:subscribe');
-    };
-    socket.on('connect', onConnect);
-
-    return () => {
-      socket.off('connect', onConnect);
-      socket.emit('livemap:unsubscribe');
-    };
-  }, [socket]);
+  // livemap:subscribe is handled globally by useSocket — no per-page sub needed
 
   const detailPanelOpen = selectedAirport != null || selectedPilot != null || selectedAirspace != null;
 

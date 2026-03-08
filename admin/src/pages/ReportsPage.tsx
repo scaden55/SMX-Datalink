@@ -72,7 +72,7 @@ interface FleetUtilizationEntry {
 
 // ── Chart Colors ────────────────────────────────────────────────
 
-const ACCENT_BLUE = '#3950ed';
+const ACCENT_BLUE = '#3b5bdb';
 const ACCENT_EMERALD = '#4ade80';
 const ACCENT_AMBER = '#fbbf24';
 const ACCENT_RED = '#f87171';
@@ -228,7 +228,7 @@ function FlightHoursChart({ data }: { data: FlightHoursEntry[] }) {
         />
         <Tooltip
           contentStyle={TOOLTIP_STYLE}
-          cursor={{ fill: 'rgba(57,80,237,0.08)' }}
+          cursor={{ fill: 'rgba(59,91,219,0.08)' }}
           content={({ active, payload, label }) => {
             if (!active || !payload?.length) return null;
             const d = payload[0].payload as { hours: number; flights: number };
@@ -287,7 +287,7 @@ function LandingRateChart({ data }: { data: LandingRateData }) {
           contentStyle={TOOLTIP_STYLE}
           formatter={(value: number | string | undefined) => [`${value ?? 0} landings`, 'Count']}
           labelStyle={{ color: 'var(--text-tertiary)' }}
-          cursor={{ fill: 'rgba(57,80,237,0.08)' }}
+          cursor={{ fill: 'rgba(59,91,219,0.08)' }}
         />
         <Bar dataKey="count" radius={[4, 4, 0, 0]} maxBarSize={36}>
           {chartData.map((entry, idx) => (
@@ -409,7 +409,7 @@ function FuelEfficiencyChart({ data }: { data: FuelEfficiencyEntry[] }) {
         />
         <Tooltip
           contentStyle={TOOLTIP_STYLE}
-          cursor={{ fill: 'rgba(57,80,237,0.08)' }}
+          cursor={{ fill: 'rgba(59,91,219,0.08)' }}
           content={({ active, payload, label }) => {
             if (!active || !payload?.length) return null;
             const d = payload[0].payload as { planned: number; actual: number };
@@ -479,7 +479,7 @@ function RoutePopularityChart({ data }: { data: RoutePopularityEntry[] }) {
           contentStyle={TOOLTIP_STYLE}
           formatter={(value: number | string | undefined) => [`${value ?? 0} flights`, 'Count']}
           labelStyle={{ color: 'var(--text-tertiary)' }}
-          cursor={{ fill: 'rgba(57,80,237,0.08)' }}
+          cursor={{ fill: 'rgba(59,91,219,0.08)' }}
         />
         <Bar dataKey="count" fill={ACCENT_BLUE} radius={[4, 4, 0, 0]} maxBarSize={36} />
       </BarChart>
@@ -542,7 +542,7 @@ function FleetUtilizationChart({ data }: { data: FleetUtilizationEntry[] }) {
           />
           <Tooltip
             contentStyle={TOOLTIP_STYLE}
-            cursor={{ fill: 'rgba(57,80,237,0.08)' }}
+            cursor={{ fill: 'rgba(59,91,219,0.08)' }}
             content={({ active, payload, label }) => {
               if (!active || !payload?.length) return null;
               const d = payload[0].payload as { flying: number; ground: number; type: string };

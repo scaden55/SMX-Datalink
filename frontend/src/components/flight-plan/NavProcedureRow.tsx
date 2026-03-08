@@ -107,7 +107,8 @@ const EMPTY_ATIS: VatsimAtis[] = [];
 // ── Component ──────────────────────────────────────────────────
 
 export function NavProcedureRow({ formData }: NavProcedureRowProps) {
-  const { canEdit, editableFields, onFieldChange } = useDispatchEdit();
+  const { canEdit, editableFields, onFieldChange, releasedFields } = useDispatchEdit();
+  const hl = (key: string) => releasedFields?.includes(key) ?? false;
   const [originRunways, setOriginRunways] = useState<string[]>([]);
   const [destRunways, setDestRunways] = useState<string[]>([]);
 
@@ -191,7 +192,7 @@ export function NavProcedureRow({ formData }: NavProcedureRowProps) {
     <div className="px-3 py-1.5">
       <div className="flex items-end gap-1.5">
         {/* Departure Runway */}
-        <div className="flex flex-col min-w-0 flex-1">
+        <div className={`flex flex-col min-w-0 flex-1 ${hl('depRunway') ? 'border-l-2 border-amber-400 bg-amber-400/5 pl-1' : ''}`}>
           <span className="text-[9px] text-acars-muted/70 mb-0.5">
             Runway {hasDepAtis && <span className="text-emerald-400" title="ATIS active">●</span>}
           </span>
@@ -211,7 +212,7 @@ export function NavProcedureRow({ formData }: NavProcedureRowProps) {
         </div>
 
         {/* SID */}
-        <div className="flex flex-col min-w-0 flex-1">
+        <div className={`flex flex-col min-w-0 flex-1 ${hl('sid') ? 'border-l-2 border-amber-400 bg-amber-400/5 pl-1' : ''}`}>
           <span className="text-[9px] text-acars-muted/70 mb-0.5">SID</span>
           <input
             type="text"
@@ -224,7 +225,7 @@ export function NavProcedureRow({ formData }: NavProcedureRowProps) {
         </div>
 
         {/* STAR */}
-        <div className="flex flex-col min-w-0 flex-1">
+        <div className={`flex flex-col min-w-0 flex-1 ${hl('star') ? 'border-l-2 border-amber-400 bg-amber-400/5 pl-1' : ''}`}>
           <span className="text-[9px] text-acars-muted/70 mb-0.5">STAR</span>
           <input
             type="text"
@@ -237,7 +238,7 @@ export function NavProcedureRow({ formData }: NavProcedureRowProps) {
         </div>
 
         {/* Arrival Runway */}
-        <div className="flex flex-col min-w-0 flex-1">
+        <div className={`flex flex-col min-w-0 flex-1 ${hl('arrRunway') ? 'border-l-2 border-amber-400 bg-amber-400/5 pl-1' : ''}`}>
           <span className="text-[9px] text-acars-muted/70 mb-0.5">
             Runway {hasArrAtis && <span className="text-emerald-400" title="ATIS active">●</span>}
           </span>
@@ -257,7 +258,7 @@ export function NavProcedureRow({ formData }: NavProcedureRowProps) {
         </div>
 
         {/* Dest Alt 1 */}
-        <div className="flex flex-col min-w-0 flex-1">
+        <div className={`flex flex-col min-w-0 flex-1 ${hl('alternate1') ? 'border-l-2 border-amber-400 bg-amber-400/5 pl-1' : ''}`}>
           <span className="text-[9px] text-acars-muted/70 mb-0.5">Dest Alt 1</span>
           <AirportSearchDropdown
             value={alt1}
@@ -267,7 +268,7 @@ export function NavProcedureRow({ formData }: NavProcedureRowProps) {
         </div>
 
         {/* Dest Alt 2 */}
-        <div className="flex flex-col min-w-0 flex-1">
+        <div className={`flex flex-col min-w-0 flex-1 ${hl('alternate2') ? 'border-l-2 border-amber-400 bg-amber-400/5 pl-1' : ''}`}>
           <span className="text-[9px] text-acars-muted/70 mb-0.5">Dest Alt 2</span>
           <AirportSearchDropdown
             value={alt2}

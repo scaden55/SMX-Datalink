@@ -1,6 +1,6 @@
 import type { Server as HttpServer } from 'http';
 import { Server as SocketServer, type Socket } from 'socket.io';
-import type { ServerToClientEvents, ClientToServerEvents, AuthPayload, VatsimDataSnapshot, VatsimFlightStatus, ActiveFlightHeartbeat, TelemetrySnapshot, ExceedanceEvent } from '@acars/shared';
+import type { ServerToClientEvents, ClientToServerEvents, AuthPayload, VatsimDataSnapshot, VatsimFlightStatus, ActiveFlightHeartbeat, ExceedanceEvent } from '@acars/shared';
 import type { TelemetryService } from '../services/telemetry.js';
 import type { ISimConnectManager } from '../simconnect/types.js';
 import type { VatsimService } from '../services/vatsim.js';
@@ -56,7 +56,6 @@ export function setupWebSocket(
   const livemapSubscribers = new Set<string>();
 
   const activeFlights = new Map<number, ActiveFlightHeartbeat>();
-  const flightObservers = new Map<number, Set<string>>();
   const pilotSockets = new Map<number, string>();
 
   const trackService = new TrackService();
@@ -139,11 +138,12 @@ export function setupWebSocket(
           io.to(ROOM_TELEMETRY).emit('telemetry:update', snapshot);
         }
 
-        // Track airborne VS for landing rate capture
+        // Track airborne VS and G-force for landing capture
         if (flightEventTracker) {
           flightEventTracker.updateAirborneVs(
             snapshot.aircraft.position.verticalSpeed,
             snapshot.flight.simOnGround,
+            snapshot.aircraft.position.gForce,
           );
         }
 
@@ -271,38 +271,11 @@ export function setupWebSocket(
       telemetrySubscribers.add(socket.id);
       socket.join(ROOM_TELEMETRY);
       startBroadcast();
-      // If this subscriber is NOT a pilot with an active flight,
-      // they're an observer — signal all active pilots to start relaying
-      const isActivePilot = socket.user && activeFlights.has(socket.user.userId);
-      if (!isActivePilot) {
-        for (const [pilotUserId, pilotSocketId] of pilotSockets) {
-          let observers = flightObservers.get(pilotUserId);
-          if (!observers) {
-            observers = new Set();
-            flightObservers.set(pilotUserId, observers);
-          }
-          const wasEmpty = observers.size === 0;
-          observers.add(socket.id);
-          if (wasEmpty) {
-            io.to(pilotSocketId).emit('relay:start');
-          }
-        }
-      }
     });
 
     socket.on('telemetry:unsubscribe', () => {
       telemetrySubscribers.delete(socket.id);
       socket.leave(ROOM_TELEMETRY);
-      // Remove from all observer sets and signal relay:stop if needed
-      for (const [pilotUserId, observers] of flightObservers) {
-        observers.delete(socket.id);
-        if (observers.size === 0) {
-          const pilotSocketId = pilotSockets.get(pilotUserId);
-          if (pilotSocketId) {
-            io.to(pilotSocketId).emit('relay:stop');
-          }
-        }
-      }
       stopBroadcast();
     });
 
@@ -318,48 +291,11 @@ export function setupWebSocket(
       }
 
       socket.join(`bid:${bidId}`);
-
-      // Look up the bid's pilot and trigger relay:start so their Electron
-      // begins sending full telemetry (flight:telemetry) to the server
-      const bid = stmts.bidOwner().get(bidId) as { user_id: number } | undefined;
-      if (bid) {
-        const pilotUserId = bid.user_id;
-        const pilotSocketId = pilotSockets.get(pilotUserId);
-        if (pilotSocketId && pilotUserId !== user.userId) {
-          let observers = flightObservers.get(pilotUserId);
-          if (!observers) {
-            observers = new Set();
-            flightObservers.set(pilotUserId, observers);
-          }
-          const wasEmpty = observers.size === 0;
-          observers.add(socket.id);
-          if (wasEmpty) {
-            io.to(pilotSocketId).emit('relay:start');
-          }
-        }
-      }
-
       logger.info('WebSocket', `${socket.id} joined bid:${bidId}`);
     });
 
     socket.on('dispatch:unsubscribe', (bidId: number) => {
       socket.leave(`bid:${bidId}`);
-
-      // Clean up relay observer for this bid's pilot
-      const bid = stmts.bidOwner().get(bidId) as { user_id: number } | undefined;
-      if (bid) {
-        const pilotUserId = bid.user_id;
-        const observers = flightObservers.get(pilotUserId);
-        if (observers) {
-          observers.delete(socket.id);
-          if (observers.size === 0) {
-            const pilotSocketId = pilotSockets.get(pilotUserId);
-            if (pilotSocketId) {
-              io.to(pilotSocketId).emit('relay:stop');
-            }
-          }
-        }
-      }
     });
 
     // Real-time message sending via WebSocket — verify bid ownership
@@ -426,31 +362,10 @@ export function setupWebSocket(
       broadcastFlights();
     });
 
-    socket.on('flight:telemetry', (snapshot: TelemetrySnapshot) => {
-      if (!socket.user) return;
-      const observers = flightObservers.get(socket.user.userId);
-      if (observers) {
-        for (const sid of observers) {
-          io.to(sid).emit('telemetry:update', snapshot);
-        }
-      }
-
-      // Relay telemetry to dispatch room subscribers watching this pilot's flight
-      try {
-        const bid = stmts.findActiveBidByUser().get(socket.user.userId) as { id: number } | undefined;
-        if (bid) {
-          io.to(`bid:${bid.id}`).emit('dispatch:telemetry', snapshot);
-        }
-      } catch {
-        // Non-critical — don't break relay
-      }
-    });
-
     socket.on('flight:ended', () => {
       if (!socket.user) return;
       activeFlights.delete(socket.user.userId);
       pilotSockets.delete(socket.user.userId);
-      flightObservers.delete(socket.user.userId);
       invalidateFlightsCache();
       broadcastFlights();
     });
@@ -515,19 +430,8 @@ export function setupWebSocket(
       if (socket.user && activeFlights.has(socket.user.userId)) {
         activeFlights.delete(socket.user.userId);
         pilotSockets.delete(socket.user.userId);
-        flightObservers.delete(socket.user.userId);
         invalidateFlightsCache();
         broadcastFlights();
-      }
-      // Remove from all observer sets and signal relay:stop if needed
-      for (const [pilotUserId, observers] of flightObservers) {
-        observers.delete(socket.id);
-        if (observers.size === 0) {
-          const pilotSocketId = pilotSockets.get(pilotUserId);
-          if (pilotSocketId) {
-            io.to(pilotSocketId).emit('relay:stop');
-          }
-        }
       }
       // Socket.io automatically removes from rooms on disconnect,
       // but we still track our own Sets for cap logic
@@ -548,7 +452,6 @@ export function setupWebSocket(
       if (age > STALE_FLIGHT_MS) {
         activeFlights.delete(userId);
         pilotSockets.delete(userId);
-        flightObservers.delete(userId);
         cleaned = true;
         logger.info('WebSocket', `Cleaned stale flight for user ${userId} (${Math.round(age / 1000)}s old)`);
       }
@@ -567,7 +470,6 @@ export function setupWebSocket(
     vatsimSubscribers: vatsimSubscribers.size,
     livemapSubscribers: livemapSubscribers.size,
     activeFlights: activeFlights.size,
-    flightObservers: flightObservers.size,
     pilotSockets: pilotSockets.size,
   });
 

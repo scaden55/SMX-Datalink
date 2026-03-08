@@ -41,8 +41,9 @@ export function RegisterPage() {
 
   return (
     <div className="relative flex items-center justify-center h-screen bg-acars-bg px-4 overflow-hidden">
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(88,166,255,0.04)_0%,transparent_70%)]" />
-      <div className="panel max-w-sm w-full p-8 shadow-2xl shadow-blue-400/5 relative">
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(77,156,246,0.06)_0%,transparent_60%)]" />
+      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[600px] h-[600px] rounded-full bg-blue-500/[0.02] blur-3xl" />
+      <div className="panel max-w-sm w-full p-8 relative" style={{ boxShadow: '0 4px 24px rgba(0, 0, 0, 0.4), 0 0 80px rgba(77, 156, 246, 0.06)' }}>
         {/* Logo */}
         <div className="flex flex-col items-center gap-3 mb-8">
           <img src="./logos/smx-login-logo.png" alt="Special Missions Air" className="h-20 w-auto" />

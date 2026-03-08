@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { motion } from 'motion/react';
-import type { ActiveFlightHeartbeat, TelemetrySnapshot, AcarsMessagePayload, TrackPoint, FlightExceedance } from '@acars/shared';
+import type { ActiveFlightHeartbeat, AcarsMessagePayload, TrackPoint, FlightExceedance } from '@acars/shared';
 import { useAuthStore } from '@/stores/authStore';
 import { useSocketStore } from '@/stores/socketStore';
 import { useSocket } from '@/hooks/useSocket';
@@ -15,7 +15,6 @@ export function DispatchBoardPage() {
 
   const [flights, setFlights] = useState<ActiveFlightHeartbeat[]>([]);
   const [selectedFlight, setSelectedFlight] = useState<ActiveFlightHeartbeat | null>(null);
-  const [telemetry, setTelemetry] = useState<TelemetrySnapshot | null>(null);
   const [messages, setMessages] = useState<AcarsMessagePayload[]>([]);
   const [trail, setTrail] = useState<TrackPoint[]>([]);
 
@@ -67,11 +66,6 @@ export function DispatchBoardPage() {
     };
   }, [socket, selectedFlight]);
 
-  // Listen for dispatch telemetry
-  useSocket<TelemetrySnapshot>('dispatch:telemetry', (data) => {
-    setTelemetry(data);
-  });
-
   // Listen for ACARS messages
   useSocket<AcarsMessagePayload>('acars:message', (msg) => {
     setMessages((prev) => [...prev, msg]);
@@ -92,7 +86,6 @@ export function DispatchBoardPage() {
 
   const handleSelectFlight = useCallback((flight: ActiveFlightHeartbeat) => {
     setSelectedFlight(flight);
-    setTelemetry(null);
     setMessages([]);
     setTrail([]);
   }, []);
@@ -101,7 +94,7 @@ export function DispatchBoardPage() {
 
   return (
     <motion.div
-      className="-m-6 flex h-[calc(100vh-3.5rem)]"
+      className="flex h-full"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
@@ -168,7 +161,6 @@ export function DispatchBoardPage() {
       >
         <FlightDetailPanel
           flight={selectedFlight}
-          telemetry={telemetry}
           bidId={bidId}
           messages={messages}
         />

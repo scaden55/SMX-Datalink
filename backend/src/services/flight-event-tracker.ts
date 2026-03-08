@@ -9,6 +9,7 @@
  */
 export interface FlightEvents {
   landingRateFpm: number | null;
+  landingGForce: number | null;
   takeoffFuelLbs: number | null;
   takeoffTime: string | null; // ISO UTC
   // OOOI timestamps
@@ -20,6 +21,7 @@ export interface FlightEvents {
 
 export class FlightEventTracker {
   private landingRateFpm: number | null = null;
+  private landingGForce: number | null = null;
   private takeoffFuelLbs: number | null = null;
   private takeoffTime: string | null = null;
   private oooiOut: string | null = null;
@@ -29,14 +31,20 @@ export class FlightEventTracker {
 
   /** Last vertical speed seen before touchdown (captured every tick while airborne) */
   private lastVerticalSpeed = 0;
+  /** Peak G-force seen near touchdown (tracked during final approach + landing) */
+  private lastGForce = 1.0;
 
   /**
-   * Called every telemetry tick (~1s) to track the latest VS while airborne.
-   * This ensures we capture the VS *just before* the simOnGround flag flips.
+   * Called every telemetry tick (~1s) to track VS and G-force while airborne.
+   * This ensures we capture the values *just before* the simOnGround flag flips.
    */
-  updateAirborneVs(verticalSpeed: number, simOnGround: boolean): void {
+  updateAirborneVs(verticalSpeed: number, simOnGround: boolean, gForce?: number): void {
     if (!simOnGround) {
       this.lastVerticalSpeed = verticalSpeed;
+    }
+    // Track G-force every tick — we want the peak G at touchdown
+    if (gForce != null) {
+      this.lastGForce = gForce;
     }
   }
 
@@ -64,9 +72,10 @@ export class FlightEventTracker {
       this.oooiOff = new Date().toISOString();
     }
 
-    // Landing: capture the last airborne VS as landing rate
+    // Landing: capture the last airborne VS and G-force at touchdown
     if (current === 'LANDING' && previous === 'APPROACH') {
       this.landingRateFpm = Math.round(this.lastVerticalSpeed);
+      this.landingGForce = Math.round(this.lastGForce * 100) / 100; // 2 decimal places
     }
 
     // ON: touchdown (any phase → LANDING means wheels on ground)
@@ -84,6 +93,7 @@ export class FlightEventTracker {
   getEvents(): FlightEvents {
     return {
       landingRateFpm: this.landingRateFpm,
+      landingGForce: this.landingGForce,
       takeoffFuelLbs: this.takeoffFuelLbs,
       takeoffTime: this.takeoffTime,
       oooiOut: this.oooiOut,
@@ -96,9 +106,11 @@ export class FlightEventTracker {
   /** Reset for next flight. */
   reset(): void {
     this.landingRateFpm = null;
+    this.landingGForce = null;
     this.takeoffFuelLbs = null;
     this.takeoffTime = null;
     this.lastVerticalSpeed = 0;
+    this.lastGForce = 1.0;
     this.oooiOut = null;
     this.oooiOff = null;
     this.oooiOn = null;

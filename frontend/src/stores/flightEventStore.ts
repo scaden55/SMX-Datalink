@@ -13,6 +13,7 @@ import type { TelemetrySnapshot } from '@acars/shared';
 interface FlightEventState {
   // Captured events (mirrors backend FlightEvents)
   landingRateFpm: number | null;
+  landingGForce: number | null;
   takeoffFuelLbs: number | null;
   takeoffTime: string | null;
   oooiOut: string | null;
@@ -23,6 +24,7 @@ interface FlightEventState {
   // Internal tracking
   _lastPhase: string;
   _lastVs: number;
+  _lastG: number;
 
   processSnapshot: (snapshot: TelemetrySnapshot) => void;
   reset: () => void;
@@ -30,6 +32,7 @@ interface FlightEventState {
 
 export const useFlightEventStore = create<FlightEventState>((set, get) => ({
   landingRateFpm: null,
+  landingGForce: null,
   takeoffFuelLbs: null,
   takeoffTime: null,
   oooiOut: null,
@@ -38,6 +41,7 @@ export const useFlightEventStore = create<FlightEventState>((set, get) => ({
   oooiIn: null,
   _lastPhase: '',
   _lastVs: 0,
+  _lastG: 1.0,
 
   processSnapshot: (snapshot) => {
     const state = get();
@@ -48,6 +52,10 @@ export const useFlightEventStore = create<FlightEventState>((set, get) => ({
     // Track VS while airborne (for landing rate capture)
     if (!snapshot.flight.simOnGround) {
       updates._lastVs = snapshot.aircraft.position.verticalSpeed;
+    }
+    // Track G-force every tick (for touchdown G capture)
+    if (snapshot.aircraft.position.gForce != null) {
+      updates._lastG = snapshot.aircraft.position.gForce;
     }
 
     // Detect phase transitions
@@ -71,9 +79,10 @@ export const useFlightEventStore = create<FlightEventState>((set, get) => ({
         updates.oooiOff = now;
       }
 
-      // Landing: capture the last airborne VS
+      // Landing: capture the last airborne VS and G-force at touchdown
       if (curr === 'LANDING' && prev === 'APPROACH') {
         updates.landingRateFpm = Math.round(state._lastVs);
+        updates.landingGForce = Math.round(state._lastG * 100) / 100;
       }
 
       // ON: touchdown
@@ -94,6 +103,7 @@ export const useFlightEventStore = create<FlightEventState>((set, get) => ({
 
   reset: () => set({
     landingRateFpm: null,
+    landingGForce: null,
     takeoffFuelLbs: null,
     takeoffTime: null,
     oooiOut: null,
@@ -102,6 +112,7 @@ export const useFlightEventStore = create<FlightEventState>((set, get) => ({
     oooiIn: null,
     _lastPhase: '',
     _lastVs: 0,
+    _lastG: 1.0,
   }),
 }));
 

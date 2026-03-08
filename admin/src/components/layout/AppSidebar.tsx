@@ -81,7 +81,7 @@ export function AppSidebar() {
       className="flex flex-col shrink-0 h-full overflow-y-auto"
       style={{
         width: 220,
-        backgroundColor: 'var(--surface-1)',
+        background: 'linear-gradient(to top, #000000, #1B1B1C)',
         paddingTop: 24,
       }}
     >
@@ -131,7 +131,7 @@ export function AppSidebar() {
             padding: '10px 20px',
             color: 'var(--text-secondary)',
             fontSize: 14,
-            fontFamily: 'Inter, sans-serif',
+            fontFamily: 'var(--font-sans)',
             borderLeft: '3px solid transparent',
           }}
         >
@@ -151,7 +151,7 @@ function GroupLabel({ children, style }: { children: string; style?: React.CSSPr
       <span
         style={{
           color: 'var(--text-tertiary)',
-          fontFamily: 'Inter, sans-serif',
+          fontFamily: 'var(--font-sans)',
           fontSize: 11,
           fontWeight: 600,
           letterSpacing: 1,
@@ -192,7 +192,7 @@ function NavGroup({
             color: isActive ? 'var(--accent-blue-bright)' : 'var(--text-secondary)',
             fontWeight: isActive ? 500 : 'normal',
             fontSize: 14,
-            fontFamily: 'Inter, sans-serif',
+            fontFamily: 'var(--font-sans)',
             textDecoration: 'none',
           })}
         >

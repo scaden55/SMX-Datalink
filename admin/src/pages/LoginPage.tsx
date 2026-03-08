@@ -46,20 +46,24 @@ export function LoginPage() {
   if (isHydrating) {
     return (
       <div className="flex h-screen items-center justify-center bg-[var(--surface-0)]">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-[var(--accent-blue)] border-t-transparent" />
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#3b5bdb] border-t-transparent" />
       </div>
     );
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[var(--surface-0)] px-4">
+    <div className="relative flex min-h-screen items-center justify-center bg-[var(--surface-0)] px-4 overflow-hidden">
+      {/* Background glow */}
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(77,156,246,0.06)_0%,transparent_60%)]" />
+      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[600px] h-[600px] rounded-full bg-blue-500/[0.02] blur-3xl" />
+
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, ease: 'easeOut' }}
-        className="w-full max-w-sm"
+        className="w-full max-w-sm relative"
       >
-        <Surface elevation={2} padding="spacious">
+        <Surface elevation={2} padding="spacious" style={{ boxShadow: '0 4px 24px rgba(0, 0, 0, 0.5), 0 0 80px rgba(255, 255, 255, 0.03)' }}>
           {/* Logo */}
           <div className="flex justify-center mb-6">
             <img

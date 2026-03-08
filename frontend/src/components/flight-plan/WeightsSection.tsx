@@ -21,13 +21,14 @@ interface FieldProps {
   editable?: boolean;
   fieldKey?: string;
   onFieldChange?: (key: string, val: string) => void;
+  highlighted?: boolean;
 }
 
-function Field({ label, value, sub, warn, editable, fieldKey, onFieldChange }: FieldProps) {
+function Field({ label, value, sub, warn, editable, fieldKey, onFieldChange, highlighted }: FieldProps) {
   const boxCls = `bg-acars-input border border-acars-border text-[11px] tabular-nums rounded-md px-1.5 py-0.5 w-full truncate outline-none focus:border-blue-400 ${warn ? 'text-amber-400' : 'text-acars-text'}`;
 
   return (
-    <div className="flex flex-col items-start min-w-0 flex-1">
+    <div className={`flex flex-col items-start min-w-0 flex-1 ${highlighted ? 'border-l-2 border-amber-400 bg-amber-400/5 pl-1' : ''}`}>
       <span className="text-[9px] font-medium uppercase tracking-[0.06em] text-acars-muted/70">{label}</span>
       {editable && fieldKey && onFieldChange ? (
         <input
@@ -49,7 +50,8 @@ function Field({ label, value, sub, warn, editable, fieldKey, onFieldChange }: F
 export function WeightsSection({ ofpWeights, ofpFuel }: WeightsSectionProps) {
   const w = ofpWeights;
   const f = ofpFuel;
-  const { canEditFuel, editableFields, onFieldChange } = useDispatchEdit();
+  const { canEditFuel, editableFields, onFieldChange, releasedFields } = useDispatchEdit();
+  const hl = (key: string) => releasedFields?.includes(key) ?? false;
 
   // Contingency fuel: default 5% of planned burn
   const contingencyRaw = editableFields.fuelContingency ?? f?.contingencyLbs;
@@ -71,6 +73,7 @@ export function WeightsSection({ ofpWeights, ofpFuel }: WeightsSectionProps) {
           editable={canEditFuel}
           fieldKey="fuelTotal"
           onFieldChange={onFieldChange}
+          highlighted={hl('fuelTotal')}
         />
         <Field
           label="Taxi Out"
@@ -79,6 +82,7 @@ export function WeightsSection({ ofpWeights, ofpFuel }: WeightsSectionProps) {
           editable={canEditFuel}
           fieldKey="fuelTaxi"
           onFieldChange={onFieldChange}
+          highlighted={hl('fuelTaxi')}
         />
         <Field
           label="CF"
@@ -87,6 +91,7 @@ export function WeightsSection({ ofpWeights, ofpFuel }: WeightsSectionProps) {
           editable={canEditFuel}
           fieldKey="fuelContingency"
           onFieldChange={onFieldChange}
+          highlighted={hl('fuelContingency')}
         />
         <Field
           label="Extra"
@@ -95,6 +100,7 @@ export function WeightsSection({ ofpWeights, ofpFuel }: WeightsSectionProps) {
           editable={canEditFuel}
           fieldKey="fuelExtra"
           onFieldChange={onFieldChange}
+          highlighted={hl('fuelExtra')}
         />
         <Field
           label="ACF"
@@ -108,6 +114,7 @@ export function WeightsSection({ ofpWeights, ofpFuel }: WeightsSectionProps) {
           editable={canEditFuel}
           fieldKey="fuelReserve"
           onFieldChange={onFieldChange}
+          highlighted={hl('fuelReserve')}
         />
       </div>
     </div>

@@ -47,7 +47,7 @@ export function TopBar() {
         transition={{ duration: 0.15 }}
       >
         <Search size={18} style={{ color: 'var(--text-tertiary)', flexShrink: 0 }} />
-        <span style={{ color: 'var(--text-tertiary)', fontSize: 14, fontFamily: 'Inter, sans-serif' }}>
+        <span style={{ color: 'var(--text-tertiary)', fontSize: 14, fontFamily: 'var(--font-sans)' }}>
           Search...
         </span>
       </motion.button>
@@ -93,10 +93,10 @@ export function TopBar() {
                 color: '#ffffff',
                 fontSize: 12,
                 fontWeight: 600,
-                fontFamily: 'Inter, sans-serif',
+                fontFamily: 'var(--font-sans)',
               }}
               whileHover={{
-                boxShadow: '0 0 0 3px rgba(57, 80, 237, 0.3)',
+                boxShadow: '0 0 0 3px rgba(59, 91, 219, 0.3)',
               }}
             >
               {getInitials(user.firstName, user.lastName)}
@@ -106,7 +106,7 @@ export function TopBar() {
                 color: 'var(--text-primary)',
                 fontSize: 13,
                 fontWeight: 500,
-                fontFamily: 'Inter, sans-serif',
+                fontFamily: 'var(--font-sans)',
               }}
             >
               {user.firstName} {user.lastName}

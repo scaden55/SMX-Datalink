@@ -1,135 +1,87 @@
-import { useState, useMemo, useCallback, memo } from 'react';
-import {
-  ComposableMap,
-  Geographies,
-  Geography,
-  ZoomableGroup,
-  Marker,
-  Line,
-} from 'react-simple-maps';
+import { useEffect, useRef, memo } from 'react';
+import { MapContainer, TileLayer, Marker, Tooltip, Polyline, useMap } from 'react-leaflet';
+import L from 'leaflet';
 import type { ActiveFlightHeartbeat, TrackPoint } from '@acars/shared';
+import 'leaflet/dist/leaflet.css';
 
-/* ── Constants ──────────────────────────────────────────────── */
+/* ── Aircraft icon factory ─────────────────────────────────── */
 
-const GEO_URL = 'https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json';
+const PLANE_SVG = (heading: number, size: number, color: string) => `
+  <svg viewBox="0 0 64 64" width="${size}" height="${size}" style="transform: rotate(${heading}deg); filter: drop-shadow(0 1px 3px rgba(0,0,0,0.6)) drop-shadow(0 0 6px ${color}60);">
+    <path d="
+      M32 2
+      C33 2 34 3 34 5
+      L34 20
+      L54 30 C56 31 56 33 55 34 L34 32
+      L34 48
+      L42 54 C43 55 43 56 42 57 L34 55
+      L33 58 C32.5 59 31.5 59 31 58
+      L30 55
+      L22 57 C21 56 21 55 22 54 L30 48
+      L30 32
+      L9 34 C8 33 8 31 10 30 L30 20
+      L30 5
+      C30 3 31 2 32 2 Z"
+      fill="${color}" stroke="rgba(0,0,0,0.3)" stroke-width="0.5"/>
+  </svg>`;
 
-const ACCENT = '#3950ed';
-const SELECTED_COLOR = '#facc15';
+const iconCache = new Map<string, L.DivIcon>();
 
-const OCEAN_COLOR = '#05060d';
-const LAND_COLOR = '#0d121f';
-const LAND_STROKE = '#1b2336';
-const LAND_HOVER = '#141c2e';
-
-/* ── Aircraft SVG marker ────────────────────────────────────── */
-
-const AircraftIcon = memo(function AircraftIcon({
-  color,
-  heading,
-  size = 14,
-}: {
-  color: string;
-  heading: number;
-  size?: number;
-}) {
-  return (
-    <g transform={`rotate(${heading})`} style={{ filter: 'drop-shadow(0 1px 3px rgba(0,0,0,0.6))' }}>
-      <path
-        d="M0 -10C0.6 -10 1 -9.2 1 -8.2L1 -1L10 3.5C10.8 3.9 10.8 4.8 10 5L1 4.2V11.8L4.5 14.5C5 15 4.9 15.6 4.5 15.8L1 14.8L0.2 16.8C0.1 17.2 -0.1 17.2 -0.2 16.8L-1 14.8L-4.5 15.8C-4.9 15.6 -5 15 -4.5 14.5L-1 11.8V4.2L-10 5C-10.8 4.8 -10.8 3.9 -10 3.5L-1 -1V-8.2C-1 -9.2 -0.6 -10 0 -10Z"
-        fill={color}
-        transform={`scale(${size / 14})`}
-      />
-    </g>
-  );
-});
-
-/* ── Tooltip ────────────────────────────────────────────────── */
-
-function MarkerTooltip({
-  callsign,
-  x,
-  y,
-}: {
-  callsign: string;
-  x: number;
-  y: number;
-}) {
-  return (
-    <g transform={`translate(${x}, ${y})`} style={{ pointerEvents: 'none' }}>
-      <rect
-        x={-callsign.length * 3.5 - 6}
-        y={-28}
-        width={callsign.length * 7 + 12}
-        height={18}
-        rx={3}
-        fill={OCEAN_COLOR}
-        stroke={LAND_STROKE}
-        strokeWidth={0.5}
-        opacity={0.95}
-      />
-      <text
-        y={-16}
-        textAnchor="middle"
-        fill="#eceef5"
-        fontSize={9}
-        fontWeight={600}
-        fontFamily="Inter, system-ui, sans-serif"
-      >
-        {callsign}
-      </text>
-    </g>
-  );
+function getFlightIcon(heading: number, selected: boolean): L.DivIcon {
+  const rounded = Math.round(heading / 5) * 5;
+  const key = `${rounded}-${selected}`;
+  let icon = iconCache.get(key);
+  if (!icon) {
+    const color = selected ? '#facc15' : '#3b82f6';
+    const size = selected ? 32 : 24;
+    icon = L.divIcon({
+      html: PLANE_SVG(rounded, size, color),
+      className: '',
+      iconSize: [size, size],
+      iconAnchor: [size / 2, size / 2],
+    });
+    iconCache.set(key, icon);
+  }
+  return icon;
 }
 
-/* ── Geography layer (memoized) ─────────────────────────────── */
+/* ── Auto-fit bounds to flights ────────────────────────────── */
 
-const GeoLayer = memo(function GeoLayer() {
+function FitFlights({ flights }: { flights: ActiveFlightHeartbeat[] }) {
+  const map = useMap();
+  const fittedRef = useRef(false);
+
+  useEffect(() => {
+    if (fittedRef.current || flights.length === 0) return;
+    const valid = flights.filter((f) => f.latitude !== 0 || f.longitude !== 0);
+    if (valid.length === 0) return;
+
+    fittedRef.current = true;
+    if (valid.length === 1) {
+      map.setView([valid[0].latitude, valid[0].longitude], 6, { animate: true });
+    } else {
+      const bounds = L.latLngBounds(valid.map((f) => [f.latitude, f.longitude] as [number, number]));
+      map.fitBounds(bounds, { padding: [40, 40], maxZoom: 8 });
+    }
+  }, [map, flights]);
+
+  return null;
+}
+
+/* ── Trail polyline ────────────────────────────────────────── */
+
+const TrailLine = memo(function TrailLine({ trail }: { trail: TrackPoint[] }) {
+  if (trail.length < 2) return null;
+  const positions = trail.map((p) => [p.lat, p.lon] as [number, number]);
   return (
-    <Geographies geography={GEO_URL}>
-      {({ geographies }) =>
-        geographies.map((geo) => (
-          <Geography
-            key={geo.rsmKey}
-            geography={geo}
-            fill={LAND_COLOR}
-            stroke={LAND_STROKE}
-            strokeWidth={0.4}
-            style={{
-              default: { outline: 'none' },
-              hover: { fill: LAND_HOVER, outline: 'none' },
-              pressed: { outline: 'none' },
-            }}
-          />
-        ))
-      }
-    </Geographies>
-  );
-});
-
-/* ── Trail path ─────────────────────────────────────────────── */
-
-const TrailPath = memo(function TrailPath({ trail }: { trail: TrackPoint[] }) {
-  const coords = useMemo(
-    () => trail.map((p) => [p.lon, p.lat] as [number, number]),
-    [trail],
-  );
-
-  if (coords.length < 2) return null;
-
-  return (
-    <Line
-      coordinates={coords}
-      stroke={ACCENT}
-      strokeWidth={1.5}
-      strokeLinecap="round"
-      strokeDasharray="4 3"
-      strokeOpacity={0.7}
-      fill="none"
+    <Polyline
+      positions={positions}
+      pathOptions={{ color: '#3b82f6', weight: 2, opacity: 0.5, dashArray: '4 3' }}
     />
   );
 });
 
-/* ── Main map component ─────────────────────────────────────── */
+/* ── Main FlightMap component ──────────────────────────────── */
 
 interface FlightMapProps {
   flights: ActiveFlightHeartbeat[];
@@ -144,102 +96,57 @@ export const FlightMap = memo(function FlightMap({
   onSelectFlight,
   trail,
 }: FlightMapProps) {
-  const [hoveredCallsign, setHoveredCallsign] = useState<string | null>(null);
-  const [position, setPosition] = useState<{ coordinates: [number, number]; zoom: number }>({
-    coordinates: [-10, 30],
-    zoom: 1.4,
-  });
-
-  const handleMoveEnd = useCallback((pos: { coordinates: [number, number]; zoom: number }) => {
-    setPosition(pos);
-  }, []);
-
-  // Sort flights so selected is rendered last (on top)
-  const sortedFlights = useMemo(() => {
-    const valid = flights.filter((f) => f.latitude !== 0 || f.longitude !== 0);
-    return valid.sort((a, b) => {
-      if (a.callsign === selectedCallsign) return 1;
-      if (b.callsign === selectedCallsign) return -1;
-      return 0;
-    });
-  }, [flights, selectedCallsign]);
-
-  // Scale marker size inversely with zoom for consistent visual size
-  const markerScale = useMemo(() => Math.max(0.6, 1 / Math.sqrt(position.zoom)), [position.zoom]);
-
   return (
-    <div className="h-full w-full" style={{ backgroundColor: OCEAN_COLOR }}>
-      <ComposableMap
-        projection="geoMercator"
-        projectionConfig={{ scale: 140 }}
-        width={800}
-        height={500}
-        style={{ width: '100%', height: '100%' }}
+    <div className="h-full w-full" style={{ background: '#000000' }}>
+      <MapContainer
+        center={[30, -20]}
+        zoom={3}
+        className="h-full w-full"
+        zoomControl={false}
+        attributionControl={false}
+        style={{ background: '#000000' }}
       >
-        <ZoomableGroup
-          center={position.coordinates}
-          zoom={position.zoom}
-          minZoom={1}
-          maxZoom={16}
-          onMoveEnd={handleMoveEnd}
-        >
-          {/* Geographies */}
-          <GeoLayer />
+        <TileLayer
+          url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+          maxZoom={19}
+        />
 
-          {/* Flight trail */}
-          <TrailPath trail={trail} />
+        <FitFlights flights={flights} />
 
-          {/* Aircraft markers */}
-          {sortedFlights.map((flight) => {
+        {/* Trail for selected flight */}
+        <TrailLine trail={trail} />
+
+        {/* Airline flight markers */}
+        {flights
+          .filter((f) => f.latitude !== 0 || f.longitude !== 0)
+          .map((flight) => {
             const isSelected = flight.callsign === selectedCallsign;
-            const isHovered = flight.callsign === hoveredCallsign;
-            const color = isSelected ? SELECTED_COLOR : ACCENT;
-
             return (
               <Marker
                 key={flight.callsign}
-                coordinates={[flight.longitude, flight.latitude]}
+                position={[flight.latitude, flight.longitude]}
+                icon={getFlightIcon(flight.heading, isSelected)}
+                eventHandlers={{ click: () => onSelectFlight(flight) }}
               >
-                <g
-                  onClick={() => onSelectFlight(flight)}
-                  onMouseEnter={() => setHoveredCallsign(flight.callsign)}
-                  onMouseLeave={() => setHoveredCallsign(null)}
-                  style={{ cursor: 'pointer' }}
-                  transform={`scale(${markerScale})`}
-                >
-                  {/* Pulse ring for selected */}
-                  {isSelected && (
-                    <circle r={18} fill="none" stroke={SELECTED_COLOR} strokeWidth={1} opacity={0.3}>
-                      <animate
-                        attributeName="r"
-                        from="10"
-                        to="22"
-                        dur="2s"
-                        repeatCount="indefinite"
-                      />
-                      <animate
-                        attributeName="opacity"
-                        from="0.4"
-                        to="0"
-                        dur="2s"
-                        repeatCount="indefinite"
-                      />
-                    </circle>
-                  )}
-
-                  {/* Aircraft icon */}
-                  <AircraftIcon color={color} heading={flight.heading} size={isSelected ? 16 : 14} />
-
-                  {/* Tooltip on hover */}
-                  {(isHovered || isSelected) && (
-                    <MarkerTooltip callsign={flight.callsign} x={0} y={0} />
-                  )}
-                </g>
+                <Tooltip direction="top" offset={[0, -12]} opacity={0.95}>
+                  <div style={{ fontFamily: 'Inter, system-ui, sans-serif', fontSize: 11, lineHeight: 1.5 }}>
+                    <div style={{ fontWeight: 600, color: isSelected ? '#facc15' : '#3b82f6' }}>
+                      {flight.callsign}
+                    </div>
+                    <div style={{ color: '#9ca3af' }}>
+                      {flight.aircraftType} · FL{Math.round(flight.altitude / 100)} · {Math.round(flight.groundSpeed)}kt
+                    </div>
+                    {flight.phase && (
+                      <div style={{ color: '#6b7280', fontSize: 10 }}>
+                        {flight.phase.replace('_', ' ')}
+                      </div>
+                    )}
+                  </div>
+                </Tooltip>
               </Marker>
             );
           })}
-        </ZoomableGroup>
-      </ComposableMap>
+      </MapContainer>
     </div>
   );
 });

@@ -1,5 +1,6 @@
 import { useDispatchTelemetry } from '../../hooks/useDispatchTelemetry';
 import { useDispatchEdit } from '../../contexts/DispatchEditContext';
+import { useAuthStore } from '../../stores/authStore';
 import { FlightHeader } from './FlightHeader';
 import { ScenarioBar } from './ScenarioBar';
 import { NavProcedureRow } from './NavProcedureRow';
@@ -22,6 +23,8 @@ interface FlightPlanPanelProps {
 export function FlightPlanPanel({ ofp, formData, ruleChips, pilot, flightNumber }: FlightPlanPanelProps) {
   const { aircraft } = useDispatchTelemetry();
   const { canEdit, saving, lastSavedAt, isOwnFlight } = useDispatchEdit();
+  const user = useAuthStore((s) => s.user);
+  const callsign = pilot?.callsign ?? (isOwnFlight ? user?.callsign : undefined);
 
   return (
     <div className="bg-acars-bg">
@@ -53,7 +56,7 @@ export function FlightPlanPanel({ ofp, formData, ruleChips, pilot, flightNumber 
       </div>
 
       {/* Item 1: Flight Identity Block */}
-      <FlightHeader ofp={ofp} formData={formData} />
+      <FlightHeader ofp={ofp} formData={formData} pilotCallsign={callsign} />
 
       {/* Item 3: Scenario + Flight Rules chips */}
       <ScenarioBar formData={formData} ruleChips={ruleChips} />
@@ -70,6 +73,8 @@ export function FlightPlanPanel({ ofp, formData, ruleChips, pilot, flightNumber 
         tailNumber={aircraft?.atcId ?? '---'}
         type={aircraft?.atcType ?? '---'}
         formData={formData}
+        ofpPilotName={ofp?.pilotName}
+        pilotName={pilot?.name}
       />
 
       {/* Item 6: Weights + Fuel row */}
@@ -87,7 +92,7 @@ export function FlightPlanPanel({ ofp, formData, ruleChips, pilot, flightNumber 
       />
 
       {/* In-depth collapsible detail sections */}
-      <FlightDetailSections ofp={ofp} formData={formData} />
+      <FlightDetailSections ofp={ofp} formData={formData} pilotName={pilot?.name} />
 
     </div>
   );

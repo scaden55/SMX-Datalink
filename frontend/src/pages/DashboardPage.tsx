@@ -22,7 +22,8 @@ import {
   FloppyDisk,
   Airplane,
 } from '@phosphor-icons/react';
-import { MapContainer, TileLayer } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Tooltip } from 'react-leaflet';
+import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { api } from '../lib/api';
 import { toast } from '../stores/toastStore';
@@ -223,7 +224,43 @@ function QuickActions() {
 
 // ─── Network Map ────────────────────────────────────────────────
 
-function NetworkMapPreview() {
+const DASH_PLANE_SVG = (heading: number) => `
+  <svg viewBox="0 0 64 64" width="22" height="22" style="transform: rotate(${heading}deg); filter: drop-shadow(0 1px 3px rgba(0,0,0,0.6)) drop-shadow(0 0 8px rgba(59,130,246,0.5));">
+    <path d="
+      M32 2
+      C33 2 34 3 34 5
+      L34 20
+      L54 30 C56 31 56 33 55 34 L34 32
+      L34 48
+      L42 54 C43 55 43 56 42 57 L34 55
+      L33 58 C32.5 59 31.5 59 31 58
+      L30 55
+      L22 57 C21 56 21 55 22 54 L30 48
+      L30 32
+      L9 34 C8 33 8 31 10 30 L30 20
+      L30 5
+      C30 3 31 2 32 2 Z"
+      fill="#3b82f6" stroke="rgba(0,0,0,0.3)" stroke-width="0.5"/>
+  </svg>`;
+
+const dashPlaneIconCache = new Map<number, L.DivIcon>();
+
+function getDashPlaneIcon(heading: number): L.DivIcon {
+  const rounded = Math.round(heading / 5) * 5;
+  let icon = dashPlaneIconCache.get(rounded);
+  if (!icon) {
+    icon = L.divIcon({
+      html: DASH_PLANE_SVG(rounded),
+      className: '',
+      iconSize: [22, 22],
+      iconAnchor: [11, 11],
+    });
+    dashPlaneIconCache.set(rounded, icon);
+  }
+  return icon;
+}
+
+function NetworkMapPreview({ activeFlights }: { activeFlights: ActiveFlightHeartbeat[] }) {
   const navigate = useNavigate();
 
   return (
@@ -232,6 +269,9 @@ function NetworkMapPreview() {
         <div className="flex items-center gap-2">
           <img src="./logos/chevron-light.png" alt="SMX" className="h-4 w-auto opacity-40" />
           <h3 className="text-[14px] font-semibold text-white">Network Map</h3>
+          {activeFlights.length > 0 && (
+            <span className="text-[10px] text-acars-muted/60 tabular-nums">{activeFlights.length} active</span>
+          )}
         </div>
         <button
           onClick={() => navigate('/map')}
@@ -258,6 +298,17 @@ function NetworkMapPreview() {
             url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
             maxZoom={19}
           />
+          {activeFlights.map((af) => (
+            <Marker
+              key={af.userId}
+              position={[af.latitude, af.longitude]}
+              icon={getDashPlaneIcon(af.heading)}
+            >
+              <Tooltip direction="top" offset={[0, -12]} opacity={0.95}>
+                <span className="tabular-nums text-xs">{af.callsign} · FL{Math.round(af.altitude / 100)}</span>
+              </Tooltip>
+            </Marker>
+          ))}
         </MapContainer>
       </div>
     </div>
@@ -734,7 +785,7 @@ export function DashboardPage() {
       <ActiveBidsCard bids={bids} isAdmin={!!isAdmin} onBidRemoved={fetchBids} activeFlights={activeFlights} />
 
       {/* Row 3: Network Map (full width, hero) */}
-      <NetworkMapPreview />
+      <NetworkMapPreview activeFlights={activeFlights} />
 
       {/* Row 4: Announcements + My Info */}
       <div className="grid grid-cols-[1fr_440px] gap-4">

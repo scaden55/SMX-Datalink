@@ -24,6 +24,7 @@ interface LogbookRow {
   pax_count: number;
   cargo_lbs: number;
   landing_rate_fpm: number | null;
+  landing_g_force: number | null;
   score: number | null;
   status: string;
   remarks: string | null;
@@ -173,6 +174,7 @@ export class LogbookService {
       paxCount: row.pax_count,
       cargoLbs: row.cargo_lbs,
       landingRateFpm: row.landing_rate_fpm,
+      landingGForce: row.landing_g_force,
       score: row.score,
       status: (row.status ?? 'approved') as LogbookStatus,
       remarks: row.remarks,

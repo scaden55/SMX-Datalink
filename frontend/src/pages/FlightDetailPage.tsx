@@ -21,10 +21,40 @@ import {
   ChartBar,
   ChatText,
   NavigationArrow,
+  CurrencyDollar,
+  Target,
 } from '@phosphor-icons/react';
 import { api } from '../lib/api';
 import { VatsimBadge } from '../components/common/VatsimBadge';
 import type { LogbookEntry, LogbookStatus, FlightExceedance } from '@acars/shared';
+
+// ─── Finance types ──────────────────────────────────────────────
+interface FlightFinances {
+  source: 'engine' | 'simple';
+  // Engine P&L fields
+  cargoRevenue?: number;
+  fuelCost?: number;
+  landingFee?: number;
+  parkingFee?: number;
+  handlingFee?: number;
+  navFee?: number;
+  deiceFee?: number;
+  uldFee?: number;
+  crewCost?: number;
+  totalVariableCost?: number;
+  maintReserve?: number;
+  leaseAlloc?: number;
+  insuranceAlloc?: number;
+  totalFixedAlloc?: number;
+  grossProfit?: number;
+  marginPct?: number;
+  loadFactor?: number;
+  blockHours?: number;
+  payloadLbs?: number;
+  // Simple pay fields
+  pilotPay?: number | null;
+  description?: string | null;
+}
 
 // ─── Helpers ────────────────────────────────────────────────────
 
@@ -60,21 +90,37 @@ function fmt(val: number | null | undefined, suffix = ''): string {
   return val.toLocaleString() + (suffix ? ` ${suffix}` : '');
 }
 
-function landingRateLabel(fpm: number): { label: string; color: string } {
-  const abs = Math.abs(fpm);
-  if (abs <= 100) return { label: 'Butter', color: 'text-emerald-400' };
-  if (abs <= 150) return { label: 'Smooth', color: 'text-emerald-400' };
-  if (abs <= 200) return { label: 'Normal', color: 'text-blue-400' };
-  if (abs <= 250) return { label: 'Firm', color: 'text-amber-400' };
-  return { label: 'Hard', color: 'text-red-400' };
+function gForceLabel(g: number): { label: string; color: string } {
+  const abs = Math.abs(g);
+  if (abs <= 1.2) return { label: 'Butter', color: 'text-emerald-400' };
+  if (abs <= 1.5) return { label: 'Normal', color: 'text-emerald-400' };
+  if (abs <= 1.8) return { label: 'Firm', color: 'text-amber-400' };
+  if (abs <= 2.1) return { label: 'Hard', color: 'text-orange-400' };
+  if (abs <= 2.5) return { label: 'Very Hard', color: 'text-red-400' };
+  return { label: 'Crash', color: 'text-red-400' };
 }
 
 function scoreLabel(score: number): { label: string; color: string } {
-  if (score >= 95) return { label: 'Excellent', color: 'text-emerald-400' };
+  if (score >= 100) return { label: 'Perfect', color: 'text-emerald-400' };
   if (score >= 85) return { label: 'Good', color: 'text-emerald-400' };
-  if (score >= 75) return { label: 'Fair', color: 'text-amber-400' };
   if (score >= 60) return { label: 'Below Average', color: 'text-amber-400' };
-  return { label: 'Poor', color: 'text-red-400' };
+  if (score >= 35) return { label: 'Poor', color: 'text-orange-400' };
+  return { label: 'Failed', color: 'text-red-400' };
+}
+
+// Score rubric tiers (G-force based) — matches backend pirep.ts calculateScore()
+const SCORE_TIERS = [
+  { max: 1.2, score: 100, label: 'Butter',    color: 'text-emerald-400', bg: 'bg-emerald-400' },
+  { max: 1.5, score: 100, label: 'Normal',    color: 'text-emerald-400', bg: 'bg-emerald-400' },
+  { max: 1.8, score: 85,  label: 'Firm',      color: 'text-amber-400',   bg: 'bg-amber-400'   },
+  { max: 2.1, score: 60,  label: 'Hard',      color: 'text-orange-400',  bg: 'bg-orange-400'  },
+  { max: 2.5, score: 35,  label: 'Very Hard', color: 'text-red-400',     bg: 'bg-red-400'     },
+  { max: 999, score: 10,  label: 'Crash',     color: 'text-red-400',     bg: 'bg-red-400'     },
+];
+
+function getScoreTierIndex(g: number): number {
+  const abs = Math.abs(g);
+  return SCORE_TIERS.findIndex(t => abs <= t.max);
 }
 
 const STATUS_CONFIG: Record<LogbookStatus, { label: string; icon: typeof CheckCircle; color: string }> = {
@@ -195,6 +241,7 @@ export function FlightDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [exceedances, setExceedances] = useState<FlightExceedance[]>([]);
+  const [finances, setFinances] = useState<FlightFinances | null>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -209,6 +256,9 @@ export function FlightDetailPage() {
     if (!entry) return;
     api.get<FlightExceedance[]>(`/api/logbook/${entry.id}/exceedances`)
       .then(setExceedances)
+      .catch(() => {}); // non-critical
+    api.get<FlightFinances>(`/api/logbook/${entry.id}/finances`)
+      .then(setFinances)
       .catch(() => {}); // non-critical
   }, [entry?.id]);
 
@@ -233,7 +283,7 @@ export function FlightDetailPage() {
 
   const statusCfg = STATUS_CONFIG[entry.status] ?? STATUS_CONFIG.approved;
   const StatusIcon = statusCfg.icon;
-  const landingInfo = entry.landingRateFpm != null ? landingRateLabel(entry.landingRateFpm) : null;
+  const landingInfo = entry.landingGForce != null ? gForceLabel(entry.landingGForce) : null;
   const scoreInfo = entry.score != null ? scoreLabel(entry.score) : null;
 
   return (
@@ -319,21 +369,21 @@ export function FlightDetailPage() {
         {/* ── OOOI Timeline ──────────────────────────────────── */}
         <OooiTimeline entry={entry} />
 
-        {/* ── Performance + Score ─────────────────────────────── */}
+        {/* ── Performance + Fuel ─────────────────────────────── */}
         <div className="grid grid-cols-2 gap-4 mb-4">
-          {/* Landing & Score */}
+          {/* Landing & Score with breakdown */}
           <div className="panel rounded-md p-4">
             <h3 className="text-[11px] uppercase tracking-wider text-acars-muted font-medium mb-3 flex items-center gap-2">
               <ChartBar className="w-3.5 h-3.5 text-emerald-400" />
               Performance
             </h3>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-3 gap-4 mb-3">
               <div>
-                <div className="text-[10px] uppercase tracking-wider text-acars-muted mb-1">Landing Rate</div>
-                {entry.landingRateFpm != null ? (
+                <div className="text-[10px] uppercase tracking-wider text-acars-muted mb-1">Touchdown G-Force</div>
+                {entry.landingGForce != null ? (
                   <>
                     <div className={`text-xl font-bold tabular-nums ${landingInfo!.color}`}>
-                      {entry.landingRateFpm} <span className="text-xs font-normal">fpm</span>
+                      {entry.landingGForce.toFixed(2)} <span className="text-xs font-normal">G</span>
                     </div>
                     <div className={`text-xs ${landingInfo!.color}`}>{landingInfo!.label}</div>
                   </>
@@ -354,10 +404,57 @@ export function FlightDetailPage() {
                   <div className="text-xl font-bold text-acars-muted">—</div>
                 )}
               </div>
+              <div>
+                <div className="text-[10px] uppercase tracking-wider text-acars-muted mb-1">Landing Rate</div>
+                {entry.landingRateFpm != null ? (
+                  <div className="text-xl font-bold tabular-nums text-acars-text">
+                    {entry.landingRateFpm} <span className="text-xs font-normal text-acars-muted">fpm</span>
+                  </div>
+                ) : (
+                  <div className="text-xl font-bold text-acars-muted">—</div>
+                )}
+              </div>
             </div>
+
+            {/* Score breakdown rubric (G-force based) */}
+            {entry.landingGForce != null && (
+              <div className="pt-3 border-t border-acars-border">
+                <div className="text-[10px] uppercase tracking-wider text-acars-muted mb-2 flex items-center gap-1.5">
+                  <Target className="w-3 h-3" />
+                  Score Breakdown
+                </div>
+                <div className="space-y-1">
+                  {SCORE_TIERS.map((tier, i) => {
+                    const isActive = getScoreTierIndex(entry.landingGForce!) === i;
+                    const prevMax = i === 0 ? 0 : SCORE_TIERS[i - 1].max;
+                    const rangeLabel = i === 0 ? `≤ ${tier.max}G` : tier.max >= 999 ? `> ${prevMax}G` : `${prevMax}–${tier.max}G`;
+                    return (
+                      <div
+                        key={tier.max}
+                        className={`flex items-center gap-2 px-2 py-1 rounded text-[11px] transition-colors ${
+                          isActive ? 'bg-white/[0.04] border border-white/[0.06]' : 'opacity-40'
+                        }`}
+                      >
+                        <div className={`w-1.5 h-1.5 rounded-full ${tier.bg} ${isActive ? '' : 'opacity-50'}`} />
+                        <span className={`tabular-nums w-16 ${isActive ? tier.color + ' font-semibold' : 'text-acars-muted'}`}>
+                          {rangeLabel}
+                        </span>
+                        <div className="flex-1" />
+                        <span className={`tabular-nums font-mono ${isActive ? 'text-acars-text font-bold' : 'text-acars-muted'}`}>
+                          {tier.score} pts
+                        </span>
+                        <span className={`w-12 text-right ${isActive ? tier.color + ' font-medium' : 'text-acars-muted'}`}>
+                          {tier.label}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
 
-          {/* GasPump */}
+          {/* Fuel */}
           <div className="panel rounded-md p-4">
             <h3 className="text-[11px] uppercase tracking-wider text-acars-muted font-medium mb-3 flex items-center gap-2">
               <GasPump className="w-3.5 h-3.5 text-amber-400" />
@@ -444,6 +541,117 @@ export function FlightDetailPage() {
                 </div>
               ))}
             </div>
+          </div>
+        )}
+
+        {/* ── Flight Finances ───────────────────────────────────── */}
+        {finances && (
+          <div className="panel rounded-md p-4 mb-4">
+            <h3 className="text-[11px] uppercase tracking-wider text-acars-muted font-medium mb-3 flex items-center gap-2">
+              <CurrencyDollar className="w-3.5 h-3.5 text-emerald-400" />
+              Flight Finances
+            </h3>
+
+            {finances.source === 'engine' ? (
+              <>
+                {/* Revenue */}
+                <div className="mb-3">
+                  <div className="flex items-center justify-between py-1.5">
+                    <span className="text-xs text-acars-muted">Cargo Revenue</span>
+                    <span className="text-sm tabular-nums font-semibold text-emerald-400">
+                      ${(finances.cargoRevenue ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Variable Costs */}
+                <div className="pt-2 border-t border-acars-border mb-3">
+                  <div className="text-[10px] uppercase tracking-wider text-acars-muted mb-1">Variable Costs</div>
+                  {[
+                    { label: 'Fuel', value: finances.fuelCost },
+                    { label: 'Landing Fee', value: finances.landingFee },
+                    { label: 'Handling', value: finances.handlingFee },
+                    { label: 'Navigation', value: finances.navFee },
+                    { label: 'Crew', value: finances.crewCost },
+                    { label: 'Parking', value: finances.parkingFee },
+                    { label: 'De-icing', value: finances.deiceFee },
+                    { label: 'ULD', value: finances.uldFee },
+                  ].filter(c => (c.value ?? 0) > 0).map(c => (
+                    <div key={c.label} className="flex items-center justify-between py-0.5">
+                      <span className="text-[11px] text-acars-muted">{c.label}</span>
+                      <span className="text-[11px] tabular-nums text-red-400/80">
+                        -${(c.value ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </span>
+                    </div>
+                  ))}
+                  <div className="flex items-center justify-between pt-1 mt-1 border-t border-acars-border/50">
+                    <span className="text-xs text-acars-muted font-medium">Total Variable</span>
+                    <span className="text-xs tabular-nums font-semibold text-red-400">
+                      -${(finances.totalVariableCost ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Fixed Costs */}
+                {(finances.totalFixedAlloc ?? 0) > 0 && (
+                  <div className="pt-2 border-t border-acars-border mb-3">
+                    <div className="text-[10px] uppercase tracking-wider text-acars-muted mb-1">Fixed Cost Allocations</div>
+                    {[
+                      { label: 'Maintenance Reserve', value: finances.maintReserve },
+                      { label: 'Lease', value: finances.leaseAlloc },
+                      { label: 'Insurance', value: finances.insuranceAlloc },
+                    ].filter(c => (c.value ?? 0) > 0).map(c => (
+                      <div key={c.label} className="flex items-center justify-between py-0.5">
+                        <span className="text-[11px] text-acars-muted">{c.label}</span>
+                        <span className="text-[11px] tabular-nums text-red-400/80">
+                          -${(c.value ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Profit Summary */}
+                <div className="pt-3 border-t border-acars-border">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-semibold text-acars-text">Gross Profit</span>
+                    <span className={`text-lg tabular-nums font-bold ${
+                      (finances.grossProfit ?? 0) >= 0 ? 'text-emerald-400' : 'text-red-400'
+                    }`}>
+                      {(finances.grossProfit ?? 0) >= 0 ? '' : '-'}${Math.abs(finances.grossProfit ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-4 mt-1">
+                    <span className="text-[10px] text-acars-muted">
+                      Margin: <span className={`font-semibold ${(finances.marginPct ?? 0) >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                        {(finances.marginPct ?? 0).toFixed(1)}%
+                      </span>
+                    </span>
+                    {(finances.loadFactor ?? 0) > 0 && (
+                      <span className="text-[10px] text-acars-muted">
+                        Load Factor: <span className="font-semibold text-acars-text">{(finances.loadFactor ?? 0).toFixed(1)}%</span>
+                      </span>
+                    )}
+                    {(finances.blockHours ?? 0) > 0 && (
+                      <span className="text-[10px] text-acars-muted">
+                        Block Hours: <span className="font-semibold text-acars-text tabular-nums">{(finances.blockHours ?? 0).toFixed(1)}</span>
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </>
+            ) : finances.pilotPay != null ? (
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-acars-muted">{finances.description ?? 'Flight Pay'}</span>
+                <span className="text-lg tabular-nums font-bold text-emerald-400">
+                  ${finances.pilotPay.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </span>
+              </div>
+            ) : (
+              <p className="text-xs text-acars-muted italic">
+                {entry.status === 'pending' ? 'Finances will be calculated upon PIREP approval.' : 'No financial data available for this flight.'}
+              </p>
+            )}
           </div>
         )}
 

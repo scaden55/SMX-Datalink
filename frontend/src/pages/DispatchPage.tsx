@@ -6,11 +6,11 @@ import { useAuthStore } from '../stores/authStore';
 import { useFlightPlanStore } from '../stores/flightPlanStore';
 import { useCargoStore } from '../stores/cargoStore';
 import { useSocketStore } from '../stores/socketStore';
-import { useTelemetryStore } from '../stores/telemetryStore';
+import { useActiveFlightsStore } from '../stores/activeFlightsStore';
 import { DispatchEditProvider } from '../contexts/DispatchEditContext';
 import { api } from '../lib/api';
 import { stepsToWaypoints } from '../components/planning/simbrief-parser';
-import type { DispatchFlight, DispatchFlightsResponse, Airport, VatsimFlightStatus, RegulatoryAssessment, CargoManifest, TelemetrySnapshot } from '@acars/shared';
+import type { DispatchFlight, DispatchFlightsResponse, Airport, VatsimFlightStatus, RegulatoryAssessment, CargoManifest } from '@acars/shared';
 
 export function DispatchPage() {
   const navigate = useNavigate();
@@ -59,6 +59,23 @@ export function DispatchPage() {
     return () => { cancelled = true; };
   }, [setAirports]);
 
+  // Auto-refresh flight list when heartbeats show a flight not in our list
+  const activeHeartbeats = useActiveFlightsStore((s) => s.flights);
+  useEffect(() => {
+    if (loading || activeHeartbeats.length === 0) return;
+    const hasNew = activeHeartbeats.some(
+      (hb) => hb.bidId && !flights.some((f) => f.bid.id === hb.bidId),
+    );
+    if (!hasNew) return;
+    api.get<DispatchFlightsResponse>('/api/dispatch/flights').then((data) => {
+      setFlights(data.flights);
+      // Auto-select the new flight if nothing is selected
+      if (!selectedBidId && data.flights.length > 0) {
+        setSelectedBidId(data.flights[0].bid.id);
+      }
+    }).catch(() => {});
+  }, [activeHeartbeats, flights, loading, selectedBidId]);
+
   // Listen for real-time VATSIM status changes
   useEffect(() => {
     if (!socket) return;
@@ -79,22 +96,37 @@ export function DispatchPage() {
     };
 
     const handleReleased = (data: { bidId: number; changedFields: string[] }) => {
-      setFlights((prev) =>
-        prev.map((f) =>
-          f.bid.id === data.bidId
-            ? { ...f, releasedFields: data.changedFields }
-            : f,
-        ),
-      );
+      // Re-fetch the full flight list so the pilot sees the dispatcher's changes
+      api.get<DispatchFlightsResponse>('/api/dispatch/flights').then((freshData) => {
+        setFlights(freshData.flights);
+      }).catch(() => {
+        // Fallback: at least update the releasedFields flag
+        setFlights((prev) =>
+          prev.map((f) =>
+            f.bid.id === data.bidId
+              ? { ...f, releasedFields: data.changedFields }
+              : f,
+          ),
+        );
+      });
+    };
+
+    const handleUpdated = () => {
+      // Dispatcher edited a field — re-fetch to show latest values
+      api.get<DispatchFlightsResponse>('/api/dispatch/flights').then((freshData) => {
+        setFlights(freshData.flights);
+      }).catch(() => {});
     };
 
     socket.on('dispatch:vatsimStatus', handleVatsimStatus);
     socket.on('flight:completed', handleFlightCompleted);
     socket.on('dispatch:released', handleReleased);
+    socket.on('dispatch:updated', handleUpdated);
     return () => {
       socket.off('dispatch:vatsimStatus', handleVatsimStatus);
       socket.off('flight:completed', handleFlightCompleted);
       socket.off('dispatch:released', handleReleased);
+      socket.off('dispatch:updated', handleUpdated);
     };
   }, [socket]);
 
@@ -236,30 +268,18 @@ export function DispatchPage() {
     };
   }, [setFlightPlan, setProgress, setOfp, setActiveBidId]);
 
-  // Subscribe to dispatch:telemetry for the selected bid (remote pilot data)
+  // Join dispatch room for the selected bid (for track:point, acars:message, dispatch:updated, etc.)
   const isOwnFlight = user?.id === selectedFlight?.bid?.userId;
-  const setRemoteSnapshot = useTelemetryStore((s) => s.setRemoteSnapshot);
-  const clearRemoteSnapshot = useTelemetryStore((s) => s.clearRemoteSnapshot);
 
   useEffect(() => {
-    if (!socket || !selectedBidId || isOwnFlight) {
-      clearRemoteSnapshot();
-      return;
-    }
+    if (!socket || !selectedBidId) return;
 
     socket.emit('dispatch:subscribe', selectedBidId);
 
-    const handleTelemetry = (data: TelemetrySnapshot) => {
-      setRemoteSnapshot(data);
-    };
-    socket.on('dispatch:telemetry', handleTelemetry);
-
     return () => {
-      socket.off('dispatch:telemetry', handleTelemetry);
       socket.emit('dispatch:unsubscribe', selectedBidId);
-      clearRemoteSnapshot();
     };
-  }, [socket, selectedBidId, isOwnFlight, setRemoteSnapshot, clearRemoteSnapshot]);
+  }, [socket, selectedBidId]);
 
   const handleSelectFlight = useCallback((bidId: number) => {
     setSelectedBidId(bidId);

@@ -8,17 +8,17 @@ import type { LogbookEntry } from '@acars/shared';
 import { LogbookService } from './logbook.js';
 import { ExceedanceService } from './exceedance.js';
 
-// ── Score calculation ────────────────────────────────────────────
+// ── Score calculation (G-force based) ────────────────────────────
 
-export function calculateScore(landingRateFpm: number | null): number | null {
-  if (landingRateFpm == null) return null;
-  const abs = Math.abs(landingRateFpm);
-  if (abs <= 100) return 100;
-  if (abs <= 150) return 90;
-  if (abs <= 200) return 80;
-  if (abs <= 250) return 65;
-  if (abs <= 400) return 45;
-  return 20;
+export function calculateScore(landingGForce: number | null): number | null {
+  if (landingGForce == null) return null;
+  const g = Math.abs(landingGForce);
+  if (g <= 1.2) return 100;   // Butter — feather-light touchdown
+  if (g <= 1.5) return 100;   // Normal — full marks
+  if (g <= 1.8) return 85;    // Firm
+  if (g <= 2.1) return 60;    // Hard
+  if (g <= 2.5) return 35;    // Very hard — inspection territory
+  return 10;                  // Crash
 }
 
 // ── Types ────────────────────────────────────────────────────────
@@ -80,8 +80,8 @@ export class PirepService {
 
     if (!bid) throw new Error('Bid not found');
     if (bid.user_id !== userId) throw new Error('Not your bid');
-    if (bid.flight_plan_phase !== 'active') {
-      throw new Error(`Flight is not active (phase: ${bid.flight_plan_phase})`);
+    if (bid.flight_plan_phase === 'completed') {
+      throw new Error('Flight has already been completed');
     }
 
     // 2. Get schedule data
@@ -123,8 +123,8 @@ export class PirepService {
       ? Math.round(takeoffFuel - currentFuelLbs)
       : null;
 
-    // 6. Score from landing rate
-    const score = calculateScore(flightEvents.landingRateFpm);
+    // 6. Score from landing G-force (primary metric)
+    const score = calculateScore(flightEvents.landingGForce);
 
     // 7. Gather fields from flight plan and OFP
     const route = ofpData.route || flightPlanData.route || null;
@@ -152,7 +152,7 @@ export class PirepService {
           fuel_used_lbs, fuel_planned_lbs,
           route, cruise_altitude,
           pax_count, cargo_lbs,
-          landing_rate_fpm, score,
+          landing_rate_fpm, landing_g_force, score,
           status, remarks,
           vatsim_connected, vatsim_callsign, vatsim_cid,
           oooi_out, oooi_off, oooi_on, oooi_in
@@ -165,7 +165,7 @@ export class PirepService {
           ?, ?,
           ?, ?,
           ?, ?,
-          ?, ?,
+          ?, ?, ?,
           ?, ?,
           ?, ?, ?,
           ?, ?, ?, ?
@@ -190,6 +190,7 @@ export class PirepService {
         paxCount,
         cargoLbs,
         flightEvents.landingRateFpm,
+        flightEvents.landingGForce,
         score,
         status,
         remarks ?? null,
@@ -249,6 +250,7 @@ export class PirepService {
         after: {
           flightNumber: schedule.flight_number,
           landingRate: flightEvents.landingRateFpm,
+          landingGForce: flightEvents.landingGForce,
           score,
           status,
         } as Record<string, unknown>,
