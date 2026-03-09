@@ -50,6 +50,7 @@ interface FleetAircraft {
   locationIcao: string | null;
   isCargo: boolean;
   configuration: string | null;
+  aircraftClass: 'I' | 'II' | 'III';
   reservedByPilot: string | null;
   bidFlightPhase: string | null;
 }
@@ -692,9 +693,25 @@ export function FleetPage() {
                     )}
                   </div>
 
-                  {/* Aircraft name + type */}
+                  {/* Aircraft name + type + class */}
                   <div className="flex flex-col" style={{ padding: '0 16px 10px 16px', gap: 2 }}>
-                    <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{ac.name}</span>
+                    <div className="flex items-center" style={{ gap: 6 }}>
+                      <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{ac.name}</span>
+                      <span
+                        style={{
+                          fontSize: 8,
+                          padding: '1px 5px',
+                          borderRadius: 3,
+                          backgroundColor: 'var(--accent-blue-bg)',
+                          color: 'var(--accent-blue-bright)',
+                          fontWeight: 600,
+                          letterSpacing: 0.3,
+                          flexShrink: 0,
+                        }}
+                      >
+                        CLASS {ac.aircraftClass}
+                      </span>
+                    </div>
                     <span style={{ fontSize: 10, color: 'var(--text-tertiary)' }}>{ac.icaoType}</span>
                   </div>
 

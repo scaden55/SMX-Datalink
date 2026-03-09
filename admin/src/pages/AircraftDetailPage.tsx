@@ -167,6 +167,7 @@ export function AircraftDetailPage() {
       cat: aircraft.cat ?? '',
       selcal: aircraft.selcal ?? '',
       hexCode: aircraft.hexCode ?? '',
+      aircraftClass: aircraft.aircraftClass ?? 'I',
       remarks: aircraft.remarks ?? '',
     });
     setEditingInfo(true);
@@ -379,6 +380,11 @@ export function AircraftDetailPage() {
                 editValue={infoForm.selcal as string} onChange={(v) => setInfoForm((p) => ({ ...p, selcal: v }))} />
               <FieldRow label="Hex Code" value={aircraft.hexCode} editing={editingInfo}
                 editValue={infoForm.hexCode as string} onChange={(v) => setInfoForm((p) => ({ ...p, hexCode: v }))} />
+              <FieldRow label="Aircraft Class" value={aircraft.aircraftClass ? `Class ${aircraft.aircraftClass}` : '—'} editing={editingInfo}
+                editValue={infoForm.aircraftClass ?? aircraft.aircraftClass ?? 'I'}
+                onChange={(v) => setInfoForm((p) => ({ ...p, aircraftClass: v as 'I' | 'II' | 'III' }))}
+                options={['I', 'II', 'III']}
+                optionLabels={['Class I (Regional)', 'Class II (Narrowbody)', 'Class III (Widebody)']} />
               <FieldRow label="Remarks" value={aircraft.remarks} editing={editingInfo}
                 editValue={infoForm.remarks as string} onChange={(v) => setInfoForm((p) => ({ ...p, remarks: v }))} />
             </div>
@@ -711,6 +717,7 @@ function FieldRow({
   editValue,
   onChange,
   options,
+  optionLabels,
 }: {
   label: string;
   value: string | null | undefined;
@@ -718,6 +725,7 @@ function FieldRow({
   editValue?: string;
   onChange?: (v: string) => void;
   options?: string[];
+  optionLabels?: string[];
 }) {
   return (
     <div
@@ -741,8 +749,8 @@ function FieldRow({
               outline: 'none',
             }}
           >
-            {options.map((o) => (
-              <option key={o} value={o}>{o}</option>
+            {options.map((o, i) => (
+              <option key={o} value={o}>{optionLabels ? optionLabels[i] : o}</option>
             ))}
           </select>
         ) : (
