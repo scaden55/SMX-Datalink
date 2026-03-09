@@ -4,6 +4,7 @@ import { NotificationService } from './notification.js';
 import { FinanceService } from './finance.js';
 import { SettingsService } from './settings.js';
 import { MaintenanceService } from './maintenance.js';
+import { RevenueModelService } from './revenue-model.js';
 import type { LogbookEntry, LogbookStatus, LogbookFilters } from '@acars/shared';
 
 interface LogbookRow {
@@ -56,6 +57,7 @@ const notificationService = new NotificationService();
 const financeService = new FinanceService();
 const settingsService = new SettingsService();
 const maintenanceService = new MaintenanceService();
+const revenueModelService = new RevenueModelService();
 
 export class PirepAdminService {
 
@@ -123,30 +125,30 @@ export class PirepAdminService {
         WHERE id = ?
       `).run(status, reviewerId, notes ?? null, pirepId);
 
-      // On approve: create finance entry for pilot pay + cargo revenue
+      // On approve: create finance entries via revenue model
       if (status === 'approved') {
-        const payRate = parseFloat(settingsService.get('finance.pay_per_hour') ?? '50');
-        const hours = pirep.flight_time_min / 60;
-        const amount = Math.round(hours * payRate * 100) / 100;
+        const breakdown = revenueModelService.calculate({
+          cargoLbs: pirep.cargo_lbs,
+          distanceNm: pirep.distance_nm,
+          aircraftRegistration: pirep.aircraft_registration,
+          aircraftType: pirep.aircraft_type,
+          blockHours: pirep.flight_time_min / 60,
+        });
 
         financeService.create({
           pilotId: pirep.user_id,
           type: 'pay',
-          amount,
+          amount: breakdown.pilotPay,
           description: `Flight pay: ${pirep.flight_number} (${pirep.dep_icao}-${pirep.arr_icao})`,
           pirepId,
         }, reviewerId);
 
-        // Post cargo revenue if cargo was carried
-        let revenue = 0;
-        const cargoRate = parseFloat(settingsService.get('finance.cargo_rate') ?? '0.0005');
-        if (pirep.cargo_lbs > 0) {
-          revenue = Math.round(pirep.cargo_lbs * cargoRate * 100) / 100;
+        if (breakdown.revenue.total > 0) {
           financeService.create({
             pilotId: pirep.user_id,
             type: 'income',
-            amount: revenue,
-            description: `Cargo revenue: ${pirep.flight_number} (${pirep.cargo_lbs.toLocaleString()} lbs @ $${cargoRate}/lb)`,
+            amount: breakdown.revenue.total,
+            description: `Cargo revenue: ${pirep.flight_number} (${breakdown.cargoKg.toLocaleString()} kg, Class ${breakdown.aircraftClass})`,
             pirepId,
           }, reviewerId);
         }
@@ -158,7 +160,7 @@ export class PirepAdminService {
 
         notificationService.send({
           userId: pirep.user_id,
-          message: `Your PIREP for ${pirep.flight_number} has been approved. Pay: $${amount.toFixed(2)}${pirep.cargo_lbs > 0 ? `, Revenue: $${revenue.toFixed(2)}` : ''}`,
+          message: `Your PIREP for ${pirep.flight_number} has been approved. Pay: $${breakdown.pilotPay.toFixed(2)}, Cargo Revenue: $${breakdown.revenue.total.toFixed(2)}`,
           type: 'success',
           link: `/logbook/${pirepId}`,
         });

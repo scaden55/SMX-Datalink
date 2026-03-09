@@ -7,6 +7,7 @@ import type { FlightEvents } from './flight-event-tracker.js';
 import type { LogbookEntry } from '@acars/shared';
 import { LogbookService } from './logbook.js';
 import { ExceedanceService } from './exceedance.js';
+import { RevenueModelService } from './revenue-model.js';
 
 // ── Score calculation (G-force based) ────────────────────────────
 
@@ -58,6 +59,7 @@ const notificationService = new NotificationService();
 const auditService = new AuditService();
 const logbookService = new LogbookService();
 const exceedanceService = new ExceedanceService();
+const revenueModelService = new RevenueModelService();
 
 export class PirepService {
   /**
@@ -211,23 +213,39 @@ export class PirepService {
       // Link exceedances to the logbook entry
       exceedanceService.linkToLogbook(bidId, logbookId);
 
-      // Auto-approve: create finance entry
+      // Auto-approve: create finance entries via revenue model
       if (autoApprove && flightTimeMin > 0) {
-        const payRate = parseFloat(settingsService.get('finance.pay_per_hour') ?? '50');
-        const hours = flightTimeMin / 60;
-        const amount = Math.round(hours * payRate * 100) / 100;
+        const breakdown = revenueModelService.calculate({
+          cargoLbs: cargoLbs,
+          distanceNm: schedule.distance_nm,
+          aircraftRegistration: aircraftReg,
+          aircraftType: schedule.aircraft_type,
+          blockHours: flightTimeMin / 60,
+        });
 
+        // Pilot pay
         financeService.create({
           pilotId: userId,
           type: 'pay',
-          amount,
+          amount: breakdown.pilotPay,
           description: `Flight pay: ${schedule.flight_number} (${schedule.dep_icao}-${schedule.arr_icao})`,
           pirepId: logbookId,
         }, userId);
 
+        // Cargo revenue
+        if (breakdown.revenue.total > 0) {
+          financeService.create({
+            pilotId: userId,
+            type: 'income',
+            amount: breakdown.revenue.total,
+            description: `Cargo revenue: ${schedule.flight_number} (${breakdown.cargoKg.toLocaleString()} kg, Class ${breakdown.aircraftClass})`,
+            pirepId: logbookId,
+          }, userId);
+        }
+
         notificationService.send({
           userId,
-          message: `PIREP auto-approved for ${schedule.flight_number}. $${amount.toFixed(2)} credited.`,
+          message: `PIREP auto-approved for ${schedule.flight_number}. Pay: $${breakdown.pilotPay.toFixed(2)}, Cargo Revenue: $${breakdown.revenue.total.toFixed(2)}`,
           type: 'success',
           link: `/logbook/${logbookId}`,
         });
