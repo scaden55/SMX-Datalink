@@ -41,6 +41,7 @@ import { adminReportsRouter } from './routes/admin-reports.js';
 import { adminNotificationsRouter } from './routes/admin-notifications.js';
 import { adminSearchRouter } from './routes/admin-search.js';
 import { adminFinanceEngineRouter } from './routes/admin-finance-engine.js';
+import { adminRevenueModelRouter } from './routes/admin-revenue-model.js';
 import { notificationsRouter } from './routes/notifications.js';
 import { SettingsService } from './services/settings.js';
 import { AuthService } from './services/auth.js';
@@ -177,6 +178,7 @@ app.use('/api', adminReportsRouter());
 app.use('/api', adminNotificationsRouter());
 app.use('/api', adminSearchRouter());
 app.use('/api', adminFinanceEngineRouter());
+app.use('/api', adminRevenueModelRouter());
 app.use('/api', notificationsRouter());
 app.use('/api', airportDetailRouter());       // /airports/:icao (AFTER scheduleRouter's /airports)
 app.use('/api', trackRouter());
