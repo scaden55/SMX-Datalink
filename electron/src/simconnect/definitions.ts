@@ -98,6 +98,27 @@ export function requestAllData(handle: SimConnectConnection): void {
 }
 
 /**
+ * Switches POSITION + FLIGHT data requests to high-rate (SIM_FRAME) or normal (SECOND).
+ * Used to capture precise landing G-force and VS when below 1000ft AGL on approach.
+ */
+export function setDataRate(handle: SimConnectConnection, highRate: boolean): void {
+  const period = highRate ? SimConnectPeriod.SIM_FRAME : SimConnectPeriod.SECOND;
+  const groups = [
+    { reqId: RequestID.POSITION, defId: DefinitionID.POSITION },
+    { reqId: RequestID.FLIGHT, defId: DefinitionID.FLIGHT },
+  ];
+  for (const { reqId, defId } of groups) {
+    handle.requestDataOnSimObject(
+      reqId,
+      defId,
+      SimConnectConstants.OBJECT_ID_USER,
+      period,
+      DataRequestFlag.DATA_REQUEST_FLAG_CHANGED,
+    );
+  }
+}
+
+/**
  * Subscribes to SimConnect system events for flight lifecycle tracking.
  */
 export function subscribeSystemEvents(handle: SimConnectConnection): void {

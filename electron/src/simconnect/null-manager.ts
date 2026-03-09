@@ -24,4 +24,5 @@ export class NullSimConnectManager extends EventEmitter implements ISimConnectMa
   }
 
   disconnect(): void {}
+  setHighRateMode(): void {}
 }

@@ -4,7 +4,7 @@ import type { RefreshResponse } from '@acars/shared';
 // Packaged Electron exe: connect to the central VPS server
 // Dev Electron: connect to local backend on localhost:3001
 // Dev browser: relative paths work via Vite proxy
-const PRODUCTION_SERVER = 'http://138.197.127.39:3001';
+const PRODUCTION_SERVER = 'https://iacars.specialmissionsair.com';
 const DEV_BACKEND = 'http://localhost:3001';
 
 let apiBase = '';

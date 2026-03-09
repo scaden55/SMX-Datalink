@@ -1,6 +1,6 @@
 import { open, Protocol, type SimConnectConnection, type RecvOpen } from 'node-simconnect';
 import { EventEmitter } from 'events';
-import { registerAllDefinitions, requestAllData, subscribeSystemEvents, SystemEventID, RequestID } from './definitions';
+import { registerAllDefinitions, requestAllData, subscribeSystemEvents, setDataRate, SystemEventID, RequestID } from './definitions';
 import { readPosition, readEngine, readFuel, readFlightState, readAutopilot, readRadio, readAircraftInfo } from './reader';
 import type { ISimConnectManager } from './types';
 
@@ -94,6 +94,15 @@ export class SimConnectManager extends EventEmitter implements ISimConnectManage
     }
     this._connected = false;
     this.emit('disconnected');
+  }
+
+  private _highRate = false;
+
+  setHighRateMode(enabled: boolean): void {
+    if (enabled === this._highRate || !this.handle || !this._connected) return;
+    this._highRate = enabled;
+    setDataRate(this.handle, enabled);
+    this.diag('info', `Data rate switched to ${enabled ? 'SIM_FRAME (high)' : 'SECOND (normal)'}`);
   }
 
   private attemptConnection(): void {

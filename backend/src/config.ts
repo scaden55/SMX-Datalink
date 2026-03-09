@@ -22,7 +22,9 @@ const devJwtSecret = randomBytes(64).toString('hex');
 export const config = {
   isDev,
   port: parseInt(process.env.PORT || '3001', 10),
-  corsOrigin: process.env.CORS_ORIGIN || 'http://localhost:5173',
+  corsOrigin: (process.env.CORS_ORIGIN || 'http://localhost:5173')
+    .split(',')
+    .map(s => s.trim()),
   simconnectEnabled: process.env.SIMCONNECT_ENABLED !== 'false',
   simconnect: {
     appName: 'ACARS System',

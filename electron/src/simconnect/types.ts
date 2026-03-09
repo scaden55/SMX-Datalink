@@ -54,4 +54,6 @@ export interface ISimConnectManager extends EventEmitter {
   getConnectionStatus(): ConnectionStatus;
   connect(): Promise<void>;
   disconnect(): void;
+  /** Switch POSITION + FLIGHT data requests to SIM_FRAME rate for precision landing capture. */
+  setHighRateMode(enabled: boolean): void;
 }

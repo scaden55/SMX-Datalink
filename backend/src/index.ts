@@ -67,11 +67,31 @@ new SettingsService().seedDefaults();
 const app = express();
 const httpServer = createServer(app);
 
-// Security headers
-app.use(helmet());
+// Trust Nginx reverse proxy — required for correct client IP in rate limiting
+app.set('trust proxy', 1);
 
-// CORS
-app.use(cors({ origin: config.corsOrigin }));
+// Security headers
+app.use(helmet({
+  contentSecurityPolicy: {
+    useDefaults: false,
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https://api.fontshare.com"],
+      imgSrc: ["'self'", "data:", "blob:", "https:"],
+      connectSrc: ["'self'", "wss:", "ws:", ...config.corsOrigin],
+      fontSrc: ["'self'", "https://cdn.fontshare.com"],
+      baseUri: ["'self'"],
+      formAction: ["'self'"],
+      frameAncestors: ["'self'"],
+      objectSrc: ["'none'"],
+      upgradeInsecureRequests: [],
+    },
+  },
+}));
+
+// CORS — supports multiple origins via comma-separated CORS_ORIGIN env var
+app.use(cors({ origin: config.corsOrigin, credentials: true }));
 app.use(express.json({ limit: config.maxBodySize }));
 app.use(hpp());
 
@@ -170,6 +190,10 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const adminDistPath = join(__dirname, '../admin-dist');
 app.use('/admin', express.static(adminDistPath));
+// SPA fallback — serve index.html for all admin routes (both /admin/ and /admin/*)
+app.get('/admin', (_req, res) => {
+  res.sendFile(join(adminDistPath, 'index.html'));
+});
 app.get('/admin/*', (_req, res) => {
   res.sendFile(join(adminDistPath, 'index.html'));
 });

@@ -480,84 +480,105 @@ app.whenReady().then(async () => {
   sim.on('simStart', () => { phaseService.reset(); exceedanceDetector.reset(); });
 
   // Broadcast composed snapshot to renderer at poll interval
+  // High-rate mode: 50ms polling + SIM_FRAME data when below 1000ft AGL on approach
+  const NORMAL_POLL_MS = 200;
+  const HIGH_RATE_POLL_MS = 50;
+  let inHighRateMode = false;
+
+  function startTelemetryLoop(intervalMs: number): void {
+    if (telemetryInterval) clearInterval(telemetryInterval);
+    telemetryInterval = setInterval(telemetryTick, intervalMs);
+  }
+
+  function telemetryTick(): void {
+    if (!sim.connected || !mainWindow) return;
+
+    // Flatten radio + aircraftInfo into aircraft to match AircraftData shape
+    const radio = (latestData.radio ?? {}) as Record<string, unknown>;
+    const info = (latestData.aircraftInfo ?? {}) as Record<string, unknown>;
+    const position = (latestData.position ?? {}) as Record<string, number>;
+    const flightState = (latestData.flightState ?? {}) as Record<string, unknown>;
+    const engine = (latestData.engine ?? {}) as Record<string, unknown>;
+
+    // Compute flight phase from accumulated telemetry
+    const engines = (engine.engines ?? []) as Array<{ n1: number }>;
+    const phase = phaseService.update({
+      groundSpeed: position.groundSpeed ?? 0,
+      verticalSpeed: position.verticalSpeed ?? 0,
+      altitude: position.altitude ?? 0,
+      altitudeAgl: position.altitudeAgl ?? 0,
+      simOnGround: (flightState.simOnGround as boolean) ?? true,
+      gearHandlePosition: (flightState.gearHandlePosition as boolean) ?? false,
+      engineN1: engines[0]?.n1 ?? 0,
+      parkingBrake: (flightState.parkingBrake as boolean) ?? true,
+    });
+
+    // High-rate mode: switch SimConnect to SIM_FRAME when below 1000ft AGL on approach
+    const agl = position.altitudeAgl ?? 10000;
+    const wantHighRate = (phase === 'APPROACH' || phase === 'LANDING') && agl < 1000;
+    if (wantHighRate !== inHighRateMode) {
+      inHighRateMode = wantHighRate;
+      sim.setHighRateMode(wantHighRate);
+      startTelemetryLoop(wantHighRate ? HIGH_RATE_POLL_MS : NORMAL_POLL_MS);
+    }
+
+    // Keep VPS relay phase in sync for heartbeats
+    vpsRelay?.updatePhase(phase);
+
+    // Detect exceedances from current telemetry
+    const exceedancePosition = {
+      latitude: position.latitude ?? 0,
+      longitude: position.longitude ?? 0,
+      altitude: position.altitude ?? 0,
+      heading: position.heading ?? 0,
+      airspeedIndicated: position.airspeedIndicated ?? 0,
+      airspeedTrue: position.airspeedTrue ?? 0,
+      groundSpeed: position.groundSpeed ?? 0,
+      verticalSpeed: position.verticalSpeed ?? 0,
+      pitch: position.pitch ?? 0,
+      bank: position.bank ?? 0,
+      altitudeAgl: position.altitudeAgl ?? 0,
+      totalWeight: position.totalWeight ?? 0,
+      gForce: position.gForce ?? 1,
+    };
+    const exceedanceEvents = exceedanceDetector.check(
+      exceedancePosition,
+      phase,
+      (flightState.simOnGround as boolean) ?? true,
+    );
+
+    // Detect landing-triggered exceedances on phase change
+    if (phase !== previousPhase) {
+      const phaseEvents = exceedanceDetector.onPhaseChange(previousPhase, phase);
+      exceedanceEvents.push(...phaseEvents);
+      previousPhase = phase;
+    }
+
+    // Emit exceedances to renderer and VPS relay
+    for (const evt of exceedanceEvents) {
+      mainWindow?.webContents.send(IpcChannels.SIM_EXCEEDANCE, evt);
+      vpsRelay?.emitExceedance(evt);
+    }
+
+    const snapshot = {
+      aircraft: {
+        position: latestData.position ?? {},
+        autopilot: latestData.autopilot ?? {},
+        ...radio,   // transponder, com1, com2, nav1, nav2
+        ...info,     // title, atcId, atcType, atcModel
+      },
+      engine: latestData.engine ?? {},
+      fuel: latestData.fuel ?? {},
+      flight: { ...flightState, phase },
+      timestamp: new Date().toISOString(),
+    };
+    mainWindow!.webContents.send(IpcChannels.SIM_TELEMETRY, snapshot);
+  }
+
   sim.on('connected', (status) => {
     mainWindow?.webContents.send(IpcChannels.SIM_STATUS, status);
     if (!telemetryInterval) {
-      telemetryInterval = setInterval(() => {
-        if (!sim.connected || !mainWindow) return;
-
-        // Flatten radio + aircraftInfo into aircraft to match AircraftData shape
-        const radio = (latestData.radio ?? {}) as Record<string, unknown>;
-        const info = (latestData.aircraftInfo ?? {}) as Record<string, unknown>;
-        const position = (latestData.position ?? {}) as Record<string, number>;
-        const flightState = (latestData.flightState ?? {}) as Record<string, unknown>;
-        const engine = (latestData.engine ?? {}) as Record<string, unknown>;
-
-        // Compute flight phase from accumulated telemetry
-        const engines = (engine.engines ?? []) as Array<{ n1: number }>;
-        const phase = phaseService.update({
-          groundSpeed: position.groundSpeed ?? 0,
-          verticalSpeed: position.verticalSpeed ?? 0,
-          altitude: position.altitude ?? 0,
-          altitudeAgl: position.altitudeAgl ?? 0,
-          simOnGround: (flightState.simOnGround as boolean) ?? true,
-          gearHandlePosition: (flightState.gearHandlePosition as boolean) ?? false,
-          engineN1: engines[0]?.n1 ?? 0,
-          parkingBrake: (flightState.parkingBrake as boolean) ?? true,
-        });
-
-        // Keep VPS relay phase in sync for heartbeats
-        vpsRelay?.updatePhase(phase);
-
-        // Detect exceedances from current telemetry
-        const exceedancePosition = {
-          latitude: position.latitude ?? 0,
-          longitude: position.longitude ?? 0,
-          altitude: position.altitude ?? 0,
-          heading: position.heading ?? 0,
-          airspeedIndicated: position.airspeedIndicated ?? 0,
-          airspeedTrue: position.airspeedTrue ?? 0,
-          groundSpeed: position.groundSpeed ?? 0,
-          verticalSpeed: position.verticalSpeed ?? 0,
-          pitch: position.pitch ?? 0,
-          bank: position.bank ?? 0,
-          altitudeAgl: position.altitudeAgl ?? 0,
-          totalWeight: position.totalWeight ?? 0,
-          gForce: position.gForce ?? 1,
-        };
-        const exceedanceEvents = exceedanceDetector.check(
-          exceedancePosition,
-          phase,
-          (flightState.simOnGround as boolean) ?? true,
-        );
-
-        // Detect landing-triggered exceedances on phase change
-        if (phase !== previousPhase) {
-          const phaseEvents = exceedanceDetector.onPhaseChange(previousPhase, phase);
-          exceedanceEvents.push(...phaseEvents);
-          previousPhase = phase;
-        }
-
-        // Emit exceedances to renderer and VPS relay
-        for (const evt of exceedanceEvents) {
-          mainWindow?.webContents.send(IpcChannels.SIM_EXCEEDANCE, evt);
-          vpsRelay?.emitExceedance(evt);
-        }
-
-        const snapshot = {
-          aircraft: {
-            position: latestData.position ?? {},
-            autopilot: latestData.autopilot ?? {},
-            ...radio,   // transponder, com1, com2, nav1, nav2
-            ...info,     // title, atcId, atcType, atcModel
-          },
-          engine: latestData.engine ?? {},
-          fuel: latestData.fuel ?? {},
-          flight: { ...flightState, phase },
-          timestamp: new Date().toISOString(),
-        };
-        mainWindow!.webContents.send(IpcChannels.SIM_TELEMETRY, snapshot);
-      }, 200);
+      startTelemetryLoop(NORMAL_POLL_MS);
     }
   });
 
@@ -567,6 +588,7 @@ app.whenReady().then(async () => {
       clearInterval(telemetryInterval);
       telemetryInterval = null;
     }
+    inHighRateMode = false;
   });
 
   // Start connection loop AFTER all listeners are registered — ensures

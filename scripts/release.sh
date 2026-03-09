@@ -6,7 +6,7 @@
 # This script:
 #   1. Bumps version in electron/package.json
 #   2. Builds shared → backend → frontend → admin → Electron installer
-#   3. Deploys backend + admin to VPS (138.197.127.39)
+#   3. Deploys backend + admin to VPS (iacars.specialmissionsair.com)
 #   4. Commits, tags, and pushes to GitHub
 #   5. Creates a GitHub Release with the installer attached
 # ───────────────────────────────────────────────────────────────
