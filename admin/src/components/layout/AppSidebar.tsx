@@ -12,6 +12,7 @@ import {
   BarChart3,
   Wallet,
   Calculator,
+  TrendingUp,
   Users,
   Settings,
   LogOut,
@@ -44,6 +45,7 @@ const navAnalytics: NavItem[] = [
   { title: 'Reports', path: '/reports', icon: BarChart3 },
   { title: 'Finances', path: '/finances', icon: Wallet },
   { title: 'Cost Engine', path: '/cost-engine', icon: Calculator },
+  { title: 'Revenue Model', path: '/revenue-model', icon: TrendingUp },
 ];
 
 const navSystem: NavItem[] = [
