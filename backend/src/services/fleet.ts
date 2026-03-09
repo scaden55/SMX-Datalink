@@ -42,6 +42,7 @@ interface FleetRow {
   cat: string | null;
   selcal: string | null;
   hex_code: string | null;
+  aircraft_class: 'I' | 'II' | 'III';
 }
 
 // ── Filters ─────────────────────────────────────────────────────
@@ -128,8 +129,8 @@ export class FleetService {
         is_active, status, base_icao, location_icao, remarks, updated_at,
         oew_lbs, mzfw_lbs, mtow_lbs, mlw_lbs, max_fuel_lbs,
         engines, ceiling_ft, iata_type, configuration, is_cargo,
-        equip_code, transponder_code, pbn, cat, selcal, hex_code
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        equip_code, transponder_code, pbn, cat, selcal, hex_code, aircraft_class
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       data.icaoType,
       data.name,
@@ -161,6 +162,7 @@ export class FleetService {
       data.cat ?? null,
       data.selcal ?? null,
       data.hexCode ?? null,
+      data.aircraftClass ?? 'I',
     );
 
     return this.findById(result.lastInsertRowid as number)!;
@@ -202,6 +204,7 @@ export class FleetService {
     if (data.cat !== undefined)             { sets.push('cat = ?');               params.push(data.cat); }
     if (data.selcal !== undefined)          { sets.push('selcal = ?');            params.push(data.selcal); }
     if (data.hexCode !== undefined)         { sets.push('hex_code = ?');          params.push(data.hexCode); }
+    if (data.aircraftClass !== undefined)  { sets.push('aircraft_class = ?');    params.push(data.aircraftClass); }
 
     // Status syncs is_active
     if (data.status !== undefined && VALID_STATUSES.has(data.status)) {
@@ -290,6 +293,7 @@ export class FleetService {
       cat: row.cat,
       selcal: row.selcal,
       hexCode: row.hex_code,
+      aircraftClass: row.aircraft_class ?? 'I',
       // Bid reservation info (null unless overridden by caller with JOIN data)
       reservedByPilot: null,
       bidFlightPhase: null,

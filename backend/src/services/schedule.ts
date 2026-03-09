@@ -64,6 +64,7 @@ interface FleetRow {
   cat: string | null;
   selcal: string | null;
   hex_code: string | null;
+  aircraft_class: 'I' | 'II' | 'III';
 }
 
 interface ScheduleRow {
@@ -631,6 +632,7 @@ export class ScheduleService {
       cat: row.cat,
       selcal: row.selcal,
       hexCode: row.hex_code,
+      aircraftClass: row.aircraft_class ?? 'I',
       // Bid reservation info (null — schedule service doesn't join bid data for fleet)
       reservedByPilot: null,
       bidFlightPhase: null,

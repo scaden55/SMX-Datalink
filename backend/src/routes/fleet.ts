@@ -60,6 +60,10 @@ export function fleetManageRouter(io?: SocketServer<ClientToServerEvents, Server
         res.status(400).json({ error: 'rangeNm, cruiseSpeed, paxCapacity, and cargoCapacityLbs are required' });
         return;
       }
+      if (body.aircraftClass !== undefined && !['I', 'II', 'III'].includes(body.aircraftClass)) {
+        res.status(400).json({ error: 'aircraftClass must be one of: I, II, III' });
+        return;
+      }
 
       const aircraft = service.create(body as CreateFleetAircraftRequest);
       io?.emit('fleet:updated');
@@ -84,6 +88,12 @@ export function fleetManageRouter(io?: SocketServer<ClientToServerEvents, Server
       }
 
       const body = req.body as UpdateFleetAircraftRequest;
+
+      if (body.aircraftClass !== undefined && !['I', 'II', 'III'].includes(body.aircraftClass)) {
+        res.status(400).json({ error: 'aircraftClass must be one of: I, II, III' });
+        return;
+      }
+
       const aircraft = service.update(id, body);
       if (!aircraft) {
         res.status(404).json({ error: 'Aircraft not found' });

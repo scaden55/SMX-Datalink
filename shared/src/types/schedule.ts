@@ -50,6 +50,8 @@ export interface FleetAircraft {
   cat: string | null;
   selcal: string | null;
   hexCode: string | null;
+  // Revenue model
+  aircraftClass: 'I' | 'II' | 'III';
   // Bid reservation info (computed, not stored in DB)
   reservedByPilot: string | null;
   bidFlightPhase: string | null;
@@ -85,6 +87,7 @@ export interface CreateFleetAircraftRequest {
   cat?: string;
   selcal?: string;
   hexCode?: string;
+  aircraftClass?: 'I' | 'II' | 'III';
 }
 
 export interface UpdateFleetAircraftRequest {
@@ -117,6 +120,7 @@ export interface UpdateFleetAircraftRequest {
   cat?: string | null;
   selcal?: string | null;
   hexCode?: string | null;
+  aircraftClass?: 'I' | 'II' | 'III';
 }
 
 export interface FleetListResponse {
