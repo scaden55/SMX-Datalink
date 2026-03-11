@@ -37,10 +37,12 @@ import { adminSettingsRouter } from './routes/admin-settings.js';
 import { adminAuditRouter } from './routes/admin-audit.js';
 import { adminMaintenanceRouter } from './routes/admin-maintenance.js';
 import { adminDashboardRouter } from './routes/admin-dashboard.js';
+import { adminFinancialKpisRouter } from './routes/admin-financial-kpis.js';
+import { adminMaintenanceSummaryRouter } from './routes/admin-maintenance-summary.js';
+import { adminFlightActivityRouter } from './routes/admin-flight-activity.js';
 import { adminReportsRouter } from './routes/admin-reports.js';
 import { adminNotificationsRouter } from './routes/admin-notifications.js';
 import { adminSearchRouter } from './routes/admin-search.js';
-import { adminFinanceEngineRouter } from './routes/admin-finance-engine.js';
 import { adminRevenueModelRouter } from './routes/admin-revenue-model.js';
 import { notificationsRouter } from './routes/notifications.js';
 import { SettingsService } from './services/settings.js';
@@ -73,7 +75,7 @@ app.set('trust proxy', 1);
 
 // Security headers
 app.use(helmet({
-  contentSecurityPolicy: {
+  contentSecurityPolicy: config.isDev ? false : {
     useDefaults: false,
     directives: {
       defaultSrc: ["'self'"],
@@ -86,13 +88,16 @@ app.use(helmet({
       formAction: ["'self'"],
       frameAncestors: ["'self'"],
       objectSrc: ["'none'"],
-      upgradeInsecureRequests: [],
     },
   },
 }));
 
 // CORS — supports multiple origins via comma-separated CORS_ORIGIN env var
-app.use(cors({ origin: config.corsOrigin, credentials: true }));
+// When CORS_ORIGIN is '*', use true to reflect the request origin (needed with credentials: true)
+const corsOrigin = config.corsOrigin.length === 1 && config.corsOrigin[0] === '*'
+  ? true
+  : config.corsOrigin;
+app.use(cors({ origin: corsOrigin, credentials: true }));
 app.use(express.json({ limit: config.maxBodySize }));
 app.use(hpp());
 
@@ -174,10 +179,12 @@ app.use('/api', adminSettingsRouter());
 app.use('/api', adminAuditRouter());
 app.use('/api', adminMaintenanceRouter());
 app.use('/api', adminDashboardRouter());
+app.use('/api', adminFinancialKpisRouter());
+app.use('/api', adminMaintenanceSummaryRouter());
+app.use('/api', adminFlightActivityRouter());
 app.use('/api', adminReportsRouter());
 app.use('/api', adminNotificationsRouter());
 app.use('/api', adminSearchRouter());
-app.use('/api', adminFinanceEngineRouter());
 app.use('/api', adminRevenueModelRouter());
 app.use('/api', notificationsRouter());
 app.use('/api', airportDetailRouter());       // /airports/:icao (AFTER scheduleRouter's /airports)
