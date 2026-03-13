@@ -336,7 +336,45 @@ Both already have backend support — this is new UI only.
 
 ---
 
-## 9. Seed Data
+## 9. A/B/C/D Check System Improvements
+
+### 9.1 Auto-Initialization of Aircraft Hours
+
+Currently, `aircraft_hours` rows must exist before check-due computation works. This should be automatic:
+
+- **On PIREP approval:** If no `aircraft_hours` row exists for the aircraft, auto-create one with `total_hours = 0`, `total_cycles = 0`, and all `hours_at_last_*` fields set to 0. Then accumulate the flight hours normally.
+- The existing `ensureAircraftHours()` method already does this — it just needs to be called reliably in the PIREP approval path (both auto-approve in `pirep.ts` and manual approve in `pirep-admin.ts`), before `accumulateFlightHours()`.
+- **On aircraft creation (fleet):** Also auto-create an `aircraft_hours` row when a new aircraft is added to the fleet, with zeros. This prevents the "no hours record" gap entirely.
+
+### 9.2 Default Check Intervals (Seed Data)
+
+Seed realistic A/B/C/D check intervals for common cargo aircraft types so admins don't need to configure from scratch. These are editable via the existing Check Schedules UI.
+
+**B763 (Boeing 767-300F):**
+| Check | Interval Hours | Interval Cycles | Interval Months | Overflight % | Est. Duration |
+|-------|---------------|----------------|----------------|-------------|---------------|
+| A | 500 | — | — | 10% | 8 hrs |
+| B | 4,500 | — | — | — | 48 hrs |
+| C | 6,000 | 3,000 | 18 | — | 2 weeks |
+| D | — | — | 72 | — | 4 weeks |
+
+**B752 (Boeing 757-200F):**
+| Check | Interval Hours | Interval Cycles | Interval Months | Overflight % | Est. Duration |
+|-------|---------------|----------------|----------------|-------------|---------------|
+| A | 500 | — | — | 10% | 6 hrs |
+| B | 4,000 | — | — | — | 40 hrs |
+| C | 5,500 | 2,800 | 18 | — | 2 weeks |
+| D | — | — | 72 | — | 4 weeks |
+
+These values are realistic approximations for Part 121 cargo operations. Admins can adjust intervals for their specific airline via the existing Check Schedules CRUD.
+
+### 9.3 Hours Accumulation from PIREPs
+
+This already works — `MaintenanceService.accumulateFlightHours()` is called on PIREP approval in `pirep-admin.ts`. The improvement is ensuring it also runs on auto-approve in `pirep.ts`, and that `ensureAircraftHours()` is called first. No schema changes needed.
+
+---
+
+## 10. Seed Data
 
 ### ATA Chapters (~78 entries)
 Standard ATA 100 chapters from 05 (Time Limits) through 80 (Starting). Key chapters for cargo ops:
@@ -347,15 +385,19 @@ Standard ATA 100 chapters from 05 (Time Limits) through 80 (Starting). Key chapt
 - 38 Water/Waste, 49 APU, 52 Doors, 53 Fuselage, 55 Stabilizers
 - 56 Windows, 57 Wings, 71-80 Engine/Power Plant
 
+### Default Check Intervals
+Seeded for B763 and B752 as described in Section 9.2 above.
+
 ### MEL Master List Items
 Approximately 25-35 items per aircraft type (B763, B752), covering the most common deferrable items. Each with category, ops procedure, and maintenance procedure where applicable.
 
 ---
 
-## 10. Integration Points
+## 11. Integration Points
 
 ### Existing Systems Affected
-- **PIREP submission** (`backend/src/services/pirep.ts`): After PIREP filed, include "Report a discrepancy?" link in the PIREP confirmation notification. Also back-fill `discrepancies.logbook_entry_id` for any open discrepancies matching the same aircraft + flight number.
+- **PIREP submission** (`backend/src/services/pirep.ts`): After PIREP filed, include "Report a discrepancy?" link in the PIREP confirmation notification. Also back-fill `discrepancies.logbook_entry_id` for any open discrepancies matching the same aircraft + flight number. Ensure `ensureAircraftHours()` is called before `accumulateFlightHours()` in both auto-approve and manual-approve paths.
+- **Fleet management**: Auto-create `aircraft_hours` row when a new aircraft is added to the fleet.
 - **Grounding logic** (`maintenance.ts` → `checkAndGroundAircraft`): Add discrepancy-based grounding check
 - **Dashboard widget** (`MaintenanceColumn.tsx`): Add open discrepancy count to fleet status display
 - **Notification system**: Discrepancy created → notify all users with role `dispatcher` or `admin` (requires querying users table and looping `NotificationService.send()` for each). Resolved → notify reporting pilot.
@@ -369,7 +411,7 @@ Approximately 25-35 items per aircraft type (B763, B752), covering the most comm
 
 ---
 
-## 11. Out of Scope
+## 12. Out of Scope
 
 - Service Difficulty Reports (SDR) filing — real Part 121 requirement, but overkill for sim
 - Mechanic certification tracking — no need to model A&P license management
