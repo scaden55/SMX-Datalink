@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { CheckSchedulesSection } from './CheckSchedulesSection';
 import { MelMasterSection } from './MelMasterSection';
+import { ComponentsSection } from './ComponentsSection';
 
 // ═══════════════════════════════════════════════════════════════
 // Configuration Tab — Check Schedules / MEL Master / Components
@@ -58,9 +59,7 @@ export function ConfigurationTab() {
           <MelMasterSection refreshKey={refreshKey} />
         )}
         {subTab === 'components' && (
-          <div style={{ padding: 24, color: 'var(--text-tertiary)', fontSize: 13 }}>
-            Components — coming soon
-          </div>
+          <ComponentsSection refreshKey={refreshKey} />
         )}
       </div>
     </div>
