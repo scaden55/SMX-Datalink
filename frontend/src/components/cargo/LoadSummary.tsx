@@ -31,15 +31,15 @@ export function LoadSummary({ manifest }: Props) {
     <div className="space-y-3">
       {/* Header */}
       <div className="flex items-baseline justify-between">
-        <span className="text-[10px] uppercase tracking-wide text-acars-muted">Load Summary</span>
-        <span className="text-[10px] text-acars-muted tabular-nums">{manifest.manifestNumber}</span>
+        <span className="text-[11px] uppercase tracking-wide text-acars-muted">Load Summary</span>
+        <span className="text-[11px] text-acars-muted tabular-nums">{manifest.manifestNumber}</span>
       </div>
 
       {/* Total weight + utilization */}
       <div>
         <div className="flex items-baseline justify-between mb-1">
-          <span className="text-[18px] tabular-nums text-acars-text font-semibold">{weight} <span className="text-[11px] text-acars-muted font-normal">{unit}</span></span>
-          <span className="text-[11px] tabular-nums text-blue-400">{utilPct}%</span>
+          <span className="text-[18px] tabular-nums text-acars-text font-semibold">{weight} <span className="text-[12px] text-acars-muted font-normal">{unit}</span></span>
+          <span className="text-[12px] tabular-nums text-blue-400">{utilPct}%</span>
         </div>
         <ProgressBar value={utilPct} max={100} />
         <div className="flex justify-between mt-0.5">
@@ -50,7 +50,7 @@ export function LoadSummary({ manifest }: Props) {
 
       {/* CG Position */}
       <div>
-        <span className="text-[10px] text-acars-muted block mb-1">CG Position (% MAC)</span>
+        <span className="text-[11px] text-acars-muted block mb-1">CG Position (% MAC)</span>
         <div className="relative h-4 bg-acars-input rounded-sm overflow-hidden">
           {/* Green envelope */}
           <div
@@ -77,12 +77,12 @@ export function LoadSummary({ manifest }: Props) {
 
       {/* Deck utilization breakdown */}
       <div className="space-y-1.5">
-        <span className="text-[10px] text-acars-muted">Deck Utilization</span>
+        <span className="text-[11px] text-acars-muted">Deck Utilization</span>
         {sections.map(([key, sec]) => (
           <div key={key}>
             <div className="flex items-center justify-between mb-0.5">
-              <span className="text-[10px] text-acars-text">{sec.name}</span>
-              <span className="text-[10px] tabular-nums text-acars-muted">
+              <span className="text-[11px] text-acars-text">{sec.name}</span>
+              <span className="text-[11px] tabular-nums text-acars-muted">
                 {Math.round(sec.weight).toLocaleString()} kg — {sec.utilization}%
               </span>
             </div>

@@ -10,7 +10,7 @@ export function PlanningNOTAMTab() {
     return (
       <div className="flex flex-col items-center justify-center h-full text-center gap-2 p-4">
         <WarningCircle className="w-6 h-6 text-acars-muted/20" />
-        <p className="text-[11px] text-acars-muted">Enter origin/destination to fetch NOTAMs</p>
+        <p className="text-[12px] text-acars-muted">Enter origin/destination to fetch NOTAMs</p>
       </div>
     );
   }
@@ -23,18 +23,18 @@ export function PlanningNOTAMTab() {
           <div key={icao}>
             <div className="flex items-center gap-2 mb-1.5">
               <span className="tabular-nums text-[12px] text-acars-text font-semibold">{icao}</span>
-              <span className="text-[11px] text-acars-muted">
+              <span className="text-[12px] text-acars-muted">
                 {notams.length} NOTAM{notams.length !== 1 ? 's' : ''}
               </span>
             </div>
             {notams.length === 0 ? (
-              <p className="text-[11px] text-acars-muted">No NOTAMs available</p>
+              <p className="text-[12px] text-acars-muted">No NOTAMs available</p>
             ) : (
               <div className="space-y-1.5">
                 {notams.map((n, i) => (
                   <pre
                     key={i}
-                    className="text-[11px] tabular-nums text-acars-text bg-acars-input rounded-md px-2 py-1 whitespace-pre-wrap break-words border border-acars-border"
+                    className="text-[12px] tabular-nums text-acars-text bg-acars-input rounded-md px-2 py-1 whitespace-pre-wrap break-words border border-acars-border"
                   >
                     {n.text}
                   </pre>

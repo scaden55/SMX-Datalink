@@ -16,10 +16,10 @@ export function MetricDisplay({ value, label, icon: Icon, trend, className }: Me
       {Icon && <Icon size={16} className="text-[var(--text-tertiary)] mb-1" />}
       <span className="text-2xl font-mono font-bold text-[var(--text-primary)]">{value}</span>
       <div className="flex items-center gap-2 mt-0.5">
-        <span className="text-[11px] text-[var(--text-tertiary)]">{label}</span>
+        <span className="text-[12px] text-[var(--text-tertiary)]">{label}</span>
         {trend && (
           <span className={cn(
-            'inline-flex items-center gap-0.5 text-[10px] font-medium',
+            'inline-flex items-center gap-0.5 text-[11px] font-medium',
             trend.direction === 'up' ? 'text-[var(--accent-emerald)]' : 'text-[var(--accent-red)]',
           )}>
             {trend.direction === 'up' ? <TrendingUp size={10} /> : <TrendingDown size={10} />}

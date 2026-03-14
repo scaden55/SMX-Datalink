@@ -35,7 +35,7 @@ function CopyButton({ text, label }: { text: string; label: string }) {
   return (
     <button
       onClick={handleCopy}
-      className="flex items-center gap-1 px-1 py-0.5 rounded-md text-[10px] text-acars-muted hover:text-acars-text hover:bg-acars-input transition-colors duration-100"
+      className="flex items-center gap-1 px-1 py-0.5 rounded-md text-[11px] text-acars-muted hover:text-acars-text hover:bg-acars-input transition-colors duration-100"
       title={`Copy ${label}`}
     >
       {copied ? <Check className="w-2.5 h-2.5 text-emerald-400" /> : <Copy className="w-2.5 h-2.5" />}
@@ -137,12 +137,12 @@ export function VatsimPrefile({ form, ofp, aircraft, onClose }: Props) {
         <div className="flex items-center justify-center gap-4 py-2">
           <div className="text-center">
             <div className="text-base font-bold tabular-nums text-acars-text">{fields.departure}</div>
-            <div className="text-[11px] text-acars-muted tabular-nums">{fields.depTime}z</div>
+            <div className="text-[12px] text-acars-muted tabular-nums">{fields.depTime}z</div>
           </div>
-          <ArrowRight className="w-3.5 h-3.5 text-[#6b8aff]/50" />
+          <ArrowRight className="w-3.5 h-3.5 text-[#7B94E0]/50" />
           <div className="text-center">
             <div className="text-base font-bold tabular-nums text-acars-text">{fields.destination}</div>
-            <div className="text-[11px] text-acars-muted tabular-nums">{fields.enrouteTime} enr</div>
+            <div className="text-[12px] text-acars-muted tabular-nums">{fields.enrouteTime} enr</div>
           </div>
         </div>
 
@@ -164,7 +164,7 @@ export function VatsimPrefile({ form, ofp, aircraft, onClose }: Props) {
           <div className="flex items-center justify-between mb-1">
             <span className="planning-label">ICAO Format</span>
           </div>
-          <pre className="text-[11px] text-white tabular-nums bg-white/[0.03] rounded-md border border-white/[0.06] p-2 leading-relaxed whitespace-pre-wrap break-all">
+          <pre className="text-[12px] text-white tabular-nums bg-white/[0.03] rounded-md border border-white/[0.06] p-2 leading-relaxed whitespace-pre-wrap break-all">
             {fullPlan}
           </pre>
         </div>
@@ -174,14 +174,14 @@ export function VatsimPrefile({ form, ofp, aircraft, onClose }: Props) {
       <div className="px-3 py-2 border-t border-white/[0.06] space-y-1.5">
         <button
           onClick={handleOpenMyVatsim}
-          className="w-full flex items-center justify-center gap-2 py-1.5 rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-400/20 text-[11px] font-semibold hover:bg-emerald-500/20 transition-colors duration-150"
+          className="w-full flex items-center justify-center gap-2 py-1.5 rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-400/20 text-[12px] font-semibold hover:bg-emerald-500/20 transition-colors duration-150"
         >
           <ArrowSquareOut className="w-3 h-3" />
           Open myVATSIM Prefile
         </button>
         <button
           onClick={handleCopyFull}
-          className="w-full flex items-center justify-center gap-2 py-1.5 rounded-md bg-white/[0.03] border border-white/[0.06] text-[11px] font-medium text-white hover:bg-white/[0.06] transition-colors duration-150"
+          className="w-full flex items-center justify-center gap-2 py-1.5 rounded-md bg-white/[0.03] border border-white/[0.06] text-[12px] font-medium text-white hover:bg-white/[0.06] transition-colors duration-150"
         >
           {fullCopied ? (
             <>
@@ -205,7 +205,7 @@ function FieldRow({ icon, label, value }: { icon: React.ReactNode; label: string
     <div className="flex items-start gap-2 py-1 px-2 rounded-md hover:bg-acars-input/50 group">
       <span className="text-acars-muted mt-0.5">{icon}</span>
       <div className="flex-1 min-w-0">
-        <div className="text-[11px] uppercase tracking-[0.08em] text-acars-muted">{label}</div>
+        <div className="text-[12px] uppercase tracking-[0.08em] text-acars-muted">{label}</div>
         <div className="text-[12px] text-acars-text tabular-nums truncate">{value}</div>
       </div>
       <CopyButton text={value} label={label} />

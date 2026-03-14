@@ -83,37 +83,37 @@ function BidRouteCard({ bid, phase }: { bid: ActiveBidEntry; phase?: string }) {
     >
       {/* Flight number + route */}
       <div className="flex-1 min-w-0 flex items-center gap-3">
-        <span className="text-[10px] font-semibold text-[#6b8aff] tabular-nums w-16 shrink-0">{bid.flightNumber}</span>
+        <span className="text-[11px] font-semibold text-[#7B94E0] font-mono tabular-nums w-16 shrink-0">{bid.flightNumber}</span>
         <div className="flex items-center gap-2 flex-1 min-w-0">
-          <span className="text-[12px] font-semibold text-white tracking-wide">{bid.depIcao}</span>
+          <span className="text-[12px] font-semibold font-mono text-white tracking-wide">{bid.depIcao}</span>
           <div className="flex-1 flex items-center gap-1">
             <div className="flex-1 h-px bg-white/[0.08]" />
-            <Airplane className="w-3 h-3 text-[#6b8aff]/40 shrink-0 rotate-90" weight="light" />
+            <Airplane className="w-3 h-3 text-[#7B94E0]/40 shrink-0 rotate-90" weight="regular" />
             <div className="flex-1 h-px bg-white/[0.08]" />
           </div>
-          <span className="text-[12px] font-semibold text-white tracking-wide">{bid.arrIcao}</span>
+          <span className="text-[12px] font-semibold font-mono text-white tracking-wide">{bid.arrIcao}</span>
         </div>
       </div>
 
       {/* Aircraft type */}
-      <span className="text-[9px] text-[var(--text-label)] tabular-nums shrink-0">{bid.aircraftType}</span>
+      <span className="text-[9px] text-[var(--text-label)] font-mono tabular-nums shrink-0">{bid.aircraftType}</span>
 
       {/* Duration */}
-      <span className="text-[9px] text-[var(--text-label)] tabular-nums shrink-0">{formatDuration(bid.flightTimeMin)}</span>
+      <span className="text-[9px] text-[var(--text-label)] font-mono tabular-nums shrink-0">{formatDuration(bid.flightTimeMin)}</span>
 
       {/* Phase badge */}
       {phase ? (
-        <span className={`text-[8px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded shrink-0 ${phaseStyle}`}>
+        <span className={`text-[9px] font-semibold font-mono uppercase tracking-wider px-1.5 py-0.5 rounded shrink-0 ${phaseStyle}`}>
           {phaseLabel(phase)}
         </span>
       ) : (
-        <span className="text-[8px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded shrink-0 text-[var(--text-label)] bg-white/[0.04]">
+        <span className="text-[9px] font-semibold font-mono uppercase tracking-wider px-1.5 py-0.5 rounded shrink-0 text-[var(--text-label)] bg-white/[0.04]">
           Idle
         </span>
       )}
 
       {/* Pilot callsign */}
-      <span className="text-[9px] text-[var(--text-secondary)] shrink-0">{bid.pilotCallsign}</span>
+      <span className="text-[9px] text-[var(--text-secondary)] font-mono shrink-0 pr-5">{bid.pilotCallsign}</span>
     </div>
   );
 }
@@ -146,22 +146,22 @@ function ActiveBidsCard({ bids, isAdmin, onBidRemoved, activeFlights }: { bids: 
       <div className="flex items-center justify-between px-4 py-3">
         <div className="flex items-center gap-2.5">
           <h3 className="text-[14px] font-semibold text-white">Active Bids</h3>
-          <span className="inline-flex items-center justify-center min-w-[20px] h-[20px] rounded-full bg-[#3b5bdb]/20 text-[10px] font-semibold text-[#6b8aff] tabular-nums px-1.5">
+          <span className="inline-flex items-center justify-center min-w-[20px] h-[20px] rounded-full bg-[#4F6CCD]/20 text-[11px] font-semibold font-mono text-[#7B94E0] tabular-nums px-1.5">
             {bids.length}
           </span>
         </div>
         <button
           onClick={() => navigate('/schedule')}
-          className="flex items-center gap-1 text-[11px] font-medium text-[#6b8aff]/70 hover:text-[#6b8aff] transition-colors"
+          className="flex items-center gap-1 text-[12px] font-medium text-[#7B94E0]/70 hover:text-[#7B94E0] transition-colors"
         >
-          Bid a Flight <ArrowRight className="w-3.5 h-3.5" weight="light" />
+          Bid a Flight <ArrowRight className="w-3.5 h-3.5" weight="regular" />
         </button>
       </div>
       {bids.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-10 px-6">
-          <CalendarDots className="w-10 h-10 text-white/10 mb-3" weight="light" />
+          <CalendarDots className="w-10 h-10 text-white/10 mb-3" weight="regular" />
           <p className="text-[13px] font-medium text-white/50 mb-1">No Active Cargo Runs</p>
-          <p className="text-[11px] text-[var(--text-label)] mb-4">No pilots currently have active bids</p>
+          <p className="text-[12px] text-[var(--text-label)] mb-4">No pilots currently have active bids</p>
           <button
             onClick={() => navigate('/schedule')}
             className="btn-primary btn-sm"
@@ -180,7 +180,7 @@ function ActiveBidsCard({ bids, isAdmin, onBidRemoved, activeFlights }: { bids: 
                   className="absolute top-1.5 right-1.5 opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-red-500/10 text-[var(--text-label)] hover:text-red-400 transition-all"
                   title="Force remove this bid (admin only)"
                 >
-                  <Trash className="w-3 h-3" weight="light" />
+                  <Trash className="w-3 h-3" weight="regular" />
                 </button>
               )}
             </div>
@@ -194,27 +194,27 @@ function ActiveBidsCard({ bids, isAdmin, onBidRemoved, activeFlights }: { bids: 
 // ─── Quick Actions ──────────────────────────────────────────────
 
 const QUICK_ACTIONS = [
-  { label: 'Bid a Flight', icon: CalendarDots, to: '/schedule', accent: 'text-[#6b8aff]' },
-  { label: 'File Flight Plan', icon: Path, to: '/planning', accent: 'text-[#6b8aff]' },
-  { label: 'View Logbook', icon: BookOpen, to: '/logbook', accent: 'text-[#6b8aff]' },
-  { label: 'Open Dispatch', icon: Broadcast, to: '/dispatch', accent: 'text-[#6b8aff]' },
+  { label: 'Bid a Flight', shortLabel: 'BID', icon: CalendarDots, to: '/schedule' },
+  { label: 'File Flight Plan', shortLabel: 'FPL', icon: Path, to: '/planning' },
+  { label: 'View Logbook', shortLabel: 'LOG', icon: BookOpen, to: '/logbook' },
+  { label: 'Open Dispatch', shortLabel: 'DSPT', icon: Broadcast, to: '/dispatch' },
 ] as const;
 
 function QuickActions() {
   const navigate = useNavigate();
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-1.5">
       {QUICK_ACTIONS.map((action) => {
         const Icon = action.icon;
         return (
           <button
             key={action.label}
             onClick={() => navigate(action.to)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-white/[0.05] bg-white/[0.02] hover:bg-white/[0.05] hover:border-white/[0.08] active:scale-[0.98] text-[11px] font-medium text-[var(--text-secondary)] hover:text-white transition-all duration-150"
+            title={action.label}
+            className="group flex items-center justify-center w-8 h-8 rounded border border-white/[0.06] bg-white/[0.02] hover:bg-[#4F6CCD]/[0.08] hover:border-[#4F6CCD]/20 active:scale-[0.98] transition-all duration-150"
           >
-            <Icon className={`w-3.5 h-3.5 ${action.accent}`} weight="light" />
-            {action.label}
+            <Icon className="w-4 h-4 text-[#4F6CCD] group-hover:text-[#7B94E0]" weight="regular" />
           </button>
         );
       })}
@@ -240,7 +240,7 @@ const DASH_PLANE_SVG = (heading: number) => `
       L9 34 C8 33 8 31 10 30 L30 20
       L30 5
       C30 3 31 2 32 2 Z"
-      fill="#3b82f6" stroke="rgba(0,0,0,0.3)" stroke-width="0.5"/>
+      fill="#4F6CCD" stroke="rgba(0,0,0,0.3)" stroke-width="0.5"/>
   </svg>`;
 
 const dashPlaneIconCache = new Map<number, L.DivIcon>();
@@ -270,14 +270,14 @@ function NetworkMapPreview({ activeFlights }: { activeFlights: ActiveFlightHeart
           <img src="./logos/chevron-light.png" alt="SMX" className="h-4 w-auto opacity-40" />
           <h3 className="text-[14px] font-semibold text-white">Network Map</h3>
           {activeFlights.length > 0 && (
-            <span className="text-[10px] text-acars-muted/60 tabular-nums">{activeFlights.length} active</span>
+            <span className="text-[11px] text-acars-muted/60 font-mono tabular-nums">{activeFlights.length} active</span>
           )}
         </div>
         <button
           onClick={() => navigate('/map')}
-          className="flex items-center gap-1 text-[11px] font-medium text-[#6b8aff]/70 hover:text-[#6b8aff] transition-colors"
+          className="flex items-center gap-1 text-[12px] font-medium text-[#7B94E0]/70 hover:text-[#7B94E0] transition-colors"
         >
-          Expand <ArrowsOut className="w-3.5 h-3.5" weight="light" />
+          Expand <ArrowsOut className="w-3.5 h-3.5" weight="regular" />
         </button>
       </div>
       <div className="flex-1 relative overflow-hidden">
@@ -288,7 +288,7 @@ function NetworkMapPreview({ activeFlights }: { activeFlights: ActiveFlightHeart
           className="h-full w-full"
           zoomControl={false}
           attributionControl={false}
-          style={{ background: '#000000' }}
+          style={{ background: 'var(--bg-app)' }}
           scrollWheelZoom={false}
           dragging={false}
           doubleClickZoom={false}
@@ -332,15 +332,15 @@ function MyInfoCard({ recentFlights }: { recentFlights: LogbookEntry[] }) {
       <div className="flex-1 overflow-auto px-5 py-4 space-y-4">
         {/* Profile header */}
         <div className="flex items-center gap-3">
-          <div className="flex items-center justify-center w-11 h-11 rounded-full bg-[#3b5bdb]/15 text-[#6b8aff] text-sm font-semibold shrink-0">
+          <div className="flex items-center justify-center w-11 h-11 rounded-full bg-[#4F6CCD]/15 text-[#7B94E0] text-sm font-semibold shrink-0">
             {initials}
           </div>
           <div className="min-w-0 flex-1">
             <p className="text-[14px] font-semibold text-white">{user.firstName} {user.lastName}</p>
-            <div className="flex items-center gap-2 text-[11px] text-[var(--text-secondary)] mt-0.5">
-              <span>{user.callsign}</span>
+            <div className="flex items-center gap-2 text-[12px] text-[var(--text-secondary)] mt-0.5">
+              <span className="font-mono">{user.callsign}</span>
               <span className="text-white/10">|</span>
-              <span className="truncate">{user.email}</span>
+              <span className="font-mono truncate">{user.email}</span>
             </div>
           </div>
         </div>
@@ -348,21 +348,21 @@ function MyInfoCard({ recentFlights }: { recentFlights: LogbookEntry[] }) {
         {/* Role & Rank row */}
         <div className="flex items-center gap-2">
           <span className="inline-flex items-center gap-1 text-[9px] font-semibold uppercase tracking-wider text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded">
-            <Medal className="w-3 h-3" weight="light" /> {user.rank}
+            <Medal className="w-3 h-3" weight="regular" /> {user.rank}
           </span>
-          <span className="inline-flex items-center text-[9px] font-semibold uppercase tracking-wider text-[#6b8aff] bg-[#3b5bdb]/10 px-2 py-0.5 rounded">
+          <span className="inline-flex items-center text-[9px] font-semibold uppercase tracking-wider text-[#7B94E0] bg-[#4F6CCD]/10 px-2 py-0.5 rounded">
             {user.role === 'admin' ? 'Admin' : 'Pilot'}
           </span>
-          <span className="text-[10px] text-[var(--text-label)] ml-auto">
-            Member since {new Date(user.createdAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
+          <span className="text-[11px] text-[var(--text-label)] ml-auto">
+            Member since <span className="font-mono">{new Date(user.createdAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}</span>
           </span>
         </div>
 
         {/* Recent Flights */}
         <div>
-          <p className="text-[10px] uppercase tracking-wider text-[var(--text-label)] font-medium mb-2">Recent Flights</p>
+          <p className="text-[11px] uppercase tracking-wider text-[var(--text-label)] font-medium mb-2">Recent Flights</p>
           {recentFlights.length === 0 ? (
-            <p className="text-[11px] text-[var(--text-label)] italic">No flights logged yet</p>
+            <p className="text-[12px] text-[var(--text-label)] italic">No flights logged yet</p>
           ) : (
             <div className="space-y-1">
               {recentFlights.map(flight => {
@@ -371,15 +371,15 @@ function MyInfoCard({ recentFlights }: { recentFlights: LogbookEntry[] }) {
                 const fpm = flight.landingRateFpm;
                 const fpmColor = fpm == null ? 'text-[var(--text-label)]' : Math.abs(fpm) <= 200 ? 'text-emerald-400' : Math.abs(fpm) <= 400 ? 'text-amber-400' : 'text-red-400';
                 return (
-                  <div key={flight.id} className="flex items-center gap-3 text-[11px] py-1.5">
-                    <span className="text-[var(--text-label)] tabular-nums w-14 shrink-0">{dateStr}</span>
-                    <span className="text-white">
+                  <div key={flight.id} className="flex items-center gap-3 text-[12px] py-1.5">
+                    <span className="text-[var(--text-label)] font-mono tabular-nums w-14 shrink-0">{dateStr}</span>
+                    <span className="text-white font-mono">
                       {flight.depIcao}
-                      <ArrowRight className="w-3 h-3 text-[#6b8aff]/40 inline mx-1" />
+                      <ArrowRight className="w-3 h-3 text-[#7B94E0]/40 inline mx-1" />
                       {flight.arrIcao}
                     </span>
-                    <span className="text-[var(--text-label)] tabular-nums ml-auto">{formatDuration(flight.flightTimeMin)}</span>
-                    <span className={`tabular-nums ${fpmColor}`}>
+                    <span className="text-[var(--text-label)] font-mono tabular-nums ml-auto">{formatDuration(flight.flightTimeMin)}</span>
+                    <span className={`font-mono tabular-nums ${fpmColor}`}>
                       {fpm != null ? `${fpm > 0 ? '-' : '-'}${Math.abs(fpm)}fpm` : '---'}
                     </span>
                   </div>
@@ -390,8 +390,8 @@ function MyInfoCard({ recentFlights }: { recentFlights: LogbookEntry[] }) {
         </div>
 
         {/* Hub info */}
-        <div className="flex items-center gap-2 text-[11px] text-[var(--text-label)]">
-          <MapPin className="w-3.5 h-3.5 text-[#6b8aff]/60" weight="light" />
+        <div className="flex items-center gap-2 text-[12px] text-[var(--text-label)]">
+          <MapPin className="w-3.5 h-3.5 text-[#7B94E0]/60" weight="regular" />
           <span>Home hub assignment coming soon</span>
         </div>
       </div>
@@ -436,32 +436,32 @@ function PilotLeaderboard() {
     <div className="gradient-card flex flex-col min-h-[280px] max-h-[560px]">
       <div className="flex items-center justify-between px-5 py-3.5 border-b border-white/[0.04]">
         <div className="flex items-center gap-2">
-          <Trophy className="w-4 h-4 text-yellow-500" weight="light" />
+          <Trophy className="w-4 h-4 text-yellow-500" weight="regular" />
           <h3 className="text-[14px] font-semibold text-white">Pilot Leaderboard</h3>
         </div>
         <div className="flex items-center gap-1">
           <button onClick={() => setMonth(m => shiftMonth(m, -1))} className="p-1 rounded hover:bg-white/[0.04] text-[var(--text-label)] hover:text-white transition-colors">
-            <CaretLeft className="w-4 h-4" weight="light" />
+            <CaretLeft className="w-4 h-4" weight="regular" />
           </button>
-          <span className="text-[11px] text-[var(--text-secondary)] tabular-nums min-w-[120px] text-center">{formatMonth(month)}</span>
+          <span className="text-[12px] text-[var(--text-secondary)] tabular-nums min-w-[120px] text-center">{formatMonth(month)}</span>
           <button onClick={() => canGoNext && setMonth(m => shiftMonth(m, 1))} disabled={!canGoNext} className="p-1 rounded hover:bg-white/[0.04] text-[var(--text-label)] hover:text-white transition-colors disabled:opacity-30 disabled:cursor-not-allowed">
-            <CaretRight className="w-4 h-4" weight="light" />
+            <CaretRight className="w-4 h-4" weight="regular" />
           </button>
         </div>
       </div>
 
       {loading ? (
         <div className="flex-1 flex items-center justify-center">
-          <SpinnerGap className="w-5 h-5 text-[#6b8aff] animate-spin" />
+          <SpinnerGap className="w-5 h-5 text-[#7B94E0] animate-spin" />
         </div>
       ) : entries.length === 0 ? (
         <div className="flex-1 flex flex-col items-center justify-center">
-          <Trophy className="w-8 h-8 text-white/10 mb-2" weight="light" />
-          <p className="text-[11px] text-[var(--text-label)]">No flights logged for {formatMonth(month)}</p>
+          <Trophy className="w-8 h-8 text-white/10 mb-2" weight="regular" />
+          <p className="text-[12px] text-[var(--text-label)]">No flights logged for {formatMonth(month)}</p>
         </div>
       ) : (
         <div className="flex-1 overflow-auto">
-          <table className="w-full text-[11px]">
+          <table className="w-full text-[12px]">
             <thead>
               <tr className="text-[9px] uppercase tracking-[0.08em] text-[var(--text-label)] border-b border-white/[0.04]">
                 <th className="text-center px-3 py-2 font-medium w-10">#</th>
@@ -478,7 +478,7 @@ function PilotLeaderboard() {
                   key={e.callsign}
                   className="border-b border-white/[0.03] hover:bg-white/[0.02] transition-colors duration-100"
                 >
-                  <td className={`text-center px-3 py-2.5 tabular-nums ${
+                  <td className={`text-center px-3 py-2.5 font-mono tabular-nums ${
                     e.rank === 1 ? 'text-yellow-400 font-bold' :
                     e.rank === 2 ? 'text-gray-300 font-bold' :
                     e.rank === 3 ? 'text-amber-600 font-bold' : 'text-[var(--text-label)]'
@@ -495,14 +495,14 @@ function PilotLeaderboard() {
                   </td>
                   <td className="px-3 py-2.5">
                     <div className="flex items-center gap-1.5">
-                      <span className="text-white">{e.callsign}</span>
+                      <span className="text-white font-mono">{e.callsign}</span>
                       <span className="text-[var(--text-label)] hidden xl:inline">{e.pilotName}</span>
                     </div>
                   </td>
-                  <td className="text-right px-3 py-2.5 text-white tabular-nums">{e.flights}</td>
-                  <td className="text-right px-3 py-2.5 text-[var(--text-secondary)] tabular-nums hidden lg:table-cell">{formatDuration(e.hoursMin)}</td>
-                  <td className="text-right px-3 py-2.5 text-[var(--text-secondary)] tabular-nums hidden xl:table-cell">{e.cargoLbs.toLocaleString()} lb</td>
-                  <td className="text-right px-3 py-2.5 tabular-nums">
+                  <td className="text-right px-3 py-2.5 text-white font-mono tabular-nums">{e.flights}</td>
+                  <td className="text-right px-3 py-2.5 text-[var(--text-secondary)] font-mono tabular-nums hidden lg:table-cell">{formatDuration(e.hoursMin)}</td>
+                  <td className="text-right px-3 py-2.5 text-[var(--text-secondary)] font-mono tabular-nums hidden xl:table-cell">{e.cargoLbs.toLocaleString()} lb</td>
+                  <td className="text-right px-3 py-2.5 font-mono tabular-nums">
                     {e.avgScore != null ? (
                       <span className={e.avgScore >= 90 ? 'text-emerald-400' : e.avgScore >= 75 ? 'text-amber-400' : 'text-red-400'}>
                         {e.avgScore}
@@ -606,17 +606,17 @@ function NewsFeed() {
     <div className="gradient-card flex flex-col h-[400px]">
       <div className="flex items-center justify-between px-5 py-3.5 border-b border-white/[0.04]">
         <div className="flex items-center gap-2">
-          <Megaphone className="w-4 h-4 text-[#6b8aff]" weight="light" />
+          <Megaphone className="w-4 h-4 text-[#7B94E0]" weight="regular" />
           <h3 className="text-[14px] font-semibold text-white">Announcements</h3>
           {posts.length > 0 && (
-            <span className="inline-flex items-center justify-center min-w-[20px] h-[20px] rounded-full bg-[#3b5bdb]/20 text-[10px] font-semibold text-[#6b8aff] tabular-nums px-1.5">
+            <span className="inline-flex items-center justify-center min-w-[20px] h-[20px] rounded-full bg-[#4F6CCD]/20 text-[11px] font-semibold font-mono text-[#7B94E0] tabular-nums px-1.5">
               {posts.length}
             </span>
           )}
         </div>
         {isAdmin && editing === null && (
           <button onClick={startCreate} className="btn-green btn-sm flex items-center gap-1">
-            <Plus className="w-3.5 h-3.5" weight="light" /> New Post
+            <Plus className="w-3.5 h-3.5" weight="regular" /> New Post
           </button>
         )}
       </div>
@@ -629,31 +629,31 @@ function NewsFeed() {
             value={formTitle}
             onChange={e => setFormTitle(e.target.value)}
             placeholder="Title"
-            className="w-full px-2.5 py-1.5 bg-black border border-white/[0.06] rounded text-[12px] text-white placeholder:text-[var(--text-label)] focus:outline-none focus:border-[#3b5bdb]/50"
+            className="w-full px-2.5 py-1.5 bg-[var(--bg-input)] border border-[var(--border-input)] rounded text-[12px] text-white placeholder:text-[var(--text-label)] focus:outline-none focus:border-[var(--accent)]/50"
           />
           <textarea
             value={formBody}
             onChange={e => setFormBody(e.target.value)}
             placeholder="Body"
             rows={3}
-            className="w-full px-2.5 py-1.5 bg-black border border-white/[0.06] rounded text-[12px] text-white placeholder:text-[var(--text-label)] focus:outline-none focus:border-[#3b5bdb]/50 resize-none"
+            className="w-full px-2.5 py-1.5 bg-[var(--bg-input)] border border-[var(--border-input)] rounded text-[12px] text-white placeholder:text-[var(--text-label)] focus:outline-none focus:border-[var(--accent)]/50 resize-none"
           />
           <div className="flex items-center justify-between">
-            <label className="flex items-center gap-1.5 text-[11px] text-amber-400 cursor-pointer select-none">
+            <label className="flex items-center gap-1.5 text-[12px] text-amber-400 cursor-pointer select-none">
               <input
                 type="checkbox"
                 checked={formPinned}
                 onChange={e => setFormPinned(e.target.checked)}
-                className="w-3.5 h-3.5 rounded border-amber-400/40 bg-black text-amber-400 focus:ring-amber-400/40 focus:ring-offset-0 accent-amber-500"
+                className="w-3.5 h-3.5 rounded border-amber-400/40 bg-[var(--bg-input)] text-amber-400 focus:ring-amber-400/40 focus:ring-offset-0 accent-amber-500"
               />
-              <PushPin className="w-3 h-3" weight="light" /> Pin post
+              <PushPin className="w-3 h-3" weight="regular" /> Pin post
             </label>
             <div className="flex items-center gap-2">
               <button onClick={cancelEdit} className="btn-danger btn-sm flex items-center gap-1">
-                <X className="w-3 h-3" weight="light" /> Cancel
+                <X className="w-3 h-3" weight="regular" /> Cancel
               </button>
               <button onClick={handleSave} disabled={saving || !formTitle.trim() || !formBody.trim()} className="btn-green btn-sm flex items-center gap-1">
-                <FloppyDisk className="w-3 h-3" weight="light" /> {saving ? 'Saving...' : 'Save'}
+                <FloppyDisk className="w-3 h-3" weight="regular" /> {saving ? 'Saving...' : 'Save'}
               </button>
             </div>
           </div>
@@ -662,12 +662,12 @@ function NewsFeed() {
 
       {loading ? (
         <div className="flex-1 flex items-center justify-center">
-          <SpinnerGap className="w-5 h-5 text-[#6b8aff] animate-spin" />
+          <SpinnerGap className="w-5 h-5 text-[#7B94E0] animate-spin" />
         </div>
       ) : posts.length === 0 ? (
         <div className="flex-1 flex flex-col items-center justify-center">
-          <Megaphone className="w-8 h-8 text-white/10 mb-2" weight="light" />
-          <p className="text-[11px] text-[var(--text-label)]">No announcements yet — check back soon!</p>
+          <Megaphone className="w-8 h-8 text-white/10 mb-2" weight="regular" />
+          <p className="text-[12px] text-[var(--text-label)]">No announcements yet — check back soon!</p>
         </div>
       ) : (
         <div className="flex-1 overflow-auto">
@@ -682,11 +682,11 @@ function NewsFeed() {
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-1.5 mb-0.5">
-                      {post.pinned && <PushPin className="w-3 h-3 text-amber-400 shrink-0" weight="light" />}
+                      {post.pinned && <PushPin className="w-3 h-3 text-amber-400 shrink-0" weight="regular" />}
                       <h4 className="text-[12px] font-semibold text-white truncate">{post.title}</h4>
                     </div>
-                    <p className={`text-[11px] text-[var(--text-secondary)] mb-1 ${isExpanded ? 'whitespace-pre-wrap' : 'line-clamp-2'}`}>{post.body}</p>
-                    <div className="flex items-center gap-2 text-[10px] text-[var(--text-label)]">
+                    <p className={`text-[12px] text-[var(--text-secondary)] mb-1 ${isExpanded ? 'whitespace-pre-wrap' : 'line-clamp-2'}`}>{post.body}</p>
+                    <div className="flex items-center gap-2 text-[11px] text-[var(--text-label)]">
                       <span>{post.authorCallsign}</span>
                       <span className="text-white/10">|</span>
                       <span>{relativeTime(post.createdAt)}</span>
@@ -701,10 +701,10 @@ function NewsFeed() {
                   {isAdmin && editing === null && (
                     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" onClick={e => e.stopPropagation()}>
                       <button onClick={() => startEdit(post)} className="p-1 rounded hover:bg-white/[0.04] text-[var(--text-label)] hover:text-white transition-colors">
-                        <PencilSimple className="w-3 h-3" weight="light" />
+                        <PencilSimple className="w-3 h-3" weight="regular" />
                       </button>
                       <button onClick={() => handleDelete(post.id)} className="p-1 rounded hover:bg-red-500/10 text-[var(--text-label)] hover:text-red-400 transition-colors">
-                        <Trash className="w-3 h-3" weight="light" />
+                        <Trash className="w-3 h-3" weight="regular" />
                       </button>
                     </div>
                   )}
@@ -735,11 +735,11 @@ export function DashboardPage() {
       .catch(() => {});
   }, []);
 
-  // Subscribe to flights:active for real-time phase data
+  // Subscribe to flights:active for real-time phase data (livemap room broadcasts this)
   useEffect(() => {
     if (!socket) return;
 
-    socket.emit('telemetry:subscribe');
+    socket.emit('livemap:subscribe');
 
     const handleActiveFlights = (flights: ActiveFlightHeartbeat[]) => {
       setActiveFlights(flights);
@@ -749,7 +749,7 @@ export function DashboardPage() {
 
     return () => {
       socket.off('flights:active', handleActiveFlights);
-      socket.emit('telemetry:unsubscribe');
+      socket.emit('livemap:unsubscribe');
     };
   }, [socket]);
 
@@ -771,7 +771,7 @@ export function DashboardPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full">
-        <SpinnerGap className="w-6 h-6 text-[#6b8aff] animate-spin" />
+        <SpinnerGap className="w-6 h-6 text-[#7B94E0] animate-spin" />
       </div>
     );
   }

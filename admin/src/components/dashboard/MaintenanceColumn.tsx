@@ -9,27 +9,28 @@ interface MaintenanceColumnProps {
 }
 
 export const MaintenanceColumn = memo(function MaintenanceColumn({ data, network }: MaintenanceColumnProps) {
-  const { fleetStatus, criticalMel, nextChecks } = data;
+  const { fleetStatus, criticalMel, nextChecks, openDiscrepancies } = data;
+  const totalDiscrepancies = openDiscrepancies.open + openDiscrepancies.inReview + openDiscrepancies.deferred;
 
   return (
-    <div className="flex flex-col gap-2.5 overflow-hidden pt-0.5">
+    <div className="flex flex-col gap-4 overflow-hidden pt-0.5">
       {/* Fleet Status */}
       <div>
-        <div className="uppercase" style={{ color: '#3a3a3a', fontSize: 7, letterSpacing: 0.5, marginBottom: 8 }}>
+        <div className="uppercase" style={{ color: '#4a4a4a', fontSize: 9, letterSpacing: 0.5, marginBottom: 10 }}>
           Fleet Status
         </div>
-        <div className="grid grid-cols-2" style={{ gap: '4px 12px' }}>
+        <div className="grid grid-cols-2" style={{ gap: '6px 16px' }}>
           {[
             { value: fleetStatus.airworthy, label: 'Airworthy', color: '#4ade80' },
             { value: fleetStatus.melDispatch, label: 'MEL Dispatch', color: '#fbbf24' },
             { value: fleetStatus.inCheck, label: 'In Check', color: '#22d3ee' },
             { value: fleetStatus.aog, label: 'AOG', color: '#f87171' },
           ].map((s, i) => (
-            <div key={s.label} style={{ marginTop: i >= 2 ? 4 : 0 }}>
-              <div className="font-mono font-semibold" style={{ color: s.color, fontSize: 20, lineHeight: 1 }}>
+            <div key={s.label} style={{ marginTop: i >= 2 ? 6 : 0 }}>
+              <div className="font-mono font-semibold" style={{ color: s.color, fontSize: 26, lineHeight: 1 }}>
                 {s.value}
               </div>
-              <div style={{ color: '#4a4a4a', fontSize: 7 }}>{s.label}</div>
+              <div style={{ color: '#5a5a5a', fontSize: 9 }}>{s.label}</div>
             </div>
           ))}
         </div>
@@ -37,24 +38,56 @@ export const MaintenanceColumn = memo(function MaintenanceColumn({ data, network
 
       <Divider />
 
+      {/* Open Discrepancies */}
+      <div>
+        <div className="uppercase" style={{ color: '#4a4a4a', fontSize: 9, letterSpacing: 0.5, marginBottom: 8 }}>
+          Discrepancies
+        </div>
+        <div className="font-mono flex flex-col gap-1" style={{ fontSize: 12 }}>
+          <div className="flex justify-between">
+            <span style={{ color: '#5a5a5a' }}>Open</span>
+            <span style={{ color: openDiscrepancies.open > 0 ? '#f87171' : '#4ade80', fontWeight: 600 }}>
+              {openDiscrepancies.open}
+            </span>
+          </div>
+          <div className="flex justify-between">
+            <span style={{ color: '#5a5a5a' }}>In Review</span>
+            <span style={{ color: openDiscrepancies.inReview > 0 ? '#fbbf24' : '#f0f0f0' }}>
+              {openDiscrepancies.inReview}
+            </span>
+          </div>
+          <div className="flex justify-between">
+            <span style={{ color: '#5a5a5a' }}>Deferred</span>
+            <span style={{ color: openDiscrepancies.deferred > 0 ? '#22d3ee' : '#f0f0f0' }}>
+              {openDiscrepancies.deferred}
+            </span>
+          </div>
+          {totalDiscrepancies === 0 && (
+            <div style={{ color: '#4ade80', fontSize: 11, marginTop: 2 }}>All clear</div>
+          )}
+        </div>
+      </div>
+
+      <Divider />
+
       {/* Critical MEL <48h */}
       <div>
-        <div className="uppercase" style={{ color: '#3a3a3a', fontSize: 7, letterSpacing: 0.5, marginBottom: 6 }}>
+        <div className="uppercase" style={{ color: '#4a4a4a', fontSize: 9, letterSpacing: 0.5, marginBottom: 8 }}>
           Critical MEL &lt;48h
         </div>
         {criticalMel.length === 0 ? (
-          <div className="font-mono" style={{ color: '#3a3a3a', fontSize: 9 }}>No critical MELs</div>
+          <div className="font-mono" style={{ color: '#4a4a4a', fontSize: 12 }}>No critical MELs</div>
         ) : (
-          <div className="font-mono flex flex-col gap-1" style={{ fontSize: 9 }}>
+          <div className="font-mono flex flex-col gap-1.5" style={{ fontSize: 12 }}>
             {criticalMel.map((mel, i) => (
               <div key={i}>
                 <div className="flex justify-between">
                   <span style={{ color: '#f0f0f0' }}>{mel.registration}</span>
-                  <span style={{ color: mel.hoursRemaining < 12 ? '#f87171' : '#fbbf24', fontSize: 8 }}>
+                  <span style={{ color: mel.hoursRemaining < 12 ? '#f87171' : '#fbbf24', fontSize: 11 }}>
                     {Math.round(mel.hoursRemaining)}h left
                   </span>
                 </div>
-                <div style={{ color: '#4a4a4a', fontSize: 7 }}>Cat {mel.category} · {mel.title}</div>
+                <div style={{ color: '#5a5a5a', fontSize: 9 }}>Cat {mel.category} · {mel.title}</div>
               </div>
             ))}
           </div>
@@ -65,10 +98,10 @@ export const MaintenanceColumn = memo(function MaintenanceColumn({ data, network
 
       {/* Next Checks */}
       <div>
-        <div className="uppercase" style={{ color: '#3a3a3a', fontSize: 7, letterSpacing: 0.5, marginBottom: 6 }}>
+        <div className="uppercase" style={{ color: '#4a4a4a', fontSize: 9, letterSpacing: 0.5, marginBottom: 8 }}>
           Next Checks
         </div>
-        <div className="font-mono flex flex-col gap-0.5" style={{ fontSize: 9 }}>
+        <div className="font-mono flex flex-col gap-1" style={{ fontSize: 12 }}>
           {nextChecks.slice(0, 4).map((chk, i) => {
             const color = chk.pctRemaining <= 0 ? '#f87171' : chk.pctRemaining < 20 ? '#fbbf24' : '#f0f0f0';
             const hoursLabel = Math.abs(chk.hoursRemaining) >= 1000
@@ -76,7 +109,7 @@ export const MaintenanceColumn = memo(function MaintenanceColumn({ data, network
               : `${Math.round(chk.hoursRemaining)}h`;
             return (
               <div key={i} className="flex justify-between">
-                <span style={{ color: '#7a7a7a' }}>{chk.registration}</span>
+                <span style={{ color: '#8a8a8a' }}>{chk.registration}</span>
                 <span style={{ color }}>{chk.checkType}-Chk {hoursLabel}</span>
               </div>
             );
@@ -88,20 +121,20 @@ export const MaintenanceColumn = memo(function MaintenanceColumn({ data, network
 
       {/* Network Health (pushed to bottom) */}
       <div className="flex-1 flex flex-col justify-end">
-        <div className="uppercase" style={{ color: '#3a3a3a', fontSize: 7, letterSpacing: 0.5, marginBottom: 6 }}>
+        <div className="uppercase" style={{ color: '#4a4a4a', fontSize: 9, letterSpacing: 0.5, marginBottom: 8 }}>
           Network
         </div>
-        <div className="font-mono flex flex-col gap-0.5" style={{ fontSize: 9 }}>
+        <div className="font-mono flex flex-col gap-1" style={{ fontSize: 12 }}>
           <div className="flex justify-between">
-            <span style={{ color: '#4a4a4a' }}>Hub LF</span>
+            <span style={{ color: '#5a5a5a' }}>Hub LF</span>
             <span style={{ color: '#f0f0f0' }}>{Math.round(network.hubLoadFactor)}%</span>
           </div>
           <div className="flex justify-between">
-            <span style={{ color: '#4a4a4a' }}>Outstation LF</span>
+            <span style={{ color: '#5a5a5a' }}>Outstation LF</span>
             <span style={{ color: '#f0f0f0' }}>{Math.round(network.outstationLoadFactor)}%</span>
           </div>
           <div className="flex justify-between">
-            <span style={{ color: '#4a4a4a' }}>Rev/Dep</span>
+            <span style={{ color: '#5a5a5a' }}>Rev/Dep</span>
             <span style={{ color: '#f0f0f0' }}>
               ${network.revenuePerDeparture >= 1000
                 ? `${(network.revenuePerDeparture / 1000).toFixed(1)}K`

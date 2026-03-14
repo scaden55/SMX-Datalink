@@ -17,6 +17,9 @@ interface AirportRunway {
 
 interface NavProcedureRowProps {
   formData?: FlightPlanFormData | null;
+  /** When provided, SID/STAR are shown as read-only from the OFP */
+  ofpSid?: string;
+  ofpStar?: string;
 }
 
 // ── ATIS Runway Parser ──────────────────────────────────────────
@@ -106,7 +109,7 @@ const EMPTY_ATIS: VatsimAtis[] = [];
 
 // ── Component ──────────────────────────────────────────────────
 
-export function NavProcedureRow({ formData }: NavProcedureRowProps) {
+export function NavProcedureRow({ formData, ofpSid, ofpStar }: NavProcedureRowProps) {
   const { canEdit, editableFields, onFieldChange, releasedFields } = useDispatchEdit();
   const hl = (key: string) => releasedFields?.includes(key) ?? false;
   const [originRunways, setOriginRunways] = useState<string[]>([]);
@@ -170,8 +173,8 @@ export function NavProcedureRow({ formData }: NavProcedureRowProps) {
 
   const depRunway = editableFields.depRunway ?? formData?.depRunway ?? '';
   const arrRunway = editableFields.arrRunway ?? formData?.arrRunway ?? '';
-  const sid = editableFields.sid ?? formData?.sid ?? '';
-  const star = editableFields.star ?? formData?.star ?? '';
+  const sid = ofpSid ?? editableFields.sid ?? formData?.sid ?? '';
+  const star = ofpStar ?? editableFields.star ?? formData?.star ?? '';
   const alt1 = editableFields.alternate1 ?? formData?.alternate1 ?? '';
   const alt2 = editableFields.alternate2 ?? formData?.alternate2 ?? '';
 
@@ -185,7 +188,7 @@ export function NavProcedureRow({ formData }: NavProcedureRowProps) {
   const hasDepAtis = depActiveSet.size > 0;
   const hasArrAtis = arrActiveSet.size > 0;
 
-  const selectCls = "bg-acars-input border border-acars-border text-[11px] tabular-nums text-acars-text rounded-md px-1.5 py-0.5 outline-none focus:border-blue-400 truncate w-full";
+  const selectCls = "bg-acars-input border border-acars-border text-[12px] font-mono tabular-nums text-acars-text rounded-md px-1.5 py-0.5 outline-none focus:border-blue-400 truncate w-full";
   const inputCls = selectCls;
 
   return (
@@ -218,7 +221,7 @@ export function NavProcedureRow({ formData }: NavProcedureRowProps) {
             type="text"
             value={sid}
             onChange={(e) => onFieldChange('sid', e.target.value.toUpperCase())}
-            readOnly={!canEdit}
+            readOnly={!!ofpSid || !canEdit}
             placeholder="---"
             className={inputCls}
           />
@@ -231,7 +234,7 @@ export function NavProcedureRow({ formData }: NavProcedureRowProps) {
             type="text"
             value={star}
             onChange={(e) => onFieldChange('star', e.target.value.toUpperCase())}
-            readOnly={!canEdit}
+            readOnly={!!ofpStar || !canEdit}
             placeholder="---"
             className={inputCls}
           />

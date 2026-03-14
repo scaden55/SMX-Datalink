@@ -17,10 +17,11 @@ export function parseSimBriefResponse(json: any): SimBriefOFP {
   const general = json.general ?? {};
   const origin = json.origin ?? {};
   const destination = json.destination ?? {};
+
+  const navlog = json.navlog?.fix ?? [];
   const fuelData = json.fuel ?? {};
   const weightsData = json.weights ?? {};
   const timesData = json.times ?? {};
-  const navlog = json.navlog?.fix ?? [];
   const alts = json.alternate ? (Array.isArray(json.alternate) ? json.alternate : [json.alternate]) : [];
   const textSection = json.text ?? '';
   const crew = json.crew ?? {};
@@ -170,6 +171,8 @@ export function parseSimBriefResponse(json: any): SimBriefOFP {
     pilotName: toStr(crew.cpt) || toStr(general.pilot) || '',
     depRunway: toStr(origin.plan_rwy),
     arrRunway: toStr(destination.plan_rwy),
+    sid: toStr(origin.plan_sid),
+    star: toStr(destination.plan_star),
   };
 }
 
@@ -202,6 +205,8 @@ export function ofpToFormFields(ofp: SimBriefOFP): Partial<FlightPlanFormData> {
     pic: ofp.pilotName || '',
     depRunway: ofp.depRunway || '',
     arrRunway: ofp.arrRunway || '',
+    sid: ofp.sid || '',
+    star: ofp.star || '',
   };
 }
 

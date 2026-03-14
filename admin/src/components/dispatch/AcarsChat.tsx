@@ -84,10 +84,10 @@ export function AcarsChat({ bidId, messages }: AcarsChatProps) {
           messages.map((msg) => (
             <div key={msg.id} className={`rounded px-3 py-2 text-xs ${getMessageStyle(msg.source)}`}>
               <div className="flex items-center justify-between mb-0.5">
-                <span className="font-semibold text-[10px] uppercase tracking-wide opacity-70">
+                <span className="font-semibold text-[11px] uppercase tracking-wide opacity-70">
                   {getSourceLabel(msg.source)} - {msg.senderName}
                 </span>
-                <span className="font-mono text-[10px] opacity-50">
+                <span className="font-mono text-[11px] opacity-50">
                   {new Date(msg.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
                 </span>
               </div>

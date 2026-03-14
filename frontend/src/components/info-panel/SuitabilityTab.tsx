@@ -130,7 +130,7 @@ function OverallBadge({ level }: { level: SuitLevel }) {
   };
   const labels = { green: 'SUITABLE', amber: 'CAUTION', red: 'NOT RECOMMENDED' };
   return (
-    <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold border ${styles[level]}`}>
+    <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-semibold border ${styles[level]}`}>
       {labels[level]}
     </span>
   );
@@ -143,12 +143,12 @@ function AirportSuitability({ icao, label, checks }: { icao: string; label: stri
     <div className="panel p-3 space-y-2">
       <div className="flex items-center gap-2">
         <span className="text-xs font-bold text-sky-400">{icao}</span>
-        <span className="text-[10px] text-acars-muted">({label})</span>
+        <span className="text-[11px] text-acars-muted">({label})</span>
         <OverallBadge level={level} />
       </div>
       <div className="space-y-1">
         {checks.map((c, i) => (
-          <div key={i} className="flex items-center gap-2 text-[11px]">
+          <div key={i} className="flex items-center gap-2 text-[12px]">
             <SuitIndicator level={c.level} />
             <span className="text-acars-muted w-28 shrink-0">{c.label}</span>
             <span className="text-acars-text">{c.detail}</span>
@@ -166,7 +166,7 @@ export function SuitabilityTab({ dispatchData }: { dispatchData: DispatchData })
     return (
       <div className="space-y-3">
         <h3 className="text-xs font-semibold text-acars-text">Airport Suitability</h3>
-        <div className="text-[11px] text-acars-muted italic">
+        <div className="text-[12px] text-acars-muted italic">
           No flight plan loaded. Suitability checks will appear once a flight is selected.
         </div>
       </div>
@@ -192,7 +192,7 @@ export function SuitabilityTab({ dispatchData }: { dispatchData: DispatchData })
       <div className="flex items-center gap-2">
         <h3 className="text-xs font-semibold text-acars-text">Airport Suitability</h3>
         {dispatchData.loading && (
-          <span className="text-[10px] text-sky-400 animate-pulse">Fetching...</span>
+          <span className="text-[11px] text-sky-400 animate-pulse">Fetching...</span>
         )}
       </div>
 

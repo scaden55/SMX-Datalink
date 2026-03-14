@@ -291,7 +291,7 @@ export function DispatchPage() {
       <div className="flex h-full items-center justify-center">
         <div className="text-center">
           <div className="animate-spin h-6 w-6 border-2 border-blue-400/30 border-t-blue-400 rounded-full mx-auto mb-3" />
-          <p className="text-[11px] text-acars-muted">Loading dispatch flights...</p>
+          <p className="text-[12px] text-acars-muted">Loading dispatch flights...</p>
         </div>
       </div>
     );
@@ -302,8 +302,8 @@ export function DispatchPage() {
     return (
       <div className="flex h-full items-center justify-center">
         <div className="text-center max-w-md">
-          <p className="text-[11px] text-red-400 mb-2">Failed to load dispatch data</p>
-          <p className="text-[10px] text-acars-muted">{error}</p>
+          <p className="text-[12px] text-red-400 mb-2">Failed to load dispatch data</p>
+          <p className="text-[11px] text-acars-muted">{error}</p>
         </div>
       </div>
     );
@@ -325,32 +325,32 @@ export function DispatchPage() {
                   <div className="w-9 h-9 rounded-md bg-amber-500/10 border border-amber-400/20 flex items-center justify-center">
                     <CalendarDots className="w-4 h-4 text-amber-400" />
                   </div>
-                  <span className="text-[10px] font-medium text-amber-400">Schedule</span>
+                  <span className="text-[11px] font-medium text-amber-400">Schedule</span>
                 </div>
                 <ArrowRight className="w-4 h-4 text-sky-400/40" />
                 <div className="flex flex-col items-center gap-1.5">
                   <div className="w-9 h-9 rounded-md bg-blue-500/10 border border-blue-400/20 flex items-center justify-center">
                     <AirplaneTilt className="w-4 h-4 text-blue-400" />
                   </div>
-                  <span className="text-[10px] font-medium text-blue-400">Bid</span>
+                  <span className="text-[11px] font-medium text-blue-400">Bid</span>
                 </div>
                 <ArrowRight className="w-4 h-4 text-sky-400/40" />
                 <div className="flex flex-col items-center gap-1.5">
                   <div className="w-9 h-9 rounded-md bg-blue-500/10 border border-blue-400/20 flex items-center justify-center">
                     <Path className="w-4 h-4 text-blue-400" />
                   </div>
-                  <span className="text-[10px] font-medium text-blue-400">Plan</span>
+                  <span className="text-[11px] font-medium text-blue-400">Plan</span>
                 </div>
                 <ArrowRight className="w-4 h-4 text-sky-400/40" />
                 <div className="flex flex-col items-center gap-1.5">
                   <div className="w-9 h-9 rounded-md bg-sky-500/10 border border-sky-400/20 flex items-center justify-center">
                     <Broadcast className="w-4 h-4 text-sky-400" />
                   </div>
-                  <span className="text-[10px] font-medium text-sky-400">Dispatch</span>
+                  <span className="text-[11px] font-medium text-sky-400">Dispatch</span>
                 </div>
               </div>
 
-              <p className="text-[11px] text-acars-muted leading-relaxed max-w-sm mx-auto">
+              <p className="text-[12px] text-acars-muted leading-relaxed max-w-sm mx-auto">
                 Place a bid on the Schedule, create a flight plan on the Planning page, then your flight will appear here.
               </p>
 
@@ -364,7 +364,7 @@ export function DispatchPage() {
           )}
 
           {isAdmin && (
-            <p className="text-[11px] text-acars-muted leading-relaxed max-w-sm mx-auto">
+            <p className="text-[12px] text-acars-muted leading-relaxed max-w-sm mx-auto">
               No pilots currently have flights with saved flight plans. Active flights will appear here once a pilot saves a flight plan from the Planning page.
             </p>
           )}

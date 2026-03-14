@@ -70,6 +70,10 @@ export interface SimBriefOFP {
   depRunway: string;
   /** Planned arrival runway from SimBrief (e.g. "22R") */
   arrRunway: string;
+  /** Planned SID from SimBrief (e.g. "RNAV1") */
+  sid: string;
+  /** Planned STAR from SimBrief (e.g. "STAR1") */
+  star: string;
 }
 
 // ─── Weather Types ───────────────────────────────────────────

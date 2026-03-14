@@ -31,7 +31,7 @@ export function PhaseIndicator({ phase, className }: PhaseIndicatorProps) {
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-[0.08em]',
+        'inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-semibold uppercase tracking-[0.08em]',
         style.bg,
         style.text,
         className,

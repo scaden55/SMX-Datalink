@@ -65,8 +65,8 @@ function DetailRow({
         ) : (
           <span className="w-2 h-2 rounded-full bg-white/10 shrink-0 mr-2" />
         )}
-        <span className="text-[11px] font-semibold text-acars-muted">{title}</span>
-        <span className="ml-auto text-[11px] tabular-nums text-acars-text truncate max-w-[400px]">
+        <span className="text-[12px] font-semibold text-acars-muted">{title}</span>
+        <span className="ml-auto text-[12px] tabular-nums text-acars-text truncate max-w-[400px]">
           {summary}
         </span>
         <svg
@@ -86,9 +86,9 @@ function DetailRow({
 /* ── Shared styles ──────────────────────────────────────────────── */
 
 const inputCls =
-  'bg-acars-input border border-acars-border text-[11px] tabular-nums text-acars-text rounded-md px-1.5 py-0.5 outline-none focus:border-blue-400';
+  'bg-acars-input border border-acars-border text-[12px] tabular-nums text-acars-text rounded-md px-1.5 py-0.5 outline-none focus:border-blue-400';
 const readOnlyCls =
-  'text-[11px] tabular-nums text-acars-text';
+  'text-[12px] tabular-nums text-acars-text';
 const labelCls =
   'text-[9px] font-medium uppercase tracking-[0.06em] text-acars-muted/70';
 
@@ -121,10 +121,10 @@ function FuelTableRow({
 }) {
   return (
     <div className={`flex items-center py-1 ${indent ? 'pl-4' : ''} border-b border-acars-border/20 last:border-b-0 ${highlighted ? 'border-l-2 border-l-amber-400 bg-amber-400/5 pl-1' : ''}`}>
-      <span className={`text-[11px] w-[130px] shrink-0 ${bold ? 'font-semibold text-acars-text/80' : 'text-acars-muted'}`}>
+      <span className={`text-[12px] w-[130px] shrink-0 ${bold ? 'font-semibold text-acars-text/80' : 'text-acars-muted'}`}>
         {label}
       </span>
-      <span className="text-[11px] tabular-nums text-acars-muted w-[55px] shrink-0 text-right pr-2">
+      <span className="text-[12px] tabular-nums text-acars-muted w-[55px] shrink-0 text-right pr-2">
         {time || ''}
       </span>
       {editable && fieldKey && onFieldChange ? (
@@ -136,12 +136,12 @@ function FuelTableRow({
           placeholder="0"
         />
       ) : (
-        <span className={`text-[11px] tabular-nums w-[80px] shrink-0 text-right ${warn ? 'text-amber-400' : 'text-acars-text'}`}>
+        <span className={`text-[12px] tabular-nums w-[80px] shrink-0 text-right ${warn ? 'text-amber-400' : 'text-acars-text'}`}>
           {value}
         </span>
       )}
       {note && (
-        <span className="text-[10px] text-acars-muted ml-3 truncate">{note}</span>
+        <span className="text-[11px] text-acars-muted ml-3 truncate">{note}</span>
       )}
     </div>
   );
@@ -172,7 +172,7 @@ function WeightTableRow({
 }) {
   return (
     <div className={`flex items-center py-1 border-b border-acars-border/20 last:border-b-0 ${highlighted ? 'border-l-2 border-l-amber-400 bg-amber-400/5 pl-1' : ''}`}>
-      <span className="text-[11px] text-acars-muted w-[90px] shrink-0">{label}</span>
+      <span className="text-[12px] text-acars-muted w-[90px] shrink-0">{label}</span>
       {editable && fieldKey && onFieldChange ? (
         <input
           type="text"
@@ -182,17 +182,17 @@ function WeightTableRow({
           placeholder="0"
         />
       ) : (
-        <span className="text-[11px] tabular-nums text-acars-text w-[100px] shrink-0 text-right">
+        <span className="text-[12px] tabular-nums text-acars-text w-[100px] shrink-0 text-right">
           {estimated}
         </span>
       )}
       {maximum !== undefined && (
-        <span className="text-[11px] tabular-nums text-acars-muted w-[100px] shrink-0 text-right">
+        <span className="text-[12px] tabular-nums text-acars-muted w-[100px] shrink-0 text-right">
           {maximum}
         </span>
       )}
       {margin !== undefined && (
-        <span className={`text-[11px] tabular-nums w-[100px] shrink-0 text-right ${warn ? 'text-amber-400 font-semibold' : 'text-emerald-400/70'}`}>
+        <span className={`text-[12px] tabular-nums w-[100px] shrink-0 text-right ${warn ? 'text-amber-400 font-semibold' : 'text-emerald-400/70'}`}>
           {margin}
         </span>
       )}
@@ -203,7 +203,7 @@ function WeightTableRow({
 /* ── Field grid helper ──────────────────────────────────────────── */
 
 function FieldGrid({ children }: { children: ReactNode }) {
-  return <div className="grid grid-cols-3 gap-x-4 gap-y-2 text-[11px]">{children}</div>;
+  return <div className="grid grid-cols-3 gap-x-4 gap-y-2 text-[12px]">{children}</div>;
 }
 
 function EditableField({
@@ -378,12 +378,12 @@ export function FlightDetailSections({ ofp, formData, pilotName }: FlightDetailS
             <textarea
               value={editableFields.melRestrictions ?? formData?.melRestrictions ?? ''}
               onChange={(e) => onFieldChange('melRestrictions', e.target.value)}
-              className="w-full h-20 rounded bg-acars-bg border border-acars-border text-acars-text text-[11px] px-2 py-1.5 tabular-nums resize-none focus:outline-none focus:border-sky-400"
+              className="w-full h-20 rounded bg-acars-bg border border-acars-border text-acars-text text-[12px] px-2 py-1.5 tabular-nums resize-none focus:outline-none focus:border-sky-400"
               placeholder="Enter MEL items, one per line..."
             />
           </div>
         ) : (
-          <div className="space-y-1.5 text-[11px]">
+          <div className="space-y-1.5 text-[12px]">
             {hasMEL ? (
               melLines.map((line, i) => (
                 <div key={i} className="flex items-start gap-2">
@@ -404,7 +404,7 @@ export function FlightDetailSections({ ofp, formData, pilotName }: FlightDetailS
       {/* ── Route ─────────────────────────────────────────────── */}
       <DetailRow title="Route" summary={routeSummary} hasData={!!route}>
         <div className="space-y-2">
-          <div className="flex items-center gap-3 text-[11px]">
+          <div className="flex items-center gap-3 text-[12px]">
             <ReadOnlyField label="Origin" value={ofp?.origin ?? formData?.origin ?? '---'} />
             <span className="text-acars-muted mt-3">→</span>
             <ReadOnlyField label="Destination" value={ofp?.destination ?? formData?.destination ?? '---'} />
@@ -422,19 +422,19 @@ export function FlightDetailSections({ ofp, formData, pilotName }: FlightDetailS
               <textarea
                 value={route}
                 onChange={(e) => onFieldChange('route', e.target.value)}
-                className="w-full h-16 rounded bg-acars-bg border border-acars-border text-acars-text text-[11px] px-2 py-1.5 tabular-nums resize-none focus:outline-none focus:border-sky-400"
+                className="w-full h-16 rounded bg-acars-bg border border-acars-border text-acars-text text-[12px] px-2 py-1.5 tabular-nums resize-none focus:outline-none focus:border-sky-400"
                 placeholder="Enter ICAO route..."
               />
             </div>
           ) : (
             <div className={hl('route') ? 'border-l-2 border-amber-400 bg-amber-400/5 pl-1.5' : ''}>
               <span className={`${labelCls} block mb-1`}>Route</span>
-              <div className="tabular-nums text-[11px] text-acars-text leading-relaxed break-all">
+              <div className="tabular-nums text-[12px] text-acars-text leading-relaxed break-all">
                 {route || <span className="text-acars-muted italic">No route loaded</span>}
               </div>
             </div>
           )}
-          <div className="flex items-center gap-4 text-[11px]">
+          <div className="flex items-center gap-4 text-[12px]">
             <EditableField
               label="Alternate 1"
               value={editableFields.alternate1 ?? formData?.alternate1 ?? ''}
@@ -514,7 +514,7 @@ export function FlightDetailSections({ ofp, formData, pilotName }: FlightDetailS
           {(ofp?.alternates ?? []).length > 0 && (
             <>
               <div className="flex items-center py-1.5 mt-1">
-                <span className="text-[10px] font-semibold uppercase tracking-wider text-acars-muted/70">Alternates</span>
+                <span className="text-[11px] font-semibold uppercase tracking-wider text-acars-muted/70">Alternates</span>
               </div>
               {ofp!.alternates.map((alt, i) => (
                 <FuelTableRow
@@ -684,24 +684,24 @@ export function FlightDetailSections({ ofp, formData, pilotName }: FlightDetailS
                       key={`${step.ident}-${i}`}
                       className="flex items-center px-2 py-0.5 border-b border-acars-border/10 last:border-b-0"
                     >
-                      <span className={`text-[10px] tabular-nums w-[70px] shrink-0 ${
+                      <span className={`text-[11px] tabular-nums w-[70px] shrink-0 ${
                         step.fixType === 'toc' || step.fixType === 'tod' ? 'text-blue-400 font-semibold' : 'text-acars-text'
                       }`}>
                         {step.fixType === 'toc' ? 'T/C' : step.fixType === 'tod' ? 'T/D' : step.ident}
                       </span>
-                      <span className="text-[10px] tabular-nums text-acars-text w-[60px] shrink-0 text-right">
+                      <span className="text-[11px] tabular-nums text-acars-text w-[60px] shrink-0 text-right">
                         {fmt(step.altitudeFt)}
                       </span>
-                      <span className="text-[10px] tabular-nums text-acars-muted w-[60px] shrink-0 text-right">
+                      <span className="text-[11px] tabular-nums text-acars-muted w-[60px] shrink-0 text-right">
                         {fmt(step.distanceFromOriginNm)}
                       </span>
-                      <span className="text-[10px] tabular-nums text-acars-muted w-[80px] shrink-0 text-right">
+                      <span className="text-[11px] tabular-nums text-acars-muted w-[80px] shrink-0 text-right">
                         {fmt(step.fuelRemainLbs)}
                       </span>
-                      <span className="text-[10px] tabular-nums text-acars-muted w-[50px] shrink-0 text-right">
+                      <span className="text-[11px] tabular-nums text-acars-muted w-[50px] shrink-0 text-right">
                         {step.wind || '---'}
                       </span>
-                      <span className="text-[10px] tabular-nums text-acars-muted w-[40px] shrink-0 text-right">
+                      <span className="text-[11px] tabular-nums text-acars-muted w-[40px] shrink-0 text-right">
                         {step.oat != null ? `${step.oat}°` : '---'}
                       </span>
                     </div>

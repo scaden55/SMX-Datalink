@@ -40,7 +40,7 @@ export function Toaster() {
             className={`
               flex items-start gap-2 px-3 py-2.5 rounded-md border
               ${colors.border} ${colors.bg}
-              text-[11px] shadow-lg
+              text-[12px] shadow-lg
               animate-in slide-in-from-right duration-200
             `}
           >

@@ -4,24 +4,29 @@
  */
 export function HeaderBar() {
   return (
-    <div className="flex items-center gap-4 px-6 pt-6 pb-2 shrink-0">
-      <img
-        src="./logos/chevron-light.png"
-        alt="SMX"
-        className="h-8 w-auto opacity-90"
-        draggable={false}
-      />
-      <div className="flex flex-col gap-1">
-        <h1 className="text-[18px] font-semibold text-white tracking-tight leading-none">
-          Special Missions Air
-        </h1>
-        <div className="flex items-center gap-2">
-          <span className="inline-flex items-center px-2 py-[1px] rounded text-[9px] font-semibold uppercase tracking-wider bg-[#3b5bdb]/20 text-[#6b8aff] border border-[#3b5bdb]/30">
-            FAA - 121
-          </span>
-          <span className="inline-flex items-center px-2 py-[1px] rounded text-[9px] font-semibold uppercase tracking-wider text-[var(--text-secondary)] border border-white/[0.08]">
-            Est. 2021
-          </span>
+    <div className="flex items-center justify-between px-6 pt-5 pb-1 shrink-0">
+      <div className="flex items-center gap-3">
+        <img
+          src="./logos/chevron-light.png"
+          alt="SMX"
+          className="h-7 w-auto opacity-90"
+          draggable={false}
+        />
+        <div className="flex flex-col gap-0.5">
+          <h1 className="text-[16px] font-semibold text-white tracking-tight leading-none">
+            Special Missions Air
+          </h1>
+          <div className="flex items-center gap-1.5">
+            <span className="inline-flex items-center px-1.5 py-[1px] rounded-sm text-[9px] font-mono font-bold uppercase tracking-[0.1em] bg-[#4F6CCD]/15 text-[#4F6CCD] border border-[#4F6CCD]/20">
+              FAA-121
+            </span>
+            <span className="inline-flex items-center px-1.5 py-[1px] rounded-sm text-[9px] font-mono font-bold uppercase tracking-[0.1em] text-[var(--text-label)] border border-white/[0.06]">
+              CARGO
+            </span>
+            <span className="inline-flex items-center px-1.5 py-[1px] rounded-sm text-[9px] font-mono uppercase tracking-[0.1em] text-[var(--text-label)] border border-white/[0.06]">
+              EST 2021
+            </span>
+          </div>
         </div>
       </div>
     </div>

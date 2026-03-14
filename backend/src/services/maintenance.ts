@@ -50,6 +50,29 @@ import type {
 const TAG = 'Maintenance';
 const auditService = new AuditService();
 
+/** Universal default check intervals — used when no type-specific rows exist in maintenance_checks */
+const DEFAULT_CHECKS: Omit<MaintenanceCheckRow, 'id' | 'icao_type'>[] = [
+  { check_type: 'A', interval_hours: 500,  interval_cycles: null, interval_months: null, overflight_pct: 10, estimated_duration_hours: 8,   description: 'A Check - Routine inspection' },
+  { check_type: 'B', interval_hours: 4500, interval_cycles: null, interval_months: null, overflight_pct: 0,  estimated_duration_hours: 48,  description: 'B Check - Intermediate inspection' },
+  { check_type: 'C', interval_hours: 6000, interval_cycles: 3000, interval_months: 18,   overflight_pct: 0,  estimated_duration_hours: 336, description: 'C Check - Heavy inspection (2 weeks)' },
+  { check_type: 'D', interval_hours: null, interval_cycles: null, interval_months: 72,   overflight_pct: 0,  estimated_duration_hours: 672, description: 'D Check - Structural overhaul (4 weeks)' },
+];
+
+/** Get maintenance check intervals for an aircraft type, falling back to universal defaults */
+function getChecksForType(icaoType: string): MaintenanceCheckRow[] {
+  const db = getDb();
+  const rows = db.prepare('SELECT * FROM maintenance_checks WHERE icao_type = ?')
+    .all(icaoType) as MaintenanceCheckRow[];
+  if (rows.length > 0) return rows;
+
+  // Synthesize default rows for types without specific configuration
+  return DEFAULT_CHECKS.map((c, i) => ({
+    ...c,
+    id: -(i + 1), // negative IDs indicate synthetic defaults
+    icao_type: icaoType,
+  })) as MaintenanceCheckRow[];
+}
+
 export class MaintenanceService {
 
   // ═══════════════════════════════════════════════════════════
@@ -284,8 +307,7 @@ export class MaintenanceService {
     const reasons: string[] = [];
 
     if (hours) {
-      const checks = db.prepare('SELECT * FROM maintenance_checks WHERE icao_type = ?')
-        .all(fleet.icao_type) as MaintenanceCheckRow[];
+      const checks = getChecksForType(fleet.icao_type);
 
       const checksDue = this.computeChecksDue(hours, checks);
       const overdueChecks = checksDue.filter(c => c.isOverdue);
@@ -324,6 +346,15 @@ export class MaintenanceService {
       reasons.push(`${expiredMELs.count} expired MEL deferral(s)`);
     }
 
+    // Check for grounding discrepancies
+    const groundedDiscrepancies = db.prepare(
+      `SELECT COUNT(*) as c FROM discrepancies WHERE aircraft_id = ? AND status = 'grounded'`
+    ).get(aircraftId) as { c: number };
+    if (groundedDiscrepancies.c > 0) {
+      shouldGround = true;
+      reasons.push(`${groundedDiscrepancies.c} grounding discrepancy(ies)`);
+    }
+
     if (shouldGround && fleet.status !== 'maintenance') {
       db.prepare('UPDATE fleet SET status = ?, updated_at = datetime(\'now\') WHERE id = ?')
         .run('maintenance', aircraftId);
@@ -343,8 +374,7 @@ export class MaintenanceService {
       .get(aircraftId) as AircraftHoursRow | undefined;
 
     if (hours) {
-      const checks = db.prepare('SELECT * FROM maintenance_checks WHERE icao_type = ?')
-        .all(fleet.icao_type) as MaintenanceCheckRow[];
+      const checks = getChecksForType(fleet.icao_type);
       const checksDue = this.computeChecksDue(hours, checks);
       if (checksDue.some(c => c.isOverdue)) {
         logger.warn(TAG, `Cannot return ${fleet.registration} to service: overdue checks remain`);
@@ -1265,8 +1295,7 @@ export class MaintenanceService {
       updated_at: '',
     };
 
-    const checks = db.prepare('SELECT * FROM maintenance_checks WHERE icao_type = ?')
-      .all(row.icao_type) as MaintenanceCheckRow[];
+    const checks = getChecksForType(row.icao_type);
 
     const checksDue = this.computeChecksDue(hoursRow, checks);
     const hasOverdueChecks = checksDue.some(c => c.isOverdue);
@@ -1287,6 +1316,18 @@ export class MaintenanceService {
       SELECT COUNT(*) as count FROM mel_deferrals
       WHERE aircraft_id = ? AND status = 'open' AND expiry_date < ?
     `).get(row.id, now) as { count: number };
+
+    // Count open discrepancies
+    const openDiscrep = db.prepare(`
+      SELECT COUNT(*) as count FROM discrepancies
+      WHERE aircraft_id = ? AND status IN ('open', 'deferred')
+    `).get(row.id) as { count: number };
+
+    // Count active MELs
+    const activeMELCount = db.prepare(`
+      SELECT COUNT(*) as count FROM mel_deferrals
+      WHERE aircraft_id = ? AND status = 'open'
+    `).get(row.id) as { count: number };
 
     // Determine next check due
     let nextCheckType: string | null = null;
@@ -1313,6 +1354,8 @@ export class MaintenanceService {
       hasOverdueChecks,
       hasOverdueADs: overdueADs.count > 0,
       hasExpiredMEL: expiredMELs.count > 0,
+      openDiscrepancies: openDiscrep.count,
+      activeMELs: activeMELCount.count,
       nextCheckType,
       nextCheckDueIn,
     };
@@ -1417,6 +1460,60 @@ export class MaintenanceService {
       mel.aircraftRegistration = row.registration;
     }
     return mel;
+  }
+
+  getAircraftTimeline(aircraftId: number, page = 1, pageSize = 50): { entries: any[]; total: number } {
+    const db = getDb();
+    const offset = (page - 1) * pageSize;
+
+    const query = `
+      SELECT 'discrepancy' as type, id, reported_at as date,
+        ('Discrepancy: ATA ' || ata_chapter) as title, description, status, ata_chapter
+      FROM discrepancies WHERE aircraft_id = ?
+      UNION ALL
+      SELECT 'mel_deferral' as type, id, deferral_date as date,
+        ('MEL: ' || item_number || ' - ' || title) as title,
+        COALESCE(remarks, '') as description, status, ata_chapter
+      FROM mel_deferrals WHERE aircraft_id = ?
+      UNION ALL
+      SELECT 'maintenance' as type, id, COALESCE(performed_at, created_at) as date,
+        title, COALESCE(description, '') as description, status, NULL as ata_chapter
+      FROM maintenance_log WHERE aircraft_id = ?
+      UNION ALL
+      SELECT 'ad_compliance' as type, id, COALESCE(compliance_date, created_at) as date,
+        (ad_number || ' - ' || title) as title,
+        COALESCE(description, '') as description, compliance_status as status, NULL as ata_chapter
+      FROM airworthiness_directives WHERE aircraft_id = ?
+      ORDER BY date DESC
+      LIMIT ? OFFSET ?
+    `;
+
+    const entries = db.prepare(query).all(aircraftId, aircraftId, aircraftId, aircraftId, pageSize, offset);
+
+    const countQuery = `
+      SELECT (
+        (SELECT COUNT(*) FROM discrepancies WHERE aircraft_id = ?) +
+        (SELECT COUNT(*) FROM mel_deferrals WHERE aircraft_id = ?) +
+        (SELECT COUNT(*) FROM maintenance_log WHERE aircraft_id = ?) +
+        (SELECT COUNT(*) FROM airworthiness_directives WHERE aircraft_id = ?)
+      ) as total
+    `;
+    const { total } = db.prepare(countQuery).get(aircraftId, aircraftId, aircraftId, aircraftId) as { total: number };
+
+    return { entries, total };
+  }
+
+  getMelStats(): { active: number; expiring48h: number; catAB: number; catCD: number; rectified30d: number } {
+    const db = getDb();
+    const active = (db.prepare(`SELECT COUNT(*) as c FROM mel_deferrals WHERE status = 'open'`).get() as { c: number }).c;
+    const now = new Date();
+    const in48h = new Date(now.getTime() + 48 * 60 * 60 * 1000).toISOString();
+    const expiring48h = (db.prepare(`SELECT COUNT(*) as c FROM mel_deferrals WHERE status = 'open' AND expiry_date <= ?`).get(in48h) as { c: number }).c;
+    const catAB = (db.prepare(`SELECT COUNT(*) as c FROM mel_deferrals WHERE status = 'open' AND category IN ('A', 'B')`).get() as { c: number }).c;
+    const catCD = (db.prepare(`SELECT COUNT(*) as c FROM mel_deferrals WHERE status = 'open' AND category IN ('C', 'D')`).get() as { c: number }).c;
+    const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString();
+    const rectified30d = (db.prepare(`SELECT COUNT(*) as c FROM mel_deferrals WHERE status = 'rectified' AND rectified_date >= ?`).get(thirtyDaysAgo) as { c: number }).c;
+    return { active, expiring48h, catAB, catCD, rectified30d };
   }
 
   private toComponent(row: AircraftComponentRow | ComponentJoinRow): AircraftComponent {

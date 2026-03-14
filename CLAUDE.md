@@ -96,7 +96,7 @@ Backend WebSocket handler (`backend/src/websocket/handler.ts`) manages:
 ### Database
 
 - better-sqlite3 in WAL mode with foreign keys enabled
-- 34 SQL migrations in `backend/src/db/migrations/` (numbered `001-*` through `034-*`)
+- 41 SQL migrations in `backend/src/db/migrations/` (numbered `001-*` through `041-*`)
 - Auto-applied on startup: reads migration dir, diffs against `schema_migrations` table
 - Seeds admin user (`admin@smavirtual.com`) and 95 airports on first run
 - Row types in `backend/src/types/db-rows.ts` — use `*Row` for SELECT *, `*QueryRow` for shaped queries
@@ -141,23 +141,25 @@ Backend WebSocket handler (`backend/src/websocket/handler.ts`) manages:
 - **Port**: 5174 in dev
 - Backend serves admin at `express.static(adminDistPath)` with SPA fallback for `/admin/*`
 
-### Design System (pilot frontend)
-- **Accent**: Blue `#3b82f6` (`--accent` / `--accent-rgb`)
-- **Panels**: Solid `#1c2033` (`--bg-panel`), `rounded-md`, inner shadow
-- **Typography**: `IBM Plex Mono` for data values (`font-mono`)
+### Design System (both apps — unified deep indigo theme)
+- **Background**: `#030726` (solid, no gradients) — `--surface-0` / `--bg-app`
+- **Foreground**: `#111532` — `--surface-1` / `--bg-panel`
+- **Surface-2**: `#181D3E` (cards, inputs) — `--surface-2` / `--bg-input`
+- **Surface-3**: `#1F2549` (elevated) — `--surface-3` / `--bg-hover`
+- **Accent**: Blue `#4F6CCD` (`--accent` / `--accent-blue`)
+- **Accent bright**: `#7B94E0` (`--accent-blue-bright`)
+- **Token file (admin)**: `admin/src/styles/tokens.css` — single source of truth for all admin visual constants
+- **Token file (frontend)**: `frontend/src/styles/planning-tokens.css` — all pilot app colors
+- **Typography (sans)**: Lufga (custom font); sizes via `--text-*-size` tokens (display 24px, body 13px, caption 11px)
+- **Typography (mono)**: System monospace (`ui-monospace, Cascadia Mono, Consolas, monospace`) — use `font-mono` class for ALL aviation data (flight numbers, ICAO codes, altitudes, speeds, headings, callsigns, timestamps, durations, registrations)
+- **Icon weight**: Use `weight="regular"` for Phosphor icons (not "light") for better readability
+- **Aviation formatting**: Leading zeros on FL (FL001), headings (045°), speeds (120kt). Use `tabular-nums` on all numeric data
+- **Spacing**: `--space-*` scale (4px increments); border radius via `--radius-*` tokens
 - **Components**: shadcn/ui in `<workspace>/src/components/ui/`
 - **Forbidden**: No purple, no glassmorphism, no `rounded-xl` containers, no `backdrop-blur`
 
-### Design System (admin panel)
-- **Token file**: `admin/src/styles/tokens.css` — single source of truth for all admin visual constants
-- **Surface system**: 4-tier depth (`--surface-0` through `--surface-3`), darkest is `#05060d`
-- **Accent palette**: Blue `#3950ed`, plus emerald/amber/red/cyan semantic colors, each with `-bg` and `-ring` variants
-- **Typography**: Inter (not IBM Plex Mono); sizes via `--text-*-size` tokens (display 24px, body 13px, caption 11px)
-- **Spacing**: `--space-*` scale (4px increments); border radius via `--radius-*` tokens
-- **Shared rules**: No purple, no glassmorphism, no `backdrop-blur`
-
 ### Electron
-- **IPC**: 53 channels defined in `electron/src/ipc-channels.ts`, whitelisted in preload.ts
+- **IPC**: 30 channels defined in `electron/src/ipc-channels.ts`, whitelisted in preload.ts
 - **Packaging**: `scripts/prepare-backend.js` creates standalone `.backend-standalone/` — never bundle `backend/node_modules` directly (hoisting empties it)
 - **better-sqlite3**: Raw C++ API, ABI-version specific — must `@electron/rebuild` for Electron
 - **ELECTRON_RUN_AS_NODE**: Must be `'1'` in fork env

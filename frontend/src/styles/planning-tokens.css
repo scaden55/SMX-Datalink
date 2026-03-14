@@ -6,39 +6,39 @@
 
 :root {
   /* ── Backgrounds ──────────────────────────────────────── */
-  --bg-app:       #000000;
-  --bg-sidebar:   #050505;
-  --bg-panel:     #0a0a0a;
-  --bg-input:     #111111;
-  --bg-map:       #000000;
-  --bg-tooltip:   #111111;
-  --bg-hover:     #1a1a1a;
+  --bg-app:       #030407;
+  --bg-sidebar:   #04060a;
+  --bg-panel:     #111532;
+  --bg-input:     #06070e;
+  --bg-map:       #030511;
+  --bg-tooltip:   #0c0e1a;
+  --bg-hover:     #171b35;
   --bg-card:      transparent;
 
   /* ── Borders ──────────────────────────────────────────── */
-  --border-panel:   rgba(255, 255, 255, 0.06);
-  --border-input:   rgba(255, 255, 255, 0.08);
-  --border-section: rgba(255, 255, 255, 0.04);
+  --border-panel:   rgba(48, 61, 104, 0.08);
+  --border-input:   rgba(79, 108, 205, 0.10);
+  --border-section: rgba(79, 108, 205, 0.05);
 
   /* ── Text ─────────────────────────────────────────────── */
-  --text-primary:   #f0f0f0;
-  --text-secondary: #7a7a7a;
-  --text-label:     #4a4a4a;
-  --text-hint:      rgba(120, 120, 120, 0.30);
+  --text-primary:   #ffffff;
+  --text-secondary: #b6b8c5;
+  --text-label:     #76798b;
+  --text-hint:      rgba(102, 107, 134, 0.30);
 
   /* RGB triplets for Tailwind opacity modifier support (space-separated for modern rgb() syntax) */
-  --bg-app-rgb:        0 0 0;
-  --bg-panel-rgb:      10 10 10;
-  --bg-input-rgb:      17 17 17;
-  --bg-hover-rgb:      26 26 26;
-  --text-primary-rgb:  240 240 240;
-  --text-secondary-rgb: 122 122 122;
-  --border-rgb:        255 255 255;
+  --bg-app-rgb:        3 4 7;
+  --bg-panel-rgb:      17 21 50;
+  --bg-input-rgb:      6 7 14;
+  --bg-hover-rgb:      23 27 53;
+  --text-primary-rgb:  255 255 255;
+  --text-secondary-rgb: 182 184 197;
+  --border-rgb:        48 61 104;
 
   /* ── Primary Accent (Blue) ──────────────────────────── */
-  --accent:      #3b5bdb;
-  --accent-dark: #0c1428;
-  --accent-rgb:  59 91 219;
+  --accent:      #4F6CCD;
+  --accent-dark: #050711;
+  --accent-rgb:  79 108 205;
 
   /* Legacy aliases — will remove in Phase 8 */
   --cyan:      var(--accent);
@@ -46,9 +46,9 @@
   --cyan-rgb:  var(--accent-rgb);
 
   /* ── Secondary (Slate — for decorative use) ───────────── */
-  --purple:      #60a5fa;
-  --purple-fill: #1e293b;
-  --purple-rgb:  96 165 250;
+  --purple:      #7B94E0;
+  --purple-fill: #090d1a;
+  --purple-rgb:  123 148 224;
 
   /* ── Status Colors ────────────────────────────────────── */
   --status-green:  #22c55e;
@@ -63,41 +63,46 @@
   --status-burn-rgb:   251 146 60;
 
   /* ── Map Phase Colors ─────────────────────────────────── */
-  --phase-climb:   #60a5fa;
-  --phase-cruise:  #3b82f6;
+  --phase-climb:   #7B94E0;
+  --phase-cruise:  #4F6CCD;
   --phase-descent: #22c55e;
 
+  /* ── Typography ──────────────────────────────────────── */
+  --font-sans: 'Inter Variable', 'Inter', system-ui, -apple-system, sans-serif;
+  --font-display: 'Lufga', system-ui, -apple-system, sans-serif;
+  --font-mono: ui-monospace, 'Cascadia Mono', 'Segoe UI Mono', 'Liberation Mono', Menlo, Monaco, Consolas, monospace;
+
   /* ── Scrollbar ────────────────────────────────────────── */
-  --scrollbar-thumb: rgba(255, 255, 255, 0.06);
+  --scrollbar-thumb: rgba(48, 61, 104, 0.10);
   --scrollbar-track: transparent;
 
   /* ── shadcn/ui HSL Variables ─────────────────────────── */
-  --background: 0 0% 0%;
-  --foreground: 240 10% 95%;
-  --card: 240 20% 4%;
-  --card-foreground: 240 10% 95%;
-  --popover: 240 20% 4%;
-  --popover-foreground: 240 10% 95%;
-  --primary: 228 70% 55%;
+  --background: 225 40% 2%;
+  --foreground: 0 0% 100%;
+  --card: 233 49% 13%;
+  --card-foreground: 0 0% 100%;
+  --popover: 226 49% 7%;
+  --popover-foreground: 0 0% 100%;
+  --primary: 226 56% 56%;
   --primary-foreground: 0 0% 100%;
-  --secondary: 240 10% 8%;
-  --secondary-foreground: 240 10% 95%;
-  --muted: 240 10% 10%;
-  --muted-foreground: 240 5% 50%;
-  --accent: 240 10% 8%;
-  --accent-foreground: 240 10% 95%;
+  --secondary: 226 49% 7%;
+  --secondary-foreground: 230 11% 75%;
+  --muted: 226 49% 7%;
+  --muted-foreground: 231 8% 50%;
+  --accent: 226 49% 7%;
+  --accent-foreground: 230 11% 75%;
   --destructive: 0 84% 60%;
   --destructive-foreground: 0 0% 100%;
-  --border: 240 10% 10%;
-  --input: 240 10% 8%;
-  --ring: 228 70% 55%;
+  --border: 228 37% 30% / 0.08;
+  --input: 226 49% 7%;
+  --ring: 226 56% 56%;
   --radius: 0.5rem;
 }
 
 /* ── Selection ──────────────────────────────────────────── */
 ::selection {
-  background: rgba(77, 156, 246, 0.25);
-  color: #e2e8f0;
+  background: rgba(79, 108, 205, 0.20);
+  color: #ffffff;
 }
 
 /* ── Select dropdown options (rendered by OS, needs explicit) */

@@ -1,4 +1,5 @@
 @import './planning-tokens.css';
+@import '@fontsource-variable/inter';
 
 /* ── Lufga font (self-hosted) ──────────────────────────── */
 @font-face {
@@ -47,8 +48,8 @@
     scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
   }
   *::-webkit-scrollbar {
-    width: 5px;
-    height: 5px;
+    width: 4px;
+    height: 4px;
   }
   *::-webkit-scrollbar-track {
     background: var(--scrollbar-track);
@@ -61,11 +62,11 @@
     background: rgba(255, 255, 255, 0.18);
   }
 
-  /* Form elements use Urbanist for consistent typography */
+  /* Form elements use Inter for consistent typography */
   input,
   select,
   textarea {
-    font-family: 'Lufga', system-ui, sans-serif;
+    font-family: 'Inter Variable', 'Inter', system-ui, sans-serif;
     font-feature-settings: "tnum";
   }
 
@@ -78,7 +79,7 @@
 
   body {
     @apply bg-[hsl(var(--background))] text-[hsl(var(--foreground))];
-    font-family: 'Lufga', system-ui, sans-serif;
+    font-family: 'Inter Variable', 'Inter', system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
@@ -86,6 +87,11 @@
 
 /* ── Tabular numbers ──────────────────────────────────────── */
 .tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Ensure font-mono always gets tabular-nums */
+.font-mono {
   font-variant-numeric: tabular-nums;
 }
 
@@ -121,33 +127,33 @@
 
   /* ── Buttons ────────────────────────────────────────────────── */
   .btn-primary {
-    @apply inline-flex items-center justify-center gap-1.5 rounded-md text-[11px] font-semibold
+    @apply inline-flex items-center justify-center gap-1.5 rounded-md text-[12px] font-semibold
            text-white
            hover:brightness-110 active:brightness-95 active:scale-[0.98]
            disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:transform-none
            transition-all focus-ring;
-    background: linear-gradient(135deg, #3b5bdb 0%, #2b4bc0 100%);
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3), 0 2px 8px rgba(59, 91, 219, 0.20);
+    background: linear-gradient(135deg, #4F6CCD 0%, #3D56A8 100%);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3), 0 2px 8px rgba(79, 108, 205, 0.20);
   }
   .btn-primary:hover:not(:disabled) {
     transform: translateY(-1px);
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3), 0 4px 16px rgba(59, 91, 219, 0.35);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3), 0 4px 16px rgba(79, 108, 205, 0.35);
   }
-  .btn-primary.btn-sm { @apply px-3 py-1.5 text-[10px]; }
+  .btn-primary.btn-sm { @apply px-3 py-1.5 text-[11px]; }
   .btn-primary.btn-md { @apply px-4 py-2; }
 
   .btn-secondary {
-    @apply inline-flex items-center justify-center gap-1.5 rounded-md text-[11px] font-semibold
+    @apply inline-flex items-center justify-center gap-1.5 rounded-md text-[12px] font-semibold
            bg-blue-500/10 text-blue-400 border border-blue-400/20
            hover:bg-blue-500/20 hover:border-blue-400/40 active:bg-blue-500/25 active:scale-[0.98]
            disabled:opacity-40 disabled:cursor-not-allowed
            transition-all focus-ring;
   }
-  .btn-secondary.btn-sm { @apply px-3 py-1.5 text-[10px]; }
+  .btn-secondary.btn-sm { @apply px-3 py-1.5 text-[11px]; }
   .btn-secondary.btn-md { @apply px-4 py-2; }
 
   .btn-danger {
-    @apply inline-flex items-center justify-center gap-1.5 rounded-md text-[11px] font-semibold
+    @apply inline-flex items-center justify-center gap-1.5 rounded-md text-[12px] font-semibold
            text-white
            hover:brightness-110 active:brightness-95 active:scale-[0.98]
            disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:transform-none
@@ -159,11 +165,11 @@
     transform: translateY(-1px);
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2), 0 4px 16px rgba(239, 68, 68, 0.40);
   }
-  .btn-danger.btn-sm { @apply px-3 py-1.5 text-[10px]; }
+  .btn-danger.btn-sm { @apply px-3 py-1.5 text-[11px]; }
   .btn-danger.btn-md { @apply px-4 py-2; }
 
   .btn-green {
-    @apply inline-flex items-center justify-center gap-1.5 rounded-md text-[11px] font-semibold
+    @apply inline-flex items-center justify-center gap-1.5 rounded-md text-[12px] font-semibold
            text-white
            hover:brightness-110 active:brightness-95 active:scale-[0.98]
            disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:transform-none
@@ -175,13 +181,13 @@
     transform: translateY(-1px);
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2), 0 4px 16px rgba(34, 197, 94, 0.40);
   }
-  .btn-green.btn-sm { @apply px-3 py-1.5 text-[10px]; }
+  .btn-green.btn-sm { @apply px-3 py-1.5 text-[11px]; }
   .btn-green.btn-md { @apply px-4 py-2; }
 
   /* ── Inputs ─────────────────────────────────────────────────── */
   .input-field {
     @apply w-full rounded-md bg-acars-input border border-acars-border
-           text-[11px] tabular-nums px-2.5 py-1.5
+           text-[12px] tabular-nums px-2.5 py-1.5
            placeholder:text-acars-muted/40
            focus:outline-none focus:border-blue-400
            disabled:opacity-50 disabled:cursor-not-allowed
@@ -189,12 +195,12 @@
     color: var(--text-primary);
   }
   .input-field:focus {
-    box-shadow: 0 0 0 2px rgba(77, 156, 246, 0.15);
+    box-shadow: 0 0 0 2px rgba(79, 108, 205, 0.15);
   }
 
   .select-field {
     @apply w-full h-7 rounded-md border border-acars-border bg-acars-input
-           text-[11px] tabular-nums px-2.5
+           text-[12px] tabular-nums px-2.5
            outline-none focus:border-blue-400
            transition-colors cursor-pointer
            appearance-none
@@ -205,7 +211,7 @@
 
   /* ── Planning-specific input (dense) ─────────────────────────── */
   .planning-input {
-    @apply w-full rounded-md text-[12px] tabular-nums px-2.5 py-1.5
+    @apply w-full rounded-md text-[13px] tabular-nums px-2.5 py-1.5
            focus:outline-none transition-colors;
     background: var(--bg-input);
     border: 1px solid var(--border-input);
@@ -215,7 +221,7 @@
   .planning-input::placeholder { color: var(--text-hint); }
 
   .planning-select {
-    @apply w-full rounded-md text-[12px] tabular-nums px-2.5 py-1.5
+    @apply w-full rounded-md text-[13px] tabular-nums px-2.5 py-1.5
            outline-none transition-colors;
     background: var(--bg-input);
     border: 1px solid var(--border-input);
@@ -224,7 +230,7 @@
   .planning-select:focus { border-color: var(--accent); }
 
   .planning-textarea {
-    @apply w-full rounded-md text-[12px] tabular-nums px-2.5 py-1.5
+    @apply w-full rounded-md text-[13px] tabular-nums px-2.5 py-1.5
            focus:outline-none transition-colors resize-none;
     background: var(--bg-input);
     border: 1px solid var(--border-input);
@@ -234,13 +240,13 @@
   .planning-textarea::placeholder { color: var(--text-hint); }
 
   .planning-label {
-    @apply text-[10px] uppercase tracking-[0.06em] font-medium block;
+    @apply text-[11px] uppercase tracking-[0.06em] font-medium block;
     color: var(--text-label);
   }
 
   /* ── Table ──────────────────────────────────────────────────── */
   .table-header-cell {
-    @apply text-[10px] uppercase tracking-[0.08em] text-acars-muted font-medium px-4 py-2.5;
+    @apply text-[11px] uppercase tracking-[0.08em] text-acars-muted font-medium px-4 py-2.5;
     letter-spacing: 0.08em;
   }
   .table-row {
@@ -272,7 +278,7 @@
     @apply text-sm font-semibold text-acars-text/80 mb-1;
   }
   .empty-state-desc {
-    @apply text-[11px] text-acars-muted/70 leading-relaxed max-w-sm;
+    @apply text-[12px] text-acars-muted/70 leading-relaxed max-w-sm;
   }
 
   /* ── Page Header ────────────────────────────────────────────── */
@@ -285,7 +291,7 @@
 
   /* ── Badges ─────────────────────────────────────────────────── */
   .badge {
-    @apply inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-[0.08em];
+    @apply inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold uppercase tracking-[0.08em];
   }
   .badge-green {
     @apply badge bg-emerald-500/15 text-emerald-400;
@@ -308,11 +314,11 @@
 
   /* ── Data Display ───────────────────────────────────────────── */
   .data-label {
-    @apply text-[10px] uppercase tracking-[0.06em] font-medium;
+    @apply text-[11px] uppercase tracking-[0.06em] font-medium;
     color: var(--text-label);
   }
   .data-value {
-    @apply text-[12px] tabular-nums;
+    @apply text-[13px] tabular-nums;
     color: var(--text-primary);
   }
 
@@ -346,9 +352,22 @@
     background: rgba(255, 255, 255, 0.12);
   }
 
+  /* ── Status Bar ──────────────────────────────────────────── */
+  .status-block {
+    @apply flex items-center gap-1.5 h-full;
+  }
+  .status-label {
+    @apply text-[9px] font-semibold uppercase tracking-[0.1em];
+    font-family: var(--font-mono);
+    color: var(--text-label);
+  }
+  .status-divider {
+    @apply w-px h-3 bg-white/[0.06] shrink-0;
+  }
+
   /* ── ACARS Message Block ──────────────────────────────────── */
   pre.acars-msg {
-    @apply text-[11px] leading-relaxed p-3 rounded-md overflow-x-auto;
+    @apply text-[12px] leading-relaxed p-3 rounded-md overflow-x-auto;
     background: var(--bg-input);
     border: 1px solid var(--border-panel);
     color: var(--text-primary);
@@ -441,11 +460,9 @@
   border-radius: 2px;
   line-height: 13px;
 }
-.airport-label-dot {
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  margin-top: 1px;
+.airport-label svg {
+  margin-top: 2px;
+  opacity: 0.85;
 }
 
 /* ── Airspace Boundary Badges ─────────────────────────────────── */
@@ -457,7 +474,7 @@
   height: auto !important;
 }
 .airspace-badge {
-  background: rgba(15, 18, 25, 0.92);
+  background: rgba(11, 12, 21, 0.95);
   border: 1px solid;
   border-radius: 3px;
   padding: 2px 6px;
@@ -490,7 +507,7 @@
 }
 
 .vatsim-boundary-tooltip {
-  background: rgba(15, 18, 25, 0.92) !important;
+  background: rgba(11, 12, 21, 0.95) !important;
   border: 1px solid rgba(255, 255, 255, 0.1) !important;
   border-radius: 4px !important;
   color: #e6e9ee !important;
@@ -501,12 +518,12 @@
   white-space: pre-line !important;
 }
 .vatsim-boundary-tooltip::before {
-  border-top-color: rgba(15, 18, 25, 0.92) !important;
+  border-top-color: rgba(11, 12, 21, 0.95) !important;
 }
 
 /* ── Planned Route Waypoint Tooltip ───────────────────────────── */
 .planned-route-tooltip {
-  background: rgba(15, 18, 25, 0.92) !important;
+  background: rgba(11, 12, 21, 0.95) !important;
   border: 1px solid rgba(255, 255, 255, 0.1) !important;
   border-radius: 4px !important;
   color: #e6e9ee !important;
@@ -516,7 +533,7 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5) !important;
 }
 .planned-route-tooltip::before {
-  border-top-color: rgba(15, 18, 25, 0.92) !important;
+  border-top-color: rgba(11, 12, 21, 0.95) !important;
 }
 
 /* ── Transparent tooltip arrow removal ────────────────────────── */

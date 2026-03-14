@@ -92,7 +92,7 @@ export function AirportSearchDropdown({ value, onChange, disabled, placeholder =
     inputRef.current?.blur();
   };
 
-  const inputCls = "bg-acars-input border border-acars-border text-[11px] tabular-nums text-[#cdd1d8] rounded-md px-1.5 py-0.5 outline-none focus:border-blue-400 truncate w-full";
+  const inputCls = "bg-acars-input border border-acars-border text-[12px] tabular-nums text-[#cdd1d8] rounded-md px-1.5 py-0.5 outline-none focus:border-blue-400 truncate w-full";
 
   return (
     <div ref={wrapperRef} className="relative">
@@ -119,11 +119,11 @@ export function AirportSearchDropdown({ value, onChange, disabled, placeholder =
               onClick={() => handleSelect(r.ident)}
               className="w-full px-2 py-1.5 flex items-center gap-2 hover:bg-white/5 transition-colors text-left border-b border-acars-border/30 last:border-0"
             >
-              <span className="text-[11px] tabular-nums font-semibold text-sky-400 shrink-0 w-[40px]">
+              <span className="text-[12px] tabular-nums font-semibold text-sky-400 shrink-0 w-[40px]">
                 {r.ident}
               </span>
               <div className="min-w-0 flex-1">
-                <div className="text-[10px] text-acars-text truncate">{r.name}</div>
+                <div className="text-[11px] text-acars-text truncate">{r.name}</div>
                 <div className="text-[9px] text-acars-muted truncate">
                   {[r.municipality, r.iso_country].filter(Boolean).join(', ')}
                   {r.iata_code && ` (${r.iata_code})`}

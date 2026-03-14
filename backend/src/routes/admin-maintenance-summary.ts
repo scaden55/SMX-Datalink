@@ -71,10 +71,25 @@ export function adminMaintenanceSummaryRouter(): Router {
         LIMIT 10
       `).all();
 
+      // Open discrepancy counts
+      const discrepancyCounts = db.prepare(`
+        SELECT
+          COALESCE(SUM(CASE WHEN status = 'open' THEN 1 ELSE 0 END), 0) AS open,
+          COALESCE(SUM(CASE WHEN status = 'in_review' THEN 1 ELSE 0 END), 0) AS inReview,
+          COALESCE(SUM(CASE WHEN status = 'deferred' THEN 1 ELSE 0 END), 0) AS deferred
+        FROM discrepancies
+        WHERE status IN ('open', 'in_review', 'deferred')
+      `).get() as { open: number; inReview: number; deferred: number };
+
       res.json({
         fleetStatus: { airworthy, melDispatch, inCheck: inCheckCount, aog: aogCount },
         criticalMel,
         nextChecks,
+        openDiscrepancies: {
+          open: discrepancyCounts.open,
+          inReview: discrepancyCounts.inReview,
+          deferred: discrepancyCounts.deferred,
+        },
       });
     } catch (err) {
       logger.error('Admin', 'Failed to fetch maintenance summary', err);

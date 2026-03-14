@@ -18,5 +18,29 @@ export function adminDashboardRouter(): Router {
     }
   });
 
+  router.get('/admin/dashboard/acars/recent', authMiddleware, dispatcherMiddleware, (_req, res) => {
+    try {
+      const db = getDb();
+      const rows = db.prepare(`
+        SELECT m.content, m.created_at,
+               COALESCE(u.callsign, 'SMX???') AS callsign
+        FROM acars_messages m
+        LEFT JOIN active_bids ab ON ab.id = m.bid_id
+        LEFT JOIN users u ON u.id = ab.user_id
+        ORDER BY m.created_at DESC
+        LIMIT 5
+      `).all() as Array<{ content: string; created_at: string; callsign: string }>;
+
+      res.json(rows.map(r => ({
+        callsign: r.callsign,
+        content: r.content,
+        createdAt: r.created_at,
+      })));
+    } catch (err) {
+      logger.error('Admin', 'Failed to fetch recent ACARS', err);
+      res.status(500).json({ error: 'Failed to fetch recent ACARS messages' });
+    }
+  });
+
   return router;
 }

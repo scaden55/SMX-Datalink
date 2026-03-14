@@ -129,7 +129,7 @@ interface PilotPayEntry {
 
 // ── Colors ──────────────────────────────────────────────────────
 
-const ACCENT_BLUE = '#3b5bdb';
+const ACCENT_BLUE = '#4F6CCD';
 const ACCENT_EMERALD = '#4ade80';
 const ACCENT_AMBER = '#fbbf24';
 const ACCENT_RED = '#f87171';
@@ -679,7 +679,7 @@ function RevenueTab() {
         accessorKey: 'flightDate',
         header: ({ column }) => <DataTableColumnHeader column={column} title="Date" />,
         cell: ({ row }) => (
-          <span style={{ color: 'var(--text-tertiary)', fontSize: 13 }}>
+          <span className="font-mono" style={{ color: 'var(--text-tertiary)', fontSize: 13 }}>
             {formatDate(row.original.flightDate)}
           </span>
         ),

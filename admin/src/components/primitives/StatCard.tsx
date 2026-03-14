@@ -34,7 +34,7 @@ export function StatCard({ icon: Icon, label, value, accent = 'blue', trend, cla
           <Icon size={18} />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">
+          <p className="text-[12px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">
             {label}
           </p>
           <div className="flex items-baseline gap-2 mt-0.5">
@@ -44,7 +44,7 @@ export function StatCard({ icon: Icon, label, value, accent = 'blue', trend, cla
             {trend && (
               <span
                 className={cn(
-                  'inline-flex items-center gap-0.5 text-xs font-medium',
+                  'inline-flex items-center gap-0.5 text-xs font-mono font-medium',
                   trend.direction === 'up' ? 'text-[var(--accent-emerald)]' : 'text-[var(--accent-red)]',
                 )}
               >

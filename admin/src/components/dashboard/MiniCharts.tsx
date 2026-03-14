@@ -62,7 +62,7 @@ export const BarTrend = memo(function BarTrend({
 export const Sparkline = memo(function Sparkline({
   data,
   height = 18,
-  color = '#3b5bdb',
+  color = '#4F6CCD',
   strokeWidth = 1.5,
 }: {
   data: number[];

@@ -6,7 +6,7 @@ export function FlightLogTab() {
 
   if (!aircraft) {
     return (
-      <div className="text-[11px] text-acars-muted italic">
+      <div className="text-[12px] text-acars-muted italic">
         {connected ? 'Awaiting telemetry data...' : 'Awaiting pilot telemetry...'}
       </div>
     );
@@ -20,7 +20,7 @@ export function FlightLogTab() {
       {/* Position & Flight */}
       <div className="panel p-3">
         <h4 className="data-label mb-2">Position & Flight</h4>
-        <table className="w-full text-[11px]">
+        <table className="w-full text-[12px]">
           <tbody className="tabular-nums">
             <Row label="Phase" value={flight?.phase ?? '---'} highlight />
             <Row label="Altitude" value={formatAltitude(pos.altitude)} />
@@ -43,7 +43,7 @@ export function FlightLogTab() {
       <div className="space-y-4">
         <div className="panel p-3">
           <h4 className="data-label mb-2">Engines</h4>
-          <table className="w-full text-[11px]">
+          <table className="w-full text-[12px]">
             <thead>
               <tr className="text-acars-muted border-b border-acars-border">
                 <th className="text-left py-1 font-medium">Param</th>
@@ -70,7 +70,7 @@ export function FlightLogTab() {
 
         <div className="panel p-3">
           <h4 className="data-label mb-2">Fuel</h4>
-          <table className="w-full text-[11px]">
+          <table className="w-full text-[12px]">
             <tbody className="tabular-nums">
               <Row label="Total" value={`${Math.round(fuel?.totalQuantityWeight ?? 0).toLocaleString()} lbs`} />
               <Row label="Quantity" value={`${Math.round(fuel?.totalQuantityGallons ?? 0).toLocaleString()} gal`} />
@@ -80,7 +80,7 @@ export function FlightLogTab() {
           </table>
           {fuel?.tanks && fuel.tanks.length > 0 && (
             <div className="mt-2 pt-2 border-t border-acars-border">
-              <table className="w-full text-[11px]">
+              <table className="w-full text-[12px]">
                 <thead>
                   <tr className="text-acars-muted">
                     <th className="text-left font-medium">Tank</th>
@@ -104,7 +104,7 @@ export function FlightLogTab() {
 
         <div className="panel p-3">
           <h4 className="data-label mb-2">Autopilot & Radios</h4>
-          <table className="w-full text-[11px]">
+          <table className="w-full text-[12px]">
             <tbody className="tabular-nums">
               <Row label="AP Master" value={ap.master ? 'ON' : 'OFF'} highlight={ap.master} />
               <Row label="ALT" value={`${ap.altitudeTarget.toLocaleString()} ft`} />

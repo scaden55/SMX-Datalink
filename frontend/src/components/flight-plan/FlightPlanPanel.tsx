@@ -32,8 +32,8 @@ export function FlightPlanPanel({ ofp, formData, ruleChips, pilot, flightNumber 
       {!isOwnFlight && pilot && (
         <div className="border-b border-amber-400/30 bg-amber-400/5 px-3 py-1.5 flex items-center gap-2">
           <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
-          <span className="text-[10px] font-semibold text-amber-400 uppercase tracking-wider">Observing</span>
-          <span className="text-[10px] text-acars-text">
+          <span className="text-[11px] font-semibold text-amber-400 uppercase tracking-wider">Observing</span>
+          <span className="text-[11px] text-acars-text font-mono">
             {pilot.callsign} — {flightNumber}
           </span>
         </div>
@@ -45,7 +45,7 @@ export function FlightPlanPanel({ ofp, formData, ruleChips, pilot, flightNumber 
           Flight Plan Details
         </h2>
         {canEdit && (
-          <span className="text-[10px] font-medium">
+          <span className="text-[11px] font-medium">
             {saving ? (
               <span className="text-amber-400">Saving...</span>
             ) : lastSavedAt ? (
@@ -65,7 +65,7 @@ export function FlightPlanPanel({ ofp, formData, ruleChips, pilot, flightNumber 
       <DispatchActionBar />
 
       {/* Item 4: Runway / SID / STAR / Dest Alt */}
-      <NavProcedureRow formData={formData} />
+      <NavProcedureRow formData={formData} ofpSid={ofp?.sid} ofpStar={ofp?.star} />
 
       {/* Item 5: Aircraft / Cruise / CI / AOB + PIC */}
       <AircraftSection

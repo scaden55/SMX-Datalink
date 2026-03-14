@@ -16,6 +16,13 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
+  Plane,
+  DollarSign,
+  MapPin,
+  Loader2,
+  X,
+  Globe,
+  Navigation,
 } from 'lucide-react';
 import {
   pageVariants,
@@ -149,7 +156,7 @@ function formatDaysOfWeek(days: string): string {
 const typeBadgeStyle = (type: string): React.CSSProperties => {
   if (type === 'cargo') return {
     padding: '2px 8px', borderRadius: 3, fontSize: 10, fontWeight: 600, fontFamily: 'inherit',
-    background: 'rgba(59,91,219,0.13)', color: 'var(--accent-blue-bright)',
+    background: 'rgba(79,108,205,0.13)', color: 'var(--accent-blue-bright)',
   };
   if (type === 'charter') return {
     padding: '2px 8px', borderRadius: 3, fontSize: 10, fontWeight: 600, fontFamily: 'inherit',
@@ -173,6 +180,255 @@ const statusBadgeStyle = (active: boolean): React.CSSProperties => {
 };
 
 // ═══════════════════════════════════════════════════════════════
+// ── Airport Detail Panel ────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════
+
+function AirportDetailPanel({
+  airport,
+  onClose,
+  onEdit,
+  onToggleHub,
+  onDelete,
+}: {
+  airport: Airport;
+  onClose: () => void;
+  onEdit: (a: Airport) => void;
+  onToggleHub: (a: Airport) => void;
+  onDelete: (a: Airport) => void;
+}) {
+  const sectionLabel: React.CSSProperties = {
+    fontSize: 10,
+    fontWeight: 600,
+    color: 'var(--text-tertiary)',
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
+    marginBottom: 8,
+    fontFamily: 'inherit',
+  };
+
+  return (
+    <div
+      style={{
+        position: 'absolute',
+        top: 0,
+        right: 0,
+        bottom: 0,
+        width: 380,
+        background: 'var(--surface-1)',
+        borderLeft: '1px solid var(--border-primary)',
+        display: 'flex',
+        flexDirection: 'column',
+        zIndex: 30,
+        overflow: 'hidden',
+      }}
+    >
+      {/* Header */}
+      <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border-primary)', display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div style={{
+          width: 40,
+          height: 40,
+          borderRadius: 8,
+          background: airport.isHub ? 'rgba(74,222,128,0.13)' : 'var(--accent-blue-bg)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          flexShrink: 0,
+        }}>
+          {airport.isHub ? (
+            <Building2 size={18} style={{ color: 'var(--accent-emerald)' }} />
+          ) : (
+            <Navigation size={18} style={{ color: 'var(--accent-blue-bright)' }} />
+          )}
+        </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text-primary)', fontFamily: 'var(--font-mono, monospace)' }}>
+            {airport.icao}
+          </div>
+          <div style={{ fontSize: 12, color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {airport.name}
+          </div>
+        </div>
+        <button
+          onClick={onClose}
+          style={{
+            background: 'transparent',
+            border: 'none',
+            cursor: 'pointer',
+            color: 'var(--text-tertiary)',
+            padding: 4,
+            borderRadius: 4,
+            display: 'flex',
+          }}
+        >
+          <X size={16} />
+        </button>
+      </div>
+
+      {/* Content — scrollable */}
+      <div style={{ flex: 1, overflowY: 'auto', padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 20 }}>
+        {/* Location */}
+        <div>
+          <div style={sectionLabel}>Location</div>
+          <div style={{
+            borderRadius: 6,
+            border: '1px solid var(--border-primary)',
+            background: 'var(--surface-2)',
+            overflow: 'hidden',
+          }}>
+            {[
+              { label: 'City', value: airport.city || '--' },
+              { label: 'State', value: airport.state || '--' },
+              { label: 'Country', value: airport.country || '--' },
+              { label: 'Latitude', value: airport.lat != null ? airport.lat.toFixed(4) + '°' : '--' },
+              { label: 'Longitude', value: airport.lon != null ? airport.lon.toFixed(4) + '°' : '--' },
+              { label: 'Elevation', value: airport.elevation != null ? `${airport.elevation.toLocaleString()} ft` : '--' },
+              { label: 'Timezone', value: airport.timezone || '--' },
+            ].map((row, i, arr) => (
+              <div
+                key={row.label}
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  padding: '8px 12px',
+                  borderBottom: i < arr.length - 1 ? '1px solid var(--border-primary)' : 'none',
+                  fontSize: 12,
+                }}
+              >
+                <span style={{ color: 'var(--text-secondary)' }}>{row.label}</span>
+                <span style={{ color: 'var(--text-primary)', fontWeight: 500, fontFamily: 'var(--font-sans)' }}>{row.value}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Operations */}
+        <div>
+          <div style={sectionLabel}>Operations</div>
+          <div style={{
+            borderRadius: 6,
+            border: '1px solid var(--border-primary)',
+            background: 'var(--surface-2)',
+            overflow: 'hidden',
+          }}>
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              padding: '8px 12px',
+              borderBottom: '1px solid var(--border-primary)',
+              fontSize: 12,
+            }}>
+              <span style={{ color: 'var(--text-secondary)' }}>Hub Status</span>
+              {airport.isHub ? (
+                <span style={{
+                  padding: '2px 8px', borderRadius: 3, fontSize: 10, fontWeight: 600,
+                  background: 'rgba(74,222,128,0.13)', color: 'var(--accent-emerald)',
+                }}>
+                  HUB
+                </span>
+              ) : (
+                <span style={{ color: 'var(--text-tertiary)', fontWeight: 500 }}>Spoke</span>
+              )}
+            </div>
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              padding: '8px 12px',
+              fontSize: 12,
+            }}>
+              <span style={{ color: 'var(--text-secondary)' }}>Ground Handler</span>
+              <span style={{ color: airport.handler ? 'var(--text-primary)' : 'var(--text-tertiary)', fontWeight: 500 }}>
+                {airport.handler || 'Not assigned'}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Actions */}
+      <div style={{
+        padding: '16px 20px',
+        borderTop: '1px solid var(--border-primary)',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 8,
+      }}>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button
+            onClick={() => onEdit(airport)}
+            style={{
+              flex: 1,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 6,
+              padding: '8px 12px',
+              borderRadius: 6,
+              border: '1px solid var(--border-primary)',
+              background: 'var(--surface-2)',
+              color: 'var(--text-primary)',
+              fontSize: 12,
+              fontWeight: 500,
+              cursor: 'pointer',
+              fontFamily: 'inherit',
+            }}
+          >
+            <Pencil size={13} />
+            Edit
+          </button>
+          <button
+            onClick={() => onToggleHub(airport)}
+            style={{
+              flex: 1,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 6,
+              padding: '8px 12px',
+              borderRadius: 6,
+              border: '1px solid var(--border-primary)',
+              background: 'var(--surface-2)',
+              color: airport.isHub ? 'var(--accent-amber)' : 'var(--accent-emerald)',
+              fontSize: 12,
+              fontWeight: 500,
+              cursor: 'pointer',
+              fontFamily: 'inherit',
+            }}
+          >
+            <Building2 size={13} />
+            {airport.isHub ? 'Remove Hub' : 'Set as Hub'}
+          </button>
+        </div>
+        <button
+          onClick={() => onDelete(airport)}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 6,
+            padding: '8px 12px',
+            borderRadius: 6,
+            border: '1px solid var(--accent-red-ring)',
+            background: 'var(--accent-red-bg)',
+            color: 'var(--accent-red)',
+            fontSize: 12,
+            fontWeight: 500,
+            cursor: 'pointer',
+            fontFamily: 'inherit',
+            width: '100%',
+          }}
+        >
+          <Trash2 size={13} />
+          Delete Airport
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════
 // ── Airports Tab ─────────────────────────────────────────────
 // ═══════════════════════════════════════════════════════════════
 
@@ -181,6 +437,7 @@ function AirportsTab() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
+  const [selectedAirport, setSelectedAirport] = useState<Airport | null>(null);
 
   // Add airport dialog
   const [addOpen, setAddOpen] = useState(false);
@@ -440,7 +697,8 @@ function AirportsTab() {
         </button>
       </div>
 
-      {/* Table */}
+      {/* Table + Detail Panel container */}
+      <div style={{ position: 'relative', flex: 1, overflow: 'hidden', display: 'flex' }}>
       <div style={{ padding: '0 24px', flex: 1, overflow: 'auto' }}>
         {loading ? (
           <div style={{ padding: '40px 16px', textAlign: 'center', color: 'var(--text-tertiary)', fontSize: 12 }}>
@@ -489,8 +747,21 @@ function AirportsTab() {
                   </td>
                 </tr>
               ) : (
-                filteredAirports.map((airport) => (
-                  <motion.tr key={airport.id} variants={tableRow} style={{ borderBottom: '1px solid var(--border-primary)' }}>
+                filteredAirports.map((airport) => {
+                  const isSelected = selectedAirport?.id === airport.id;
+                  return (
+                  <motion.tr
+                    key={airport.id}
+                    variants={tableRow}
+                    onClick={() => setSelectedAirport(isSelected ? null : airport)}
+                    style={{
+                      borderBottom: '1px solid var(--border-primary)',
+                      cursor: 'pointer',
+                      background: isSelected ? 'rgba(79,108,205,0.08)' : undefined,
+                      transition: 'background 0.15s ease',
+                    }}
+                    className="row-interactive"
+                  >
                     <td style={{ padding: '10px 16px', fontSize: 12, fontWeight: 600, color: 'var(--text-primary)', fontFamily: 'var(--font-mono, monospace)' }}>
                       {airport.icao}
                     </td>
@@ -519,6 +790,7 @@ function AirportsTab() {
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <button
+                            onClick={(e) => e.stopPropagation()}
                             style={{
                               background: 'transparent',
                               border: 'none',
@@ -555,11 +827,24 @@ function AirportsTab() {
                       </DropdownMenu>
                     </td>
                   </motion.tr>
-                ))
+                  );
+                })
               )}
             </motion.tbody>
           </table>
         )}
+      </div>
+
+      {/* Airport Detail Panel */}
+      {selectedAirport && (
+        <AirportDetailPanel
+          airport={selectedAirport}
+          onClose={() => setSelectedAirport(null)}
+          onEdit={(a) => { openEditAirport(a); setSelectedAirport(null); }}
+          onToggleHub={(a) => { handleToggleHub(a); setSelectedAirport(null); }}
+          onDelete={(a) => { initiateDelete(a); setSelectedAirport(null); }}
+        />
+      )}
       </div>
 
       {/* Add Airport Dialog */}
@@ -1069,7 +1354,7 @@ function ChartersTab() {
                   <td style={{ padding: '10px 16px' }}>
                     <span style={{
                       padding: '2px 8px', borderRadius: 3, fontSize: 10, fontWeight: 600,
-                      background: 'rgba(59,91,219,0.13)', color: 'var(--accent-blue-bright)',
+                      background: 'rgba(79,108,205,0.13)', color: 'var(--accent-blue-bright)',
                     }}>
                       {event.eventType.toUpperCase()}
                     </span>
@@ -1127,6 +1412,383 @@ function ChartersTab() {
 }
 
 // ═══════════════════════════════════════════════════════════════
+// ── Route Detail Panel ──────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════
+
+interface RevenueEstimate {
+  cargoLbs: number;
+  distanceNm: number;
+  distanceFactor: number;
+  aircraftClass: string;
+  manifest: { standardLbs: number; nonstandardLbs: number; hazardLbs: number };
+  revenue: { standard: number; nonstandard: number; hazard: number; total: number };
+  pilotPay: number;
+  blockHours: number;
+}
+
+function RouteDetailPanel({
+  schedule,
+  onClose,
+  onEdit,
+  onClone,
+  onToggle,
+  onDelete,
+}: {
+  schedule: Schedule;
+  onClose: () => void;
+  onEdit: (s: Schedule) => void;
+  onClone: (s: Schedule) => void;
+  onToggle: (s: Schedule) => void;
+  onDelete: (s: Schedule) => void;
+}) {
+  const [estimate, setEstimate] = useState<RevenueEstimate | null>(null);
+  const [estimateLoading, setEstimateLoading] = useState(false);
+
+  useEffect(() => {
+    if (schedule.distanceNm > 0 && schedule.flightTimeMin > 0) {
+      setEstimateLoading(true);
+      api
+        .get<RevenueEstimate>(
+          `/api/admin/schedules/estimate?distanceNm=${schedule.distanceNm}&flightTimeMin=${schedule.flightTimeMin}`,
+        )
+        .then(setEstimate)
+        .catch(() => setEstimate(null))
+        .finally(() => setEstimateLoading(false));
+    }
+  }, [schedule.distanceNm, schedule.flightTimeMin]);
+
+  const fType = getFlightType(schedule.aircraftType, schedule.flightType);
+  const flightHours = schedule.flightTimeMin > 0 ? Math.floor(schedule.flightTimeMin / 60) : 0;
+  const flightMins = schedule.flightTimeMin > 0 ? schedule.flightTimeMin % 60 : 0;
+
+  const sectionLabel: React.CSSProperties = {
+    fontSize: 10,
+    fontWeight: 600,
+    color: 'var(--text-tertiary)',
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
+    marginBottom: 8,
+    fontFamily: 'inherit',
+  };
+
+  const metricRow: React.CSSProperties = {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: '6px 0',
+    borderBottom: '1px solid var(--border-primary)',
+    fontSize: 12,
+  };
+
+  return (
+    <div
+      style={{
+        position: 'absolute',
+        top: 0,
+        right: 0,
+        bottom: 0,
+        width: 380,
+        background: 'var(--surface-1)',
+        borderLeft: '1px solid var(--border-primary)',
+        display: 'flex',
+        flexDirection: 'column',
+        zIndex: 30,
+        overflow: 'hidden',
+      }}
+    >
+      {/* Header */}
+      <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border-primary)', display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div style={{
+          width: 40,
+          height: 40,
+          borderRadius: 8,
+          background: 'var(--accent-blue-bg)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          flexShrink: 0,
+        }}>
+          <Plane size={18} style={{ color: 'var(--accent-blue-bright)' }} />
+        </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text-primary)', fontFamily: 'var(--font-sans)' }}>
+            {schedule.flightNumber}
+          </div>
+          <div style={{ fontSize: 12, color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: 4 }}>
+            <span style={{ color: 'var(--accent-blue-bright)', fontWeight: 500 }}>{schedule.depIcao}</span>
+            <span style={{ color: 'var(--text-tertiary)' }}>{'\u2192'}</span>
+            <span style={{ color: 'var(--accent-blue-bright)', fontWeight: 500 }}>{schedule.arrIcao}</span>
+            <span style={{ margin: '0 4px', color: 'var(--text-quaternary)' }}>{'\u00B7'}</span>
+            <span style={typeBadgeStyle(fType)}>{fType.toUpperCase()}</span>
+            <span style={statusBadgeStyle(schedule.isActive)}>
+              {schedule.isActive ? 'ACTIVE' : 'INACTIVE'}
+            </span>
+          </div>
+        </div>
+        <button
+          onClick={onClose}
+          style={{
+            background: 'transparent',
+            border: 'none',
+            cursor: 'pointer',
+            color: 'var(--text-tertiary)',
+            padding: 4,
+            borderRadius: 4,
+            display: 'flex',
+          }}
+        >
+          <X size={16} />
+        </button>
+      </div>
+
+      {/* Content — scrollable */}
+      <div style={{ flex: 1, overflowY: 'auto', padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 20 }}>
+        {/* Route Info */}
+        <div>
+          <div style={sectionLabel}>Route Details</div>
+          <div style={{
+            borderRadius: 6,
+            border: '1px solid var(--border-primary)',
+            background: 'var(--surface-2)',
+            overflow: 'hidden',
+          }}>
+            {[
+              { label: 'Distance', value: schedule.distanceNm > 0 ? `${schedule.distanceNm.toLocaleString()} nm` : '--' },
+              { label: 'Flight Time', value: schedule.flightTimeMin > 0 ? `${flightHours}h ${flightMins}m` : '--' },
+              { label: 'Departure', value: schedule.depTime ? `${schedule.depTime}z` : '--' },
+              { label: 'Arrival', value: schedule.arrTime ? `${schedule.arrTime}z` : '--' },
+              { label: 'Days', value: formatDaysOfWeek(schedule.daysOfWeek) },
+              { label: 'Active Bids', value: String(schedule.bidCount ?? 0) },
+            ].map((row, i, arr) => (
+              <div
+                key={row.label}
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  padding: '8px 12px',
+                  borderBottom: i < arr.length - 1 ? '1px solid var(--border-primary)' : 'none',
+                  fontSize: 12,
+                }}
+              >
+                <span style={{ color: 'var(--text-secondary)' }}>{row.label}</span>
+                <span style={{ color: 'var(--text-primary)', fontWeight: 500, fontFamily: 'var(--font-sans)' }}>{row.value}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Revenue Estimate */}
+        <div>
+          <div style={sectionLabel}>
+            <DollarSign size={10} style={{ display: 'inline', verticalAlign: 'middle', marginRight: 4 }} />
+            Estimated Revenue (per flight)
+          </div>
+          {estimateLoading ? (
+            <div style={{ display: 'flex', justifyContent: 'center', padding: 20 }}>
+              <Loader2 size={16} className="animate-spin" style={{ color: 'var(--text-tertiary)' }} />
+            </div>
+          ) : estimate ? (
+            <div style={{
+              borderRadius: 6,
+              border: '1px solid var(--border-primary)',
+              background: 'var(--surface-2)',
+              overflow: 'hidden',
+            }}>
+              {/* Total revenue highlight */}
+              <div style={{
+                padding: '12px',
+                borderBottom: '1px solid var(--border-primary)',
+                background: 'var(--accent-blue-bg)',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+              }}>
+                <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--accent-blue-bright)' }}>Total Revenue</span>
+                <span style={{ fontSize: 18, fontWeight: 700, color: 'var(--accent-blue-bright)', fontFamily: 'var(--font-sans)' }}>
+                  ${estimate.revenue.total.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                </span>
+              </div>
+              {[
+                { label: 'Standard Cargo', value: `$${estimate.revenue.standard.toLocaleString(undefined, { maximumFractionDigits: 0 })}` },
+                { label: 'Non-Standard', value: `$${estimate.revenue.nonstandard.toLocaleString(undefined, { maximumFractionDigits: 0 })}` },
+                { label: 'Hazard', value: `$${estimate.revenue.hazard.toLocaleString(undefined, { maximumFractionDigits: 0 })}` },
+                { label: 'Pilot Pay', value: `$${estimate.pilotPay.toLocaleString(undefined, { maximumFractionDigits: 0 })}` },
+                { label: 'Net (Rev - Pay)', value: `$${(estimate.revenue.total - estimate.pilotPay).toLocaleString(undefined, { maximumFractionDigits: 0 })}`, highlight: true },
+              ].map((row, i, arr) => (
+                <div
+                  key={row.label}
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    padding: '8px 12px',
+                    borderBottom: i < arr.length - 1 ? '1px solid var(--border-primary)' : 'none',
+                    fontSize: 12,
+                  }}
+                >
+                  <span style={{ color: 'var(--text-secondary)' }}>{row.label}</span>
+                  <span style={{
+                    color: row.highlight ? 'var(--accent-emerald)' : 'var(--text-primary)',
+                    fontWeight: row.highlight ? 600 : 500,
+                    fontFamily: 'var(--font-sans)',
+                  }}>
+                    {row.value}
+                  </span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div style={{
+              padding: '16px 12px',
+              borderRadius: 6,
+              border: '1px solid var(--border-primary)',
+              background: 'var(--surface-2)',
+              fontSize: 11,
+              color: 'var(--text-tertiary)',
+              textAlign: 'center',
+            }}>
+              {schedule.distanceNm > 0 ? 'Unable to estimate' : 'Distance required for estimate'}
+            </div>
+          )}
+
+          {estimate && (
+            <div style={{ marginTop: 8, fontSize: 10, color: 'var(--text-tertiary)', lineHeight: 1.5 }}>
+              Based on {Math.round(estimate.cargoLbs).toLocaleString()} lbs avg fleet capacity, Class {estimate.aircraftClass}, distance factor {estimate.distanceFactor.toFixed(2)}x
+            </div>
+          )}
+        </div>
+
+        {/* Cargo Manifest Breakdown */}
+        {estimate && (
+          <div>
+            <div style={sectionLabel}>Manifest Breakdown</div>
+            <div style={{ display: 'flex', gap: 6 }}>
+              {[
+                { label: 'STD', lbs: estimate.manifest.standardLbs, color: 'var(--accent-blue)' },
+                { label: 'NSTD', lbs: estimate.manifest.nonstandardLbs, color: 'var(--accent-amber)' },
+                { label: 'HAZ', lbs: estimate.manifest.hazardLbs, color: 'var(--accent-red)' },
+              ].map((seg) => {
+                const pct = estimate.cargoLbs > 0 ? (seg.lbs / estimate.cargoLbs) * 100 : 0;
+                return (
+                  <div key={seg.label} style={{
+                    flex: Math.max(pct, 5),
+                    borderRadius: 4,
+                    padding: '8px 6px',
+                    background: `color-mix(in srgb, ${seg.color} 15%, transparent)`,
+                    border: `1px solid color-mix(in srgb, ${seg.color} 25%, transparent)`,
+                    textAlign: 'center',
+                  }}>
+                    <div style={{ fontSize: 10, fontWeight: 600, color: seg.color }}>{seg.label}</div>
+                    <div style={{ fontSize: 11, fontWeight: 500, color: 'var(--text-primary)', marginTop: 2 }}>
+                      {Math.round(pct)}%
+                    </div>
+                    <div style={{ fontSize: 9, color: 'var(--text-tertiary)', marginTop: 1 }}>
+                      {Math.round(seg.lbs).toLocaleString()} lbs
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Action buttons */}
+      <div style={{
+        padding: '12px 20px',
+        borderTop: '1px solid var(--border-primary)',
+        display: 'flex',
+        gap: 8,
+      }}>
+        <button
+          onClick={() => onEdit(schedule)}
+          style={{
+            flex: 1,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 6,
+            background: 'var(--accent-blue)',
+            color: '#fff',
+            border: 'none',
+            borderRadius: 6,
+            padding: '8px 12px',
+            fontSize: 12,
+            fontWeight: 600,
+            cursor: 'pointer',
+            fontFamily: 'inherit',
+          }}
+        >
+          <Pencil size={13} />
+          Edit
+        </button>
+        <button
+          onClick={() => onClone(schedule)}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 6,
+            background: 'transparent',
+            color: 'var(--text-secondary)',
+            border: '1px solid var(--border-primary)',
+            borderRadius: 6,
+            padding: '8px 12px',
+            fontSize: 12,
+            fontWeight: 500,
+            cursor: 'pointer',
+            fontFamily: 'inherit',
+          }}
+        >
+          <Copy size={13} />
+          Clone
+        </button>
+        <button
+          onClick={() => onToggle(schedule)}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 6,
+            background: 'transparent',
+            color: 'var(--text-secondary)',
+            border: '1px solid var(--border-primary)',
+            borderRadius: 6,
+            padding: '8px 12px',
+            fontSize: 12,
+            fontWeight: 500,
+            cursor: 'pointer',
+            fontFamily: 'inherit',
+          }}
+        >
+          <ToggleLeft size={13} />
+          {schedule.isActive ? 'Deactivate' : 'Activate'}
+        </button>
+        <button
+          onClick={() => onDelete(schedule)}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            background: 'transparent',
+            color: 'var(--accent-red)',
+            border: '1px solid var(--accent-red-ring)',
+            borderRadius: 6,
+            padding: '8px 12px',
+            fontSize: 12,
+            cursor: 'pointer',
+            fontFamily: 'inherit',
+          }}
+        >
+          <Trash2 size={13} />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════
 // ── Main Page ────────────────────────────────────────────────
 // ═══════════════════════════════════════════════════════════════
 
@@ -1144,7 +1806,7 @@ export function SchedulesPage() {
       variants={pageVariants}
       initial="hidden"
       animate="visible"
-      style={{ display: 'flex', flexDirection: 'column', height: '100%', background: 'var(--surface-0)' }}
+      style={{ display: 'flex', flexDirection: 'column', height: '100%' }}
     >
       {/* Page Header */}
       <motion.div variants={fadeUp} style={{ padding: '16px 24px 0', display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -1257,6 +1919,9 @@ function FlightsTabInner({ triggerCreate }: { triggerCreate: number }) {
   const [cloneDialogSchedule, setCloneDialogSchedule] = useState<Schedule | null>(null);
   const [cloneFlightNumber, setCloneFlightNumber] = useState('');
   const [cloneLoading, setCloneLoading] = useState(false);
+
+  // Selected schedule for detail panel
+  const [selectedSchedule, setSelectedSchedule] = useState<Schedule | null>(null);
 
   // Dropdown open state for custom selects
   const [typeDropdownOpen, setTypeDropdownOpen] = useState(false);
@@ -1544,7 +2209,7 @@ function FlightsTabInner({ triggerCreate }: { triggerCreate: number }) {
                     padding: '8px 12px',
                     fontSize: 12,
                     color: typeFilter === val ? 'var(--text-primary)' : 'var(--text-secondary)',
-                    background: typeFilter === val ? 'rgba(59,91,219,0.13)' : 'transparent',
+                    background: typeFilter === val ? 'rgba(79,108,205,0.13)' : 'transparent',
                     border: 'none',
                     cursor: 'pointer',
                     fontFamily: 'inherit',
@@ -1605,7 +2270,7 @@ function FlightsTabInner({ triggerCreate }: { triggerCreate: number }) {
                     padding: '8px 12px',
                     fontSize: 12,
                     color: activeFilter === val ? 'var(--text-primary)' : 'var(--text-secondary)',
-                    background: activeFilter === val ? 'rgba(59,91,219,0.13)' : 'transparent',
+                    background: activeFilter === val ? 'rgba(79,108,205,0.13)' : 'transparent',
                     border: 'none',
                     cursor: 'pointer',
                     fontFamily: 'inherit',
@@ -1627,7 +2292,8 @@ function FlightsTabInner({ triggerCreate }: { triggerCreate: number }) {
         />
       )}
 
-      {/* Table */}
+      {/* Table + Detail Panel container */}
+      <div style={{ position: 'relative', flex: 1, overflow: 'hidden', display: 'flex' }}>
       <div style={{ padding: '0 24px', flex: 1, overflow: 'auto' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
@@ -1678,8 +2344,20 @@ function FlightsTabInner({ triggerCreate }: { triggerCreate: number }) {
             ) : (
               paginatedSchedules.map((schedule) => {
                 const fType = getFlightType(schedule.aircraftType, schedule.flightType);
+                const isSelected = selectedSchedule?.id === schedule.id;
                 return (
-                  <motion.tr key={schedule.id} variants={tableRow} style={{ borderBottom: '1px solid var(--border-primary)' }}>
+                  <motion.tr
+                    key={schedule.id}
+                    variants={tableRow}
+                    onClick={() => setSelectedSchedule(isSelected ? null : schedule)}
+                    style={{
+                      borderBottom: '1px solid var(--border-primary)',
+                      cursor: 'pointer',
+                      background: isSelected ? 'rgba(79,108,205,0.08)' : undefined,
+                      transition: 'background 0.15s ease',
+                    }}
+                    className="row-interactive"
+                  >
                     <td style={{ padding: '10px 16px', fontSize: 12, fontWeight: 600, color: 'var(--text-primary)' }}>
                       {schedule.flightNumber}
                     </td>
@@ -1754,6 +2432,19 @@ function FlightsTabInner({ triggerCreate }: { triggerCreate: number }) {
         </table>
       </div>
 
+      {/* Route Detail Panel */}
+      {selectedSchedule && (
+        <RouteDetailPanel
+          schedule={selectedSchedule}
+          onClose={() => setSelectedSchedule(null)}
+          onEdit={(s) => { handleEdit(s); setSelectedSchedule(null); }}
+          onClone={(s) => { handleClone(s); setSelectedSchedule(null); }}
+          onToggle={(s) => { handleToggle(s); setSelectedSchedule(null); }}
+          onDelete={(s) => { setDeleteSchedule(s); setSelectedSchedule(null); }}
+        />
+      )}
+      </div>
+
       {/* Pagination */}
       {!loading && filteredSchedules.length > 0 && (
         <div
@@ -1808,7 +2499,7 @@ function FlightsTabInner({ triggerCreate }: { triggerCreate: number }) {
                     height: 28,
                     borderRadius: 4,
                     border: pageNum === currentPage ? '1px solid var(--accent-blue)' : '1px solid var(--border-primary)',
-                    background: pageNum === currentPage ? 'rgba(59,91,219,0.13)' : 'transparent',
+                    background: pageNum === currentPage ? 'rgba(79,108,205,0.13)' : 'transparent',
                     color: pageNum === currentPage ? 'var(--accent-blue-bright)' : 'var(--text-secondary)',
                     cursor: 'pointer',
                     fontSize: 11,

@@ -20,6 +20,12 @@ interface RevenueModelConfigRow {
   manifest_std_pct: number;
   manifest_nonstd_pct: number;
   manifest_hazard_pct: number;
+  manifest_std_min: number;
+  manifest_std_max: number;
+  manifest_nonstd_min: number;
+  manifest_nonstd_max: number;
+  manifest_hazard_min: number;
+  manifest_hazard_max: number;
   reference_nm: number;
   updated_at: string;
 }
@@ -33,14 +39,14 @@ interface FleetClassRow {
 export type AircraftClass = 'I' | 'II' | 'III';
 
 export interface RevenueBreakdown {
-  cargoKg: number;
+  cargoLbs: number;
   distanceNm: number;
   distanceFactor: number;
   aircraftClass: AircraftClass;
   manifest: {
-    standardKg: number;
-    nonstandardKg: number;
-    hazardKg: number;
+    standardLbs: number;
+    nonstandardLbs: number;
+    hazardLbs: number;
   };
   revenue: {
     standard: number;
@@ -58,14 +64,9 @@ function distanceFactor(routeNm: number, referenceNm: number): number {
   return Math.log(routeNm / 100 + 1) / Math.log(referenceNm / 100 + 1);
 }
 
-function clampNonNegative(v: number): number {
-  return v < 0 ? 0 : v;
-}
-
-/** Add random variance to a center value, clamped non-negative. */
-function vary(center: number, halfRange: number): number {
-  const offset = (Math.random() * 2 - 1) * halfRange;
-  return clampNonNegative(center + offset);
+/** Random value uniformly distributed between min and max. */
+function randBetween(min: number, max: number): number {
+  return min + Math.random() * (max - min);
 }
 
 // --- Service ---
@@ -112,7 +113,7 @@ export class RevenueModelService {
     return row.aircraft_class as AircraftClass;
   }
 
-  /** Get the yield rate ($/kg) for a given class and tier. */
+  /** Get the yield rate ($/lb) for a given class and tier. */
   private yieldRate(
     config: RevenueModelConfigRow,
     cls: AircraftClass,
@@ -122,15 +123,15 @@ export class RevenueModelService {
     return config[key] as number;
   }
 
-  /** Generate cargo manifest with random variance around configured percentages. */
+  /** Generate cargo manifest by picking random percentages within configured min/max ranges. */
   private generateManifest(
-    totalKg: number,
+    totalLbs: number,
     config: RevenueModelConfigRow,
-  ): { standardKg: number; nonstandardKg: number; hazardKg: number } {
-    // Apply variance: ±10% for standard, ±5% for nonstandard & hazard
-    let stdPct = vary(config.manifest_std_pct, 0.10);
-    let nonstdPct = vary(config.manifest_nonstd_pct, 0.05);
-    let hazPct = vary(config.manifest_hazard_pct, 0.05);
+  ): { standardLbs: number; nonstandardLbs: number; hazardLbs: number } {
+    // Pick a random value within each configured range
+    let stdPct = randBetween(config.manifest_std_min, config.manifest_std_max);
+    let nonstdPct = randBetween(config.manifest_nonstd_min, config.manifest_nonstd_max);
+    let hazPct = randBetween(config.manifest_hazard_min, config.manifest_hazard_max);
 
     // Normalize so they sum to 1.0
     const sum = stdPct + nonstdPct + hazPct;
@@ -139,21 +140,21 @@ export class RevenueModelService {
       nonstdPct /= sum;
       hazPct /= sum;
     } else {
-      // Fallback to equal split if all zeroed out (shouldn't happen)
       stdPct = 1;
       nonstdPct = 0;
       hazPct = 0;
     }
 
     return {
-      standardKg: Math.round(totalKg * stdPct * 100) / 100,
-      nonstandardKg: Math.round(totalKg * nonstdPct * 100) / 100,
-      hazardKg: Math.round(totalKg * hazPct * 100) / 100,
+      standardLbs: Math.round(totalLbs * stdPct * 100) / 100,
+      nonstandardLbs: Math.round(totalLbs * nonstdPct * 100) / 100,
+      hazardLbs: Math.round(totalLbs * hazPct * 100) / 100,
     };
   }
 
   /**
    * Calculate revenue breakdown for a completed flight.
+   * All weights in pounds (lbs). Yield rates are $/lb.
    */
   calculate(params: {
     cargoLbs: number;
@@ -164,27 +165,26 @@ export class RevenueModelService {
   }): RevenueBreakdown {
     const config = this.getConfig();
 
-    const cargoKg = params.cargoLbs / 2.20462;
     const dFactor = distanceFactor(params.distanceNm, config.reference_nm);
     const aircraftClass = this.lookupAircraftClass(params.aircraftRegistration);
-    const manifest = this.generateManifest(cargoKg, config);
+    const manifest = this.generateManifest(params.cargoLbs, config);
 
-    const stdRevenue = manifest.standardKg * this.yieldRate(config, aircraftClass, 'standard') * dFactor;
-    const nonstdRevenue = manifest.nonstandardKg * this.yieldRate(config, aircraftClass, 'nonstandard') * dFactor;
-    const hazRevenue = manifest.hazardKg * this.yieldRate(config, aircraftClass, 'hazard') * dFactor;
+    const stdRevenue = manifest.standardLbs * this.yieldRate(config, aircraftClass, 'standard') * dFactor;
+    const nonstdRevenue = manifest.nonstandardLbs * this.yieldRate(config, aircraftClass, 'nonstandard') * dFactor;
+    const hazRevenue = manifest.hazardLbs * this.yieldRate(config, aircraftClass, 'hazard') * dFactor;
     const totalRevenue = stdRevenue + nonstdRevenue + hazRevenue;
 
     const pilotPay = params.blockHours * config.pilot_pay_per_hour;
 
     const breakdown: RevenueBreakdown = {
-      cargoKg: Math.round(cargoKg * 100) / 100,
+      cargoLbs: Math.round(params.cargoLbs * 100) / 100,
       distanceNm: params.distanceNm,
       distanceFactor: Math.round(dFactor * 10000) / 10000,
       aircraftClass,
       manifest: {
-        standardKg: manifest.standardKg,
-        nonstandardKg: manifest.nonstandardKg,
-        hazardKg: manifest.hazardKg,
+        standardLbs: manifest.standardLbs,
+        nonstandardLbs: manifest.nonstandardLbs,
+        hazardLbs: manifest.hazardLbs,
       },
       revenue: {
         standard: Math.round(stdRevenue * 100) / 100,
@@ -197,7 +197,7 @@ export class RevenueModelService {
     };
 
     logger.info(TAG, `Revenue calculated: $${breakdown.revenue.total} (class ${aircraftClass}, ${params.distanceNm}nm)`, {
-      cargoKg: breakdown.cargoKg,
+      cargoLbs: breakdown.cargoLbs,
       pilotPay: breakdown.pilotPay,
     });
 

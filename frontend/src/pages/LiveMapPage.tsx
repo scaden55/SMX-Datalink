@@ -79,7 +79,7 @@ function getActiveFlightIcon(heading: number): L.DivIcon {
   let icon = activeFlightIconCache.get(rounded);
   if (!icon) {
     icon = L.divIcon({
-      html: PLANE_SVG(rounded, 28, '#3b82f6', true),
+      html: PLANE_SVG(rounded, 28, '#4F6CCD', true),
       className: '',
       iconSize: [28, 28],
       iconAnchor: [14, 14],
@@ -115,7 +115,7 @@ function FlightsSidebar({
       <div className="absolute top-3 left-3 z-[1000]">
         <button
           onClick={onToggle}
-          className="flex items-center justify-center w-9 h-9 bg-acars-panel rounded-md border border-acars-border hover:bg-acars-border transition-colors"
+          className="flex items-center justify-center w-9 h-9 bg-acars-input rounded-md border border-acars-border hover:bg-acars-border transition-colors"
         >
           <CaretRight className="w-4 h-4 text-acars-muted" />
         </button>
@@ -125,14 +125,14 @@ function FlightsSidebar({
 
   return (
     <div className="absolute top-3 left-3 bottom-3 z-[1000] w-72 transition-all duration-300 flex">
-      <div className="flex-1 bg-acars-panel rounded-md border border-acars-border overflow-hidden flex flex-col">
+      <div className="flex-1 bg-acars-input rounded-md border border-acars-border overflow-hidden flex flex-col">
         {/* Toggle button */}
         <button
           onClick={onToggle}
           className="flex items-center justify-center h-9 border-b border-acars-border hover:bg-acars-border transition-colors shrink-0"
         >
           <div className="flex items-center justify-between w-full px-3">
-            <span className="text-[11px] font-bold text-acars-text tracking-wider uppercase">Flights</span>
+            <span className="text-[12px] font-bold text-acars-text tracking-wider uppercase">Flights</span>
             <CaretLeft className="w-4 h-4 text-acars-muted" />
           </div>
         </button>
@@ -143,10 +143,10 @@ function FlightsSidebar({
               <div className="mx-2 mt-2 mb-1 p-2.5 rounded-md bg-sky-500/10 border border-sky-400/20">
                 <div className="flex items-center gap-1.5 mb-2">
                   <Broadcast className="w-3 h-3 text-sky-400" />
-                  <span className="text-[10px] font-bold text-sky-400 tracking-wider uppercase">Your Flight</span>
+                  <span className="text-[11px] font-bold text-sky-400 tracking-wider uppercase">Your Flight</span>
                   <span className="ml-auto w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
                 </div>
-                <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 text-[11px]">
+                <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 text-[12px]">
                   <div className="flex items-center gap-1.5">
                     <ArrowsDownUp className="w-3 h-3 text-acars-muted shrink-0" />
                     <span className="text-acars-muted">ALT</span>
@@ -181,7 +181,7 @@ function FlightsSidebar({
 
             {/* Active flights list */}
             <div className="px-2 py-1.5">
-              <span className="text-[10px] font-semibold text-acars-muted tracking-wider uppercase px-1">
+              <span className="text-[11px] font-semibold text-acars-muted tracking-wider uppercase px-1">
                 Active Flights ({routes.length})
               </span>
             </div>
@@ -203,13 +203,13 @@ function FlightsSidebar({
                 >
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-semibold text-acars-text tabular-nums">{bid.flightNumber}</span>
-                    <span className="text-[10px] text-acars-muted tabular-nums">{bid.aircraftType}</span>
+                    <span className="text-[11px] text-acars-muted tabular-nums">{bid.aircraftType}</span>
                   </div>
                   <div className="flex items-center gap-1.5 mt-0.5">
-                    <span className="text-[11px] tabular-nums text-acars-text">{bid.depIcao}</span>
-                    <span className="text-[10px] text-acars-muted">→</span>
-                    <span className="text-[11px] tabular-nums text-acars-text">{bid.arrIcao}</span>
-                    <span className="ml-auto text-[10px] text-acars-muted truncate max-w-[90px]">
+                    <span className="text-[12px] tabular-nums text-acars-text">{bid.depIcao}</span>
+                    <span className="text-[11px] text-acars-muted">→</span>
+                    <span className="text-[12px] tabular-nums text-acars-text">{bid.arrIcao}</span>
+                    <span className="ml-auto text-[11px] text-acars-muted truncate max-w-[90px]">
                       {bid.pilotCallsign}
                     </span>
                   </div>
@@ -234,7 +234,7 @@ function MapControlButtons({ connected, panelOpen }: { connected: boolean; panel
 
       {/* Zoom + utility buttons below filters, tight sizing */}
       <div className="flex flex-col gap-1">
-        <div className="bg-acars-panel rounded-md border border-acars-border overflow-hidden w-8">
+        <div className="bg-acars-input rounded-md border border-acars-border overflow-hidden w-8">
           <button
             onClick={() => map.zoomIn()}
             className="flex items-center justify-center w-8 h-8 hover:bg-acars-border hover:text-acars-text transition-colors border-b border-acars-border"
@@ -251,7 +251,7 @@ function MapControlButtons({ connected, panelOpen }: { connected: boolean; panel
           </button>
         </div>
         {connected && (
-          <div className="bg-acars-panel rounded-md border border-acars-border overflow-hidden w-8">
+          <div className="bg-acars-input rounded-md border border-acars-border overflow-hidden w-8">
             <button
               onClick={() => {
                 map.getContainer().dispatchEvent(new CustomEvent('center-aircraft'));

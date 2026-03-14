@@ -32,7 +32,7 @@ function AirportButton({ label, icao, color, active, onClick }: AirportButtonPro
   return (
     <button
       onClick={onClick}
-      className={`flex items-center gap-1.5 px-2 py-1 rounded-md text-[11px] transition-colors duration-100 ${
+      className={`flex items-center gap-1.5 px-2 py-1 rounded-md text-[12px] transition-colors duration-100 ${
         active
           ? 'bg-acars-input border border-acars-border text-acars-text'
           : 'text-acars-muted hover:text-acars-text hover:bg-acars-input/50'

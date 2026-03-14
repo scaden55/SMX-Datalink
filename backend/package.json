@@ -23,8 +23,7 @@
     "hpp": "^0.2.3",
     "jsonwebtoken": "^9.0.3",
     "osmtogeojson": "^3.0.0-beta.5",
-    "socket.io": "^4.8.1",
-    "uuid": "^11.1.0"
+    "socket.io": "^4.8.1"
   },
   "optionalDependencies": {
     "node-simconnect": "^4.0.0"
@@ -37,7 +36,6 @@
     "@types/hpp": "^0.2.7",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^22.12.0",
-    "@types/uuid": "^10.0.0",
     "copyfiles": "^2.4.1",
     "tsx": "^4.19.2",
     "typescript": "^5.7.3"

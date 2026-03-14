@@ -41,12 +41,12 @@ export function LoginPage() {
         {/* Logo */}
         <div className="flex flex-col items-center gap-2.5 mb-8">
           <img src="./logos/smx-login-logo.png" alt="Special Missions Air" className="h-20 w-auto" />
-          <p className="text-[10px] text-acars-muted/60 uppercase tracking-[0.15em] font-medium">Flight Operations</p>
+          <p className="text-[9px] font-mono text-acars-muted/40 uppercase tracking-[0.2em] font-medium">Electronic Flight Bag</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label htmlFor="email" className="block text-[10px] font-medium text-acars-muted/70 uppercase tracking-wider mb-1.5">
+            <label htmlFor="email" className="block text-[11px] font-medium text-acars-muted/70 uppercase tracking-wider mb-1.5">
               Email
             </label>
             <input
@@ -62,7 +62,7 @@ export function LoginPage() {
           </div>
 
           <div>
-            <label htmlFor="password" className="block text-[10px] font-medium text-acars-muted/70 uppercase tracking-wider mb-1.5">
+            <label htmlFor="password" className="block text-[11px] font-medium text-acars-muted/70 uppercase tracking-wider mb-1.5">
               Password
             </label>
             <input
@@ -79,7 +79,7 @@ export function LoginPage() {
 
           {error && (
             <div className="flex items-center gap-2 px-3 py-2 rounded-md bg-red-500/10 border border-red-400/20">
-              <span className="text-red-400 text-[11px]">{error}</span>
+              <span className="text-red-400 text-[12px]">{error}</span>
             </div>
           )}
 
@@ -97,14 +97,14 @@ export function LoginPage() {
           </button>
         </form>
 
-        <p className="text-center text-[11px] text-acars-muted/50 mt-6">
+        <p className="text-center text-[12px] text-acars-muted/50 mt-6">
           Don't have an account?{' '}
           <Link to="/register" className="text-blue-400/80 hover:text-blue-400 hover:underline transition-colors">
             Register
           </Link>
         </p>
       </div>
-      <p className="absolute bottom-4 left-0 right-0 text-center text-[9px] text-acars-muted/20 tracking-wider">SMX ACARS v{__APP_VERSION__}</p>
+      <p className="absolute bottom-4 left-0 right-0 text-center text-[9px] font-mono text-acars-muted/20 tracking-[0.15em] uppercase">SMX ACARS v{__APP_VERSION__} · FAA Part 121</p>
     </div>
   );
 }

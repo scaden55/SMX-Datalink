@@ -78,7 +78,7 @@ export function TrackInfoCard({ points, flightNumber, depIcao, arrIcao }: Props)
 
   if (!stats) {
     return (
-      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-[1000] bg-acars-panel rounded-md border border-acars-border px-4 py-2">
+      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-[1000] bg-acars-input rounded-md border border-acars-border px-4 py-2">
         <span className="text-xs text-acars-muted">No track data yet</span>
       </div>
     );
@@ -89,17 +89,17 @@ export function TrackInfoCard({ points, flightNumber, depIcao, arrIcao }: Props)
   const vsColor = stats.currentVs > 200 ? 'text-green-400' : stats.currentVs < -200 ? 'text-orange-400' : 'text-acars-muted';
 
   return (
-    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-[1000] bg-acars-panel rounded-md border border-acars-border overflow-hidden" style={{ width: 420 }}>
+    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-[1000] bg-acars-input rounded-md border border-acars-border overflow-hidden" style={{ width: 420 }}>
       {/* Header */}
       <div className="flex items-center justify-between px-3 py-1.5 border-b border-acars-border">
         <div className="flex items-center gap-2">
           <AirplaneTilt className="w-3.5 h-3.5 text-sky-400" />
           <span className="text-xs font-bold text-acars-text tabular-nums tracking-wide">{flightNumber}</span>
-          <span className="text-[10px] text-acars-muted tabular-nums">{depIcao} → {arrIcao}</span>
+          <span className="text-[11px] text-acars-muted tabular-nums">{depIcao} → {arrIcao}</span>
         </div>
         <div className="flex items-center gap-1">
           <span className="w-2 h-2 rounded-full" style={{ backgroundColor: altColor }} />
-          <span className="text-[10px] tabular-nums text-acars-text">{stats.currentAlt.toLocaleString()} ft</span>
+          <span className="text-[11px] tabular-nums text-acars-text">{stats.currentAlt.toLocaleString()} ft</span>
         </div>
       </div>
 
@@ -127,7 +127,7 @@ export function TrackInfoCard({ points, flightNumber, depIcao, arrIcao }: Props)
       </div>
 
       {/* Stats row */}
-      <div className="flex items-center justify-around px-2 py-1.5 border-t border-acars-border text-[10px]">
+      <div className="flex items-center justify-around px-2 py-1.5 border-t border-acars-border text-[11px]">
         <div className="flex items-center gap-1 text-acars-muted">
           <Clock className="w-3 h-3" />
           <span className="text-acars-text tabular-nums">{formatDuration(stats.duration)}</span>

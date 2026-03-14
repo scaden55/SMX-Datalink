@@ -26,7 +26,7 @@ export function ScenarioBar({ formData, ruleChips, classification }: ScenarioBar
       {/* Left: Scenario dropdown */}
       <div className="flex items-center gap-2 shrink-0">
         <span className="text-[9px] font-medium text-acars-muted/70 uppercase tracking-[0.06em]">Scenario</span>
-        <select className="bg-acars-input border border-acars-border text-[11px] tabular-nums text-acars-text rounded-md px-1.5 py-0.5 outline-none focus:border-blue-400">
+        <select className="bg-acars-input border border-acars-border text-[12px] tabular-nums text-acars-text rounded-md px-1.5 py-0.5 outline-none focus:border-blue-400">
           <option>{flightRules} Standard</option>
           <option>IFR Standard</option>
           <option>VFR Standard</option>
@@ -43,7 +43,7 @@ export function ScenarioBar({ formData, ruleChips, classification }: ScenarioBar
           return (
             <span
               key={chip}
-              className={`text-[10px] uppercase font-semibold ${textCls} ${bgCls} px-1.5 rounded-md leading-[18px] shrink-0 whitespace-nowrap`}
+              className={`text-[11px] uppercase font-semibold ${textCls} ${bgCls} px-1.5 rounded-md leading-[18px] shrink-0 whitespace-nowrap`}
             >
               {chip}
             </span>
@@ -52,7 +52,7 @@ export function ScenarioBar({ formData, ruleChips, classification }: ScenarioBar
       </div>
 
       {/* Right: Edit button */}
-      <button className="text-[10px] font-medium text-blue-400/70 hover:text-blue-400 transition-colors duration-150 shrink-0 ml-auto">
+      <button className="text-[11px] font-medium text-blue-400/70 hover:text-blue-400 transition-colors duration-150 shrink-0 ml-auto">
         Edit
       </button>
     </div>

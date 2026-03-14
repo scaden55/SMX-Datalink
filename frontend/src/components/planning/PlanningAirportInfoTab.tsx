@@ -10,7 +10,7 @@ export function PlanningAirportInfoTab() {
     return (
       <div className="flex flex-col items-center justify-center h-full text-center gap-2 p-4">
         <MapPin className="w-6 h-6 text-acars-muted/20" />
-        <p className="text-[11px] text-acars-muted">Click an airport card to view details</p>
+        <p className="text-[12px] text-acars-muted">Click an airport card to view details</p>
       </div>
     );
   }
@@ -43,7 +43,7 @@ export function PlanningAirportInfoTab() {
           </div>
           <div>
             <span className="planning-label">Lat / Lon</span>
-            <span className="data-value text-[11px]">{airport.lat.toFixed(4)} / {airport.lon.toFixed(4)}</span>
+            <span className="data-value text-[12px]">{airport.lat.toFixed(4)} / {airport.lon.toFixed(4)}</span>
           </div>
         </div>
       </div>
@@ -51,7 +51,7 @@ export function PlanningAirportInfoTab() {
       {wx?.metar && (
         <div>
           <span className="planning-label mb-1">Current METAR</span>
-          <pre className="text-[11px] tabular-nums text-acars-text bg-acars-input rounded-md px-2 py-1 whitespace-pre-wrap break-words border border-acars-border">
+          <pre className="text-[12px] tabular-nums text-acars-text bg-acars-input rounded-md px-2 py-1 whitespace-pre-wrap break-words border border-acars-border">
             {wx.metar.rawOb}
           </pre>
         </div>

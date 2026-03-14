@@ -75,7 +75,7 @@ function StatusBadge({ status }: { status: LogbookStatus }) {
   const cfg = STATUS_CONFIG[status] ?? STATUS_CONFIG.approved;
   const Icon = cfg.icon;
   return (
-    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide ${cfg.bg} ${cfg.text} border ${cfg.border}`}>
+    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold uppercase tracking-wide ${cfg.bg} ${cfg.text} border ${cfg.border}`}>
       <Icon className="w-3 h-3" />
       {cfg.label}
     </span>
@@ -163,7 +163,7 @@ export function LogbookPage() {
     return (
       <button
         onClick={() => toggleSort(field)}
-        className={`flex items-center gap-1 text-[10px] uppercase tracking-wider font-medium hover:text-acars-text transition-colors ${active ? 'text-emerald-400' : 'text-acars-muted'} ${className}`}
+        className={`flex items-center gap-1 text-[11px] uppercase tracking-wider font-medium font-mono hover:text-acars-text transition-colors ${active ? 'text-emerald-400' : 'text-acars-muted'} ${className}`}
       >
         {label}
         <ArrowsDownUp className={`w-3 h-3 ${active ? 'text-emerald-400' : 'text-acars-muted/50'}`} />
@@ -198,7 +198,7 @@ export function LogbookPage() {
           <div className="flex items-center gap-2">
             <button
               onClick={() => { setPage(1); fetchEntries(); }}
-              className="h-8 w-8 rounded-md border border-acars-border bg-acars-panel text-acars-muted hover:text-acars-text flex items-center justify-center transition-colors"
+              className="h-8 w-8 rounded-md border border-acars-border bg-acars-input text-acars-muted hover:text-acars-text flex items-center justify-center transition-colors"
               title="Refresh"
             >
               <ArrowCounterClockwise className="w-3.5 h-3.5" />
@@ -208,32 +208,32 @@ export function LogbookPage() {
 
         {/* Stats bar */}
         <div className="grid grid-cols-4 gap-3 mb-3">
-          <div className="flex items-center gap-3 rounded-md border border-acars-border bg-acars-panel/50 px-3 py-2">
+          <div className="flex items-center gap-3 rounded-md border border-acars-border bg-acars-input/50 px-3 py-2">
             <AirplaneTilt className="w-3.5 h-3.5 text-sky-400 shrink-0" />
             <div>
-              <div className="text-[10px] text-acars-muted uppercase tracking-wider">Flights</div>
-              <div className="text-sm font-semibold text-acars-text tabular-nums">{totalFlights}</div>
+              <div className="text-[11px] text-acars-muted uppercase tracking-wider">Flights</div>
+              <div className="text-sm font-semibold text-acars-text font-mono tabular-nums">{totalFlights}</div>
             </div>
           </div>
-          <div className="flex items-center gap-3 rounded-md border border-acars-border bg-acars-panel/50 px-3 py-2">
+          <div className="flex items-center gap-3 rounded-md border border-acars-border bg-acars-input/50 px-3 py-2">
             <Clock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
             <div>
-              <div className="text-[10px] text-acars-muted uppercase tracking-wider">Hours</div>
-              <div className="text-sm font-semibold text-acars-text tabular-nums">{formatDuration(totalHours)}</div>
+              <div className="text-[11px] text-acars-muted uppercase tracking-wider">Hours</div>
+              <div className="text-sm font-semibold text-acars-text font-mono tabular-nums">{formatDuration(totalHours)}</div>
             </div>
           </div>
-          <div className="flex items-center gap-3 rounded-md border border-acars-border bg-acars-panel/50 px-3 py-2">
+          <div className="flex items-center gap-3 rounded-md border border-acars-border bg-acars-input/50 px-3 py-2">
             <Ruler className="w-3.5 h-3.5 text-blue-400 shrink-0" />
             <div>
-              <div className="text-[10px] text-acars-muted uppercase tracking-wider">Distance</div>
-              <div className="text-sm font-semibold text-acars-text tabular-nums">{totalDist.toLocaleString()} nm</div>
+              <div className="text-[11px] text-acars-muted uppercase tracking-wider">Distance</div>
+              <div className="text-sm font-semibold text-acars-text font-mono tabular-nums">{totalDist.toLocaleString()} nm</div>
             </div>
           </div>
-          <div className="flex items-center gap-3 rounded-md border border-acars-border bg-acars-panel/50 px-3 py-2">
+          <div className="flex items-center gap-3 rounded-md border border-acars-border bg-acars-input/50 px-3 py-2">
             <CheckCircle className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
             <div>
-              <div className="text-[10px] text-acars-muted uppercase tracking-wider">Avg Score</div>
-              <div className={`text-sm font-semibold tabular-nums ${scoreColor(avgScore)}`}>{avgScore || '—'}</div>
+              <div className="text-[11px] text-acars-muted uppercase tracking-wider">Avg Score</div>
+              <div className={`text-sm font-semibold font-mono tabular-nums ${scoreColor(avgScore)}`}>{avgScore || '—'}</div>
             </div>
           </div>
         </div>
@@ -247,7 +247,7 @@ export function LogbookPage() {
               value={search}
               onChange={e => { setSearch(e.target.value); setPage(1); }}
               placeholder="Search flight, ICAO, registration..."
-              className="w-full h-8 pl-8 pr-3 rounded-md border border-acars-border bg-acars-panel text-xs text-acars-text placeholder:text-acars-muted/50 outline-none focus:border-emerald-400 transition-colors tabular-nums"
+              className="w-full h-8 pl-8 pr-3 rounded-md border border-acars-border bg-acars-input text-xs text-acars-text placeholder:text-acars-muted/50 outline-none focus:border-emerald-400 transition-colors font-mono tabular-nums"
             />
           </div>
 
@@ -256,7 +256,7 @@ export function LogbookPage() {
             className={`h-8 px-3 rounded-md border text-xs font-medium transition-colors flex items-center gap-1.5 ${
               vatsimOnly
                 ? 'bg-emerald-500/10 border-emerald-400/20 text-emerald-400'
-                : 'bg-acars-panel border-acars-border text-acars-muted hover:text-acars-text'
+                : 'bg-acars-input border-acars-border text-acars-muted hover:text-acars-text'
             }`}
           >
             <Broadcast className="w-3 h-3" />
@@ -307,8 +307,8 @@ export function LogbookPage() {
                 <th className="text-left px-3 py-2.5"><SortHeader field="block" label="Block" /></th>
                 <th className="text-right px-3 py-2.5"><SortHeader field="landing" label="Landing" className="justify-end" /></th>
                 <th className="text-right px-3 py-2.5"><SortHeader field="score" label="Score" className="justify-end" /></th>
-                <th className="text-center px-3 py-2.5 text-[10px] uppercase tracking-wider font-medium text-acars-muted">Net</th>
-                <th className="text-center px-3 py-2.5 text-[10px] uppercase tracking-wider font-medium text-acars-muted">Status</th>
+                <th className="text-center px-3 py-2.5 text-[11px] uppercase tracking-wider font-medium font-mono text-acars-muted">Net</th>
+                <th className="text-center px-3 py-2.5 text-[11px] uppercase tracking-wider font-medium font-mono text-acars-muted">Status</th>
               </tr>
             </thead>
             <tbody>
@@ -320,41 +320,41 @@ export function LogbookPage() {
                   title="Click to view details"
                 >
                   <td className="px-4 py-2.5">
-                    <div className="text-acars-text font-medium">{formatDate(entry.actualDep)}</div>
-                    <div className="text-acars-muted text-[10px]">{formatTime(entry.actualDep)}</div>
+                    <div className="text-acars-text font-medium font-mono">{formatDate(entry.actualDep)}</div>
+                    <div className="text-acars-muted text-[11px] font-mono">{formatTime(entry.actualDep)}</div>
                   </td>
                   <td className="px-3 py-2.5">
-                    <span className="text-acars-text tabular-nums font-semibold">{entry.flightNumber}</span>
+                    <span className="text-acars-text font-mono tabular-nums font-semibold">{entry.flightNumber}</span>
                   </td>
                   <td className="px-3 py-2.5">
                     <div className="flex items-center gap-1.5">
-                      <span className="text-acars-text tabular-nums font-semibold">{entry.depIcao}</span>
+                      <span className="text-acars-text font-mono tabular-nums font-semibold">{entry.depIcao}</span>
                       <ArrowRight className="w-3 h-3 text-sky-400/40" />
-                      <span className="text-acars-text tabular-nums font-semibold">{entry.arrIcao}</span>
+                      <span className="text-acars-text font-mono tabular-nums font-semibold">{entry.arrIcao}</span>
                     </div>
-                    <div className="text-acars-muted text-[10px]">{entry.distanceNm.toLocaleString()} nm</div>
+                    <div className="text-acars-muted text-[11px] font-mono">{entry.distanceNm.toLocaleString()} nm</div>
                   </td>
                   <td className="px-3 py-2.5">
-                    <div className="text-acars-text font-medium">{entry.aircraftType}</div>
+                    <div className="text-acars-text font-medium font-mono">{entry.aircraftType}</div>
                     {entry.aircraftRegistration && (
-                      <div className="text-acars-muted text-[10px] tabular-nums">{entry.aircraftRegistration}</div>
+                      <div className="text-acars-muted text-[11px] font-mono tabular-nums">{entry.aircraftRegistration}</div>
                     )}
                   </td>
                   <td className="px-3 py-2.5">
-                    <span className="text-acars-text tabular-nums">{entry.flightTimeMin > 0 ? formatDuration(entry.flightTimeMin) : '—'}</span>
+                    <span className="text-acars-text font-mono tabular-nums">{entry.flightTimeMin > 0 ? formatDuration(entry.flightTimeMin) : '—'}</span>
                   </td>
                   <td className="px-3 py-2.5">
-                    <span className="text-acars-text tabular-nums">
+                    <span className="text-acars-text font-mono tabular-nums">
                       {entry.blockTimeMin != null ? formatDuration(entry.blockTimeMin) : '—'}
                     </span>
                   </td>
                   <td className="text-right px-3 py-2.5">
-                    <span className={`tabular-nums font-semibold ${gForceColor(entry.landingGForce)}`}>
+                    <span className={`font-mono tabular-nums font-semibold ${gForceColor(entry.landingGForce)}`}>
                       {entry.landingGForce != null ? `${entry.landingGForce.toFixed(2)}G` : entry.landingRateFpm != null ? `${entry.landingRateFpm} fpm` : '—'}
                     </span>
                   </td>
                   <td className="text-right px-3 py-2.5">
-                    <span className={`tabular-nums font-bold ${scoreColor(entry.score)}`}>
+                    <span className={`font-mono tabular-nums font-bold ${scoreColor(entry.score)}`}>
                       {entry.score ?? '—'}
                     </span>
                   </td>
@@ -381,15 +381,15 @@ export function LogbookPage() {
             <button
               onClick={() => setPage(p => Math.max(1, p - 1))}
               disabled={page <= 1}
-              className="h-7 w-7 rounded border border-acars-border bg-acars-panel text-acars-muted hover:text-acars-text disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center transition-colors"
+              className="h-7 w-7 rounded border border-acars-border bg-acars-input text-acars-muted hover:text-acars-text disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center transition-colors"
             >
               <CaretLeft className="w-3.5 h-3.5" />
             </button>
-            <span className="text-xs text-acars-text px-2 tabular-nums">{page} / {totalPages}</span>
+            <span className="text-xs text-acars-text px-2 font-mono tabular-nums">{page} / {totalPages}</span>
             <button
               onClick={() => setPage(p => Math.min(totalPages, p + 1))}
               disabled={page >= totalPages}
-              className="h-7 w-7 rounded border border-acars-border bg-acars-panel text-acars-muted hover:text-acars-text disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center transition-colors"
+              className="h-7 w-7 rounded border border-acars-border bg-acars-input text-acars-muted hover:text-acars-text disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center transition-colors"
             >
               <CaretRight className="w-3.5 h-3.5" />
             </button>

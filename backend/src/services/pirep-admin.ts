@@ -148,7 +148,7 @@ export class PirepAdminService {
             pilotId: pirep.user_id,
             type: 'income',
             amount: breakdown.revenue.total,
-            description: `Cargo revenue: ${pirep.flight_number} (${breakdown.cargoKg.toLocaleString()} kg, Class ${breakdown.aircraftClass})`,
+            description: `Cargo revenue: ${pirep.flight_number} (${breakdown.cargoLbs.toLocaleString()} lbs, Class ${breakdown.aircraftClass})`,
             pirepId,
           }, reviewerId);
         }
@@ -156,6 +156,17 @@ export class PirepAdminService {
         // Accumulate aircraft flight hours/cycles for maintenance tracking
         if (pirep.aircraft_registration) {
           maintenanceService.accumulateFlightHours(pirep.aircraft_registration, pirep.flight_time_min);
+        }
+
+        // Back-fill discrepancies with logbook entry ID
+        if (pirep.aircraft_registration && pirep.flight_number) {
+          const fleetRow = db.prepare('SELECT id FROM fleet WHERE registration = ?').get(pirep.aircraft_registration) as { id: number } | undefined;
+          if (fleetRow) {
+            db.prepare(`
+              UPDATE discrepancies SET logbook_entry_id = ?
+              WHERE aircraft_id = ? AND flight_number = ? AND logbook_entry_id IS NULL
+            `).run(pirepId, fleetRow.id, pirep.flight_number);
+          }
         }
 
         notificationService.send({

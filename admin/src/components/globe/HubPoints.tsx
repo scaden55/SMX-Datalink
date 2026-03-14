@@ -7,7 +7,7 @@ interface HubPointsProps {
 }
 
 const GLOBE_RADIUS = 1.002;
-const POINT_GEOMETRY = new THREE.SphereGeometry(0.008, 6, 6);
+const POINT_GEOMETRY = new THREE.SphereGeometry(0.005, 6, 6);
 const POINT_MATERIAL = new THREE.MeshBasicMaterial({ color: '#3950ed' });
 
 export function HubPoints({ hubs }: HubPointsProps) {

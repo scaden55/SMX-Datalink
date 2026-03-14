@@ -24,11 +24,11 @@ export function RemarksSection({ dispatcherRemarks: initialDispatcher = '', auto
               <textarea
                 value={dispatcherRemarks}
                 onChange={(e) => onFieldChange('dispatcherRemarks', e.target.value)}
-                className="w-full h-16 rounded bg-acars-bg border border-acars-border text-acars-text text-[11px] px-2 py-1.5 tabular-nums resize-none focus:outline-none focus:border-sky-400"
+                className="w-full h-16 rounded bg-acars-bg border border-acars-border text-acars-text text-[12px] px-2 py-1.5 tabular-nums resize-none focus:outline-none focus:border-sky-400"
                 placeholder="No dispatcher remarks"
               />
             ) : (
-              <div className="w-full h-16 rounded bg-acars-bg border border-acars-border text-acars-text text-[11px] px-2 py-1.5 tabular-nums overflow-y-auto">
+              <div className="w-full h-16 rounded bg-acars-bg border border-acars-border text-acars-text text-[12px] px-2 py-1.5 tabular-nums overflow-y-auto">
                 {dispatcherRemarks || <span className="text-acars-muted italic">No dispatcher remarks</span>}
               </div>
             )}
@@ -39,11 +39,11 @@ export function RemarksSection({ dispatcherRemarks: initialDispatcher = '', auto
               <textarea
                 value={fuelAutoRemarks}
                 onChange={(e) => onFieldChange('autoRemarks', e.target.value)}
-                className="w-full h-16 rounded bg-acars-bg border border-acars-border text-acars-text text-[11px] px-2 py-1.5 tabular-nums resize-none focus:outline-none focus:border-sky-400"
+                className="w-full h-16 rounded bg-acars-bg border border-acars-border text-acars-text text-[12px] px-2 py-1.5 tabular-nums resize-none focus:outline-none focus:border-sky-400"
                 placeholder="No auto remarks"
               />
             ) : (
-              <div className="w-full h-16 rounded bg-acars-bg border border-acars-border text-acars-text text-[11px] px-2 py-1.5 tabular-nums overflow-y-auto">
+              <div className="w-full h-16 rounded bg-acars-bg border border-acars-border text-acars-text text-[12px] px-2 py-1.5 tabular-nums overflow-y-auto">
                 {fuelAutoRemarks || <span className="text-acars-muted italic">No auto remarks</span>}
               </div>
             )}
@@ -53,7 +53,7 @@ export function RemarksSection({ dispatcherRemarks: initialDispatcher = '', auto
         {/* Right: System Info */}
         <div>
           <label className="data-label block mb-1">System Info</label>
-          <div className="h-[140px] rounded bg-acars-bg border border-acars-border text-[10px] tabular-nums px-2 py-1.5 overflow-y-auto leading-relaxed">
+          <div className="h-[140px] rounded bg-acars-bg border border-acars-border text-[11px] tabular-nums px-2 py-1.5 overflow-y-auto leading-relaxed">
             {(initialDispatcher || initialAuto) ? (
               <>
                 {initialDispatcher && <div className="text-acars-text">{initialDispatcher}</div>}

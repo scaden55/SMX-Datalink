@@ -2,7 +2,9 @@ import { Router } from 'express';
 import { ScheduleAdminService } from '../services/schedule-admin.js';
 import { CharterGeneratorService, currentMonth } from '../services/charter-generator.js';
 import { VatsimEventsService } from '../services/vatsim-events.js';
-import { authMiddleware, dispatcherMiddleware } from '../middleware/auth.js';
+import { authMiddleware, adminMiddleware, dispatcherMiddleware } from '../middleware/auth.js';
+import { RevenueModelService } from '../services/revenue-model.js';
+import { getDb } from '../db/index.js';
 import { logger } from '../lib/logger.js';
 
 export function adminSchedulesRouter(): Router {
@@ -160,6 +162,40 @@ export function adminSchedulesRouter(): Router {
     } catch (err) {
       logger.error('Admin', 'List events error', err);
       res.status(500).json({ error: 'Failed to list events' });
+    }
+  });
+
+  // ── Revenue Estimation ───────────────────────────────────
+
+  // GET /api/admin/schedules/estimate — estimate revenue for a route
+  router.get('/admin/schedules/estimate', authMiddleware, adminMiddleware, (req, res) => {
+    try {
+      const distanceNm = parseFloat(req.query.distanceNm as string);
+      const flightTimeMin = parseFloat(req.query.flightTimeMin as string);
+
+      if (!distanceNm || !flightTimeMin || isNaN(distanceNm) || isNaN(flightTimeMin)) {
+        res.status(400).json({ error: 'distanceNm and flightTimeMin are required numeric parameters' });
+        return;
+      }
+
+      // Look up average cargo capacity from fleet table; fall back to 100,000 lbs
+      const fleetRow = getDb()
+        .prepare('SELECT AVG(cargo_capacity_lbs) as avg_capacity FROM fleet WHERE is_active = 1 AND cargo_capacity_lbs > 0')
+        .get() as { avg_capacity: number | null } | undefined;
+      const cargoLbs = fleetRow?.avg_capacity ?? 100_000;
+
+      const revenueService = new RevenueModelService();
+      const breakdown = revenueService.calculate({
+        cargoLbs,
+        distanceNm,
+        aircraftRegistration: null,
+        blockHours: flightTimeMin / 60,
+      });
+
+      res.json(breakdown);
+    } catch (err) {
+      logger.error('Admin', 'Revenue estimate error', err);
+      res.status(500).json({ error: 'Failed to estimate revenue' });
     }
   });
 

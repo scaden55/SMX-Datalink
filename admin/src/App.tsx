@@ -20,7 +20,6 @@ import { AuditPage } from '@/pages/AuditPage';
 import { SettingsPage } from '@/pages/SettingsPage';
 import { FleetPage } from '@/pages/FleetPage';
 import { AircraftDetailPage } from '@/pages/AircraftDetailPage';
-import { CostEnginePage } from '@/pages/CostEnginePage';
 import { RevenueModelPage } from '@/pages/RevenueModelPage';
 
 export function App() {
@@ -53,7 +52,6 @@ export function App() {
           <Route path="pireps" element={<PirepsPage />} />
           <Route path="maintenance" element={<MaintenancePage />} />
           <Route path="finances" element={<FinancesPage />} />
-          <Route path="cost-engine" element={<CostEnginePage />} />
           <Route path="revenue-model" element={<RevenueModelPage />} />
           <Route path="reports" element={<ReportsPage />} />
           <Route path="notifications" element={<NotificationsPage />} />

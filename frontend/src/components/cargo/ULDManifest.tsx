@@ -9,12 +9,12 @@ export function ULDManifest({ manifest }: Props) {
   return (
     <div>
       <div className="flex items-center justify-between mb-2">
-        <span className="text-[10px] uppercase tracking-wide text-acars-muted">ULD Manifest</span>
-        <span className="text-[10px] text-acars-muted tabular-nums">{manifest.ulds.length} units</span>
+        <span className="text-[11px] uppercase tracking-wide text-acars-muted">ULD Manifest</span>
+        <span className="text-[11px] text-acars-muted tabular-nums">{manifest.ulds.length} units</span>
       </div>
 
       <div className="overflow-x-auto">
-        <table className="w-full text-[10px]">
+        <table className="w-full text-[11px]">
           <thead>
             <tr className="border-b border-acars-border">
               <th className="text-left py-1 pr-2 font-medium text-acars-muted">ULD</th>

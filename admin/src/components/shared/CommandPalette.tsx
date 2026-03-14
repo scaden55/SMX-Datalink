@@ -69,7 +69,7 @@ const pages = [
 ];
 
 const groupHeadingClass =
-  '[&_[cmdk-group-heading]]:text-[10px] [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-wider [&_[cmdk-group-heading]]:text-muted-foreground [&_[cmdk-group-heading]]:px-4 [&_[cmdk-group-heading]]:py-1.5';
+  '[&_[cmdk-group-heading]]:text-[11px] [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-wider [&_[cmdk-group-heading]]:text-muted-foreground [&_[cmdk-group-heading]]:px-4 [&_[cmdk-group-heading]]:py-1.5';
 
 const itemClass =
   'px-4 py-2.5 text-sm flex items-center gap-3 cursor-pointer rounded-sm mx-1 text-muted-foreground data-[selected=true]:bg-[var(--accent-blue-bg)] data-[selected=true]:text-foreground';
@@ -173,7 +173,7 @@ export function CommandPalette() {
               >
                 <page.icon size={18} />
                 <span>{page.label}</span>
-                <kbd className="ml-auto text-[10px] text-muted-foreground/50">{page.shortcut}</kbd>
+                <kbd className="ml-auto text-[11px] text-muted-foreground/50">{page.shortcut}</kbd>
               </Command.Item>
             ))}
           </Command.Group>
@@ -191,7 +191,7 @@ export function CommandPalette() {
                   <User size={18} />
                   <span className="font-mono text-xs text-[var(--accent-blue-bright)]">{user.callsign}</span>
                   <span>{user.name}</span>
-                  <span className="ml-auto text-[10px] text-muted-foreground/50">{user.role}</span>
+                  <span className="ml-auto text-[11px] text-muted-foreground/50">{user.role}</span>
                 </Command.Item>
               ))}
             </Command.Group>
@@ -210,7 +210,7 @@ export function CommandPalette() {
                   <Plane size={18} />
                   <span className="font-mono text-xs">{flight.flightNumber}</span>
                   <span className="text-muted-foreground">{flight.route}</span>
-                  <span className={`ml-auto text-[10px] ${statusColor(flight.status)}`}>
+                  <span className={`ml-auto text-[11px] ${statusColor(flight.status)}`}>
                     {flight.status}
                   </span>
                 </Command.Item>
@@ -231,7 +231,7 @@ export function CommandPalette() {
                   <Cog size={18} />
                   <span className="font-mono text-xs text-[var(--accent-blue-bright)]">{ac.registration}</span>
                   <span className="text-muted-foreground">{ac.type}</span>
-                  <span className={`ml-auto text-[10px] ${statusColor(ac.status)}`}>
+                  <span className={`ml-auto text-[11px] ${statusColor(ac.status)}`}>
                     {ac.status}
                   </span>
                 </Command.Item>

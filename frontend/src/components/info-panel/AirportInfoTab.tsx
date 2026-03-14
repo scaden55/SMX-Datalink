@@ -21,7 +21,7 @@ function StatusBadge({ color, children }: { color: 'red' | 'amber' | 'green' | '
     cyan: 'bg-sky-500/15 text-sky-400 border-sky-400/30',
   };
   return (
-    <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold border ${colors[color]}`}>
+    <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-semibold border ${colors[color]}`}>
       {children}
     </span>
   );
@@ -32,7 +32,7 @@ function FaaStatusSection({ event }: { event: FaaAirportEvent | null }) {
     return (
       <div className="panel p-3">
         <h3 className="text-xs font-semibold text-acars-text mb-2">FAA Status</h3>
-        <div className="text-[11px] text-acars-muted italic">No FAA status data for this airport.</div>
+        <div className="text-[12px] text-acars-muted italic">No FAA status data for this airport.</div>
       </div>
     );
   }
@@ -48,14 +48,14 @@ function FaaStatusSection({ event }: { event: FaaAirportEvent | null }) {
       </div>
 
       {event.airportClosure && (
-        <div className="flex items-center gap-2 text-[11px]">
+        <div className="flex items-center gap-2 text-[12px]">
           <StatusBadge color="red">CLOSED</StatusBadge>
           <span className="text-acars-text">{event.airportClosure.reason}</span>
         </div>
       )}
 
       {event.groundStop && (
-        <div className="text-[11px] space-y-0.5">
+        <div className="text-[12px] space-y-0.5">
           <div className="flex items-center gap-2">
             <StatusBadge color="red">GROUND STOP</StatusBadge>
             <span className="text-acars-muted">{event.groundStop.impactingCondition}</span>
@@ -70,7 +70,7 @@ function FaaStatusSection({ event }: { event: FaaAirportEvent | null }) {
       )}
 
       {event.groundDelay && (
-        <div className="text-[11px] space-y-0.5">
+        <div className="text-[12px] space-y-0.5">
           <div className="flex items-center gap-2">
             <StatusBadge color="amber">GROUND DELAY</StatusBadge>
             <span className="text-acars-text">
@@ -84,7 +84,7 @@ function FaaStatusSection({ event }: { event: FaaAirportEvent | null }) {
       )}
 
       {event.arrivalDelay && (
-        <div className="text-[11px] flex items-center gap-2">
+        <div className="text-[12px] flex items-center gap-2">
           <StatusBadge color="amber">ARR DELAY</StatusBadge>
           <span className="text-acars-text">
             {event.arrivalDelay.arrivalDeparture.min}–{event.arrivalDelay.arrivalDeparture.max}
@@ -95,7 +95,7 @@ function FaaStatusSection({ event }: { event: FaaAirportEvent | null }) {
       )}
 
       {event.departureDelay && (
-        <div className="text-[11px] flex items-center gap-2">
+        <div className="text-[12px] flex items-center gap-2">
           <StatusBadge color="amber">DEP DELAY</StatusBadge>
           <span className="text-acars-text">
             {event.departureDelay.arrivalDeparture.min}–{event.departureDelay.arrivalDeparture.max}
@@ -106,7 +106,7 @@ function FaaStatusSection({ event }: { event: FaaAirportEvent | null }) {
       )}
 
       {event.deicing && (
-        <div className="text-[11px] flex items-center gap-2">
+        <div className="text-[12px] flex items-center gap-2">
           <StatusBadge color="blue">DEICING</StatusBadge>
           <span className="text-acars-muted">
             Active since {formatTime(event.deicing.eventTime)}
@@ -116,7 +116,7 @@ function FaaStatusSection({ event }: { event: FaaAirportEvent | null }) {
       )}
 
       {event.airportConfig && (
-        <div className="text-[11px] mt-1 grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5">
+        <div className="text-[12px] mt-1 grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5">
           <span className="text-acars-muted">Arr Runways</span>
           <span className="text-acars-text tabular-nums">{event.airportConfig.arrivalRunwayConfig || '—'}</span>
           <span className="text-acars-muted">Dep Runways</span>
@@ -134,7 +134,7 @@ function MetarSummary({ metar }: { metar?: MetarData }) {
     return (
       <div className="panel p-3">
         <h3 className="text-xs font-semibold text-acars-text mb-2">METAR</h3>
-        <div className="text-[11px] text-acars-muted italic">No METAR available.</div>
+        <div className="text-[12px] text-acars-muted italic">No METAR available.</div>
       </div>
     );
   }
@@ -148,10 +148,10 @@ function MetarSummary({ metar }: { metar?: MetarData }) {
         <h3 className="text-xs font-semibold text-acars-text">METAR</h3>
         {cat && <StatusBadge color={catColor}>{cat}</StatusBadge>}
       </div>
-      <div className="tabular-nums text-[10px] text-acars-text leading-relaxed break-all">
+      <div className="tabular-nums text-[11px] text-acars-text leading-relaxed break-all">
         {metar.rawOb}
       </div>
-      <div className="grid grid-cols-4 gap-2 text-[11px]">
+      <div className="grid grid-cols-4 gap-2 text-[12px]">
         <div>
           <span className="text-acars-muted">Wind</span>
           <div className="text-acars-text tabular-nums">
@@ -182,7 +182,7 @@ function MetarSummary({ metar }: { metar?: MetarData }) {
 function AirportDetail({ airport }: { airport: Airport | null }) {
   if (!airport) {
     return (
-      <div className="text-[11px] text-acars-muted italic">
+      <div className="text-[12px] text-acars-muted italic">
         Airport data not available.
       </div>
     );
@@ -193,7 +193,7 @@ function AirportDetail({ airport }: { airport: Airport | null }) {
   return (
     <div className="panel p-3">
       <h3 className="text-xs font-semibold text-acars-text mb-2">General</h3>
-      <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5 text-[11px]">
+      <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5 text-[12px]">
         <span className="text-acars-muted">Name</span>
         <span className="text-acars-text">{airport.name}</span>
         <span className="text-acars-muted">Location</span>
@@ -240,7 +240,7 @@ export function AirportInfoTab({ dispatchData }: { dispatchData: DispatchData })
     return (
       <div className="space-y-3">
         <h3 className="text-xs font-semibold text-acars-text">Airport Info</h3>
-        <div className="text-[11px] text-acars-muted italic">
+        <div className="text-[12px] text-acars-muted italic">
           No flight plan loaded. Airport information will appear once a flight is selected.
         </div>
       </div>
@@ -277,12 +277,12 @@ export function AirportInfoTab({ dispatchData }: { dispatchData: DispatchData })
           {destIcao ?? '----'} (Destination)
         </button>
         {altIcaos.length > 0 && (
-          <span className="text-[10px] text-acars-muted ml-2">
+          <span className="text-[11px] text-acars-muted ml-2">
             Alt: {altIcaos.join(', ')}
           </span>
         )}
         {dispatchData.loading && (
-          <span className="text-[10px] text-sky-400 animate-pulse ml-auto">Updating...</span>
+          <span className="text-[11px] text-sky-400 animate-pulse ml-auto">Updating...</span>
         )}
       </div>
 
@@ -314,13 +314,13 @@ export function AirportInfoTab({ dispatchData }: { dispatchData: DispatchData })
               <div key={altIcaos[i]} className="panel p-2">
                 <div className="text-xs font-bold text-sky-400">{altIcaos[i]}</div>
                 {alt ? (
-                  <div className="text-[10px] text-acars-muted mt-0.5">
+                  <div className="text-[11px] text-acars-muted mt-0.5">
                     {alt.name} — {alt.city}, {alt.state}
                     <br />
                     Elev: {alt.elevation.toLocaleString()}' | {alt.timezone}
                   </div>
                 ) : (
-                  <div className="text-[10px] text-acars-muted mt-0.5 italic">Not in database</div>
+                  <div className="text-[11px] text-acars-muted mt-0.5 italic">Not in database</div>
                 )}
               </div>
             ))}

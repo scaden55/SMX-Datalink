@@ -86,10 +86,10 @@ export function SettingsPage() {
               <Gear className="w-4 h-4 text-acars-muted" />
               <h2 className="text-sm font-semibold text-acars-text">SimBrief Integration</h2>
             </div>
-            <p className="text-[11px] text-acars-muted mt-0.5">Connect your SimBrief account to auto-populate flight plans</p>
+            <p className="text-[12px] text-acars-muted mt-0.5">Connect your SimBrief account to auto-populate flight plans</p>
           </div>
           <div className="px-4 py-4">
-            <label className="text-[10px] uppercase tracking-wider text-acars-muted font-medium mb-1.5 block">
+            <label className="text-[11px] uppercase tracking-wider text-acars-muted font-medium mb-1.5 block">
               SimBrief Username / Pilot ID
             </label>
             <div className="flex gap-2">
@@ -99,7 +99,7 @@ export function SettingsPage() {
                 onChange={(e) => setSimbriefUsername(e.target.value)}
                 placeholder={loading ? 'Loading...' : 'Enter your SimBrief username'}
                 disabled={loading}
-                className="input-field flex-1 text-[11px] tabular-nums"
+                className="input-field flex-1 text-[12px] tabular-nums"
               />
               <button
                 onClick={handleSave}
@@ -116,7 +116,7 @@ export function SettingsPage() {
                 {saved ? 'Saved' : 'Save'}
               </button>
             </div>
-            <p className="text-[10px] text-acars-muted mt-2">
+            <p className="text-[11px] text-acars-muted mt-2">
               Find your username at{' '}
               <span className="text-sky-400">simbrief.com</span> under Account Gear.
               This is used to fetch your latest OFP on the Flight Planning page.
@@ -125,8 +125,8 @@ export function SettingsPage() {
               <div className="mt-4 pt-3 border-t border-acars-border">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-[11px] text-acars-text font-medium">Navigraph Login Session</p>
-                    <p className="text-[10px] text-acars-muted">
+                    <p className="text-[12px] text-acars-text font-medium">Navigraph Login Session</p>
+                    <p className="text-[11px] text-acars-muted">
                       Your Navigraph login is saved so you only sign in once. Clear it to sign out.
                     </p>
                   </div>

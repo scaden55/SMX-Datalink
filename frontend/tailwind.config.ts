@@ -55,7 +55,9 @@ const config: Config = {
         },
       },
       fontFamily: {
-        sans: ['Lufga', 'system-ui', 'sans-serif'],
+        sans: ['Inter Variable', 'Inter', 'system-ui', 'sans-serif'],
+        display: ['Lufga', 'system-ui', 'sans-serif'],
+        mono: ['ui-monospace', 'Cascadia Mono', 'Segoe UI Mono', 'Liberation Mono', 'Menlo', 'Monaco', 'Consolas', 'monospace'],
       },
       borderRadius: {
         lg: 'var(--radius)',

@@ -2,6 +2,7 @@ import { useRef, useEffect, useState } from 'react';
 import * as d3 from 'd3';
 import { useDispatchTelemetry } from '../../hooks/useDispatchTelemetry';
 import { useFlightPlanStore } from '../../stores/flightPlanStore';
+import { findTocTod } from '../../lib/flight-phases';
 
 const MARGIN = { top: 10, right: 40, bottom: 25, left: 50 };
 
@@ -84,17 +85,9 @@ export function VerticalProfile() {
       .domain([0, (d3.max(points, (d) => d.alt) ?? 40000) + 10000])
       .range([innerH, 0]);
 
-    // Find TOC/TOD
-    const maxAlt = d3.max(points, (d) => d.alt) ?? 0;
-    const threshold = maxAlt * 0.90;
-    let tocIndex = 0;
-    let todIndex = points.length - 1;
-    for (let i = 0; i < points.length; i++) {
-      if (points[i].alt >= threshold) { tocIndex = i; break; }
-    }
-    for (let i = points.length - 1; i >= 0; i--) {
-      if (points[i].alt >= threshold) { todIndex = i; break; }
-    }
+    // Find TOC/TOD using shared helper (ident-first, altitude fallback)
+    const wpsForPhase = flightPlan.waypoints.map((wp) => ({ ident: wp.ident, altitude: wp.altitude }));
+    const { tocIndex, todIndex } = findTocTod(wpsForPhase);
 
     // Terrain silhouette (simplified — flat terrain placeholder)
     g.append('rect')
@@ -125,7 +118,7 @@ export function VerticalProfile() {
         .attr('d', lineFn)
         .attr('fill', 'none')
         .attr('stroke', CLR_CLIMB)
-        .attr('stroke-width', 2);
+        .attr('stroke-width', 3);
     }
 
     // Cruise segment (TOC → TOD inclusive)
@@ -136,7 +129,7 @@ export function VerticalProfile() {
         .attr('d', lineFn)
         .attr('fill', 'none')
         .attr('stroke', CLR_CRUISE)
-        .attr('stroke-width', 2);
+        .attr('stroke-width', 3);
     }
 
     // Descent segment (TOD → end inclusive)
@@ -147,11 +140,11 @@ export function VerticalProfile() {
         .attr('d', lineFn)
         .attr('fill', 'none')
         .attr('stroke', CLR_DESCENT)
-        .attr('stroke-width', 2);
+        .attr('stroke-width', 3);
     }
 
     // Waypoint dots — shape by type, color by phase
-    const R = 4;
+    const R = 5;
     const hexPath = (cx: number, cy: number) =>
       Array.from({ length: 6 }, (_, k) => {
         const a = (Math.PI / 3) * k - Math.PI / 2;
@@ -162,28 +155,33 @@ export function VerticalProfile() {
       const cx = xScale(i) ?? 0;
       const cy = yScale(pt.alt);
       const color = i < tocIndex ? CLR_CLIMB : i > todIndex ? CLR_DESCENT : CLR_CRUISE;
-      const fill = 'var(--bg-app)';
 
       switch (pt.wpType) {
-        case 'airport': // Square
-          g.append('rect').attr('x', cx - R).attr('y', cy - R).attr('width', R * 2).attr('height', R * 2)
-            .attr('fill', fill).attr('stroke', color).attr('stroke-width', 1.5);
-          break;
-        case 'vor': // Hexagon
-          g.append('polygon').attr('points', hexPath(cx, cy))
-            .attr('fill', fill).attr('stroke', color).attr('stroke-width', 1.5);
-          break;
-        case 'gps': // Diamond
-          g.append('polygon').attr('points', `${cx},${cy - R} ${cx + R},${cy} ${cx},${cy + R} ${cx - R},${cy}`)
-            .attr('fill', fill).attr('stroke', color).attr('stroke-width', 1.5);
-          break;
-        case 'ndb': // Circle
+        case 'airport': // Solid filled circle
           g.append('circle').attr('cx', cx).attr('cy', cy).attr('r', R)
-            .attr('fill', fill).attr('stroke', color).attr('stroke-width', 1.5);
+            .attr('fill', color).attr('stroke', '#000').attr('stroke-width', 1.5);
           break;
-        default: // Triangle — intersection/fix
+        case 'vor': // Solid hexagon with black center dot
+          g.append('polygon').attr('points', hexPath(cx, cy))
+            .attr('fill', color).attr('stroke', '#000').attr('stroke-width', 1.5);
+          g.append('circle').attr('cx', cx).attr('cy', cy).attr('r', 2)
+            .attr('fill', '#000');
+          break;
+        case 'gps': // Diamond with black stroke
+          g.append('polygon').attr('points', `${cx},${cy - R} ${cx + R},${cy} ${cx},${cy + R} ${cx - R},${cy}`)
+            .attr('fill', 'none').attr('stroke', '#000').attr('stroke-width', 1.5);
+          g.append('polygon').attr('points', `${cx},${cy - R} ${cx + R},${cy} ${cx},${cy + R} ${cx - R},${cy}`)
+            .attr('fill', 'none').attr('stroke', color).attr('stroke-width', 2);
+          break;
+        case 'ndb': // Circle with black stroke
+          g.append('circle').attr('cx', cx).attr('cy', cy).attr('r', R)
+            .attr('fill', 'none').attr('stroke', '#000').attr('stroke-width', 1.5);
+          g.append('circle').attr('cx', cx).attr('cy', cy).attr('r', R)
+            .attr('fill', 'none').attr('stroke', color).attr('stroke-width', 2);
+          break;
+        default: // Triangle — filled with black stroke
           g.append('polygon').attr('points', `${cx},${cy - R} ${cx + R},${cy + R} ${cx - R},${cy + R}`)
-            .attr('fill', fill).attr('stroke', color).attr('stroke-width', 1.5);
+            .attr('fill', color).attr('stroke', '#000').attr('stroke-width', 1.5);
           break;
       }
     });
@@ -258,7 +256,7 @@ export function VerticalProfile() {
   return (
     <div
       ref={containerRef}
-      className="h-full w-full bg-acars-panel border-t border-acars-border"
+      className="h-full w-full bg-acars-input border-t border-acars-border"
     >
       <svg ref={svgRef} className="block" />
     </div>

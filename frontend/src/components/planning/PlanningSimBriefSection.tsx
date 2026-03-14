@@ -5,7 +5,7 @@ import { useFlightPlanStore } from '../../stores/flightPlanStore';
 export function PlanningSimBriefSection() {
   const { form, setFormField } = useFlightPlanStore();
 
-  const checkboxRow = 'flex items-center gap-2.5 text-[11px] text-acars-text';
+  const checkboxRow = 'flex items-center gap-2.5 text-[12px] text-acars-text';
   const checkboxClass = 'w-3.5 h-3.5 rounded-md border-acars-border bg-acars-input accent-acars-blue';
 
   return (

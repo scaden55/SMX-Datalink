@@ -21,7 +21,7 @@ interface Props {
 /** Color mapping by facility type */
 const FACILITY_COLORS: Record<VatsimFacilityType, string> = {
   0: '#6b7280', // Observer — gray
-  1: '#3b82f6', // FSS — blue
+  1: '#4F6CCD', // FSS — blue
   2: '#60a5fa', // Delivery — blue
   3: '#22c55e', // Ground — green
   4: '#ef4444', // Tower — red

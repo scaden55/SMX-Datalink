@@ -69,7 +69,7 @@ const FACILITY_NAMES: Record<VatsimFacilityType, string> = {
 };
 
 const FACILITY_COLORS: Record<VatsimFacilityType, string> = {
-  0: '#6b7280', 1: '#3b82f6', 2: '#60a5fa', 3: '#22c55e',
+  0: '#6b7280', 1: '#4F6CCD', 2: '#60a5fa', 3: '#22c55e',
   4: '#ef4444', 5: '#f59e0b', 6: '#22d3ee',
 };
 
@@ -216,7 +216,7 @@ export function AirportDetailPanel({ icao, controllers, pilots, atis, onClose }:
   }, [liveControllers]);
 
   return (
-    <div className="absolute top-3 right-3 bottom-3 w-[350px] z-[1000] bg-acars-panel rounded-md border border-acars-border flex flex-col overflow-hidden animate-in slide-in-from-right duration-200">
+    <div className="absolute top-3 right-3 bottom-3 w-[350px] z-[1000] bg-acars-input rounded-md border border-acars-border flex flex-col overflow-hidden animate-in slide-in-from-right duration-200">
       {/* ── Sticky Header ── */}
       <div className="px-4 py-3 border-b border-acars-border shrink-0">
         <div className="flex items-start justify-between">
@@ -254,7 +254,7 @@ export function AirportDetailPanel({ icao, controllers, pilots, atis, onClose }:
           {liveControllers.length > 0 && (
             <div className="flex items-center gap-1.5 ml-auto">
               <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
-              <span className="text-[10px] font-bold text-green-400">
+              <span className="text-[11px] font-bold text-green-400">
                 {liveControllers.length} ATC
               </span>
             </div>
@@ -275,7 +275,7 @@ export function AirportDetailPanel({ icao, controllers, pilots, atis, onClose }:
                 </span>
               )}
             </div>
-            <div className="text-[10px] tabular-nums text-acars-text leading-relaxed break-all">
+            <div className="text-[11px] tabular-nums text-acars-text leading-relaxed break-all">
               {metar.rawOb}
             </div>
             {/* Quick weather cards */}
@@ -311,7 +311,7 @@ export function AirportDetailPanel({ icao, controllers, pilots, atis, onClose }:
           <button
             key={key}
             onClick={() => setTab(key)}
-            className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-2 text-[10px] font-semibold tracking-wider uppercase transition-colors ${
+            className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-2 text-[11px] font-semibold tracking-wider uppercase transition-colors ${
               tab === key
                 ? 'text-sky-400 border-b-2 border-sky-400 bg-sky-500/5'
                 : 'text-acars-muted hover:text-acars-text hover:bg-acars-border'
@@ -372,7 +372,7 @@ function TrafficBadge({
   return (
     <div className="flex items-center gap-1">
       <Icon className="w-3 h-3" style={{ color }} />
-      <span className="text-[11px] font-bold tabular-nums" style={{ color }}>
+      <span className="text-[12px] font-bold tabular-nums" style={{ color }}>
         {count}
       </span>
       <span className="text-[9px] text-acars-muted uppercase">{label}</span>
@@ -508,17 +508,17 @@ function TrafficSection({
           key={p.cid}
           className="flex items-center gap-2 px-2.5 py-1.5 rounded mb-0.5 hover:bg-acars-border transition-colors"
         >
-          <span className="text-[11px] font-bold tabular-nums text-acars-text w-16 shrink-0">
+          <span className="text-[12px] font-bold tabular-nums text-acars-text w-16 shrink-0">
             {p.callsign}
           </span>
-          <span className="text-[10px] tabular-nums text-acars-muted">
+          <span className="text-[11px] tabular-nums text-acars-muted">
             {p.flight_plan?.aircraft_short || '—'}
           </span>
-          <span className="text-[10px] text-acars-muted ml-auto tabular-nums">
+          <span className="text-[11px] text-acars-muted ml-auto tabular-nums">
             {showDest && p.flight_plan?.arrival && `→ ${p.flight_plan.arrival}`}
             {showOrigin && p.flight_plan?.departure && `${p.flight_plan.departure} →`}
           </span>
-          <span className="text-[10px] tabular-nums text-acars-muted tabular-nums w-14 text-right">
+          <span className="text-[11px] tabular-nums text-acars-muted tabular-nums w-14 text-right">
             {p.groundspeed < 50
               ? 'GND'
               : `FL${Math.round(p.altitude / 100).toString().padStart(3, '0')}`}
@@ -570,16 +570,16 @@ function AtcTab({
               <div key={a.callsign} className="mb-2">
                 <div className="flex items-center gap-2 mb-1">
                   <span className="w-1.5 h-1.5 rounded-full bg-green-400 shrink-0" />
-                  <span className="text-[11px] font-bold tabular-nums text-acars-text">{a.callsign}</span>
-                  <span className="text-[11px] tabular-nums text-sky-400">{a.frequency}</span>
+                  <span className="text-[12px] font-bold tabular-nums text-acars-text">{a.callsign}</span>
+                  <span className="text-[12px] tabular-nums text-sky-400">{a.frequency}</span>
                   {a.atis_code && (
-                    <span className="ml-auto px-1.5 py-0.5 rounded bg-sky-500/10 text-[10px] font-bold text-sky-400">
+                    <span className="ml-auto px-1.5 py-0.5 rounded bg-sky-500/10 text-[11px] font-bold text-sky-400">
                       {a.atis_code}
                     </span>
                   )}
                 </div>
                 {a.text_atis && a.text_atis.length > 0 && (
-                  <div className="p-2 rounded-md bg-acars-bg/60 border border-acars-border text-[10px] tabular-nums text-acars-muted leading-relaxed max-h-24 overflow-y-auto">
+                  <div className="p-2 rounded-md bg-acars-bg/60 border border-acars-border text-[11px] tabular-nums text-acars-muted leading-relaxed max-h-24 overflow-y-auto">
                     {a.text_atis.join(' ')}
                   </div>
                 )}
@@ -610,12 +610,12 @@ function AtcTab({
                   {FACILITY_NAMES[ctrl.facility]}
                 </span>
                 <div className="flex-1 min-w-0">
-                  <div className="text-[11px] tabular-nums text-acars-text">{ctrl.callsign}</div>
+                  <div className="text-[12px] tabular-nums text-acars-text">{ctrl.callsign}</div>
                   <div className="text-[9px] text-acars-muted">
                     {ctrl.name} &middot; {formatLogonDuration(ctrl.logon_time)}
                   </div>
                 </div>
-                <span className="text-[11px] tabular-nums text-sky-400 tabular-nums shrink-0">
+                <span className="text-[12px] tabular-nums text-sky-400 tabular-nums shrink-0">
                   {ctrl.frequency}
                 </span>
               </div>
@@ -631,7 +631,7 @@ function AtcTab({
         onToggle={() => toggle('freqs')}
       >
         {sortedFreqs.length === 0 ? (
-          <div className="py-3 text-center text-[10px] text-acars-muted">No frequency data</div>
+          <div className="py-3 text-center text-[11px] text-acars-muted">No frequency data</div>
         ) : (
           sortedFreqs.map((freq, i) => {
             const freqStr = freq.frequency_mhz.toFixed(3);
@@ -647,8 +647,8 @@ function AtcTab({
                 <span className="text-[9px] font-bold tracking-wider uppercase w-12 shrink-0 text-acars-muted">
                   {freq.type}
                 </span>
-                <span className="text-[11px] text-acars-text truncate flex-1">{freq.description}</span>
-                <span className="text-[11px] tabular-nums text-sky-400 tabular-nums shrink-0">
+                <span className="text-[12px] text-acars-text truncate flex-1">{freq.description}</span>
+                <span className="text-[12px] tabular-nums text-sky-400 tabular-nums shrink-0">
                   {freqStr}
                 </span>
                 {live.length > 0 && (
@@ -704,7 +704,7 @@ function InfoTab({
         onToggle={() => toggle('runways')}
       >
         {detail.runways.length === 0 ? (
-          <div className="py-3 text-center text-[10px] text-acars-muted">No runway data</div>
+          <div className="py-3 text-center text-[11px] text-acars-muted">No runway data</div>
         ) : (
           <div className="space-y-1.5">
             {detail.runways.map((rwy, i) => (
@@ -721,13 +721,13 @@ function InfoTab({
                       <Lightbulb className="w-3 h-3 text-amber-400" />
                     )}
                     {rwy.le_heading_degT != null && (
-                      <span className="text-[10px] text-acars-muted tabular-nums">
+                      <span className="text-[11px] text-acars-muted tabular-nums">
                         {Math.round(rwy.le_heading_degT).toString().padStart(3, '0')}&deg;
                       </span>
                     )}
                   </div>
                 </div>
-                <div className="grid grid-cols-3 gap-2 text-[10px]">
+                <div className="grid grid-cols-3 gap-2 text-[11px]">
                   <div>
                     <span className="text-acars-muted">Length</span>
                     <div className="text-acars-text tabular-nums">{rwy.length_ft.toLocaleString()} ft</div>
@@ -769,7 +769,7 @@ function CollapsibleSection({
         onClick={onToggle}
         className="w-full flex items-center gap-1.5 px-4 py-2.5 hover:bg-acars-border transition-colors"
       >
-        <span className="text-[10px] font-semibold text-acars-muted tracking-wider uppercase">{title}</span>
+        <span className="text-[11px] font-semibold text-acars-muted tracking-wider uppercase">{title}</span>
         <div className="flex-1" />
         <CaretDown
           className={`w-3 h-3 text-acars-muted transition-transform duration-200 ${collapsed ? '-rotate-90' : ''}`}
@@ -787,8 +787,8 @@ function CollapsibleSection({
 function InfoRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-center justify-between py-0.5">
-      <span className="text-[10px] text-acars-muted">{label}</span>
-      <span className="text-[11px] text-acars-text tabular-nums">{value}</span>
+      <span className="text-[11px] text-acars-muted">{label}</span>
+      <span className="text-[12px] text-acars-text tabular-nums">{value}</span>
     </div>
   );
 }

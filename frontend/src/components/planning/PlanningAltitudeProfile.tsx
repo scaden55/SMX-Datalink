@@ -7,24 +7,6 @@ function getCssVar(name: string): string {
   return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 }
 
-/** Find TOC/TOD indices by locating the cruise band (>=90% of max altitude). */
-function findPhases(data: { altitude: number }[]) {
-  const maxAlt = Math.max(...data.map((d) => d.altitude));
-  const threshold = maxAlt * 0.90;
-
-  let tocIndex = 0;
-  let todIndex = data.length - 1;
-
-  for (let i = 0; i < data.length; i++) {
-    if (data[i].altitude >= threshold) { tocIndex = i; break; }
-  }
-  for (let i = data.length - 1; i >= 0; i--) {
-    if (data[i].altitude >= threshold) { todIndex = i; break; }
-  }
-
-  return { tocIndex, todIndex };
-}
-
 /** Local error boundary so a chart crash doesn't take down the whole app. */
 class ChartErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
   constructor(props: { children: ReactNode }) {
@@ -41,7 +23,7 @@ class ChartErrorBoundary extends Component<{ children: ReactNode }, { hasError: 
     if (this.state.hasError) {
       return (
         <div className="h-full flex items-center justify-center">
-          <span className="text-[11px] text-acars-muted">Chart unavailable</span>
+          <span className="text-[12px] text-acars-muted">Chart unavailable</span>
         </div>
       );
     }
@@ -91,7 +73,7 @@ export function PlanningAltitudeProfile() {
   if (!hasSteps) {
     return (
       <div className="flex-[1] min-h-[60px] border-t border-white/[0.06] flex items-center justify-center">
-        <span className="text-[11px] text-acars-muted">Generate OFP to see altitude profile</span>
+        <span className="text-[12px] text-acars-muted">Generate OFP to see altitude profile</span>
       </div>
     );
   }
@@ -123,7 +105,7 @@ export function PlanningAltitudeProfile() {
           return (
             <span
               key={i}
-              className="absolute text-[10px] tabular-nums whitespace-nowrap"
+              className="absolute text-[11px] font-mono tabular-nums whitespace-nowrap"
               style={{
                 color: 'var(--text-label)',
                 left: `${pct}%`,
@@ -183,9 +165,9 @@ export function PlanningAltitudeProfile() {
                       padding: '6px 10px',
                       fontSize: 11,
                     }}>
-                      <div style={{ color: clr.textPrimary, fontWeight: 600 }}>{pt.ident}</div>
-                      <div style={{ color: clr.textSecondary }}>Alt: {alt.toLocaleString()} ft</div>
-                      <div style={{ color: clr.textSecondary }}>Dist: {dist} nm</div>
+                      <div style={{ color: clr.textPrimary, fontWeight: 600, fontFamily: 'var(--font-mono, ui-monospace, monospace)' }}>{pt.ident}</div>
+                      <div style={{ color: clr.textSecondary, fontFamily: 'var(--font-mono, ui-monospace, monospace)' }}>Alt: {alt.toLocaleString()} ft</div>
+                      <div style={{ color: clr.textSecondary, fontFamily: 'var(--font-mono, ui-monospace, monospace)' }}>Dist: {dist} nm</div>
                     </div>
                   );
                 }}
@@ -194,7 +176,7 @@ export function PlanningAltitudeProfile() {
                 type="monotone"
                 dataKey="altitude"
                 stroke={clr.cruise}
-                strokeWidth={1.5}
+                strokeWidth={3}
                 fill="url(#altGrad)"
                 dot={false}
                 activeDot={{ r: 4, fill: clr.bgApp, stroke: clr.cruise, strokeWidth: 2 }}

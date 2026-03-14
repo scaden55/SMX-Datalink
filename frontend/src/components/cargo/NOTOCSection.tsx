@@ -13,14 +13,14 @@ export function NOTOCSection({ manifest }: Props) {
       {/* Amber header */}
       <div className="bg-amber-500/10 px-3 py-2 flex items-center gap-2">
         <Warning className="w-3.5 h-3.5 text-amber-400" />
-        <span className="text-[11px] font-semibold text-amber-400">
+        <span className="text-[12px] font-semibold text-amber-400">
           NOTOC — Dangerous Goods / Special Cargo
         </span>
       </div>
 
       {/* NOTOC items table */}
       <div className="p-3">
-        <table className="w-full text-[10px]">
+        <table className="w-full text-[11px]">
           <thead>
             <tr className="border-b border-amber-500/20">
               <th className="text-left py-1 pr-2 font-medium text-acars-muted">ULD/Pos</th>
@@ -49,8 +49,8 @@ export function NOTOCSection({ manifest }: Props) {
 
         {/* Handling instructions */}
         <div className="mt-3 pt-2 border-t border-amber-500/20">
-          <span className="text-[10px] text-acars-muted block mb-1">Handling Instructions</span>
-          <p className="text-[10px] text-acars-text leading-relaxed">
+          <span className="text-[11px] text-acars-muted block mb-1">Handling Instructions</span>
+          <p className="text-[11px] text-acars-text leading-relaxed">
             All dangerous goods must be handled in accordance with IATA DGR. Ensure proper separation
             from incompatible materials. Temperature-controlled items must be monitored throughout flight.
             Notify captain of all DG items prior to departure.

@@ -21,7 +21,7 @@ export function TerrainSection({ ofp }: TerrainSectionProps) {
       status={cruiseAlt ? 'green' : 'grey'}
       defaultOpen
     >
-      <div className="grid grid-cols-3 gap-2 text-[11px]">
+      <div className="grid grid-cols-3 gap-2 text-[12px]">
         <div>
           <span className="data-label">Cruise Alt</span>
           <div className="data-value">{cruiseStr}</div>

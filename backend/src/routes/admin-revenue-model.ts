@@ -27,6 +27,9 @@ export function adminRevenueModelRouter(): Router {
         'class_iii_standard', 'class_iii_nonstandard', 'class_iii_hazard',
         'pilot_pay_per_hour',
         'manifest_std_pct', 'manifest_nonstd_pct', 'manifest_hazard_pct',
+        'manifest_std_min', 'manifest_std_max',
+        'manifest_nonstd_min', 'manifest_nonstd_max',
+        'manifest_hazard_min', 'manifest_hazard_max',
         'reference_nm',
       ];
 

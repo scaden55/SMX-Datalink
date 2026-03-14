@@ -27,7 +27,7 @@ export function TitleBar() {
       {/* Left: branding */}
       <div className="flex items-center gap-2 pl-3">
         <img src="./logos/chevron-light.png" alt="SMX" className="h-4 w-auto opacity-80" />
-        <span className="text-[11px] font-semibold tracking-wide text-acars-muted/80 uppercase">
+        <span className="text-[12px] font-semibold tracking-wide text-acars-muted/80 uppercase">
           SMX ACARS
         </span>
       </div>

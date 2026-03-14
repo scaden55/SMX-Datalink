@@ -44,6 +44,8 @@ import { adminReportsRouter } from './routes/admin-reports.js';
 import { adminNotificationsRouter } from './routes/admin-notifications.js';
 import { adminSearchRouter } from './routes/admin-search.js';
 import { adminRevenueModelRouter } from './routes/admin-revenue-model.js';
+import { adminDiscrepancyRouter } from './routes/admin-discrepancies.js';
+import { adminMelMasterRouter } from './routes/admin-mel-master.js';
 import { notificationsRouter } from './routes/notifications.js';
 import { SettingsService } from './services/settings.js';
 import { AuthService } from './services/auth.js';
@@ -54,6 +56,9 @@ import { trackRouter } from './routes/track.js';
 import { navdataRouter } from './routes/navdata.js';
 import { regulatoryRouter } from './routes/regulatory.js';
 import { cargoRouter } from './routes/cargo.js';
+import { discrepancyRouter } from './routes/discrepancies.js';
+import { ataChaptersRouter } from './routes/ata-chapters.js';
+import { melBriefingRouter } from './routes/mel-briefing.js';
 import { TrackService } from './services/track.js';
 import { FlightEventTracker } from './services/flight-event-tracker.js';
 import { BidExpirationService } from './services/bid-expiration.js';
@@ -186,23 +191,27 @@ app.use('/api', adminReportsRouter());
 app.use('/api', adminNotificationsRouter());
 app.use('/api', adminSearchRouter());
 app.use('/api', adminRevenueModelRouter());
+app.use('/api', adminDiscrepancyRouter());
+app.use('/api', adminMelMasterRouter());
 app.use('/api', notificationsRouter());
 app.use('/api', airportDetailRouter());       // /airports/:icao (AFTER scheduleRouter's /airports)
 app.use('/api', trackRouter());
 app.use('/api', navdataRouter());
 app.use('/api', regulatoryRouter());
 app.use('/api', cargoRouter());
+app.use('/api', discrepancyRouter());
+app.use('/api', ataChaptersRouter());
+app.use('/api', melBriefingRouter());
 app.use('/api', vatsimRouter(vatsimService));
 
 // Serve admin frontend static files
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const adminDistPath = join(__dirname, '../admin-dist');
+// Redirect /admin to /admin/ so relative asset paths resolve correctly
+app.get('/admin', (_req, res) => res.redirect(301, '/admin/'));
 app.use('/admin', express.static(adminDistPath));
-// SPA fallback — serve index.html for all admin routes (both /admin/ and /admin/*)
-app.get('/admin', (_req, res) => {
-  res.sendFile(join(adminDistPath, 'index.html'));
-});
+// SPA fallback — serve index.html for all admin sub-routes
 app.get('/admin/*', (_req, res) => {
   res.sendFile(join(adminDistPath, 'index.html'));
 });

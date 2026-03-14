@@ -143,7 +143,7 @@ function InfoRow({ label, value, icon: Icon, iconColor, valueClass = '' }: {
     <div className="flex items-start gap-3 py-2">
       {Icon && <Icon className={`w-4 h-4 mt-0.5 flex-none ${iconColor ?? 'text-acars-muted'}`} />}
       <div className="min-w-0">
-        <div className="text-[10px] uppercase tracking-wider text-acars-muted font-medium">{label}</div>
+        <div className="text-[11px] uppercase tracking-wider text-acars-muted font-medium">{label}</div>
         <div className={`text-sm text-acars-text font-medium ${valueClass}`}>{value}</div>
       </div>
     </div>
@@ -169,7 +169,7 @@ function OooiTimeline({ entry }: { entry: LogbookEntry }) {
 
   return (
     <div className="panel rounded-md p-4 mb-4">
-      <h3 className="text-[11px] uppercase tracking-wider text-acars-muted font-medium mb-4 flex items-center gap-2">
+      <h3 className="text-[12px] uppercase tracking-wider text-acars-muted font-medium mb-4 flex items-center gap-2">
         <Clock className="w-3.5 h-3.5 text-blue-400" />
         OOOI Times
       </h3>
@@ -181,21 +181,21 @@ function OooiTimeline({ entry }: { entry: LogbookEntry }) {
         </div>
         <div className="flex-1 flex flex-col items-center">
           <div className="w-full h-0.5 border-t-2 border-dashed border-acars-border" />
-          {taxiOut && <div className="text-[10px] text-acars-muted mt-1">Taxi {taxiOut}</div>}
+          {taxiOut && <div className="text-[11px] text-acars-muted mt-1">Taxi {taxiOut}</div>}
         </div>
         <div className="flex flex-col items-center">
           <div className="w-3 h-3 rounded-full bg-blue-400 border-2 border-blue-400/30" />
         </div>
         <div className="flex-[3] flex flex-col items-center">
           <div className="w-full h-0.5 bg-blue-400" />
-          {airborne && <div className="text-[10px] text-blue-400 font-semibold mt-1">Flight {airborne}</div>}
+          {airborne && <div className="text-[11px] text-blue-400 font-semibold mt-1">Flight {airborne}</div>}
         </div>
         <div className="flex flex-col items-center">
           <div className="w-3 h-3 rounded-full bg-blue-400 border-2 border-blue-400/30" />
         </div>
         <div className="flex-1 flex flex-col items-center">
           <div className="w-full h-0.5 border-t-2 border-dashed border-acars-border" />
-          {taxiIn && <div className="text-[10px] text-acars-muted mt-1">Taxi {taxiIn}</div>}
+          {taxiIn && <div className="text-[11px] text-acars-muted mt-1">Taxi {taxiIn}</div>}
         </div>
         <div className="flex flex-col items-center">
           <div className="w-3 h-3 rounded-full bg-emerald-400 border-2 border-emerald-400/30" />
@@ -206,11 +206,11 @@ function OooiTimeline({ entry }: { entry: LogbookEntry }) {
       <div className="flex justify-between text-center">
         {events.map(e => (
           <div key={e.key} className="flex flex-col items-center">
-            <div className="text-[10px] uppercase tracking-wider text-acars-muted font-medium">{e.key}</div>
+            <div className="text-[11px] uppercase tracking-wider text-acars-muted font-medium">{e.key}</div>
             <div className="text-xs tabular-nums text-acars-text font-semibold">
               {e.time ? formatTime(e.time) : '—'}
             </div>
-            <div className="text-[10px] text-acars-muted">{e.label}</div>
+            <div className="text-[11px] text-acars-muted">{e.label}</div>
           </div>
         ))}
       </div>
@@ -219,11 +219,11 @@ function OooiTimeline({ entry }: { entry: LogbookEntry }) {
       {entry.blockTimeMin != null && (
         <div className="mt-3 pt-3 border-t border-acars-border flex items-center justify-center gap-6">
           <div className="text-center">
-            <div className="text-[10px] uppercase tracking-wider text-acars-muted">Block Time</div>
+            <div className="text-[11px] uppercase tracking-wider text-acars-muted">Block Time</div>
             <div className="text-sm tabular-nums font-bold text-acars-text">{formatDuration(entry.blockTimeMin)}</div>
           </div>
           <div className="text-center">
-            <div className="text-[10px] uppercase tracking-wider text-acars-muted">Flight Time</div>
+            <div className="text-[11px] uppercase tracking-wider text-acars-muted">Flight Time</div>
             <div className="text-sm tabular-nums font-bold text-blue-400">{entry.flightTimeMin > 0 ? formatDuration(entry.flightTimeMin) : '—'}</div>
           </div>
         </div>
@@ -373,13 +373,13 @@ export function FlightDetailPage() {
         <div className="grid grid-cols-2 gap-4 mb-4">
           {/* Landing & Score with breakdown */}
           <div className="panel rounded-md p-4">
-            <h3 className="text-[11px] uppercase tracking-wider text-acars-muted font-medium mb-3 flex items-center gap-2">
+            <h3 className="text-[12px] uppercase tracking-wider text-acars-muted font-medium mb-3 flex items-center gap-2">
               <ChartBar className="w-3.5 h-3.5 text-emerald-400" />
               Performance
             </h3>
             <div className="grid grid-cols-3 gap-4 mb-3">
               <div>
-                <div className="text-[10px] uppercase tracking-wider text-acars-muted mb-1">Touchdown G-Force</div>
+                <div className="text-[11px] uppercase tracking-wider text-acars-muted mb-1">Touchdown G-Force</div>
                 {entry.landingGForce != null ? (
                   <>
                     <div className={`text-xl font-bold tabular-nums ${landingInfo!.color}`}>
@@ -392,7 +392,7 @@ export function FlightDetailPage() {
                 )}
               </div>
               <div>
-                <div className="text-[10px] uppercase tracking-wider text-acars-muted mb-1">Flight Score</div>
+                <div className="text-[11px] uppercase tracking-wider text-acars-muted mb-1">Flight Score</div>
                 {entry.score != null ? (
                   <>
                     <div className={`text-xl font-bold tabular-nums ${scoreInfo!.color}`}>
@@ -405,7 +405,7 @@ export function FlightDetailPage() {
                 )}
               </div>
               <div>
-                <div className="text-[10px] uppercase tracking-wider text-acars-muted mb-1">Landing Rate</div>
+                <div className="text-[11px] uppercase tracking-wider text-acars-muted mb-1">Landing Rate</div>
                 {entry.landingRateFpm != null ? (
                   <div className="text-xl font-bold tabular-nums text-acars-text">
                     {entry.landingRateFpm} <span className="text-xs font-normal text-acars-muted">fpm</span>
@@ -419,7 +419,7 @@ export function FlightDetailPage() {
             {/* Score breakdown rubric (G-force based) */}
             {entry.landingGForce != null && (
               <div className="pt-3 border-t border-acars-border">
-                <div className="text-[10px] uppercase tracking-wider text-acars-muted mb-2 flex items-center gap-1.5">
+                <div className="text-[11px] uppercase tracking-wider text-acars-muted mb-2 flex items-center gap-1.5">
                   <Target className="w-3 h-3" />
                   Score Breakdown
                 </div>
@@ -431,7 +431,7 @@ export function FlightDetailPage() {
                     return (
                       <div
                         key={tier.max}
-                        className={`flex items-center gap-2 px-2 py-1 rounded text-[11px] transition-colors ${
+                        className={`flex items-center gap-2 px-2 py-1 rounded text-[12px] transition-colors ${
                           isActive ? 'bg-white/[0.04] border border-white/[0.06]' : 'opacity-40'
                         }`}
                       >
@@ -456,20 +456,20 @@ export function FlightDetailPage() {
 
           {/* Fuel */}
           <div className="panel rounded-md p-4">
-            <h3 className="text-[11px] uppercase tracking-wider text-acars-muted font-medium mb-3 flex items-center gap-2">
+            <h3 className="text-[12px] uppercase tracking-wider text-acars-muted font-medium mb-3 flex items-center gap-2">
               <GasPump className="w-3.5 h-3.5 text-amber-400" />
               Fuel
             </h3>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <div className="text-[10px] uppercase tracking-wider text-acars-muted mb-1">Fuel Used</div>
+                <div className="text-[11px] uppercase tracking-wider text-acars-muted mb-1">Fuel Used</div>
                 <div className="text-xl font-bold tabular-nums text-acars-text">
                   {entry.fuelUsedLbs != null ? entry.fuelUsedLbs.toLocaleString() : '—'}
                   {entry.fuelUsedLbs != null && <span className="text-xs font-normal text-acars-muted ml-1">lbs</span>}
                 </div>
               </div>
               <div>
-                <div className="text-[10px] uppercase tracking-wider text-acars-muted mb-1">Fuel Planned</div>
+                <div className="text-[11px] uppercase tracking-wider text-acars-muted mb-1">Fuel Planned</div>
                 <div className="text-xl font-bold tabular-nums text-acars-text">
                   {entry.fuelPlannedLbs != null ? entry.fuelPlannedLbs.toLocaleString() : '—'}
                   {entry.fuelPlannedLbs != null && <span className="text-xs font-normal text-acars-muted ml-1">lbs</span>}
@@ -478,7 +478,7 @@ export function FlightDetailPage() {
             </div>
             {entry.fuelUsedLbs != null && entry.fuelPlannedLbs != null && (
               <div className="mt-2 pt-2 border-t border-acars-border">
-                <div className="text-[10px] uppercase tracking-wider text-acars-muted">Variance</div>
+                <div className="text-[11px] uppercase tracking-wider text-acars-muted">Variance</div>
                 <div className={`text-sm tabular-nums font-semibold ${
                   entry.fuelUsedLbs <= entry.fuelPlannedLbs ? 'text-emerald-400' : 'text-amber-400'
                 }`}>
@@ -494,7 +494,7 @@ export function FlightDetailPage() {
         {/* ── Events ───────────────────────────────────────── */}
         {exceedances.length > 0 && (
           <div className="panel rounded-md p-4 mb-4">
-            <h3 className="text-[11px] uppercase tracking-wider text-acars-muted font-medium mb-3 flex items-center gap-2">
+            <h3 className="text-[12px] uppercase tracking-wider text-acars-muted font-medium mb-3 flex items-center gap-2">
               <Warning className="w-3.5 h-3.5 text-amber-400" weight="fill" />
               Events ({exceedances.length})
             </h3>
@@ -513,7 +513,7 @@ export function FlightDetailPage() {
                       {exc.type.replace(/_/g, ' ')}
                     </div>
                     <div className="text-acars-muted">{exc.message}</div>
-                    <div className="text-acars-muted text-[10px]">
+                    <div className="text-acars-muted text-[11px]">
                       Detected during {exc.phase} at{' '}
                       {new Date(exc.detectedAt).toLocaleTimeString('en-US', {
                         hour: '2-digit',
@@ -524,13 +524,13 @@ export function FlightDetailPage() {
                       UTC
                     </div>
                     {exc.type === 'HARD_LANDING' && (
-                      <div className="text-amber-400 text-[10px] mt-1">
+                      <div className="text-amber-400 text-[11px] mt-1">
                         → Maintenance inspection scheduled
                       </div>
                     )}
                   </div>
                   <span
-                    className={`text-[10px] font-semibold uppercase px-1.5 py-0.5 rounded ${
+                    className={`text-[11px] font-semibold uppercase px-1.5 py-0.5 rounded ${
                       exc.severity === 'critical'
                         ? 'bg-red-500/20 text-red-400'
                         : 'bg-amber-500/20 text-amber-400'
@@ -547,7 +547,7 @@ export function FlightDetailPage() {
         {/* ── Flight Finances ───────────────────────────────────── */}
         {finances && (
           <div className="panel rounded-md p-4 mb-4">
-            <h3 className="text-[11px] uppercase tracking-wider text-acars-muted font-medium mb-3 flex items-center gap-2">
+            <h3 className="text-[12px] uppercase tracking-wider text-acars-muted font-medium mb-3 flex items-center gap-2">
               <CurrencyDollar className="w-3.5 h-3.5 text-emerald-400" />
               Flight Finances
             </h3>
@@ -566,7 +566,7 @@ export function FlightDetailPage() {
 
                 {/* Variable Costs */}
                 <div className="pt-2 border-t border-acars-border mb-3">
-                  <div className="text-[10px] uppercase tracking-wider text-acars-muted mb-1">Variable Costs</div>
+                  <div className="text-[11px] uppercase tracking-wider text-acars-muted mb-1">Variable Costs</div>
                   {[
                     { label: 'Fuel', value: finances.fuelCost },
                     { label: 'Landing Fee', value: finances.landingFee },
@@ -578,8 +578,8 @@ export function FlightDetailPage() {
                     { label: 'ULD', value: finances.uldFee },
                   ].filter(c => (c.value ?? 0) > 0).map(c => (
                     <div key={c.label} className="flex items-center justify-between py-0.5">
-                      <span className="text-[11px] text-acars-muted">{c.label}</span>
-                      <span className="text-[11px] tabular-nums text-red-400/80">
+                      <span className="text-[12px] text-acars-muted">{c.label}</span>
+                      <span className="text-[12px] tabular-nums text-red-400/80">
                         -${(c.value ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </span>
                     </div>
@@ -595,15 +595,15 @@ export function FlightDetailPage() {
                 {/* Fixed Costs */}
                 {(finances.totalFixedAlloc ?? 0) > 0 && (
                   <div className="pt-2 border-t border-acars-border mb-3">
-                    <div className="text-[10px] uppercase tracking-wider text-acars-muted mb-1">Fixed Cost Allocations</div>
+                    <div className="text-[11px] uppercase tracking-wider text-acars-muted mb-1">Fixed Cost Allocations</div>
                     {[
                       { label: 'Maintenance Reserve', value: finances.maintReserve },
                       { label: 'Lease', value: finances.leaseAlloc },
                       { label: 'Insurance', value: finances.insuranceAlloc },
                     ].filter(c => (c.value ?? 0) > 0).map(c => (
                       <div key={c.label} className="flex items-center justify-between py-0.5">
-                        <span className="text-[11px] text-acars-muted">{c.label}</span>
-                        <span className="text-[11px] tabular-nums text-red-400/80">
+                        <span className="text-[12px] text-acars-muted">{c.label}</span>
+                        <span className="text-[12px] tabular-nums text-red-400/80">
                           -${(c.value ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </span>
                       </div>
@@ -622,18 +622,18 @@ export function FlightDetailPage() {
                     </span>
                   </div>
                   <div className="flex items-center gap-4 mt-1">
-                    <span className="text-[10px] text-acars-muted">
+                    <span className="text-[11px] text-acars-muted">
                       Margin: <span className={`font-semibold ${(finances.marginPct ?? 0) >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
                         {(finances.marginPct ?? 0).toFixed(1)}%
                       </span>
                     </span>
                     {(finances.loadFactor ?? 0) > 0 && (
-                      <span className="text-[10px] text-acars-muted">
+                      <span className="text-[11px] text-acars-muted">
                         Load Factor: <span className="font-semibold text-acars-text">{(finances.loadFactor ?? 0).toFixed(1)}%</span>
                       </span>
                     )}
                     {(finances.blockHours ?? 0) > 0 && (
-                      <span className="text-[10px] text-acars-muted">
+                      <span className="text-[11px] text-acars-muted">
                         Block Hours: <span className="font-semibold text-acars-text tabular-nums">{(finances.blockHours ?? 0).toFixed(1)}</span>
                       </span>
                     )}
@@ -658,7 +658,7 @@ export function FlightDetailPage() {
         {/* ── Flight Details ──────────────────────────────────── */}
         <div className="grid grid-cols-2 gap-4 mb-4">
           <div className="panel rounded-md p-4">
-            <h3 className="text-[11px] uppercase tracking-wider text-acars-muted font-medium mb-3 flex items-center gap-2">
+            <h3 className="text-[12px] uppercase tracking-wider text-acars-muted font-medium mb-3 flex items-center gap-2">
               <AirplaneTilt className="w-3.5 h-3.5 text-sky-400" />
               Aircraft
             </h3>
@@ -671,7 +671,7 @@ export function FlightDetailPage() {
           </div>
 
           <div className="panel rounded-md p-4">
-            <h3 className="text-[11px] uppercase tracking-wider text-acars-muted font-medium mb-3 flex items-center gap-2">
+            <h3 className="text-[12px] uppercase tracking-wider text-acars-muted font-medium mb-3 flex items-center gap-2">
               <Path className="w-3.5 h-3.5 text-blue-400" />
               Flight Plan
             </h3>
@@ -685,7 +685,7 @@ export function FlightDetailPage() {
             />
             {entry.route && (
               <div className="mt-2 pt-2 border-t border-acars-border">
-                <div className="text-[10px] uppercase tracking-wider text-acars-muted font-medium mb-1">Path</div>
+                <div className="text-[11px] uppercase tracking-wider text-acars-muted font-medium mb-1">Path</div>
                 <div className="text-xs text-acars-text tabular-nums leading-relaxed bg-acars-bg rounded px-2 py-1.5 border border-acars-border">
                   {entry.route}
                 </div>
@@ -696,7 +696,7 @@ export function FlightDetailPage() {
 
         {/* ── Pilot & Remarks ─────────────────────────────────── */}
         <div className="panel rounded-md p-4 mb-4">
-          <h3 className="text-[11px] uppercase tracking-wider text-acars-muted font-medium mb-3 flex items-center gap-2">
+          <h3 className="text-[12px] uppercase tracking-wider text-acars-muted font-medium mb-3 flex items-center gap-2">
             <ChatText className="w-3.5 h-3.5 text-blue-400" />
             Pilot Notes
           </h3>

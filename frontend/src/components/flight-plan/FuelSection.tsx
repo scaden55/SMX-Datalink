@@ -29,7 +29,7 @@ export function FuelSection({ totalWeight, fuelPct, ofpFuel }: FuelSectionProps)
     summaryParts.push(`Live: ${fmt(totalWeight)} lbs`);
   }
 
-  const boxCls = "bg-acars-input border border-acars-border text-[11px] tabular-nums rounded-md px-1.5 py-0.5 w-full truncate";
+  const boxCls = "bg-acars-input border border-acars-border text-[12px] tabular-nums rounded-md px-1.5 py-0.5 w-full truncate";
 
   return (
     <CollapsibleSection

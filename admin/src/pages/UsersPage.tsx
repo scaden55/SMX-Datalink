@@ -424,7 +424,7 @@ export function UsersPage() {
                     </td>
 
                     {/* Callsign */}
-                    <td style={{ padding: '10px 16px', fontSize: 12, fontWeight: 600, color: 'var(--text-primary)', fontFamily: 'var(--font-mono)' }}>
+                    <td style={{ padding: '10px 16px', fontSize: 12, fontWeight: 600, color: 'var(--text-primary)', fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums' }}>
                       {user.callsign}
                     </td>
 
@@ -445,12 +445,12 @@ export function UsersPage() {
                     </td>
 
                     {/* Hours */}
-                    <td style={{ padding: '10px 16px', fontSize: 12, fontWeight: 500, color: 'var(--text-primary)', fontFamily: 'var(--font-mono)' }}>
+                    <td style={{ padding: '10px 16px', fontSize: 12, fontWeight: 500, color: 'var(--text-primary)', fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums' }}>
                       {user.hoursTotal.toFixed(1)}
                     </td>
 
                     {/* Flights placeholder — not in the data model, show dash */}
-                    <td style={{ padding: '10px 16px', fontSize: 12, color: 'var(--text-tertiary)', fontFamily: 'var(--font-mono)' }}>
+                    <td style={{ padding: '10px 16px', fontSize: 12, color: 'var(--text-tertiary)', fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums' }}>
                       —
                     </td>
 

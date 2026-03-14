@@ -1,7 +1,7 @@
 -- Revenue Model configuration (single-row table)
 CREATE TABLE IF NOT EXISTS revenue_model_config (
   id INTEGER PRIMARY KEY DEFAULT 1 CHECK (id = 1),
-  -- Yield rates ($/kg) per aircraft class and cargo unit type
+  -- Yield rates ($/lb) per aircraft class and cargo unit type
   class_i_standard REAL NOT NULL DEFAULT 10.00,
   class_i_nonstandard REAL NOT NULL DEFAULT 20.00,
   class_i_hazard REAL NOT NULL DEFAULT 40.00,

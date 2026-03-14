@@ -33,69 +33,69 @@ export const FinanceColumn = memo(function FinanceColumn({ data }: { data: Finan
     : [];
 
   return (
-    <div className="flex flex-col gap-2.5 overflow-hidden pt-0.5">
+    <div className="flex flex-col gap-4 overflow-hidden pt-0.5">
       {/* Header */}
       <div>
-        <div className="text-sm font-semibold" style={{ color: '#f0f0f0', lineHeight: 1.15 }}>
+        <div className="font-semibold" style={{ color: '#f0f0f0', fontSize: 18, lineHeight: 1.15 }}>
           Airline<br />Performance
         </div>
-        <div className="mt-0.5" style={{ color: '#3a3a3a', fontSize: 9 }}>
+        <div className="mt-1" style={{ color: '#4a4a4a', fontSize: 11 }}>
           {new Date().toLocaleDateString('en-US', { month: 'numeric', day: 'numeric', year: '2-digit' })}
         </div>
       </div>
 
       {/* Balance */}
       <div>
-        <AreaChart data={balance.months.map(m => m.income - m.expenses)} />
-        <div className="mt-1" style={{ color: '#4a4a4a', fontSize: 8 }}>Balance</div>
-        <div className="font-mono font-semibold" style={{ color: '#f0f0f0', fontSize: 17, lineHeight: 1 }}>
+        <AreaChart data={balance.months.map(m => m.income - m.expenses)} height={48} />
+        <div className="mt-1.5" style={{ color: '#5a5a5a', fontSize: 10 }}>Balance</div>
+        <div className="font-mono font-semibold" style={{ color: '#f0f0f0', fontSize: 24, lineHeight: 1 }}>
           {fmt(balance.netBalance)}
         </div>
-        <div className="flex gap-2.5 mt-0.5">
+        <div className="flex gap-3 mt-1">
           <div>
-            <span style={{ color: '#3a3a3a', fontSize: 7 }}>Income</span>
-            <div className="font-mono" style={{ color: '#4ade80', fontSize: 10 }}>+{fmt(balance.totalIncome)}</div>
+            <span style={{ color: '#4a4a4a', fontSize: 9 }}>Income</span>
+            <div className="font-mono" style={{ color: '#4ade80', fontSize: 13 }}>+{fmt(balance.totalIncome)}</div>
           </div>
           <div>
-            <span style={{ color: '#3a3a3a', fontSize: 7 }}>Expenses</span>
-            <div className="font-mono" style={{ color: '#f87171', fontSize: 10 }}>-{fmt(balance.totalExpenses)}</div>
+            <span style={{ color: '#4a4a4a', fontSize: 9 }}>Expenses</span>
+            <div className="font-mono" style={{ color: '#f87171', fontSize: 13 }}>-{fmt(balance.totalExpenses)}</div>
           </div>
         </div>
       </div>
 
       {/* RATM + CATM side by side */}
-      <div className="flex gap-3">
+      <div className="flex gap-4">
         <div className="flex-1">
-          <BarTrend data={profitability.ratmTrend ?? []} color="#4ade80" />
-          <div className="mt-1" style={{ color: '#4a4a4a', fontSize: 8 }}>RATM</div>
-          <div className="font-mono font-semibold" style={{ color: '#4ade80', fontSize: 15, lineHeight: 1 }}>
+          <BarTrend data={profitability.ratmTrend ?? []} color="#4ade80" height={32} />
+          <div className="mt-1.5" style={{ color: '#5a5a5a', fontSize: 10 }}>RATM</div>
+          <div className="font-mono font-semibold" style={{ color: '#4ade80', fontSize: 20, lineHeight: 1 }}>
             ${revenuePerRtm.toFixed(2)}
           </div>
-          <div style={{ color: '#3a3a3a', fontSize: 7 }}>/ton-mi</div>
+          <div style={{ color: '#4a4a4a', fontSize: 9 }}>/ton-mi</div>
         </div>
         <div className="flex-1">
-          <BarTrend data={profitability.catmTrend ?? []} color="#3b5bdb" />
-          <div className="mt-1" style={{ color: '#4a4a4a', fontSize: 8 }}>CATM</div>
-          <div className="font-mono font-semibold" style={{ color: '#f0f0f0', fontSize: 15, lineHeight: 1 }}>
+          <BarTrend data={profitability.catmTrend ?? []} color="#4F6CCD" height={32} />
+          <div className="mt-1.5" style={{ color: '#5a5a5a', fontSize: 10 }}>CATM</div>
+          <div className="font-mono font-semibold" style={{ color: '#f0f0f0', fontSize: 20, lineHeight: 1 }}>
             ${costPerAtm.toFixed(2)}
           </div>
-          <div style={{ color: '#3a3a3a', fontSize: 7 }}>/ton-mi</div>
+          <div style={{ color: '#4a4a4a', fontSize: 9 }}>/ton-mi</div>
         </div>
       </div>
 
       {/* Spread */}
       <div>
-        <div style={{ color: '#4a4a4a', fontSize: 8 }}>Spread</div>
-        <div className="font-mono font-semibold" style={{ color: spread >= 0 ? '#4ade80' : '#f87171', fontSize: 13, lineHeight: 1 }}>
+        <div style={{ color: '#5a5a5a', fontSize: 10 }}>Spread</div>
+        <div className="font-mono font-semibold" style={{ color: spread >= 0 ? '#4ade80' : '#f87171', fontSize: 17, lineHeight: 1 }}>
           {spread >= 0 ? '+' : ''}{fmt(spread)}{' '}
-          <span style={{ color: '#3a3a3a', fontSize: 8, fontWeight: 400 }}>/tm · {spreadPct.toFixed(1)}%</span>
+          <span style={{ color: '#4a4a4a', fontSize: 10, fontWeight: 400 }}>/tm · {spreadPct.toFixed(1)}%</span>
         </div>
       </div>
 
       <Divider />
 
       {/* Key Metrics Grid */}
-      <div className="grid grid-cols-3" style={{ gap: '6px 8px' }}>
+      <div className="grid grid-cols-3" style={{ gap: '8px 10px' }}>
         {[
           { label: 'RTM', value: fmt(revenue.totalRtm, '') },
           { label: 'Fleet LF', value: fmtPct(revenue.fleetAvgLoadFactor) },
@@ -105,8 +105,8 @@ export const FinanceColumn = memo(function FinanceColumn({ data }: { data: Finan
           { label: 'Fuel Srchg', value: fmtPct(revenue.fuelSurchargeRecovery) },
         ].map(m => (
           <div key={m.label}>
-            <div style={{ color: '#3a3a3a', fontSize: 7 }}>{m.label}</div>
-            <div className="font-mono font-medium" style={{ color: '#f0f0f0', fontSize: 12 }}>{m.value}</div>
+            <div style={{ color: '#4a4a4a', fontSize: 9 }}>{m.label}</div>
+            <div className="font-mono font-medium" style={{ color: '#f0f0f0', fontSize: 15 }}>{m.value}</div>
           </div>
         ))}
       </div>
@@ -115,11 +115,11 @@ export const FinanceColumn = memo(function FinanceColumn({ data }: { data: Finan
 
       {/* Route Margins */}
       <div className="flex-1">
-        <div className="uppercase" style={{ color: '#3a3a3a', fontSize: 7, letterSpacing: 0.5, marginBottom: 5 }}>Route Margins</div>
-        <div className="font-mono flex flex-col gap-0.5" style={{ fontSize: 9 }}>
+        <div className="uppercase" style={{ color: '#4a4a4a', fontSize: 9, letterSpacing: 0.5, marginBottom: 6 }}>Route Margins</div>
+        <div className="font-mono flex flex-col gap-1" style={{ fontSize: 12 }}>
           {routeMargins.map(r => (
             <div key={r.route} className="flex justify-between">
-              <span style={{ color: '#7a7a7a' }}>{r.route}</span>
+              <span style={{ color: '#8a8a8a' }}>{r.route}</span>
               <span style={{ color: r.marginPct >= 0 ? '#4ade80' : '#f87171' }}>
                 {r.marginPct >= 0 ? '+' : ''}{r.marginPct.toFixed(1)}%
               </span>
@@ -130,14 +130,14 @@ export const FinanceColumn = memo(function FinanceColumn({ data }: { data: Finan
 
       {/* Yield Trend */}
       <div>
-        <div className="uppercase" style={{ color: '#3a3a3a', fontSize: 7, letterSpacing: 0.5 }}>Yield Trend</div>
-        <div className="mt-0.5">
-          <Sparkline data={yieldData} />
+        <div className="uppercase" style={{ color: '#4a4a4a', fontSize: 9, letterSpacing: 0.5 }}>Yield Trend</div>
+        <div className="mt-1">
+          <Sparkline data={yieldData} height={24} />
         </div>
         {yieldLabels.length === 2 && (
-          <div className="flex justify-between mt-px">
-            <span style={{ color: '#3a3a3a', fontSize: 7 }}>{yieldLabels[0]}</span>
-            <span style={{ color: '#3a3a3a', fontSize: 7 }}>{yieldLabels[1]}</span>
+          <div className="flex justify-between mt-0.5">
+            <span style={{ color: '#4a4a4a', fontSize: 9 }}>{yieldLabels[0]}</span>
+            <span style={{ color: '#4a4a4a', fontSize: 9 }}>{yieldLabels[1]}</span>
           </div>
         )}
       </div>

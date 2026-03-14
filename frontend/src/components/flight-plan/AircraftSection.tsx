@@ -19,7 +19,7 @@ export function AircraftSection({ title, tailNumber, type, formData, ofpPilotNam
   const aobFL = editableFields.aobFL ?? formData?.aobFL ?? '';
   const pic = editableFields.pic ?? formData?.pic ?? ofpPilotName ?? pilotName ?? '';
 
-  const inputCls = "bg-acars-input border border-acars-border text-[11px] tabular-nums text-acars-text rounded-md px-1.5 py-0.5 outline-none focus:border-blue-400 truncate w-full";
+  const inputCls = "bg-acars-input border border-acars-border text-[12px] tabular-nums text-acars-text rounded-md px-1.5 py-0.5 outline-none focus:border-blue-400 truncate w-full";
 
   return (
     <div className="px-3 py-1.5">

@@ -11,7 +11,7 @@ function FlightCategoryBadge({ category }: { category: string | null }) {
     LIFR: 'bg-red-500/15 text-red-400 border-red-500/30',
   };
   return (
-    <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold border ${styles[category] ?? 'bg-sky-500/15 text-sky-400 border-sky-400/30'}`}>
+    <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-semibold border ${styles[category] ?? 'bg-sky-500/15 text-sky-400 border-sky-400/30'}`}>
       {category}
     </span>
   );
@@ -22,7 +22,7 @@ function MetarBlock({ icao, label, metar }: { icao: string; label: string; metar
     <div className="panel p-3 space-y-2">
       <div className="flex items-center gap-2">
         <span className="text-xs font-bold text-sky-400">{icao}</span>
-        <span className="text-[10px] text-acars-muted">({label})</span>
+        <span className="text-[11px] text-acars-muted">({label})</span>
         {metar?.flightCategory && <FlightCategoryBadge category={metar.flightCategory} />}
       </div>
 
@@ -30,12 +30,12 @@ function MetarBlock({ icao, label, metar }: { icao: string; label: string; metar
         <>
           <div>
             <span className="data-label">METAR</span>
-            <div className="tabular-nums text-[10px] text-acars-text mt-1 leading-relaxed break-all">
+            <div className="tabular-nums text-[11px] text-acars-text mt-1 leading-relaxed break-all">
               {metar.rawOb}
             </div>
           </div>
 
-          <div className="grid grid-cols-5 gap-2 text-[11px]">
+          <div className="grid grid-cols-5 gap-2 text-[12px]">
             <div>
               <span className="text-acars-muted">Wind</span>
               <div className="text-acars-text tabular-nums">
@@ -63,7 +63,7 @@ function MetarBlock({ icao, label, metar }: { icao: string; label: string; metar
           </div>
         </>
       ) : (
-        <div className="text-[11px] text-acars-muted italic">METAR not available.</div>
+        <div className="text-[12px] text-acars-muted italic">METAR not available.</div>
       )}
     </div>
   );
@@ -74,20 +74,20 @@ function TafBlock({ icao, label, taf }: { icao: string; label: string; taf?: Taf
     <div className="panel p-3 space-y-2">
       <div className="flex items-center gap-2">
         <span className="text-xs font-bold text-sky-400">{icao}</span>
-        <span className="text-[10px] text-acars-muted">({label} TAF)</span>
+        <span className="text-[11px] text-acars-muted">({label} TAF)</span>
       </div>
 
       {taf ? (
         <div>
-          <div className="tabular-nums text-[10px] text-acars-text leading-relaxed break-all whitespace-pre-wrap">
+          <div className="tabular-nums text-[11px] text-acars-text leading-relaxed break-all whitespace-pre-wrap">
             {taf.rawTaf}
           </div>
-          <div className="text-[10px] text-acars-muted mt-1">
+          <div className="text-[11px] text-acars-muted mt-1">
             Valid: {taf.validTimeFrom} – {taf.validTimeTo}
           </div>
         </div>
       ) : (
-        <div className="text-[11px] text-acars-muted italic">TAF not available.</div>
+        <div className="text-[12px] text-acars-muted italic">TAF not available.</div>
       )}
     </div>
   );
@@ -102,7 +102,7 @@ export function WeatherTab({ dispatchData }: { dispatchData: DispatchData }) {
     return (
       <div className="space-y-3">
         <h3 className="text-xs font-semibold text-acars-text">Weather</h3>
-        <div className="text-[11px] text-acars-muted italic">
+        <div className="text-[12px] text-acars-muted italic">
           No flight plan loaded. Weather data will appear once a flight is selected.
         </div>
       </div>
@@ -119,7 +119,7 @@ export function WeatherTab({ dispatchData }: { dispatchData: DispatchData }) {
       <div className="flex items-center gap-2">
         <h3 className="text-xs font-semibold text-acars-text">Weather</h3>
         {dispatchData.loading && (
-          <span className="text-[10px] text-sky-400 animate-pulse">Fetching...</span>
+          <span className="text-[11px] text-sky-400 animate-pulse">Fetching...</span>
         )}
       </div>
 

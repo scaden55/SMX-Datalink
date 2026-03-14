@@ -25,7 +25,7 @@ interface FieldProps {
 }
 
 function Field({ label, value, sub, warn, editable, fieldKey, onFieldChange, highlighted }: FieldProps) {
-  const boxCls = `bg-acars-input border border-acars-border text-[11px] tabular-nums rounded-md px-1.5 py-0.5 w-full truncate outline-none focus:border-blue-400 ${warn ? 'text-amber-400' : 'text-acars-text'}`;
+  const boxCls = `bg-acars-input border border-acars-border text-[12px] tabular-nums rounded-md px-1.5 py-0.5 w-full truncate outline-none focus:border-blue-400 ${warn ? 'text-amber-400' : 'text-acars-text'}`;
 
   return (
     <div className={`flex flex-col items-start min-w-0 flex-1 ${highlighted ? 'border-l-2 border-amber-400 bg-amber-400/5 pl-1' : ''}`}>

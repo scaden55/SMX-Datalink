@@ -170,7 +170,7 @@ export function DataTable<T>({
                 {headerGroup.headers.map((header) => (
                   <TableHead
                     key={header.id}
-                    className="text-[11px] uppercase tracking-wider bg-[var(--surface-0)] sticky top-0 px-3 h-9"
+                    className="text-[12px] uppercase tracking-wider bg-[var(--surface-0)] sticky top-0 px-3 h-9"
                     style={{
                       color: 'var(--text-tertiary)',
                       ...(header.column.columnDef.size

@@ -428,5 +428,38 @@ export function adminMaintenanceRouter(): Router {
     }
   });
 
+  // ═══════════════════════════════════════════════════════════
+  // Aircraft Timeline
+  // ═══════════════════════════════════════════════════════════
+
+  // GET /api/admin/maintenance/aircraft/:id/timeline
+  router.get('/admin/maintenance/aircraft/:id/timeline', authMiddleware, adminMiddleware, (req, res) => {
+    try {
+      const aircraftId = parseInt(req.params.id as string);
+      const page = parseInt(req.query.page as string) || 1;
+      const pageSize = parseInt(req.query.pageSize as string) || 50;
+      const result = service.getAircraftTimeline(aircraftId, page, pageSize);
+      res.json(result);
+    } catch (err) {
+      logger.error(TAG, 'Get aircraft timeline error', err);
+      res.status(500).json({ error: 'Failed to get aircraft timeline' });
+    }
+  });
+
+  // ═══════════════════════════════════════════════════════════
+  // MEL Stats
+  // ═══════════════════════════════════════════════════════════
+
+  // GET /api/admin/maintenance/mel/stats
+  router.get('/admin/maintenance/mel/stats', authMiddleware, adminMiddleware, (_req, res) => {
+    try {
+      const stats = service.getMelStats();
+      res.json(stats);
+    } catch (err) {
+      logger.error(TAG, 'Get MEL stats error', err);
+      res.status(500).json({ error: 'Failed to get MEL stats' });
+    }
+  });
+
   return router;
 }

@@ -46,7 +46,7 @@ export function LoginPage() {
   if (isHydrating) {
     return (
       <div className="flex h-screen items-center justify-center bg-[var(--surface-0)]">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#3b5bdb] border-t-transparent" />
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#4F6CCD] border-t-transparent" />
       </div>
     );
   }
@@ -75,11 +75,11 @@ export function LoginPage() {
 
           {/* Title / Subtitle */}
           <div className="text-center mb-6">
-            <h1 className="text-xl font-semibold text-[var(--text-primary)]">
+            <h1 className="text-lg font-semibold text-[var(--text-primary)]">
               Admin Portal
             </h1>
-            <p className="mt-1 text-sm text-[var(--text-secondary)]">
-              Sign in to manage SMA Virtual
+            <p className="mt-1.5 text-[11px] font-mono text-[var(--text-tertiary)] uppercase tracking-[0.15em]">
+              Operations Management System
             </p>
           </div>
 

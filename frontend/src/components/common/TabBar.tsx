@@ -33,7 +33,7 @@ export function TabBar<T extends string>({ tabs, active, onChange }: TabBarProps
         <button
           key={tab.id}
           onClick={() => onChange(tab.id)}
-          className={`whitespace-nowrap px-3 py-2 text-[11px] uppercase tracking-[0.08em] font-medium transition-colors ${
+          className={`whitespace-nowrap px-3 py-2 text-[12px] uppercase tracking-[0.08em] font-medium transition-colors ${
             active === tab.id ? 'tab-active' : 'tab-inactive'
           }`}
         >

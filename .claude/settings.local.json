@@ -78,7 +78,13 @@
       "Bash(start \"\" \"c:\\\\Users\\\\scade\\\\Documents\\\\SMA ACARS\\\\electron\\\\assets\\\\splash.html\")",
       "Read(//tmp/**)",
       "Bash(node -e \"console.log\\(require\\(''./package.json''\\).version\\)\")",
-      "Bash(node -e \"console.log\\(require\\(''./electron/package.json''\\).version\\)\")"
+      "Bash(node -e \"console.log\\(require\\(''./electron/package.json''\\).version\\)\")",
+      "Bash(node -e \"console.log\\(require\\(''electron/package.json''\\).version\\)\")",
+      "Bash(ELECTRON_RUN_AS_NODE= npx electron --version)",
+      "Bash(node -e \"console.log\\(JSON.parse\\(require\\(''fs''\\).readFileSync\\(''admin/package.json'',''utf8''\\)\\).scripts\\)\")",
+      "Bash(nslookup iacars.specialmissionsair.com)",
+      "Bash(dig iacars.specialmissionsair.com +short)",
+      "Bash(nslookup iacars.specialmissionsair.com 8.8.8.8)"
     ],
     "deny": [
       "Bash(taskkill //F //IM explorer.exe:*)",

@@ -9,7 +9,7 @@ export function CargoTab() {
   if (!manifest) {
     return (
       <div className="flex items-center justify-center h-32">
-        <span className="text-[11px] text-acars-muted">No cargo manifest available</span>
+        <span className="text-[12px] text-acars-muted">No cargo manifest available</span>
       </div>
     );
   }

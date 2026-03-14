@@ -8,7 +8,7 @@ export function PlanningTerrainSection() {
   if (steps.length === 0) {
     return (
       <CollapsibleSection title="Terrain" icon={<Mountains className="w-3.5 h-3.5" />} defaultOpen>
-        <p className="text-[11px] text-acars-muted">Generate OFP to see terrain data</p>
+        <p className="text-[12px] text-acars-muted">Generate OFP to see terrain data</p>
       </CollapsibleSection>
     );
   }

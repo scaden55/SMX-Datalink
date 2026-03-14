@@ -14,11 +14,11 @@ export function VatsimLayerToggle() {
   const pilotCount = snapshot?.pilots.length ?? 0;
 
   return (
-    <div className="bg-acars-panel rounded-md border border-acars-border overflow-hidden mt-1 w-44">
+    <div className="bg-acars-input rounded-md border border-acars-border overflow-hidden mt-1 w-44">
       {/* Header */}
       <div className="flex items-center gap-1.5 px-2.5 py-1.5 border-b border-acars-border">
         <Broadcast className="w-3 h-3 text-sky-400" />
-        <span className="text-[10px] font-bold text-acars-text tracking-wider uppercase">VATSIM</span>
+        <span className="text-[11px] font-bold text-acars-text tracking-wider uppercase">VATSIM</span>
         {snapshot && (
           <span className="ml-auto text-[9px] text-acars-muted">
             {controllerCount} ATC
@@ -92,7 +92,7 @@ function ToggleRow({
       }`}
     >
       <span className={active ? color : 'text-acars-muted/40'}>{icon}</span>
-      <span className={`text-[10px] flex-1 ${active ? 'text-acars-text' : 'text-acars-muted/50'}`}>
+      <span className={`text-[11px] flex-1 ${active ? 'text-acars-text' : 'text-acars-muted/50'}`}>
         {label}
       </span>
       {count != null && (

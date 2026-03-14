@@ -418,7 +418,7 @@ export function PirepDetailPanel({ pirep, open, onOpenChange, onReviewed }: Pire
                         { label: 'IN', value: pirep.oooiIn },
                       ].map(({ label, value }) => (
                         <div key={label} className="bg-muted/30 rounded-md p-2">
-                          <p className="text-[10px] uppercase text-muted-foreground">{label}</p>
+                          <p className="text-[11px] uppercase text-muted-foreground">{label}</p>
                           <p className="text-xs font-mono mt-0.5">
                             {value
                               ? new Date(value).toLocaleTimeString('en-US', {

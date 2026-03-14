@@ -8,6 +8,7 @@ import type { LogbookEntry } from '@acars/shared';
 import { LogbookService } from './logbook.js';
 import { ExceedanceService } from './exceedance.js';
 import { RevenueModelService } from './revenue-model.js';
+import { MaintenanceService } from './maintenance.js';
 
 // ── Score calculation (G-force based) ────────────────────────────
 
@@ -60,6 +61,7 @@ const auditService = new AuditService();
 const logbookService = new LogbookService();
 const exceedanceService = new ExceedanceService();
 const revenueModelService = new RevenueModelService();
+const maintenanceService = new MaintenanceService();
 
 export class PirepService {
   /**
@@ -238,9 +240,25 @@ export class PirepService {
             pilotId: userId,
             type: 'income',
             amount: breakdown.revenue.total,
-            description: `Cargo revenue: ${schedule.flight_number} (${breakdown.cargoKg.toLocaleString()} kg, Class ${breakdown.aircraftClass})`,
+            description: `Cargo revenue: ${schedule.flight_number} (${breakdown.cargoLbs.toLocaleString()} lbs, Class ${breakdown.aircraftClass})`,
             pirepId: logbookId,
           }, userId);
+        }
+
+        // Accumulate aircraft flight hours/cycles for maintenance tracking (auto-approve path)
+        if (aircraftReg) {
+          maintenanceService.accumulateFlightHours(aircraftReg, flightTimeMin);
+        }
+
+        // Back-fill discrepancies with logbook entry ID
+        if (aircraftReg && schedule.flight_number) {
+          const fleetRow = db.prepare('SELECT id FROM fleet WHERE registration = ?').get(aircraftReg) as { id: number } | undefined;
+          if (fleetRow) {
+            db.prepare(`
+              UPDATE discrepancies SET logbook_entry_id = ?
+              WHERE aircraft_id = ? AND flight_number = ? AND logbook_entry_id IS NULL
+            `).run(logbookId, fleetRow.id, schedule.flight_number);
+          }
         }
 
         notificationService.send({

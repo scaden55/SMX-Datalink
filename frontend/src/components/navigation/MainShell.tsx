@@ -129,7 +129,7 @@ export function MainShell() {
       <div
         className="flex flex-col flex-1 min-w-0 relative"
         style={{
-          background: 'linear-gradient(to top right, #000000, #1B1B1C)',
+          background: 'var(--bg-app)',
           WebkitAppRegion: 'no-drag',
         } as React.CSSProperties}
       >

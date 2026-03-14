@@ -1,9 +1,10 @@
 import { useEffect, useMemo } from 'react';
-import { MapContainer, TileLayer, CircleMarker, Marker, Polyline, Tooltip, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Polyline, Tooltip, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import type { Waypoint } from '@acars/shared';
 import { useFlightPlanStore } from '../../stores/flightPlanStore';
+import { findTocTod, isTocTod } from '../../lib/flight-phases';
 
 /** Resolve a CSS custom property from :root to its computed value (e.g. '#00cece'). */
 function getCssVar(name: string): string {
@@ -29,42 +30,49 @@ function MapInvalidator() {
   return null;
 }
 
-const SZ = 10;
-const SW = 1.5;
-
-function shapeIcon(wpType: Waypoint['type'], color: string, fill: string): L.DivIcon {
-  let svg: string;
-  const half = SZ / 2;
+/** ForeFlight-style SVG shape per waypoint type, colored by flight phase */
+function shapeIcon(wpType: Waypoint['type'], color: string, _fill: string): L.DivIcon {
+  let html: string;
 
   switch (wpType) {
-    case 'airport':
-      svg = `<rect x="1" y="1" width="${SZ - 2}" height="${SZ - 2}" fill="${fill}" stroke="${color}" stroke-width="${SW}"/>`;
-      break;
-    case 'vor': {
-      const pts = Array.from({ length: 6 }, (_, i) => {
-        const a = (Math.PI / 3) * i - Math.PI / 2;
-        return `${half + (half - 1) * Math.cos(a)},${half + (half - 1) * Math.sin(a)}`;
-      }).join(' ');
-      svg = `<polygon points="${pts}" fill="${fill}" stroke="${color}" stroke-width="${SW}"/>`;
-      break;
-    }
-    case 'ndb':
-      svg = `<circle cx="${half}" cy="${half}" r="${half - 1}" fill="${fill}" stroke="${color}" stroke-width="${SW}"/>`;
-      break;
-    case 'gps':
-      svg = `<polygon points="${half},1 ${SZ - 1},${half} ${half},${SZ - 1} 1,${half}" fill="${fill}" stroke="${color}" stroke-width="${SW}"/>`;
-      break;
-    default:
-      svg = `<polygon points="${half},1 ${SZ - 1},${SZ - 1} 1,${SZ - 1}" fill="${fill}" stroke="${color}" stroke-width="${SW}"/>`;
-      break;
-  }
+    case 'airport': // Aerodrome: circle with 4 protruding ticks
+      html = `<svg viewBox="0 0 24 24" width="20" height="20">
+        <circle cx="12" cy="12" r="6" fill="none" stroke="#000" stroke-width="1.5"/>
+        <circle cx="12" cy="12" r="6" fill="none" stroke="${color}" stroke-width="2.5"/>
+        <rect x="10" y="0" width="4" height="5" fill="${color}" stroke="#000" stroke-width="0.5"/>
+        <rect x="10" y="19" width="4" height="5" fill="${color}" stroke="#000" stroke-width="0.5"/>
+        <rect x="0" y="10" width="5" height="4" fill="${color}" stroke="#000" stroke-width="0.5"/>
+        <rect x="19" y="10" width="5" height="4" fill="${color}" stroke="#000" stroke-width="0.5"/>
+      </svg>`;
+      return L.divIcon({ html, className: '', iconSize: [20, 20], iconAnchor: [10, 10] });
 
-  return L.divIcon({
-    html: `<svg width="${SZ}" height="${SZ}" viewBox="0 0 ${SZ} ${SZ}">${svg}</svg>`,
-    className: '',
-    iconSize: [SZ, SZ],
-    iconAnchor: [half, half],
-  });
+    case 'vor': // Solid hexagon with black center dot
+      html = `<svg viewBox="0 0 20 20" width="18" height="18">
+        <polygon points="10,1 18,5.5 18,14.5 10,19 2,14.5 2,5.5" fill="${color}" stroke="#000" stroke-width="1.5"/>
+        <circle cx="10" cy="10" r="2.5" fill="#000"/>
+      </svg>`;
+      return L.divIcon({ html, className: '', iconSize: [18, 18], iconAnchor: [9, 9] });
+
+    case 'ndb': // Circle with black stroke
+      html = `<svg viewBox="0 0 16 16" width="14" height="14">
+        <circle cx="8" cy="8" r="5.5" fill="none" stroke="#000" stroke-width="1.5"/>
+        <circle cx="8" cy="8" r="5.5" fill="none" stroke="${color}" stroke-width="2.5"/>
+      </svg>`;
+      return L.divIcon({ html, className: '', iconSize: [14, 14], iconAnchor: [7, 7] });
+
+    case 'gps': // Diamond with black stroke
+      html = `<svg viewBox="0 0 14 14" width="14" height="14">
+        <polygon points="7,1 13,7 7,13 1,7" fill="none" stroke="#000" stroke-width="1.5"/>
+        <polygon points="7,1 13,7 7,13 1,7" fill="none" stroke="${color}" stroke-width="2"/>
+      </svg>`;
+      return L.divIcon({ html, className: '', iconSize: [14, 14], iconAnchor: [7, 7] });
+
+    default: // Fix/intersection: filled triangle with black stroke
+      html = `<svg viewBox="0 0 14 14" width="14" height="14">
+        <polygon points="7,1 13,12 1,12" fill="${color}" stroke="#000" stroke-width="1.5"/>
+      </svg>`;
+      return L.divIcon({ html, className: '', iconSize: [14, 14], iconAnchor: [7, 7] });
+  }
 }
 
 export function PlanningMap() {
@@ -109,17 +117,7 @@ export function PlanningMap() {
   const { climbPositions, cruisePositions, descentPositions, tocIndex, todIndex } = useMemo(() => {
     if (planningWaypoints.length < 2) return { climbPositions: [] as [number, number][], cruisePositions: [] as [number, number][], descentPositions: [] as [number, number][], tocIndex: 0, todIndex: 0 };
 
-    const maxAlt = Math.max(...planningWaypoints.map((w) => w.altitude ?? 0));
-    const threshold = maxAlt * 0.90;
-
-    let toc = 0;
-    let tod = planningWaypoints.length - 1;
-    for (let i = 0; i < planningWaypoints.length; i++) {
-      if ((planningWaypoints[i].altitude ?? 0) >= threshold) { toc = i; break; }
-    }
-    for (let i = planningWaypoints.length - 1; i >= 0; i--) {
-      if ((planningWaypoints[i].altitude ?? 0) >= threshold) { tod = i; break; }
-    }
+    const { tocIndex: toc, todIndex: tod } = findTocTod(planningWaypoints);
 
     const toPos = (w: typeof planningWaypoints[number]): [number, number] => [w.latitude, w.longitude];
     return {
@@ -130,6 +128,13 @@ export function PlanningMap() {
       todIndex: tod,
     };
   }, [planningWaypoints]);
+
+  const tocTodDiamond = (color: string) => L.divIcon({
+    html: `<svg viewBox="0 0 14 14" width="14" height="14"><polygon points="7,1 13,7 7,13 1,7" fill="${color}" stroke="#000" stroke-width="1.5"/></svg>`,
+    className: '',
+    iconSize: [14, 14],
+    iconAnchor: [7, 7],
+  });
 
   return (
     <div className="h-full w-full relative">
@@ -151,20 +156,36 @@ export function PlanningMap() {
           <>
             <FitToRoute positions={routePositions} />
             {climbPositions.length >= 2 && (
-              <Polyline key={`climb-${routeKey}`} positions={climbPositions} pathOptions={{ color: clr.climb, weight: 2, opacity: 0.8, dashArray: '6 4' }} />
+              <Polyline key={`climb-${routeKey}`} positions={climbPositions} pathOptions={{ color: clr.climb, weight: 3, opacity: 0.8 }} />
             )}
             {cruisePositions.length >= 2 && (
-              <Polyline key={`cruise-${routeKey}`} positions={cruisePositions} pathOptions={{ color: clr.cruise, weight: 2, opacity: 0.8, dashArray: '6 4' }} />
+              <Polyline key={`cruise-${routeKey}`} positions={cruisePositions} pathOptions={{ color: clr.cruise, weight: 3, opacity: 0.8 }} />
             )}
             {descentPositions.length >= 2 && (
-              <Polyline key={`descent-${routeKey}`} positions={descentPositions} pathOptions={{ color: clr.descent, weight: 2, opacity: 0.8, dashArray: '6 4' }} />
+              <Polyline key={`descent-${routeKey}`} positions={descentPositions} pathOptions={{ color: clr.descent, weight: 3, opacity: 0.8 }} />
             )}
           </>
         )}
 
-        {/* Waypoint markers — shape by type, colored by phase */}
+        {/* Waypoint markers — TOC/TOD as diamonds, others as navaid shapes */}
         {planningWaypoints.slice(1, -1).map((w, i) => {
           const absIdx = i + 1;
+
+          // TOC/TOD → diamond marker with label
+          if (isTocTod(w.ident)) {
+            const isToc = /c$/i.test(w.ident);
+            const color = isToc ? clr.climb : clr.descent;
+            const label = isToc ? 'TOC' : 'TOD';
+            return (
+              <Marker key={`wp-${i}-${w.ident}`} position={[w.latitude, w.longitude]} icon={tocTodDiamond(color)}>
+                <Tooltip direction="right" offset={[8, 0]} permanent className="!bg-transparent !border-none !shadow-none !p-0">
+                  <span style={{ fontSize: '10px', color, fontWeight: 600 }}>{label}</span>
+                </Tooltip>
+              </Marker>
+            );
+          }
+
+          // Regular waypoint — navaid shape colored by phase
           const phaseClr = absIdx < tocIndex ? clr.climb : absIdx > todIndex ? clr.descent : clr.cruise;
           return (
             <Marker
@@ -183,62 +204,58 @@ export function PlanningMap() {
 
         {/* Departure */}
         {depAirport && (
-          <CircleMarker
-            center={[depAirport.lat, depAirport.lon]}
-            radius={6}
-            pathOptions={{ color: clr.depArr, fillColor: clr.depArr, fillOpacity: 0.9, weight: 1.5 }}
+          <Marker
+            position={[depAirport.lat, depAirport.lon]}
+            icon={shapeIcon('airport', clr.depArr, clr.fill)}
           >
             <Tooltip direction="top" offset={[0, -8]} permanent className="hub-tooltip">
               <span style={{ fontSize: '11px', fontFeatureSettings: '"tnum"' }}>
                 {depAirport.icao}
               </span>
             </Tooltip>
-          </CircleMarker>
+          </Marker>
         )}
 
         {/* Arrival */}
         {arrAirport && (
-          <CircleMarker
-            center={[arrAirport.lat, arrAirport.lon]}
-            radius={6}
-            pathOptions={{ color: clr.arrival, fillColor: clr.arrival, fillOpacity: 0.9, weight: 1.5 }}
+          <Marker
+            position={[arrAirport.lat, arrAirport.lon]}
+            icon={shapeIcon('airport', clr.arrival, clr.fill)}
           >
             <Tooltip direction="top" offset={[0, -8]} permanent className="hub-tooltip">
               <span style={{ fontSize: '11px', fontFeatureSettings: '"tnum"' }}>
                 {arrAirport.icao}
               </span>
             </Tooltip>
-          </CircleMarker>
+          </Marker>
         )}
 
         {/* Alternate 1 */}
         {alt1Airport && (
-          <CircleMarker
-            center={[alt1Airport.lat, alt1Airport.lon]}
-            radius={5}
-            pathOptions={{ color: clr.alt, fillColor: clr.alt, fillOpacity: 0.8, weight: 1.5 }}
+          <Marker
+            position={[alt1Airport.lat, alt1Airport.lon]}
+            icon={shapeIcon('airport', clr.alt, clr.fill)}
           >
             <Tooltip direction="top" offset={[0, -8]} className="hub-tooltip">
               <span style={{ fontSize: '11px', fontFeatureSettings: '"tnum"' }}>
                 {alt1Airport.icao} (ALT)
               </span>
             </Tooltip>
-          </CircleMarker>
+          </Marker>
         )}
 
         {/* Alternate 2 */}
         {alt2Airport && (
-          <CircleMarker
-            center={[alt2Airport.lat, alt2Airport.lon]}
-            radius={5}
-            pathOptions={{ color: clr.alt, fillColor: clr.alt, fillOpacity: 0.8, weight: 1.5 }}
+          <Marker
+            position={[alt2Airport.lat, alt2Airport.lon]}
+            icon={shapeIcon('airport', clr.alt, clr.fill)}
           >
             <Tooltip direction="top" offset={[0, -8]} className="hub-tooltip">
               <span style={{ fontSize: '11px', fontFeatureSettings: '"tnum"' }}>
                 {alt2Airport.icao} (ALT)
               </span>
             </Tooltip>
-          </CircleMarker>
+          </Marker>
         )}
       </MapContainer>
     </div>

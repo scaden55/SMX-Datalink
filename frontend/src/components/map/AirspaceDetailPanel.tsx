@@ -22,7 +22,7 @@ const FACILITY_NAMES: Record<VatsimFacilityType, string> = {
 };
 
 const FACILITY_COLORS: Record<VatsimFacilityType, string> = {
-  0: '#6b7280', 1: '#3b82f6', 2: '#60a5fa', 3: '#22c55e',
+  0: '#6b7280', 1: '#4F6CCD', 2: '#60a5fa', 3: '#22c55e',
   4: '#ef4444', 5: '#f59e0b', 6: '#22d3ee',
 };
 
@@ -96,7 +96,7 @@ export function AirspaceDetailPanel({
   }, [airspaceControllers, atis]);
 
   return (
-    <div className="absolute top-3 right-3 bottom-3 w-[350px] z-[1000] bg-acars-panel rounded-md border border-acars-border flex flex-col overflow-hidden animate-in slide-in-from-right duration-200">
+    <div className="absolute top-3 right-3 bottom-3 w-[350px] z-[1000] bg-acars-input rounded-md border border-acars-border flex flex-col overflow-hidden animate-in slide-in-from-right duration-200">
       {/* ── Sticky Header ── */}
       <div className="px-4 py-3 border-b border-acars-border shrink-0">
         <div className="flex items-start justify-between">
@@ -130,7 +130,7 @@ export function AirspaceDetailPanel({
         <div className="flex items-center gap-2 mt-2">
           <div className="flex items-center gap-1">
             <AirplaneTilt className="w-3 h-3 text-acars-muted" />
-            <span className="text-[11px] font-bold tabular-nums text-acars-text">
+            <span className="text-[12px] font-bold tabular-nums text-acars-text">
               {insidePilots.length}
             </span>
             <span className="text-[9px] text-acars-muted uppercase">aircraft</span>
@@ -138,7 +138,7 @@ export function AirspaceDetailPanel({
           {airspaceControllers.length > 0 && (
             <div className="flex items-center gap-1.5 ml-auto">
               <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
-              <span className="text-[10px] font-bold text-green-400">
+              <span className="text-[11px] font-bold text-green-400">
                 {airspaceControllers.length} ATC
               </span>
             </div>
@@ -155,7 +155,7 @@ export function AirspaceDetailPanel({
           <button
             key={key}
             onClick={() => setTab(key)}
-            className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-2 text-[10px] font-semibold tracking-wider uppercase transition-colors ${
+            className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-2 text-[11px] font-semibold tracking-wider uppercase transition-colors ${
               tab === key
                 ? 'text-sky-400 border-b-2 border-sky-400 bg-sky-500/5'
                 : 'text-acars-muted hover:text-acars-text hover:bg-acars-border'
@@ -234,18 +234,18 @@ function TrafficTab({ pilots }: { pilots: VatsimPilot[] }) {
               key={p.cid}
               className="flex items-center gap-2 px-2.5 py-1.5 rounded mb-0.5 hover:bg-acars-border transition-colors"
             >
-              <span className="text-[11px] font-bold tabular-nums text-acars-text w-16 shrink-0">
+              <span className="text-[12px] font-bold tabular-nums text-acars-text w-16 shrink-0">
                 {p.callsign}
               </span>
-              <span className="text-[10px] tabular-nums text-acars-muted">
+              <span className="text-[11px] tabular-nums text-acars-muted">
                 {p.flight_plan?.aircraft_short || '—'}
               </span>
-              <span className="text-[10px] text-acars-muted ml-auto tabular-nums">
+              <span className="text-[11px] text-acars-muted ml-auto tabular-nums">
                 {p.flight_plan?.departure && p.flight_plan?.arrival
                   ? `${p.flight_plan.departure} → ${p.flight_plan.arrival}`
                   : '—'}
               </span>
-              <span className="text-[10px] tabular-nums text-acars-muted tabular-nums w-14 text-right">
+              <span className="text-[11px] tabular-nums text-acars-muted tabular-nums w-14 text-right">
                 {formatAltitude(p)}
               </span>
             </div>
@@ -291,16 +291,16 @@ function ControllerTab({
               <div key={a.callsign} className="mb-2">
                 <div className="flex items-center gap-2 mb-1">
                   <span className="w-1.5 h-1.5 rounded-full bg-green-400 shrink-0" />
-                  <span className="text-[11px] font-bold tabular-nums text-acars-text">{a.callsign}</span>
-                  <span className="text-[11px] tabular-nums text-sky-400">{a.frequency}</span>
+                  <span className="text-[12px] font-bold tabular-nums text-acars-text">{a.callsign}</span>
+                  <span className="text-[12px] tabular-nums text-sky-400">{a.frequency}</span>
                   {a.atis_code && (
-                    <span className="ml-auto px-1.5 py-0.5 rounded bg-sky-500/10 text-[10px] font-bold text-sky-400">
+                    <span className="ml-auto px-1.5 py-0.5 rounded bg-sky-500/10 text-[11px] font-bold text-sky-400">
                       {a.atis_code}
                     </span>
                   )}
                 </div>
                 {a.text_atis && a.text_atis.length > 0 && (
-                  <div className="p-2 rounded-md bg-acars-bg/60 border border-acars-border text-[10px] tabular-nums text-acars-muted leading-relaxed max-h-24 overflow-y-auto">
+                  <div className="p-2 rounded-md bg-acars-bg/60 border border-acars-border text-[11px] tabular-nums text-acars-muted leading-relaxed max-h-24 overflow-y-auto">
                     {a.text_atis.join(' ')}
                   </div>
                 )}
@@ -328,14 +328,14 @@ function ControllerTab({
                   {FACILITY_NAMES[ctrl.facility]}
                 </span>
                 <div className="flex-1 min-w-0">
-                  <div className="text-[11px] tabular-nums text-acars-text">{ctrl.callsign}</div>
+                  <div className="text-[12px] tabular-nums text-acars-text">{ctrl.callsign}</div>
                   <div className="text-[9px] text-acars-muted">
                     {ctrl.name} &middot;{' '}
                     <Clock className="w-2.5 h-2.5 inline-block -mt-px" />{' '}
                     {formatLogonDuration(ctrl.logon_time)}
                   </div>
                 </div>
-                <span className="text-[11px] tabular-nums text-sky-400 tabular-nums shrink-0">
+                <span className="text-[12px] tabular-nums text-sky-400 tabular-nums shrink-0">
                   {ctrl.frequency}
                 </span>
               </div>
@@ -381,7 +381,7 @@ function ControllerAtisBlock({
         <span className="uppercase tracking-wider font-semibold">Controller Info</span>
       </button>
       {!collapsed && (
-        <div className="mt-1 p-2 rounded-md bg-acars-bg/60 border border-acars-border text-[10px] tabular-nums text-acars-muted leading-relaxed max-h-24 overflow-y-auto">
+        <div className="mt-1 p-2 rounded-md bg-acars-bg/60 border border-acars-border text-[11px] tabular-nums text-acars-muted leading-relaxed max-h-24 overflow-y-auto">
           {text.join(' ')}
         </div>
       )}
@@ -408,7 +408,7 @@ function CollapsibleSection({
         onClick={onToggle}
         className="w-full flex items-center gap-1.5 px-4 py-2.5 hover:bg-acars-border transition-colors"
       >
-        <span className="text-[10px] font-semibold text-acars-muted tracking-wider uppercase">{title}</span>
+        <span className="text-[11px] font-semibold text-acars-muted tracking-wider uppercase">{title}</span>
         <div className="flex-1" />
         <CaretDown
           className={`w-3 h-3 text-acars-muted transition-transform duration-200 ${collapsed ? '-rotate-90' : ''}`}

@@ -147,7 +147,7 @@ export function RegisterPage() {
           </Link>
         </p>
       </div>
-      <p className="absolute bottom-4 left-0 right-0 text-center text-[10px] text-acars-muted/30">SMX ACARS v{__APP_VERSION__}</p>
+      <p className="absolute bottom-4 left-0 right-0 text-center text-[11px] text-acars-muted/30">SMX ACARS v{__APP_VERSION__}</p>
     </div>
   );
 }

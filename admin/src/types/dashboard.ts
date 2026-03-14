@@ -67,6 +67,11 @@ export interface MaintenanceSummary {
     intervalHours: number;
     pctRemaining: number;
   }[];
+  openDiscrepancies: {
+    open: number;
+    inReview: number;
+    deferred: number;
+  };
 }
 
 // ── Flight Activity (new endpoint) ───────────────────────────
@@ -85,4 +90,37 @@ export interface FlightActivity {
     arrIcao: string;
     completedAt: string;
   }[];
+}
+
+// ── Ops & Fleet (Column 2) ──────────────────────────────────
+export interface PilotActivityEntry {
+  callsign: string;
+  firstName: string;
+  lastName: string;
+  hoursThisMonth: number;
+}
+
+export interface FleetUtilizationEntry {
+  registration: string;
+  totalHours: number;
+}
+
+// ── Network & Flights (Column 4) ────────────────────────────
+export interface VatsimPilotSummary {
+  callsign: string;
+  departure: string;
+  arrival: string;
+}
+
+export interface AcarsMessage {
+  callsign: string;
+  content: string;
+  createdAt: string;
+}
+
+export interface HubWeather {
+  icao: string;
+  flightRules: 'VFR' | 'MVFR' | 'IFR';
+  tempC: number;
+  visibility: string;
 }

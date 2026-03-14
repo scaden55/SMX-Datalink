@@ -216,12 +216,12 @@ export function RouteAutocomplete({ value, onChange, placeholder }: Props) {
               </span>
 
               {/* Type badge */}
-              <span className="text-[10px] px-[3px] rounded-[2px] bg-acars-badge-bg text-acars-badge-text tabular-nums">
+              <span className="text-[11px] px-[3px] rounded-[2px] bg-acars-badge-bg text-acars-badge-text tabular-nums">
                 {TYPE_LABELS[r.type] ?? r.type}
               </span>
 
               {/* Name / frequency */}
-              <span className="text-[11px] text-acars-muted tabular-nums truncate ml-auto">
+              <span className="text-[12px] text-acars-muted tabular-nums truncate ml-auto">
                 {r.frequency ? `${r.frequency.toFixed(r.type === 'NDB' ? 0 : 2)}` : ''}
                 {r.name ? ` ${r.name}` : ''}
               </span>

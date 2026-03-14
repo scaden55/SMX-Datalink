@@ -49,7 +49,7 @@ export function CollapsibleSection({
         {icon && <span className="text-blue-400 shrink-0">{icon}</span>}
 
         {/* Title */}
-        <span className="text-[10px] uppercase tracking-[0.06em] font-medium" style={{ color: 'var(--text-label)' }}>
+        <span className="text-[11px] uppercase tracking-[0.06em] font-medium" style={{ color: 'var(--text-label)' }}>
           {title}
         </span>
       </div>

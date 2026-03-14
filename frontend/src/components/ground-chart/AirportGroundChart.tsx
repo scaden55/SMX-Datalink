@@ -10,11 +10,11 @@ interface AirportGroundChartProps {
   className?: string;
 }
 
-// SVG aircraft icon as data URL (blue #3b82f6)
+// SVG aircraft icon as data URL (blue #4F6CCD)
 const AIRCRAFT_SVG = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(`
 <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
   <path d="M16 2 L19 12 L28 14 L19 16 L19 26 L16 24 L13 26 L13 16 L4 14 L13 12 Z"
-        fill="#3b82f6" stroke="#1e3a5f" stroke-width="1"/>
+        fill="#4F6CCD" stroke="#1e3a5f" stroke-width="1"/>
 </svg>
 `)}`;
 
@@ -43,7 +43,7 @@ export function AirportGroundChart({ icao, aircraftPosition, className }: Airpor
           {
             id: 'background',
             type: 'background',
-            paint: { 'background-color': '#000000' },
+            paint: { 'background-color': '#030726' },
           },
         ],
       },
@@ -194,13 +194,13 @@ export function AirportGroundChart({ icao, aircraftPosition, className }: Airpor
         <div className="absolute inset-0 flex items-center justify-center bg-black/60">
           <div className="text-center">
             <div className="text-xs text-acars-muted tabular-nums">No ground chart data</div>
-            <div className="text-[10px] text-acars-muted/60 mt-1">OSM data unavailable for {icao}</div>
+            <div className="text-[11px] text-acars-muted/60 mt-1">OSM data unavailable for {icao}</div>
           </div>
         </div>
       )}
 
       {/* ICAO badge */}
-      <div className="absolute top-2 left-2 px-2 py-1 rounded bg-black/70 text-[10px] tabular-nums font-bold text-acars-text">
+      <div className="absolute top-2 left-2 px-2 py-1 rounded bg-black/70 text-[11px] tabular-nums font-bold text-acars-text">
         {icao}
       </div>
     </div>

@@ -40,32 +40,15 @@ export default {
   				DEFAULT: 'hsl(var(--card))',
   				foreground: 'hsl(var(--card-foreground))'
   			},
-  			sidebar: {
-  				DEFAULT: 'hsl(var(--sidebar-background))',
-  				foreground: 'hsl(var(--sidebar-foreground))',
-  				primary: 'hsl(var(--sidebar-primary))',
-  				'primary-foreground': 'hsl(var(--sidebar-primary-foreground))',
-  				accent: 'hsl(var(--sidebar-accent))',
-  				'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
-  				border: 'hsl(var(--sidebar-border))',
-  				ring: 'hsl(var(--sidebar-ring))'
-  			},
   			success: '#22c55e',
   			warning: '#f59e0b',
   			danger: '#ef4444',
   			info: '#06b6d4'
   		},
   		fontFamily: {
-  			sans: [
-  				'Lufga',
-  				'system-ui',
-  				'sans-serif'
-  			],
-  			mono: [
-  				'Lufga',
-  				'system-ui',
-  				'sans-serif'
-  			]
+  			sans: ['Inter Variable', 'Inter', 'system-ui', 'sans-serif'],
+  			display: ['Lufga', 'system-ui', 'sans-serif'],
+  			mono: ['ui-monospace', 'Cascadia Mono', 'Segoe UI Mono', 'Liberation Mono', 'Menlo', 'Monaco', 'Consolas', 'monospace'],
   		},
   		borderRadius: {
   			lg: 'var(--radius)',

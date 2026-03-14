@@ -49,7 +49,7 @@ export function NotificationDropdown() {
         <Bell className="w-4 h-4" />
         {unreadCount > 0 && (
           <>
-            <span className="absolute -top-0.5 -right-0.5 flex items-center justify-center min-w-[14px] h-3.5 rounded-full bg-red-500 text-[8px] font-bold text-white px-0.5">
+            <span className="absolute -top-0.5 -right-0.5 flex items-center justify-center min-w-[14px] h-3.5 rounded-full bg-red-500 text-[9px] font-bold text-white px-0.5">
               {unreadCount > 99 ? '99+' : unreadCount}
             </span>
             <span className="absolute -top-0.5 -right-0.5 h-3.5 w-3.5 rounded-full bg-red-500/40 animate-ping" />
@@ -65,7 +65,7 @@ export function NotificationDropdown() {
             {unreadCount > 0 && (
               <button
                 onClick={() => markAllRead()}
-                className="flex items-center gap-1 text-[10px] text-blue-400 hover:text-blue-400/80 transition-colors"
+                className="flex items-center gap-1 text-[11px] text-blue-400 hover:text-blue-400/80 transition-colors"
               >
                 <Checks className="w-3 h-3" />
                 Mark all read
@@ -97,7 +97,7 @@ export function NotificationDropdown() {
                     )}
                     <div className={`flex-1 min-w-0 ${n.read ? 'pl-3.5' : ''}`}>
                       <p className="text-xs text-acars-text leading-relaxed">{n.message}</p>
-                      <p className="text-[10px] text-acars-muted mt-0.5">
+                      <p className="text-[11px] text-acars-muted mt-0.5">
                         {new Date(n.createdAt).toLocaleString()}
                       </p>
                     </div>

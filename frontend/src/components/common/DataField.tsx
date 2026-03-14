@@ -11,7 +11,7 @@ export function DataField({ label, value, unit, className = '' }: DataFieldProps
       <div className="data-label">{label}</div>
       <div className="data-value">
         {value ?? '---'}
-        {unit && value !== null && <span className="text-acars-muted ml-1 text-[10px]">{unit}</span>}
+        {unit && value !== null && <span className="text-acars-muted ml-1 text-[11px]">{unit}</span>}
       </div>
     </div>
   );

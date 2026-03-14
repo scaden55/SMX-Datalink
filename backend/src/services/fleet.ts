@@ -6,6 +6,7 @@ import type {
   UpdateFleetAircraftRequest,
 } from '@acars/shared';
 import type { FleetUtilizationQueryRow } from '../types/db-rows.js';
+import { MaintenanceService } from './maintenance.js';
 
 // ── Raw DB row type ─────────────────────────────────────────────
 
@@ -164,6 +165,10 @@ export class FleetService {
       data.hexCode ?? null,
       data.aircraftClass ?? 'I',
     );
+
+    // Auto-create aircraft_hours for maintenance tracking
+    const maintenanceService = new MaintenanceService();
+    maintenanceService.ensureAircraftHours(Number(result.lastInsertRowid));
 
     return this.findById(result.lastInsertRowid as number)!;
   }

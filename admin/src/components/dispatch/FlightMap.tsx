@@ -32,7 +32,7 @@ function getFlightIcon(heading: number, selected: boolean): L.DivIcon {
   const key = `${rounded}-${selected}`;
   let icon = iconCache.get(key);
   if (!icon) {
-    const color = selected ? '#facc15' : '#3b82f6';
+    const color = selected ? '#facc15' : '#4F6CCD';
     const size = selected ? 32 : 24;
     icon = L.divIcon({
       html: PLANE_SVG(rounded, size, color),
@@ -76,7 +76,7 @@ const TrailLine = memo(function TrailLine({ trail }: { trail: TrackPoint[] }) {
   return (
     <Polyline
       positions={positions}
-      pathOptions={{ color: '#3b82f6', weight: 2, opacity: 0.5, dashArray: '4 3' }}
+      pathOptions={{ color: '#4F6CCD', weight: 2, opacity: 0.5, dashArray: '4 3' }}
     />
   );
 });
@@ -97,14 +97,14 @@ export const FlightMap = memo(function FlightMap({
   trail,
 }: FlightMapProps) {
   return (
-    <div className="h-full w-full" style={{ background: '#000000' }}>
+    <div className="h-full w-full" style={{ background: '#030726' }}>
       <MapContainer
         center={[30, -20]}
         zoom={3}
         className="h-full w-full"
         zoomControl={false}
         attributionControl={false}
-        style={{ background: '#000000' }}
+        style={{ background: '#030726' }}
       >
         <TileLayer
           url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
@@ -129,15 +129,15 @@ export const FlightMap = memo(function FlightMap({
                 eventHandlers={{ click: () => onSelectFlight(flight) }}
               >
                 <Tooltip direction="top" offset={[0, -12]} opacity={0.95}>
-                  <div style={{ fontFamily: 'Inter, system-ui, sans-serif', fontSize: 11, lineHeight: 1.5 }}>
-                    <div style={{ fontWeight: 600, color: isSelected ? '#facc15' : '#3b82f6' }}>
+                  <div style={{ fontFamily: 'ui-monospace, Cascadia Mono, Consolas, monospace', fontSize: 11, lineHeight: 1.5, fontVariantNumeric: 'tabular-nums' }}>
+                    <div style={{ fontWeight: 700, color: isSelected ? '#facc15' : '#4F6CCD', letterSpacing: '0.04em' }}>
                       {flight.callsign}
                     </div>
-                    <div style={{ color: '#9ca3af' }}>
-                      {flight.aircraftType} · FL{Math.round(flight.altitude / 100)} · {Math.round(flight.groundSpeed)}kt
+                    <div style={{ color: '#9ca3af', fontSize: 10 }}>
+                      {flight.aircraftType} · FL{Math.round(flight.altitude / 100).toString().padStart(3, '0')} · {Math.round(flight.groundSpeed).toString().padStart(3, '0')}kt
                     </div>
                     {flight.phase && (
-                      <div style={{ color: '#6b7280', fontSize: 10 }}>
+                      <div style={{ color: '#6b7280', fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
                         {flight.phase.replace('_', ' ')}
                       </div>
                     )}

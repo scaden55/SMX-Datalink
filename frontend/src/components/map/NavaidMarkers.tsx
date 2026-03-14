@@ -4,22 +4,32 @@ import L from 'leaflet';
 import { api } from '../../lib/api';
 import type { NavaidMapItem } from '@acars/shared';
 
-// ── SVG icon templates ──────────────────────────────────────
+// ── SVG icon templates (ForeFlight style) ───────────────────
 
-const VOR_SVG = `<svg viewBox="0 0 14 14" width="14" height="14">
-  <polygon points="7,1 12.5,4.2 12.5,9.8 7,13 1.5,9.8 1.5,4.2" fill="var(--bg-panel)" stroke="#79c0ff" stroke-width="1.5"/>
+// VOR: Cyan hexagon (stroke only) with center dot
+const VOR_SVG = `<svg viewBox="0 0 16 16" width="16" height="16">
+  <polygon points="8,1 14,4.5 14,11.5 8,15 2,11.5 2,4.5" fill="none" stroke="#00d4ff" stroke-width="2"/>
+  <circle cx="8" cy="8" r="2" fill="#00d4ff"/>
 </svg>`;
 
-const NDB_SVG = `<svg viewBox="0 0 14 14" width="14" height="14">
-  <circle cx="7" cy="7" r="5.5" fill="var(--bg-panel)" stroke="#d29922" stroke-width="1.5"/>
+// NDB: Orange circle (stroke only)
+const NDB_SVG = `<svg viewBox="0 0 12 12" width="12" height="12">
+  <circle cx="6" cy="6" r="4.5" fill="none" stroke="#d29922" stroke-width="2"/>
 </svg>`;
 
-const DME_SVG = `<svg viewBox="0 0 14 14" width="14" height="14">
-  <rect x="2" y="2" width="10" height="10" fill="var(--bg-panel)" stroke="#8e939b" stroke-width="1.5"/>
+// DME: Gray square (stroke only)
+const DME_SVG = `<svg viewBox="0 0 12 12" width="12" height="12">
+  <rect x="1.5" y="1.5" width="9" height="9" fill="none" stroke="#8e939b" stroke-width="1.5"/>
 </svg>`;
 
+// TACAN: Cyan diamond (stroke only)
 const TACAN_SVG = `<svg viewBox="0 0 14 14" width="14" height="14">
-  <polygon points="7,1 13,7 7,13 1,7" fill="var(--bg-panel)" stroke="#a5d6ff" stroke-width="1.5"/>
+  <polygon points="7,1 13,7 7,13 1,7" fill="none" stroke="#a5d6ff" stroke-width="1.5"/>
+</svg>`;
+
+// Fix: Cyan filled triangle
+const FIX_SVG = `<svg viewBox="0 0 10 10" width="10" height="10">
+  <polygon points="5,1 9,9 1,9" fill="#00d4ff"/>
 </svg>`;
 
 // ── Icon cache ──────────────────────────────────────────────
@@ -31,20 +41,43 @@ function getNavaidIcon(type: string): L.DivIcon {
   if (icon) return icon;
 
   let svg: string;
+  let size: [number, number];
   switch (type) {
-    case 'VOR': svg = VOR_SVG; break;
-    case 'NDB': svg = NDB_SVG; break;
+    case 'VOR':
+    case 'VOR-DME':
+    case 'VORTAC':
+      svg = VOR_SVG;
+      size = [16, 16];
+      break;
+    case 'NDB':
+    case 'NDB-DME':
+      svg = NDB_SVG;
+      size = [12, 12];
+      break;
     case 'DME':
-    case 'DME_STANDALONE': svg = DME_SVG; break;
-    case 'TACAN': svg = TACAN_SVG; break;
-    default: svg = DME_SVG; break;
+    case 'DME_STANDALONE':
+      svg = DME_SVG;
+      size = [12, 12];
+      break;
+    case 'TACAN':
+      svg = TACAN_SVG;
+      size = [14, 14];
+      break;
+    case 'fix':
+      svg = FIX_SVG;
+      size = [10, 10];
+      break;
+    default:
+      svg = DME_SVG;
+      size = [12, 12];
+      break;
   }
 
   icon = L.divIcon({
     html: svg,
     className: '',
-    iconSize: [14, 14],
-    iconAnchor: [7, 7],
+    iconSize: size,
+    iconAnchor: [size[0] / 2, size[1] / 2],
   });
   iconCache.set(type, icon);
   return icon;

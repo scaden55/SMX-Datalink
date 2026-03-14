@@ -9,10 +9,10 @@ import { api } from '../../lib/api';
 const WP_COLOR = '#e8602c';
 
 const waypointIcon = L.divIcon({
-  html: `<svg viewBox="0 0 10 10" width="10" height="10"><polygon points="5,1 9,5 5,9 1,5" fill="${WP_COLOR}" stroke="${WP_COLOR}" stroke-width="0.5"/></svg>`,
+  html: `<svg viewBox="0 0 14 14" width="14" height="14"><polygon points="7,1 13,7 7,13 1,7" fill="${WP_COLOR}" stroke="#000" stroke-width="1.5"/></svg>`,
   className: '',
-  iconSize: [10, 10],
-  iconAnchor: [5, 5],
+  iconSize: [14, 14],
+  iconAnchor: [7, 7],
 });
 
 // ── Types ───────────────────────────────────────────────────

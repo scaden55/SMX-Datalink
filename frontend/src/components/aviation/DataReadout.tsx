@@ -27,7 +27,7 @@ export function DataReadout({ fields, columns = 3, className }: DataReadoutProps
     <div className={cn('grid gap-x-4 gap-y-2.5', gridCols[columns], className)}>
       {fields.map((field) => (
         <div key={field.label} className="flex flex-col gap-0.5">
-          <span className="text-[10px] uppercase tracking-[0.06em] font-medium text-[var(--text-label)]">
+          <span className="text-[11px] uppercase tracking-[0.06em] font-medium text-[var(--text-label)]">
             {field.label}
           </span>
           <span

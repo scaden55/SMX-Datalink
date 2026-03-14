@@ -14,7 +14,7 @@ export function PlanningHeader() {
             onChange={(e) => setFormField('origin', e.target.value.toUpperCase())}
             placeholder="ICAO"
             maxLength={4}
-            className="planning-input"
+            className="planning-input font-mono"
           />
         </div>
         <div>
@@ -25,7 +25,7 @@ export function PlanningHeader() {
             onChange={(e) => setFormField('destination', e.target.value.toUpperCase())}
             placeholder="ICAO"
             maxLength={4}
-            className="planning-input"
+            className="planning-input font-mono"
           />
         </div>
       </div>
@@ -37,7 +37,7 @@ export function PlanningHeader() {
             value={form.flightNumber}
             onChange={(e) => setFormField('flightNumber', e.target.value)}
             placeholder="SMX001"
-            className="planning-input"
+            className="planning-input font-mono"
           />
         </div>
         <div>

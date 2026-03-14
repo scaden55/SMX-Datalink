@@ -277,6 +277,14 @@ export interface MELDeferralRow {
   remarks: string | null;
   created_by: number | null;
   created_at: string;
+  discrepancy_id: number | null;
+  mel_master_id: number | null;
+  ata_chapter: string | null;
+  placard_info: string | null;
+  operations_procedure: string | null;
+  maintenance_procedure: string | null;
+  authorized_by: number | null;
+  updated_at: string;
 }
 
 /** aircraft_components table — SELECT * shape */
@@ -333,6 +341,70 @@ export interface MELJoinRow extends MELDeferralRow {
 /** aircraft_components JOIN fleet for list queries */
 export interface ComponentJoinRow extends AircraftComponentRow {
   registration: string;
+}
+
+// ─────────────────────────────────────────────────────────────
+// discrepancy.ts / mel-master.ts
+// ─────────────────────────────────────────────────────────────
+
+/** discrepancies table raw row */
+export interface DiscrepancyRow {
+  id: number;
+  aircraft_id: number;
+  flight_number: string | null;
+  logbook_entry_id: number | null;
+  reported_by: number;
+  reported_at: string;
+  ata_chapter: string;
+  description: string;
+  flight_phase: string | null;
+  severity: string;
+  status: string;
+  resolved_by: number | null;
+  resolved_at: string | null;
+  resolution_type: string | null;
+  corrective_action: string | null;
+  mel_deferral_id: number | null;
+  created_at: string;
+  updated_at: string;
+}
+
+/** discrepancies JOIN fleet + users + ata_chapters for list queries */
+export interface DiscrepancyJoinRow extends DiscrepancyRow {
+  registration: string;
+  reporter_name: string;
+  resolver_name: string | null;
+  ata_title: string;
+}
+
+/** mel_master_list table raw row */
+export interface MelMasterRow {
+  id: number;
+  icao_type: string;
+  ata_chapter: string;
+  item_number: string;
+  title: string;
+  description: string | null;
+  category: string;
+  repair_interval_days: number | null;
+  remarks: string | null;
+  operations_procedure: string | null;
+  maintenance_procedure: string | null;
+  is_active: number;
+  created_at: string;
+  updated_at: string;
+}
+
+/** mel_master_list JOIN ata_chapters */
+export interface MelMasterJoinRow extends MelMasterRow {
+  ata_title: string;
+}
+
+/** ata_chapters table raw row */
+export interface ATAChapterRow {
+  chapter: string;
+  title: string;
+  description: string | null;
 }
 
 // ─────────────────────────────────────────────────────────────

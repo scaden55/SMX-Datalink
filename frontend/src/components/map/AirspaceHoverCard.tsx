@@ -45,7 +45,7 @@ export function AirspaceHoverCard({ airspaceId, airspaceType, feature, controlle
       className="absolute z-[2000] pointer-events-none"
       style={{ left: clampedX, top: clampedY }}
     >
-      <div className="bg-acars-panel border border-acars-border rounded-md shadow-lg p-3 w-56">
+      <div className="bg-acars-input border border-acars-border rounded-md shadow-lg p-3 w-56">
         <div className="flex items-center gap-2 mb-2">
           <Broadcast className="w-3.5 h-3.5 shrink-0" style={{ color: accentColor }} />
           <div className="min-w-0">
@@ -59,8 +59,8 @@ export function AirspaceHoverCard({ airspaceId, airspaceType, feature, controlle
         {matchedControllers.map((ctrl) => (
           <div key={ctrl.callsign} className="flex items-center gap-2 mb-1.5">
             <span className="w-1.5 h-1.5 rounded-full bg-green-400 shrink-0" />
-            <span className="text-[11px] tabular-nums font-bold text-acars-text">{ctrl.callsign}</span>
-            <span className="text-[11px] tabular-nums ml-auto" style={{ color: accentColor }}>
+            <span className="text-[12px] tabular-nums font-bold text-acars-text">{ctrl.callsign}</span>
+            <span className="text-[12px] tabular-nums ml-auto" style={{ color: accentColor }}>
               {ctrl.frequency}
             </span>
           </div>
@@ -75,8 +75,8 @@ export function AirspaceHoverCard({ airspaceId, airspaceType, feature, controlle
 
         <div className="border-t border-acars-border pt-2 flex items-center gap-1.5">
           <AirplaneTilt className="w-3 h-3 text-acars-muted" />
-          <span className="text-[11px] text-acars-text tabular-nums font-bold">{pilotCount}</span>
-          <span className="text-[10px] text-acars-muted">aircraft in airspace</span>
+          <span className="text-[12px] text-acars-text tabular-nums font-bold">{pilotCount}</span>
+          <span className="text-[11px] text-acars-muted">aircraft in airspace</span>
         </div>
       </div>
     </div>

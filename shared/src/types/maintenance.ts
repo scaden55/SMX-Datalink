@@ -87,6 +87,13 @@ export interface MELDeferral {
   remarks: string | null;
   createdBy: number | null;
   createdAt: string;
+  discrepancyId?: number | null;
+  melMasterId?: number | null;
+  ataChapter?: string | null;
+  placardInfo?: string | null;
+  operationsProcedure?: string | null;
+  maintenanceProcedure?: string | null;
+  authorizedBy?: number | null;
 }
 
 export interface AircraftComponent {
@@ -137,6 +144,8 @@ export interface FleetMaintenanceStatus {
   hasOverdueChecks: boolean;
   hasOverdueADs: boolean;
   hasExpiredMEL: boolean;
+  openDiscrepancies: number;
+  activeMELs: number;
   nextCheckType: string | null;
   nextCheckDueIn: number | null; // remaining hours to next check
 }

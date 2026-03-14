@@ -23,28 +23,28 @@ function AirportAdvisories({ icao, label, faaEvent }: { icao: string; label: str
     <div className="panel p-3 space-y-2">
       <div className="flex items-center gap-2">
         <span className="text-xs font-bold text-sky-400">{icao}</span>
-        <span className="text-[10px] text-acars-muted">({label})</span>
+        <span className="text-[11px] text-acars-muted">({label})</span>
       </div>
 
       {hasFreeForm ? (
         <div className="space-y-2">
-          <div className="text-[11px] text-acars-text bg-acars-bg/50 p-2 rounded border border-acars-border tabular-nums leading-relaxed whitespace-pre-wrap">
+          <div className="text-[12px] text-acars-text bg-acars-bg/50 p-2 rounded border border-acars-border tabular-nums leading-relaxed whitespace-pre-wrap">
             {faaEvent!.freeForm!.simpleText}
           </div>
-          <div className="text-[10px] text-acars-muted">
+          <div className="text-[11px] text-acars-muted">
             Valid: {formatTime(faaEvent!.freeForm!.startTime)} – {formatTime(faaEvent!.freeForm!.endTime)}
             {faaEvent!.freeForm!.notamNumber > 0 && ` | NOTAM #${faaEvent!.freeForm!.notamNumber}`}
           </div>
         </div>
       ) : (
-        <div className="text-[11px] text-acars-muted italic">No active advisories.</div>
+        <div className="text-[12px] text-acars-muted italic">No active advisories.</div>
       )}
 
       {/* Show ground stop / closure as critical NOTAMs */}
       {faaEvent?.airportClosure && (
-        <div className="text-[11px] bg-red-500/10 border border-red-500/20 rounded p-2 space-y-0.5">
+        <div className="text-[12px] bg-red-500/10 border border-red-500/20 rounded p-2 space-y-0.5">
           <div className="flex items-center gap-2">
-            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold border bg-red-500/15 text-red-400 border-red-500/30">
+            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-semibold border bg-red-500/15 text-red-400 border-red-500/30">
               CLOSURE
             </span>
             <span className="text-red-400 font-semibold">{faaEvent.airportClosure.reason}</span>
@@ -56,9 +56,9 @@ function AirportAdvisories({ icao, label, faaEvent }: { icao: string; label: str
       )}
 
       {faaEvent?.groundStop && (
-        <div className="text-[11px] bg-red-500/10 border border-red-500/20 rounded p-2 space-y-0.5">
+        <div className="text-[12px] bg-red-500/10 border border-red-500/20 rounded p-2 space-y-0.5">
           <div className="flex items-center gap-2">
-            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold border bg-red-500/15 text-red-400 border-red-500/30">
+            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-semibold border bg-red-500/15 text-red-400 border-red-500/30">
               GROUND STOP
             </span>
             <span className="text-acars-text">{faaEvent.groundStop.impactingCondition}</span>
@@ -79,7 +79,7 @@ export function NOTAMTab({ dispatchData }: { dispatchData: DispatchData }) {
     return (
       <div className="space-y-3">
         <h3 className="text-xs font-semibold text-acars-text">NOTAMs</h3>
-        <div className="text-[11px] text-acars-muted italic">
+        <div className="text-[12px] text-acars-muted italic">
           No flight plan loaded. NOTAMs will appear once a flight is selected.
         </div>
       </div>
@@ -94,7 +94,7 @@ export function NOTAMTab({ dispatchData }: { dispatchData: DispatchData }) {
       <div className="flex items-center gap-2">
         <h3 className="text-xs font-semibold text-acars-text">NOTAMs & Advisories</h3>
         {dispatchData.loading && (
-          <span className="text-[10px] text-sky-400 animate-pulse">Fetching...</span>
+          <span className="text-[11px] text-sky-400 animate-pulse">Fetching...</span>
         )}
       </div>
 

@@ -20,6 +20,17 @@ interface Props {
   onSelectAirport: (icao: string) => void;
 }
 
+// ── Aerodrome symbol SVG (ForeFlight style) ─────────────────
+
+// Circle with 4 short protruding ticks at N/S/E/W
+const AERODROME_SVG = `<svg viewBox="0 0 20 20" width="20" height="20">
+  <circle cx="10" cy="10" r="6" fill="none" stroke="#4F6CCD" stroke-width="2.5"/>
+  <rect x="8.5" y="0" width="3" height="3.5" fill="#4F6CCD"/>
+  <rect x="8.5" y="16.5" width="3" height="3.5" fill="#4F6CCD"/>
+  <rect x="0" y="8.5" width="3.5" height="3" fill="#4F6CCD"/>
+  <rect x="16.5" y="8.5" width="3.5" height="3" fill="#4F6CCD"/>
+</svg>`;
+
 // ── Badge config (facility type → letter + color) ───────────
 
 interface BadgeInfo {
@@ -54,26 +65,24 @@ function getIcon(icao: string, badges: BadgeInfo[]): L.DivIcon {
       `<span class="airport-facility-badge" style="background:${b.color};">${b.letter}</span>`,
   ).join('');
 
-  const dot = `<div class="airport-label-dot" style="background:${hasBadges ? '#58a6ff' : '#4a5568'};"></div>`;
-
   const html = hasBadges
     ? `<div class="airport-label airport-label--active">
         <div class="airport-label-row">
           <span class="airport-label-icao airport-label-icao--active">${icao}</span>
           ${badgeHtml}
         </div>
-        ${dot}
+        ${AERODROME_SVG}
       </div>`
     : `<div class="airport-label">
         <span class="airport-label-icao">${icao}</span>
-        ${dot}
+        ${AERODROME_SVG}
       </div>`;
 
   icon = L.divIcon({
     html,
     className: 'airport-label-wrapper',
     iconSize: [0, 0],
-    iconAnchor: [2, 22],
+    iconAnchor: [10, 35],
   });
 
   iconCache.set(key, icon);

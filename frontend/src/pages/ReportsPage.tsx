@@ -99,7 +99,7 @@ function currentMonth(): string {
 function DarkTooltip({ active, payload, label }: any) {
   if (!active || !payload?.length) return null;
   return (
-    <div className="rounded-md border border-acars-border bg-acars-panel px-3 py-2 text-xs shadow-lg">
+    <div className="rounded-md border border-acars-border bg-acars-input px-3 py-2 text-xs shadow-lg">
       <p className="text-acars-muted mb-1 font-medium">{label}</p>
       {payload.map((p: any, i: number) => (
         <p key={i} style={{ color: p.color }} className="font-semibold">
@@ -119,10 +119,10 @@ function StatCard({ icon: Icon, label, value, color }: {
   color: string;
 }) {
   return (
-    <div className="rounded-md border border-acars-border bg-acars-panel p-3 flex flex-col gap-1 min-w-0">
+    <div className="rounded-md border border-acars-border bg-acars-input p-3 flex flex-col gap-1 min-w-0">
       <div className="flex items-center gap-2">
         <Icon className="w-3.5 h-3.5 flex-shrink-0" style={{ color }} />
-        <span className="text-[10px] uppercase tracking-wider text-acars-muted font-medium truncate">{label}</span>
+        <span className="text-[11px] uppercase tracking-wider text-acars-muted font-medium truncate">{label}</span>
       </div>
       <span className="text-lg font-bold text-acars-text tabular-nums truncate">{value}</span>
     </div>
@@ -149,10 +149,10 @@ function ExpenseRow({ icon: Icon, label, amount, pct, color, description }: {
           <div className="flex items-center justify-between mb-1">
             <div className="flex items-center gap-2">
               <span className="text-xs font-medium text-acars-text">{label}</span>
-              <span className="text-[10px] text-acars-muted">{description}</span>
+              <span className="text-[11px] text-acars-muted">{description}</span>
             </div>
             <div className="flex items-center gap-3">
-              <span className="text-[10px] tabular-nums text-acars-muted">{pct.toFixed(1)}%</span>
+              <span className="text-[11px] tabular-nums text-acars-muted">{pct.toFixed(1)}%</span>
               <span className="text-xs tabular-nums font-semibold text-acars-text min-w-[80px] text-right">{formatCurrencyFull(amount)}</span>
             </div>
           </div>
@@ -190,7 +190,7 @@ function AircraftFilter({ options, value, onChange }: {
       {open && (
         <>
           <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
-          <div className="absolute right-0 top-full mt-1 z-20 min-w-[140px] rounded-md border border-acars-border bg-acars-panel shadow-xl py-1">
+          <div className="absolute right-0 top-full mt-1 z-20 min-w-[140px] rounded-md border border-acars-border bg-acars-input shadow-xl py-1">
             <button
               onClick={() => { onChange('all'); setOpen(false); }}
               className={`w-full text-left px-3 py-1.5 text-xs transition-colors ${value === 'all' ? 'text-sky-400 bg-sky-500/5' : 'text-acars-text hover:bg-acars-border'}`}
@@ -286,7 +286,7 @@ export function ReportsPage() {
 
           {/* Month selector */}
           <div className="flex items-center gap-2">
-            <div className="flex items-center gap-1 rounded-md border border-acars-border bg-acars-panel h-8">
+            <div className="flex items-center gap-1 rounded-md border border-acars-border bg-acars-input h-8">
               <button
                 onClick={() => { setAllTime(false); setMonth(m => prevMonth(m)); }}
                 disabled={allTime}
@@ -311,7 +311,7 @@ export function ReportsPage() {
               className={`h-8 px-3 rounded-md border text-xs font-medium transition-colors flex items-center gap-1.5 ${
                 allTime
                   ? 'border-sky-400/40 bg-sky-500/10 text-sky-400'
-                  : 'border-acars-border bg-acars-panel text-acars-muted hover:text-acars-text'
+                  : 'border-acars-border bg-acars-input text-acars-muted hover:text-acars-text'
               }`}
             >
               <Infinity className="w-3.5 h-3.5" />
@@ -320,7 +320,7 @@ export function ReportsPage() {
 
             <button
               onClick={() => { setMonth(currentMonth()); setAllTime(false); }}
-              className="h-8 px-2 rounded-md border border-acars-border bg-acars-panel text-acars-muted hover:text-acars-text flex items-center gap-1.5 transition-colors"
+              className="h-8 px-2 rounded-md border border-acars-border bg-acars-input text-acars-muted hover:text-acars-text flex items-center gap-1.5 transition-colors"
               title="Current month"
             >
               <Calendar className="w-3.5 h-3.5" />
@@ -329,7 +329,7 @@ export function ReportsPage() {
 
             <button
               onClick={fetchReport}
-              className="h-8 w-8 rounded-md border border-acars-border bg-acars-panel text-acars-muted hover:text-acars-text flex items-center justify-center transition-colors"
+              className="h-8 w-8 rounded-md border border-acars-border bg-acars-input text-acars-muted hover:text-acars-text flex items-center justify-center transition-colors"
               title="Refresh"
             >
               <ArrowCounterClockwise className="w-3.5 h-3.5" />
@@ -377,7 +377,7 @@ export function ReportsPage() {
                   <div className="flex items-center gap-2">
                     <h2 className="text-xs font-semibold text-acars-text uppercase tracking-wider">Financial Overview</h2>
                     {aircraftFilter !== 'all' && activeFlightInfo && (
-                      <span className="text-[10px] text-acars-muted px-2 py-0.5 rounded-full border border-acars-border bg-acars-bg">
+                      <span className="text-[11px] text-acars-muted px-2 py-0.5 rounded-full border border-acars-border bg-acars-bg">
                         {activeFlightInfo.flights} flights · {formatDuration(activeFlightInfo.hoursMin)}
                       </span>
                     )}
@@ -397,12 +397,12 @@ export function ReportsPage() {
                 {/* ── Financial Detail Row ──────────────────────── */}
                 <div className="grid grid-cols-2 gap-3">
                   {/* Expense Breakdown Detail */}
-                  <div className="rounded-md border border-acars-border bg-acars-panel p-4">
+                  <div className="rounded-md border border-acars-border bg-acars-input p-4">
                     <div className="flex items-center justify-between mb-1">
                       <h3 className="text-xs font-semibold text-acars-text uppercase tracking-wider">Expense Breakdown</h3>
                       <span className="text-xs tabular-nums font-semibold text-amber-400">{formatCurrencyFull(activeFin.expenses.totalExpenses)}</span>
                     </div>
-                    <p className="text-[10px] text-acars-muted mb-3">Operating costs for completed flights</p>
+                    <p className="text-[11px] text-acars-muted mb-3">Operating costs for completed flights</p>
 
                     <div className="divide-y divide-acars-border">
                       <ExpenseRow
@@ -441,12 +441,12 @@ export function ReportsPage() {
                   </div>
 
                   {/* Revenue & Profit Summary */}
-                  <div className="rounded-md border border-acars-border bg-acars-panel p-4">
+                  <div className="rounded-md border border-acars-border bg-acars-input p-4">
                     <div className="flex items-center justify-between mb-1">
                       <h3 className="text-xs font-semibold text-acars-text uppercase tracking-wider">Revenue &amp; Profit</h3>
                       <span className="text-xs tabular-nums font-semibold" style={{ color: COLORS.green }}>{formatCurrencyFull(activeFin.revenue.totalRevenue)}</span>
                     </div>
-                    <p className="text-[10px] text-acars-muted mb-4">Revenue sources and margin analysis</p>
+                    <p className="text-[11px] text-acars-muted mb-4">Revenue sources and margin analysis</p>
 
                     <div className="flex flex-col items-center gap-5">
                       {/* Profit Margin */}
@@ -454,7 +454,7 @@ export function ReportsPage() {
                         <div className="text-2xl font-bold tabular-nums" style={{ color: activeFin.netProfit >= 0 ? COLORS.green : COLORS.red }}>
                           {activeFin.profitMargin > 0 ? '+' : ''}{activeFin.profitMargin}%
                         </div>
-                        <div className="text-[10px] uppercase tracking-wider text-acars-muted mt-1">Profit Margin</div>
+                        <div className="text-[11px] uppercase tracking-wider text-acars-muted mt-1">Profit Margin</div>
                       </div>
 
                       {/* Revenue Breakdown Bars */}
@@ -463,7 +463,7 @@ export function ReportsPage() {
                           <div className="flex items-center justify-between mb-1">
                             <div className="flex items-center gap-2">
                               <Package className="w-3 h-3" style={{ color: COLORS.amber }} />
-                              <span className="text-[10px] text-acars-muted uppercase tracking-wider">Cargo Revenue</span>
+                              <span className="text-[11px] text-acars-muted uppercase tracking-wider">Cargo Revenue</span>
                             </div>
                             <span className="text-xs tabular-nums font-semibold text-acars-text">{formatCurrencyFull(activeFin.revenue.cargoRevenue)}</span>
                           </div>
@@ -483,7 +483,7 @@ export function ReportsPage() {
                           <div className="flex items-center justify-between mb-1">
                             <div className="flex items-center gap-2">
                               <Users className="w-3 h-3" style={{ color: COLORS.cyan }} />
-                              <span className="text-[10px] text-acars-muted uppercase tracking-wider">Passenger Revenue</span>
+                              <span className="text-[11px] text-acars-muted uppercase tracking-wider">Passenger Revenue</span>
                             </div>
                             <span className="text-xs tabular-nums font-semibold text-acars-text">{formatCurrencyFull(activeFin.revenue.passengerRevenue)}</span>
                           </div>
@@ -503,15 +503,15 @@ export function ReportsPage() {
                         {/* P&L Summary Line */}
                         <div className="pt-2 border-t border-acars-border space-y-1.5">
                           <div className="flex items-center justify-between">
-                            <span className="text-[10px] text-acars-muted uppercase tracking-wider">Total Revenue</span>
+                            <span className="text-[11px] text-acars-muted uppercase tracking-wider">Total Revenue</span>
                             <span className="text-xs tabular-nums font-semibold" style={{ color: COLORS.green }}>{formatCurrencyFull(activeFin.revenue.totalRevenue)}</span>
                           </div>
                           <div className="flex items-center justify-between">
-                            <span className="text-[10px] text-acars-muted uppercase tracking-wider">Total Expenses</span>
+                            <span className="text-[11px] text-acars-muted uppercase tracking-wider">Total Expenses</span>
                             <span className="text-xs tabular-nums font-semibold" style={{ color: COLORS.amber }}>-{formatCurrencyFull(activeFin.expenses.totalExpenses)}</span>
                           </div>
                           <div className="flex items-center justify-between pt-1.5 border-t border-acars-border">
-                            <span className="text-[10px] text-acars-text font-semibold uppercase tracking-wider">Net Profit</span>
+                            <span className="text-[11px] text-acars-text font-semibold uppercase tracking-wider">Net Profit</span>
                             <span className="text-xs tabular-nums font-bold" style={{ color: activeFin.netProfit >= 0 ? COLORS.green : COLORS.red }}>
                               {formatCurrencyFull(activeFin.netProfit)}
                             </span>
@@ -526,7 +526,7 @@ export function ReportsPage() {
 
             {/* ── Volume Chart ─────────────────────────────────── */}
             {report.volume.length > 0 && (
-              <div className="rounded-md border border-acars-border bg-acars-panel p-4">
+              <div className="rounded-md border border-acars-border bg-acars-input p-4">
                 <h3 className="text-xs font-semibold text-acars-text mb-4 uppercase tracking-wider flex items-center gap-2">
                   <ChartBar className="w-3.5 h-3.5 text-sky-400" />
                   {allTime ? 'Monthly Flight Volume' : 'Daily Flight Volume'}
@@ -559,7 +559,7 @@ export function ReportsPage() {
             {/* ── Tables Row ───────────────────────────────────── */}
             <div className="grid grid-cols-2 gap-3">
               {/* Top Routes */}
-              <div className="rounded-md border border-acars-border bg-acars-panel p-4">
+              <div className="rounded-md border border-acars-border bg-acars-input p-4">
                 <h3 className="text-xs font-semibold text-acars-text mb-3 uppercase tracking-wider">Top Routes</h3>
                 {report.topRoutes.length === 0 ? (
                   <p className="text-xs text-acars-muted">No route data</p>
@@ -567,9 +567,9 @@ export function ReportsPage() {
                   <table className="w-full text-xs">
                     <thead>
                       <tr className="border-b border-acars-border">
-                        <th className="text-left pb-2 text-[10px] uppercase tracking-wider text-acars-muted font-medium">#</th>
-                        <th className="text-left pb-2 text-[10px] uppercase tracking-wider text-acars-muted font-medium">Path</th>
-                        <th className="text-right pb-2 text-[10px] uppercase tracking-wider text-acars-muted font-medium">Flights</th>
+                        <th className="text-left pb-2 text-[11px] uppercase tracking-wider text-acars-muted font-medium">#</th>
+                        <th className="text-left pb-2 text-[11px] uppercase tracking-wider text-acars-muted font-medium">Path</th>
+                        <th className="text-right pb-2 text-[11px] uppercase tracking-wider text-acars-muted font-medium">Flights</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -583,7 +583,7 @@ export function ReportsPage() {
                               <span className="tabular-nums font-semibold text-acars-text">{r.arrIcao}</span>
                             </div>
                             {(r.depName || r.arrName) && (
-                              <div className="text-[10px] text-acars-muted truncate max-w-[240px]">
+                              <div className="text-[11px] text-acars-muted truncate max-w-[240px]">
                                 {r.depName ?? r.depIcao} — {r.arrName ?? r.arrIcao}
                               </div>
                             )}
@@ -597,7 +597,7 @@ export function ReportsPage() {
               </div>
 
               {/* Pilot Leaderboard */}
-              <div className="rounded-md border border-acars-border bg-acars-panel p-4">
+              <div className="rounded-md border border-acars-border bg-acars-input p-4">
                 <h3 className="text-xs font-semibold text-acars-text mb-3 uppercase tracking-wider">Pilot Leaderboard</h3>
                 {report.byPilot.length === 0 ? (
                   <p className="text-xs text-acars-muted">No pilot data</p>
@@ -605,11 +605,11 @@ export function ReportsPage() {
                   <table className="w-full text-xs">
                     <thead>
                       <tr className="border-b border-acars-border">
-                        <th className="text-left pb-2 text-[10px] uppercase tracking-wider text-acars-muted font-medium">#</th>
-                        <th className="text-left pb-2 text-[10px] uppercase tracking-wider text-acars-muted font-medium">Pilot</th>
-                        <th className="text-right pb-2 text-[10px] uppercase tracking-wider text-acars-muted font-medium">Flights</th>
-                        <th className="text-right pb-2 text-[10px] uppercase tracking-wider text-acars-muted font-medium">Hours</th>
-                        <th className="text-right pb-2 text-[10px] uppercase tracking-wider text-acars-muted font-medium">Avg Score</th>
+                        <th className="text-left pb-2 text-[11px] uppercase tracking-wider text-acars-muted font-medium">#</th>
+                        <th className="text-left pb-2 text-[11px] uppercase tracking-wider text-acars-muted font-medium">Pilot</th>
+                        <th className="text-right pb-2 text-[11px] uppercase tracking-wider text-acars-muted font-medium">Flights</th>
+                        <th className="text-right pb-2 text-[11px] uppercase tracking-wider text-acars-muted font-medium">Hours</th>
+                        <th className="text-right pb-2 text-[11px] uppercase tracking-wider text-acars-muted font-medium">Avg Score</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -618,7 +618,7 @@ export function ReportsPage() {
                           <td className="py-1.5 text-acars-muted">{i + 1}</td>
                           <td className="py-1.5">
                             <div className="font-semibold text-acars-text">{p.callsign}</div>
-                            <div className="text-[10px] text-acars-muted">{p.pilotName}</div>
+                            <div className="text-[11px] text-acars-muted">{p.pilotName}</div>
                           </td>
                           <td className="py-1.5 text-right tabular-nums font-semibold text-acars-text">{p.flights}</td>
                           <td className="py-1.5 text-right tabular-nums text-acars-text">{formatDuration(p.hoursMin)}</td>

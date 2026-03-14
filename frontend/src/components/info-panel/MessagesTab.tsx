@@ -124,7 +124,7 @@ export function MessagesTab() {
       <div className="space-y-3">
         <h3 className="text-xs font-semibold text-acars-text">ACARS Messages</h3>
         <div className="panel p-3">
-          <div className="text-[11px] text-acars-muted italic">
+          <div className="text-[12px] text-acars-muted italic">
             Select a flight to view messages.
           </div>
         </div>
@@ -139,16 +139,16 @@ export function MessagesTab() {
       {/* Message list */}
       <div ref={listRef} className="flex-1 overflow-y-auto space-y-1.5 mb-2 min-h-0">
         {messages.length === 0 ? (
-          <div className="text-[11px] text-acars-muted italic p-2">
+          <div className="text-[12px] text-acars-muted italic p-2">
             No messages yet. Send a message to begin communication.
           </div>
         ) : (
           messages.map((msg) => (
             <div
               key={msg.id}
-              className="flex items-start gap-2 px-2 py-1.5 rounded bg-acars-panel/50 text-[11px]"
+              className="flex items-start gap-2 px-2 py-1.5 rounded bg-acars-input/50 text-[12px]"
             >
-              <span className="text-acars-muted shrink-0 tabular-nums text-[10px] mt-0.5">
+              <span className="text-acars-muted shrink-0 tabular-nums text-[11px] mt-0.5">
                 {formatTimestamp(msg.timestamp)}
               </span>
               <span className="shrink-0 mt-0.5">{typeBadge(msg.type)}</span>
@@ -170,13 +170,13 @@ export function MessagesTab() {
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder={`Send as ${user?.role === 'admin' ? 'Dispatcher' : 'Pilot'}...`}
-            className="flex-1 rounded bg-acars-bg border border-acars-border text-acars-text text-[11px] px-2 py-1.5 focus:outline-none focus:border-sky-400"
+            className="flex-1 rounded bg-acars-bg border border-acars-border text-acars-text text-[12px] px-2 py-1.5 focus:outline-none focus:border-sky-400"
             disabled={sending}
           />
           <button
             onClick={handleSend}
             disabled={!input.trim() || sending}
-            className="px-3 py-1.5 rounded text-[11px] font-medium bg-sky-500/10 text-sky-400 border border-sky-400/20 hover:bg-sky-500/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            className="px-3 py-1.5 rounded text-[12px] font-medium bg-sky-500/10 text-sky-400 border border-sky-400/20 hover:bg-sky-500/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
             Send
           </button>

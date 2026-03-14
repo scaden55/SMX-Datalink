@@ -238,16 +238,16 @@ export function FlightPlanningPage() {
     return (
       <div className="flex flex-col items-center justify-center h-full text-center gap-4 bg-transparent">
         <img src="./logos/chevron-light.png" alt="SMX" className="h-12 w-auto opacity-10" />
-        <div className="flex items-center justify-center w-12 h-12 rounded-md bg-[#3b5bdb]/10 border border-[#3b5bdb]/20">
-          <Path className="w-5 h-5 text-[#6b8aff]" />
+        <div className="flex items-center justify-center w-12 h-12 rounded-md bg-[#4F6CCD]/10 border border-[#4F6CCD]/20">
+          <Path className="w-5 h-5 text-[#7B94E0]" />
         </div>
         <div>
           <h2 className="text-[13px] font-semibold text-acars-text">No Active Bids</h2>
-          <p className="text-[11px] text-acars-muted mt-1">Browse the schedule and place a bid to start planning a cargo run</p>
+          <p className="text-[12px] text-acars-muted mt-1">Browse the schedule and place a bid to start planning a cargo run</p>
         </div>
         <button
           onClick={() => navigate('/schedule')}
-          className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md text-[10px] font-semibold text-amber-400 bg-amber-500/10 border border-amber-400/20 hover:bg-amber-500/20 transition-colors"
+          className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md text-[11px] font-semibold text-amber-400 bg-amber-500/10 border border-amber-400/20 hover:bg-amber-500/20 transition-colors"
         >
           <CalendarDots className="w-3.5 h-3.5" /> Browse Schedule
         </button>
@@ -260,12 +260,12 @@ export function FlightPlanningPage() {
     return (
       <div className="flex flex-col items-center justify-center h-full text-center gap-4 bg-transparent">
         <img src="./logos/chevron-light.png" alt="SMX" className="h-12 w-auto opacity-10" />
-        <div className="flex items-center justify-center w-12 h-12 rounded-md bg-[#3b5bdb]/10 border border-[#3b5bdb]/20">
-          <Path className="w-5 h-5 text-[#6b8aff]" />
+        <div className="flex items-center justify-center w-12 h-12 rounded-md bg-[#4F6CCD]/10 border border-[#4F6CCD]/20">
+          <Path className="w-5 h-5 text-[#7B94E0]" />
         </div>
         <div>
           <h2 className="text-[13px] font-semibold text-acars-text">Select a Bid to Plan</h2>
-          <p className="text-[11px] text-acars-muted mt-1">Choose one of your active bids</p>
+          <p className="text-[12px] text-acars-muted mt-1">Choose one of your active bids</p>
         </div>
         <div className="w-72">
           <select
@@ -274,7 +274,7 @@ export function FlightPlanningPage() {
               if (!isNaN(id)) handleSelectBid(id);
             }}
             defaultValue=""
-            className="select-field h-auto py-2 text-[11px]"
+            className="select-field h-auto py-2 text-[12px]"
           >
             <option value="" disabled>Select a bid...</option>
             {bids.map((b) => (
@@ -292,7 +292,7 @@ export function FlightPlanningPage() {
   if (loading || !bidsLoaded) {
     return (
       <div className="flex items-center justify-center h-full bg-transparent">
-        <SpinnerGap className="w-5 h-5 text-[#6b8aff] animate-spin" />
+        <SpinnerGap className="w-5 h-5 text-[#7B94E0] animate-spin" />
       </div>
     );
   }
@@ -301,10 +301,10 @@ export function FlightPlanningPage() {
   if (error) {
     return (
       <div className="flex flex-col items-center justify-center h-full text-center gap-3 bg-transparent">
-        <p className="text-[11px] text-red-400">{error}</p>
+        <p className="text-[12px] text-red-400">{error}</p>
         <button
           onClick={() => navigate('/schedule')}
-          className="text-[10px] text-[#6b8aff] hover:underline"
+          className="text-[11px] text-[#7B94E0] hover:underline"
         >
           Back to Schedule
         </button>
@@ -330,12 +330,12 @@ export function FlightPlanningPage() {
       {/* Center: Map + Profile + Info */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {simbriefError && (
-          <div className="px-3 py-1.5 bg-red-500/10 border-b border-red-400/20 text-[11px] text-red-400">
+          <div className="px-3 py-1.5 bg-red-500/10 border-b border-red-400/20 text-[12px] text-red-400">
             {simbriefError}
           </div>
         )}
         {aircraftNotAtDeparture && (
-          <div className="flex items-center gap-2 px-3 py-2 bg-amber-500/10 border-b border-amber-400/20 text-[11px] text-amber-400 shrink-0">
+          <div className="flex items-center gap-2 px-3 py-2 bg-amber-500/10 border-b border-amber-400/20 text-[12px] text-amber-400 shrink-0">
             <Warning className="w-4 h-4 shrink-0" weight="fill" />
             <span>
               <span className="font-semibold">{bidAircraft.registration}</span> is currently at{' '}
@@ -359,7 +359,7 @@ export function FlightPlanningPage() {
             className="fixed inset-0 bg-black/30 z-[9998]"
             onClick={() => setShowVatsimPrefile(false)}
           />
-          <div className="fixed top-0 right-0 bottom-0 w-80 border-l border-white/[0.06] z-[9999] shadow-2xl" style={{ background: 'linear-gradient(to top right, #000000, #1B1B1C)' }}>
+          <div className="fixed top-0 right-0 bottom-0 w-80 border-l border-white/[0.06] z-[9999] shadow-2xl" style={{ background: 'var(--bg-panel)' }}>
             <VatsimPrefile
               form={form}
               ofp={ofp}

@@ -165,7 +165,7 @@ export function PilotDetailPanel({ pilot, onClose, onRouteResolved }: Props) {
   };
 
   return (
-    <div className="absolute top-3 right-3 bottom-3 w-[350px] z-[1000] bg-acars-panel rounded-md border border-acars-border flex flex-col overflow-hidden animate-in slide-in-from-right duration-200">
+    <div className="absolute top-3 right-3 bottom-3 w-[350px] z-[1000] bg-acars-input rounded-md border border-acars-border flex flex-col overflow-hidden animate-in slide-in-from-right duration-200">
       {/* ── Sticky Header ── */}
       <div className="px-4 py-3 border-b border-acars-border shrink-0">
         <div className="flex items-start justify-between">
@@ -191,16 +191,16 @@ export function PilotDetailPanel({ pilot, onClose, onRouteResolved }: Props) {
         {/* Online time */}
         <div className="flex items-center gap-1.5 mt-2">
           <Clock className="w-3 h-3 text-acars-muted" />
-          <span className="text-[10px] text-acars-muted">
+          <span className="text-[11px] text-acars-muted">
             Online {formatLogonDuration(pilot.logon_time)}
           </span>
           {fp && (
             <>
               <span className="text-acars-border mx-1">|</span>
-              <span className="text-[10px] text-acars-muted tabular-nums">
+              <span className="text-[11px] text-acars-muted tabular-nums">
                 {formatFlightRules(fp.flight_rules)}
               </span>
-              <span className="text-[10px] text-acars-muted tabular-nums ml-1">
+              <span className="text-[11px] text-acars-muted tabular-nums ml-1">
                 {fp.aircraft_short || fp.aircraft_faa || '—'}
               </span>
             </>
@@ -249,7 +249,7 @@ export function PilotDetailPanel({ pilot, onClose, onRouteResolved }: Props) {
             </div>
 
             {/* Progress percentage + alternate */}
-            <div className="flex items-center justify-between text-[10px]">
+            <div className="flex items-center justify-between text-[11px]">
               {progress != null && (
                 <span className="text-acars-muted">{Math.round(progress)}% complete</span>
               )}
@@ -348,7 +348,7 @@ export function PilotDetailPanel({ pilot, onClose, onRouteResolved }: Props) {
               </button>
             }
           >
-            <div className="p-2.5 rounded-md bg-acars-bg/80 border border-acars-border text-[11px] tabular-nums text-acars-text leading-relaxed max-h-28 overflow-y-auto break-all select-all">
+            <div className="p-2.5 rounded-md bg-acars-bg/80 border border-acars-border text-[12px] tabular-nums text-acars-text leading-relaxed max-h-28 overflow-y-auto break-all select-all">
               {fp.route}
             </div>
           </CollapsibleSection>
@@ -361,7 +361,7 @@ export function PilotDetailPanel({ pilot, onClose, onRouteResolved }: Props) {
             collapsed={collapsed.remarks}
             onToggle={() => toggle('remarks')}
           >
-            <div className="p-2.5 rounded-md bg-acars-bg/80 border border-acars-border text-[10px] tabular-nums text-acars-muted leading-relaxed max-h-24 overflow-y-auto break-all">
+            <div className="p-2.5 rounded-md bg-acars-bg/80 border border-acars-border text-[11px] tabular-nums text-acars-muted leading-relaxed max-h-24 overflow-y-auto break-all">
               {fp.remarks}
             </div>
           </CollapsibleSection>
@@ -406,7 +406,7 @@ function DataCard({
       </div>
       <div className="flex items-baseline gap-0.5">
         <span className="text-base font-bold tabular-nums text-acars-text tabular-nums">{value}</span>
-        <span className="text-[10px] text-acars-muted">{unit}</span>
+        <span className="text-[11px] text-acars-muted">{unit}</span>
       </div>
     </div>
   );
@@ -438,7 +438,7 @@ function CollapsibleSection({
         className="w-full flex items-center gap-1.5 px-4 py-2.5 hover:bg-acars-border transition-colors cursor-pointer select-none"
       >
         {Icon && <Icon className="w-3 h-3 text-acars-muted" />}
-        <span className="text-[10px] font-semibold text-acars-muted tracking-wider uppercase">{title}</span>
+        <span className="text-[11px] font-semibold text-acars-muted tracking-wider uppercase">{title}</span>
         <div className="flex-1" />
         {action}
         <CaretDown
@@ -458,8 +458,8 @@ function CollapsibleSection({
 function DataRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-center justify-between py-0.5">
-      <span className="text-[10px] text-acars-muted">{label}</span>
-      <span className="text-[11px] text-acars-text tabular-nums">{value}</span>
+      <span className="text-[11px] text-acars-muted">{label}</span>
+      <span className="text-[12px] text-acars-text tabular-nums">{value}</span>
     </div>
   );
 }

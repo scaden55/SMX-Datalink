@@ -146,7 +146,7 @@ function scoreDisplay(score: number | null) {
   let color = 'var(--accent-emerald)';
   if (score < 60) color = 'var(--accent-red)';
   else if (score < 80) color = 'var(--accent-amber)';
-  return <span style={{ color, fontFamily: 'var(--font-mono)', fontWeight: 700 }}>{score}</span>;
+  return <span style={{ color, fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums', fontWeight: 700 }}>{score}</span>;
 }
 
 // ── Status badge (inline for table) ─────────────────────────────
@@ -362,7 +362,7 @@ export function PirepsPage() {
               fontSize: 12,
               fontWeight: 600,
               color: 'var(--text-primary)',
-              fontFamily: 'var(--font-mono)',
+              fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums',
             }}
           >
             {row.original.flightNumber}
@@ -375,7 +375,7 @@ export function PirepsPage() {
         header: ({ column }) => <DataTableColumnHeader column={column} title="Pilot" />,
         cell: ({ row }) => (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-            <span style={{ fontSize: 12, color: 'var(--text-primary)', fontWeight: 500 }}>
+            <span style={{ fontSize: 12, color: 'var(--text-primary)', fontWeight: 500, fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums' }}>
               {row.original.pilotCallsign || `Pilot #${row.original.userId}`}
             </span>
             {row.original.pilotName && (
@@ -391,7 +391,7 @@ export function PirepsPage() {
         id: 'route',
         header: 'Route',
         cell: ({ row }) => (
-          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12 }}>
+          <span style={{ fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums', fontSize: 12 }}>
             <span style={{ color: 'var(--accent-blue-bright)' }}>{row.original.depIcao}</span>
             <span style={{ color: 'var(--text-quaternary)', margin: '0 4px' }}>&rarr;</span>
             <span style={{ color: 'var(--accent-blue-bright)' }}>{row.original.arrIcao}</span>
@@ -408,7 +408,7 @@ export function PirepsPage() {
           return (
             <span
               style={{
-                fontFamily: 'var(--font-mono)',
+                fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums',
                 fontSize: 12,
                 fontWeight: 600,
                 color: landingRateColor(fpm),
@@ -424,7 +424,7 @@ export function PirepsPage() {
         accessorKey: 'flightTimeMin',
         header: ({ column }) => <DataTableColumnHeader column={column} title="Time" />,
         cell: ({ row }) => (
-          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--text-secondary)' }}>
+          <span style={{ fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums', fontSize: 12, color: 'var(--text-secondary)' }}>
             {formatMinutes(row.original.flightTimeMin)}
           </span>
         ),
@@ -676,7 +676,7 @@ export function PirepsPage() {
               <div style={{ fontSize: 10, fontWeight: 500, color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>
                 {stat.label}
               </div>
-              <div style={{ fontSize: 22, fontWeight: 700, color: stat.color, fontFamily: 'var(--font-mono)' }}>
+              <div style={{ fontSize: 22, fontWeight: 700, color: stat.color, fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums' }}>
                 {stat.value}
               </div>
             </motion.div>
@@ -937,7 +937,7 @@ export function PirepsPage() {
                   <DataRow
                     label="Route"
                     value={
-                      <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 500 }}>
+                      <span style={{ fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums', fontWeight: 500 }}>
                         <span style={{ color: 'var(--accent-blue-bright)' }}>{detailPirep.depIcao}</span>
                         {' '}
                         <span style={{ color: 'var(--text-quaternary)', margin: '0 4px' }}>&rarr;</span>
@@ -960,7 +960,7 @@ export function PirepsPage() {
                     label="Aircraft"
                     value={
                       <span>
-                        <span style={{ fontFamily: 'var(--font-mono)' }}>{detailPirep.aircraftType}</span>
+                        <span style={{ fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums' }}>{detailPirep.aircraftType}</span>
                         {detailPirep.aircraftRegistration && (
                           <span style={{ color: 'var(--text-tertiary)', marginLeft: 4 }}>
                             ({detailPirep.aircraftRegistration})
@@ -972,7 +972,7 @@ export function PirepsPage() {
                   {detailPirep.route && (
                     <DataRow
                       label="Route String"
-                      value={<span style={{ fontSize: 11, fontFamily: 'var(--font-mono)', wordBreak: 'break-all' }}>{detailPirep.route}</span>}
+                      value={<span style={{ fontSize: 11, fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums', wordBreak: 'break-all' }}>{detailPirep.route}</span>}
                     />
                   )}
                   {detailPirep.cruiseAltitude && (
@@ -1002,7 +1002,7 @@ export function PirepsPage() {
                   <p
                     style={{
                       fontSize: 28,
-                      fontFamily: 'var(--font-mono)',
+                      fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums',
                       fontWeight: 700,
                       color: landingRateColor(detailPirep.landingRateFpm),
                     }}
@@ -1020,7 +1020,7 @@ export function PirepsPage() {
                   <DataRow
                     label="Flight Time"
                     value={
-                      <span style={{ fontFamily: 'var(--font-mono)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <span style={{ fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums', display: 'flex', alignItems: 'center', gap: 6 }}>
                         <Clock size={13} style={{ color: 'var(--text-tertiary)' }} />
                         {formatMinutes(detailPirep.flightTimeMin)}
                       </span>
@@ -1032,7 +1032,7 @@ export function PirepsPage() {
                   <DataRow
                     label="Distance"
                     value={
-                      <span style={{ fontFamily: 'var(--font-mono)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <span style={{ fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums', display: 'flex', alignItems: 'center', gap: 6 }}>
                         <MapPin size={13} style={{ color: 'var(--text-tertiary)' }} />
                         {detailPirep.distanceNm.toLocaleString()} nm
                       </span>
@@ -1067,7 +1067,7 @@ export function PirepsPage() {
                         value={
                           <span
                             style={{
-                              fontFamily: 'var(--font-mono)',
+                              fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums',
                               color: detailPirep.fuelUsedLbs <= detailPirep.fuelPlannedLbs
                                 ? 'var(--accent-emerald)'
                                 : 'var(--accent-amber)',
@@ -1097,7 +1097,7 @@ export function PirepsPage() {
                   <DataRow
                     label="Passengers"
                     value={
-                      <span style={{ fontFamily: 'var(--font-mono)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <span style={{ fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums', display: 'flex', alignItems: 'center', gap: 6 }}>
                         <UsersIcon size={13} style={{ color: 'var(--text-tertiary)' }} />
                         {detailPirep.paxCount}
                       </span>
@@ -1118,7 +1118,7 @@ export function PirepsPage() {
                       textAlign: 'center',
                     }}
                   >
-                    <p style={{ fontSize: 32, fontFamily: 'var(--font-mono)', fontWeight: 700 }}>
+                    <p style={{ fontSize: 32, fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums', fontWeight: 700 }}>
                       {scoreDisplay(detailPirep.score)}
                     </p>
                     <p style={{ fontSize: 11, color: 'var(--text-quaternary)', marginTop: 4 }}>/ 100</p>
@@ -1157,7 +1157,7 @@ export function PirepsPage() {
                     ].map(({ label, value }) => (
                       <div key={label} style={{ backgroundColor: 'var(--surface-3)', borderRadius: 6, padding: 8 }}>
                         <p style={{ fontSize: 10, textTransform: 'uppercase', color: 'var(--text-quaternary)' }}>{label}</p>
-                        <p style={{ fontSize: 12, fontFamily: 'var(--font-mono)', marginTop: 2, color: 'var(--text-primary)' }}>
+                        <p style={{ fontSize: 12, fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums', marginTop: 2, color: 'var(--text-primary)' }}>
                           {value
                             ? new Date(value).toLocaleTimeString('en-US', {
                                 hour: '2-digit',
@@ -1186,7 +1186,7 @@ export function PirepsPage() {
                   <div style={{ backgroundColor: 'var(--surface-3)', borderRadius: 6, padding: 12 }}>
                     <p style={{ fontSize: 13, color: 'var(--text-primary)' }}>
                       <span style={{ color: 'var(--text-tertiary)' }}>Reviewed by </span>
-                      <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 500 }}>
+                      <span style={{ fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums', fontWeight: 500 }}>
                         {detailPirep.reviewerCallsign || 'Unknown'}
                       </span>
                       <span style={{ color: 'var(--text-tertiary)' }}> on </span>

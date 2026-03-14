@@ -43,7 +43,7 @@ export function FlightDetailPanel({ flight, bidId, messages }: FlightDetailPanel
             value={
               <span className="flex items-center gap-1.5">
                 <ArrowUpDown size={14} className="text-[var(--text-tertiary)]" />
-                {`${Math.round(flight.altitude).toLocaleString()} ft`}
+                {`FL${Math.round(flight.altitude / 100).toString().padStart(3, '0')} (${Math.round(flight.altitude).toLocaleString()} ft)`}
               </span>
             }
             mono
@@ -63,7 +63,7 @@ export function FlightDetailPanel({ flight, bidId, messages }: FlightDetailPanel
             value={
               <span className="flex items-center gap-1.5">
                 <Compass size={14} className="text-[var(--text-tertiary)]" />
-                {`${Math.round(flight.heading)}\u00B0`}
+                {`${Math.round(flight.heading).toString().padStart(3, '0')}°`}
               </span>
             }
             mono

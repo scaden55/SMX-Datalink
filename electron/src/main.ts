@@ -8,6 +8,11 @@ import { FlightPhaseService } from './simconnect/flight-phase';
 import { ExceedanceDetector } from './simconnect/exceedance-detector';
 import { VpsRelay } from './relay';
 
+// Swallow EPIPE errors on stdout/stderr — happens when the renderer pipe closes
+// while SimConnect reconnect loop is still logging diagnostics.
+process.stdout?.on('error', () => {});
+process.stderr?.on('error', () => {});
+
 // Set AppUserModelId early so Windows uses our icon, not Electron's default
 app.setAppUserModelId('com.sma.acars');
 

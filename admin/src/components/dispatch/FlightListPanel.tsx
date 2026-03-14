@@ -57,10 +57,10 @@ export function FlightListPanel({ flights, selectedCallsign, onSelectFlight, con
                   <span className="font-mono text-sm font-semibold text-[var(--text-primary)]">{flight.callsign}</span>
                   <StatusBadge status={flight.phase?.toLowerCase() || 'unknown'} />
                 </div>
-                <div className="mt-1 flex items-center gap-3 text-xs text-[var(--text-tertiary)]">
-                  <span className="font-mono">{flight.aircraftType || 'N/A'}</span>
-                  <span className="font-mono">{Math.round(flight.altitude).toLocaleString()} ft</span>
-                  <span className="font-mono">{Math.round(flight.groundSpeed)} kts</span>
+                <div className="mt-1 flex items-center gap-3 text-[12px] text-[var(--text-tertiary)]">
+                  <span className="font-mono">{flight.aircraftType || '----'}</span>
+                  <span className="font-mono">FL{Math.round(flight.altitude / 100).toString().padStart(3, '0')}</span>
+                  <span className="font-mono">{Math.round(flight.groundSpeed).toString().padStart(3, '0')}kt</span>
                 </div>
               </button>
             );

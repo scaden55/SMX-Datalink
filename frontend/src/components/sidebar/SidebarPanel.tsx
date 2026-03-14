@@ -29,11 +29,11 @@ export function SidebarPanel({ flights, selectedBidId, onSelectFlight }: Sidebar
               onClick={() => onSelectFlight(f.bid.id)}
               className={`w-full text-left rounded-md p-2 border transition-all duration-150 ${
                 isSelected
-                  ? 'border-[#3b5bdb]/60 bg-[#3b5bdb]/10'
-                  : 'border-white/[0.04] bg-white/[0.02] hover:border-[#3b5bdb]/30 hover:bg-white/[0.04]'
+                  ? 'border-[#4F6CCD]/60 bg-[#4F6CCD]/10'
+                  : 'border-white/[0.04] bg-white/[0.02] hover:border-[#4F6CCD]/30 hover:bg-white/[0.04]'
               }`}
             >
-              <div className="text-[10px] font-bold text-[#6b8aff]">
+              <div className="text-[11px] font-bold text-[#7B94E0]">
                 {f.bid.flightNumber}
               </div>
               <div className="text-[9px] text-[var(--text-primary)] mt-0.5">
@@ -45,7 +45,7 @@ export function SidebarPanel({ flights, selectedBidId, onSelectFlight }: Sidebar
                 </div>
               )}
               <div className="flex items-center gap-1.5 mt-0.5">
-                <span className="text-[8px] text-[var(--text-label)]">{f.bid.aircraftType}</span>
+                <span className="text-[9px] text-[var(--text-label)]">{f.bid.aircraftType}</span>
                 <VatsimBadge connected={f.vatsimConnected} callsign={f.vatsimCallsign} />
               </div>
             </button>

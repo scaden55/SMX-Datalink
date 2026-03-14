@@ -55,7 +55,7 @@ const STATUS_CONFIG: Record<FleetStatus, { label: string; bg: string; text: stri
 function StatusBadge({ status }: { status: FleetStatus }) {
   const cfg = STATUS_CONFIG[status] ?? STATUS_CONFIG.active;
   return (
-    <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide ${cfg.bg} ${cfg.text} border ${cfg.border}`}>
+    <span className={`inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold uppercase tracking-wide ${cfg.bg} ${cfg.text} border ${cfg.border}`}>
       {cfg.label}
     </span>
   );
@@ -65,7 +65,7 @@ function FleetStatusDisplay({ aircraft }: { aircraft: FleetAircraft }) {
   // If aircraft has an active flight (airborne or active phase)
   if (aircraft.bidFlightPhase === 'airborne' || aircraft.bidFlightPhase === 'active') {
     return (
-      <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide bg-blue-500/10 text-blue-400 border border-blue-400/20">
+      <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold uppercase tracking-wide bg-blue-500/10 text-blue-400 border border-blue-400/20">
         In Flight
       </span>
     );
@@ -74,7 +74,7 @@ function FleetStatusDisplay({ aircraft }: { aircraft: FleetAircraft }) {
   if (aircraft.reservedByPilot) {
     return (
       <div className="flex flex-col items-center gap-0.5">
-        <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide bg-amber-500/10 text-amber-400 border border-amber-400/20">
+        <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold uppercase tracking-wide bg-amber-500/10 text-amber-400 border border-amber-400/20">
           Reserved
         </span>
         <span className="text-[9px] text-acars-muted">{aircraft.reservedByPilot}</span>
@@ -91,7 +91,7 @@ function fmt(val: number | null | undefined, suffix = ''): string {
 }
 
 const INPUT_CLS = 'w-full h-9 rounded-md border border-acars-border bg-acars-bg text-xs text-acars-text px-2.5 tabular-nums outline-none focus:border-emerald-400 transition-colors placeholder:text-acars-muted/50';
-const LABEL_CLS = 'text-[10px] uppercase tracking-wider text-acars-muted font-medium mb-1.5 block';
+const LABEL_CLS = 'text-[11px] uppercase tracking-wider text-acars-muted font-medium mb-1.5 block';
 
 // ─── Add Aircraft Modal ─────────────────────────────────────────
 
@@ -193,7 +193,7 @@ function AddAircraftModal({ onClose, onCreated }: AddAircraftModalProps) {
             </div>
             <div>
               <h2 className="text-[13px] font-semibold text-acars-text">Add Aircraft</h2>
-              <p className="text-[10px] text-acars-muted">MagnifyingGlass SimBrief or enter details manually</p>
+              <p className="text-[11px] text-acars-muted">MagnifyingGlass SimBrief or enter details manually</p>
             </div>
           </div>
           <button onClick={onClose} className="p-1.5 rounded-md hover:bg-acars-bg text-acars-muted hover:text-acars-text transition-colors">
@@ -226,26 +226,26 @@ function AddAircraftModal({ onClose, onCreated }: AddAircraftModalProps) {
                     onClick={() => selectSimBrief(ac)}
                     className="w-full flex items-center gap-3 px-3 py-2 text-left hover:bg-acars-panel transition-colors border-b border-acars-border last:border-0"
                   >
-                    <span className="tabular-nums font-bold text-xs text-sky-400 w-[48px] shrink-0">{ac.aircraftIcao}</span>
+                    <span className="font-mono tabular-nums font-bold text-xs text-sky-400 w-[48px] shrink-0">{ac.aircraftIcao}</span>
                     <span className="text-xs text-acars-text flex-1 truncate">{ac.aircraftName}</span>
-                    <span className="text-[10px] text-acars-muted truncate max-w-[100px]">{ac.engines}</span>
-                    <span className="text-[10px] text-acars-muted tabular-nums w-[40px] text-right">{ac.maxPax} pax</span>
-                    <span className="text-[10px] text-acars-muted tabular-nums w-[70px] text-right">{fmt(ac.mtowLbs, 'lbs')}</span>
+                    <span className="text-[11px] text-acars-muted truncate max-w-[100px]">{ac.engines}</span>
+                    <span className="text-[11px] text-acars-muted font-mono tabular-nums w-[40px] text-right">{ac.maxPax} pax</span>
+                    <span className="text-[11px] text-acars-muted font-mono tabular-nums w-[70px] text-right">{fmt(ac.mtowLbs, 'lbs')}</span>
                   </button>
                 ))}
               </div>
             )}
             {sbSelected && (
-              <div className="mt-1.5 flex items-center gap-2 px-2.5 py-1.5 rounded-md bg-sky-500/10 border border-sky-400/20 text-[10px] text-sky-400">
+              <div className="mt-1.5 flex items-center gap-2 px-2.5 py-1.5 rounded-md bg-sky-500/10 border border-sky-400/20 text-[11px] text-sky-400">
                 <AirplaneTilt className="w-3 h-3" />
-                Auto-filled from SimBrief: <span className="tabular-nums font-bold">{sbSelected.aircraftIcao}</span> — {sbSelected.aircraftName}
+                Auto-filled from SimBrief: <span className="font-mono tabular-nums font-bold">{sbSelected.aircraftIcao}</span> — {sbSelected.aircraftName}
               </div>
             )}
           </div>
 
           <div className="relative flex items-center gap-3">
             <div className="flex-1 border-t border-acars-border" />
-            <span className="text-[10px] text-acars-muted/60 uppercase tracking-wider">or enter details manually</span>
+            <span className="text-[11px] text-acars-muted/60 uppercase tracking-wider">or enter details manually</span>
             <div className="flex-1 border-t border-acars-border" />
           </div>
 
@@ -370,7 +370,7 @@ function AddAircraftModal({ onClose, onCreated }: AddAircraftModalProps) {
           </div>
 
           {error && (
-            <p className="text-[11px] text-red-400 bg-red-500/10 border border-red-400/20 rounded-md px-3 py-2">{error}</p>
+            <p className="text-[12px] text-red-400 bg-red-500/10 border border-red-400/20 rounded-md px-3 py-2">{error}</p>
           )}
         </div>
 
@@ -401,8 +401,8 @@ function AddAircraftModal({ onClose, onCreated }: AddAircraftModalProps) {
 function SpecRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-center justify-between py-1.5 border-b border-acars-border last:border-0">
-      <span className="text-[10px] text-acars-muted uppercase tracking-wider">{label}</span>
-      <span className="text-xs tabular-nums font-semibold tabular-nums text-acars-text">{value}</span>
+      <span className="text-[11px] text-acars-muted uppercase tracking-wider">{label}</span>
+      <span className="text-xs font-mono tabular-nums font-semibold text-acars-text">{value}</span>
     </div>
   );
 }
@@ -435,38 +435,38 @@ function UtilizationStats({ aircraftId }: { aircraftId: number }) {
     <div className="rounded-md border border-acars-border bg-acars-panel/50 p-3">
       <div className="flex items-center gap-2 mb-3">
         <ChartBar className="w-3.5 h-3.5 text-sky-400" />
-        <span className="text-[10px] uppercase tracking-wider text-acars-muted font-medium">Utilization</span>
+        <span className="text-[11px] uppercase tracking-wider text-acars-muted font-medium">Utilization</span>
       </div>
       {loading ? (
         <div className="flex items-center gap-2 py-2">
           <SpinnerGap className="w-3.5 h-3.5 text-acars-muted animate-spin" />
-          <span className="text-[11px] text-acars-muted">Loading stats...</span>
+          <span className="text-[12px] text-acars-muted">Loading stats...</span>
         </div>
       ) : !stats || stats.totalFlights === 0 ? (
-        <p className="text-[11px] text-acars-muted/60 italic">No flights recorded for this aircraft</p>
+        <p className="text-[12px] text-acars-muted/60 italic">No flights recorded for this aircraft</p>
       ) : (
         <div className="grid grid-cols-5 gap-3">
           <div>
-            <div className="text-[10px] text-acars-muted">Total Flights</div>
-            <div className="text-sm font-semibold text-acars-text">{stats.totalFlights}</div>
+            <div className="text-[11px] text-acars-muted">Total Flights</div>
+            <div className="text-sm font-mono font-semibold text-acars-text">{stats.totalFlights}</div>
           </div>
           <div>
-            <div className="text-[10px] text-acars-muted">Total Hours</div>
-            <div className="text-sm font-semibold text-acars-text">{stats.totalHours.toFixed(1)}h</div>
+            <div className="text-[11px] text-acars-muted">Total Hours</div>
+            <div className="text-sm font-mono font-semibold text-acars-text">{stats.totalHours.toFixed(1)}h</div>
           </div>
           <div>
-            <div className="text-[10px] text-acars-muted">Avg Score</div>
-            <div className="text-sm font-semibold text-emerald-400">{stats.avgScore?.toFixed(0) ?? '—'}</div>
+            <div className="text-[11px] text-acars-muted">Avg Score</div>
+            <div className="text-sm font-mono font-semibold text-emerald-400">{stats.avgScore?.toFixed(0) ?? '—'}</div>
           </div>
           <div>
-            <div className="text-[10px] text-acars-muted">Avg Landing</div>
-            <div className={`text-sm font-semibold ${(stats.avgLandingRate ?? 999) < 200 ? 'text-emerald-400' : (stats.avgLandingRate ?? 999) < 400 ? 'text-amber-400' : 'text-red-400'}`}>
+            <div className="text-[11px] text-acars-muted">Avg Landing</div>
+            <div className={`text-sm font-mono font-semibold ${(stats.avgLandingRate ?? 999) < 200 ? 'text-emerald-400' : (stats.avgLandingRate ?? 999) < 400 ? 'text-amber-400' : 'text-red-400'}`}>
               {stats.avgLandingRate?.toFixed(0) ?? '—'} fpm
             </div>
           </div>
           <div>
-            <div className="text-[10px] text-acars-muted">Last Flight</div>
-            <div className="text-sm font-semibold text-acars-text">
+            <div className="text-[11px] text-acars-muted">Last Flight</div>
+            <div className="text-sm font-mono font-semibold text-acars-text">
               {stats.lastFlightDate ? new Date(stats.lastFlightDate).toLocaleDateString() : '—'}
             </div>
           </div>
@@ -503,7 +503,7 @@ function CheckCard({ check }: { check: CheckDueStatus }) {
       {check.checkType === 'D' ? (
         <div className="flex items-center justify-between">
           <span className="text-[9px] text-acars-muted">Due Date</span>
-          <span className={`text-[11px] font-semibold tabular-nums ${isOverdue ? 'text-red-400' : 'text-acars-text'}`}>
+          <span className={`text-[12px] font-mono font-semibold tabular-nums ${isOverdue ? 'text-red-400' : 'text-acars-text'}`}>
             {check.dueAtDate ?? '—'}
           </span>
         </div>
@@ -512,13 +512,13 @@ function CheckCard({ check }: { check: CheckDueStatus }) {
           <div className="space-y-1">
             <div className="flex items-center justify-between">
               <span className="text-[9px] text-acars-muted">Rem. Hours</span>
-              <span className={`text-[11px] font-semibold tabular-nums ${isOverdue ? 'text-red-400' : 'text-acars-text'}`}>
+              <span className={`text-[12px] font-mono font-semibold tabular-nums ${isOverdue ? 'text-red-400' : 'text-acars-text'}`}>
                 {check.remainingHours != null ? check.remainingHours.toLocaleString() : '—'}
               </span>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-[9px] text-acars-muted">Rem. Cycles</span>
-              <span className={`text-[11px] font-semibold tabular-nums ${isOverdue ? 'text-red-400' : 'text-acars-text'}`}>
+              <span className={`text-[12px] font-mono font-semibold tabular-nums ${isOverdue ? 'text-red-400' : 'text-acars-text'}`}>
                 {check.remainingCycles != null ? check.remainingCycles.toLocaleString() : '—'}
               </span>
             </div>
@@ -550,28 +550,28 @@ function MaintenanceSection({ aircraftId }: { aircraftId: number }) {
     <div className="rounded-md border border-acars-border bg-acars-panel/50 p-3">
       <div className="flex items-center gap-2 mb-3">
         <Wrench className="w-3.5 h-3.5 text-amber-400" />
-        <span className="text-[10px] uppercase tracking-wider text-acars-muted font-medium">Maintenance</span>
+        <span className="text-[11px] uppercase tracking-wider text-acars-muted font-medium">Maintenance</span>
       </div>
       {loading ? (
         <div className="flex items-center gap-2 py-2">
           <SpinnerGap className="w-3.5 h-3.5 text-acars-muted animate-spin" />
-          <span className="text-[11px] text-acars-muted">Loading maintenance data...</span>
+          <span className="text-[12px] text-acars-muted">Loading maintenance data...</span>
         </div>
       ) : !maintenance ? (
-        <p className="text-[11px] text-acars-muted/60 italic">No maintenance data available</p>
+        <p className="text-[12px] text-acars-muted/60 italic">No maintenance data available</p>
       ) : (
         <div className="space-y-3">
           {/* Summary row */}
           <div className="flex items-center justify-between">
-            <span className="text-[10px] text-acars-muted tabular-nums">
+            <span className="text-[11px] text-acars-muted font-mono tabular-nums">
               {maintenance.totalHours.toLocaleString()} hrs · {maintenance.totalCycles.toLocaleString()} cycles
             </span>
             {maintenance.hasOverdueChecks ? (
-              <span className="flex items-center gap-1 text-[10px] text-red-400">
+              <span className="flex items-center gap-1 text-[11px] text-red-400">
                 <Warning className="w-3 h-3" /> Overdue checks
               </span>
             ) : (
-              <span className="flex items-center gap-1 text-[10px] text-emerald-400">
+              <span className="flex items-center gap-1 text-[11px] text-emerald-400">
                 <CheckCircle className="w-3 h-3" /> All checks current
               </span>
             )}
@@ -585,7 +585,7 @@ function MaintenanceSection({ aircraftId }: { aircraftId: number }) {
               ))}
             </div>
           ) : (
-            <p className="text-[11px] text-acars-muted/60 italic">No check schedules configured for this aircraft type</p>
+            <p className="text-[12px] text-acars-muted/60 italic">No check schedules configured for this aircraft type</p>
           )}
         </div>
       )}
@@ -675,7 +675,7 @@ function FleetDetailPanel({ aircraft, isAdmin, onSave, onDelete }: FleetDetailPa
         <div className="rounded-md border border-acars-border bg-acars-panel/50 p-3">
           <div className="flex items-center gap-2 mb-3">
             <AirplaneTilt className="w-3.5 h-3.5 text-sky-400" />
-            <span className="text-[10px] uppercase tracking-wider text-acars-muted font-medium">Aircraft Info</span>
+            <span className="text-[11px] uppercase tracking-wider text-acars-muted font-medium">Aircraft Info</span>
           </div>
           <div className="space-y-0">
             <SpecRow label="ICAO Type" value={a.icaoType} />
@@ -695,7 +695,7 @@ function FleetDetailPanel({ aircraft, isAdmin, onSave, onDelete }: FleetDetailPa
         <div className="rounded-md border border-acars-border bg-acars-panel/50 p-3">
           <div className="flex items-center gap-2 mb-3">
             <Scales className="w-3.5 h-3.5 text-blue-400" />
-            <span className="text-[10px] uppercase tracking-wider text-acars-muted font-medium">Specifications</span>
+            <span className="text-[11px] uppercase tracking-wider text-acars-muted font-medium">Specifications</span>
           </div>
           <div className="space-y-0">
             <SpecRow label="OEW" value={fmt(a.oewLbs, 'lbs')} />
@@ -717,14 +717,14 @@ function FleetDetailPanel({ aircraft, isAdmin, onSave, onDelete }: FleetDetailPa
         <div className="rounded-md border border-acars-border bg-acars-panel/50 p-3">
           <div className="flex items-center gap-2 mb-3">
             <Broadcast className="w-3.5 h-3.5 text-blue-400" />
-            <span className="text-[10px] uppercase tracking-wider text-acars-muted font-medium">Equipment Codes</span>
+            <span className="text-[11px] uppercase tracking-wider text-acars-muted font-medium">Equipment Codes</span>
           </div>
           <div className="grid grid-cols-5 gap-3">
-            {a.equipCode && <div><div className="text-[10px] text-acars-muted">Equipment</div><div className="text-xs tabular-nums text-acars-text">{a.equipCode}</div></div>}
-            {a.transponderCode && <div><div className="text-[10px] text-acars-muted">Transponder</div><div className="text-xs tabular-nums text-acars-text">{a.transponderCode}</div></div>}
-            {a.pbn && <div><div className="text-[10px] text-acars-muted">PBN</div><div className="text-xs tabular-nums text-acars-text">{a.pbn}</div></div>}
-            {a.selcal && <div><div className="text-[10px] text-acars-muted">SELCAL</div><div className="text-xs tabular-nums text-acars-text">{a.selcal}</div></div>}
-            {a.hexCode && <div><div className="text-[10px] text-acars-muted">Hex Code</div><div className="text-xs tabular-nums text-acars-text">{a.hexCode}</div></div>}
+            {a.equipCode && <div><div className="text-[11px] text-acars-muted">Equipment</div><div className="text-xs font-mono tabular-nums text-acars-text">{a.equipCode}</div></div>}
+            {a.transponderCode && <div><div className="text-[11px] text-acars-muted">Transponder</div><div className="text-xs font-mono tabular-nums text-acars-text">{a.transponderCode}</div></div>}
+            {a.pbn && <div><div className="text-[11px] text-acars-muted">PBN</div><div className="text-xs font-mono tabular-nums text-acars-text">{a.pbn}</div></div>}
+            {a.selcal && <div><div className="text-[11px] text-acars-muted">SELCAL</div><div className="text-xs font-mono tabular-nums text-acars-text">{a.selcal}</div></div>}
+            {a.hexCode && <div><div className="text-[11px] text-acars-muted">Hex Code</div><div className="text-xs font-mono tabular-nums text-acars-text">{a.hexCode}</div></div>}
           </div>
         </div>
       )}
@@ -736,9 +736,9 @@ function FleetDetailPanel({ aircraft, isAdmin, onSave, onDelete }: FleetDetailPa
       <div className="rounded-md border border-acars-border bg-acars-panel/50 p-3">
         <div className="flex items-center gap-2 mb-2">
           <FileText className="w-3.5 h-3.5 text-emerald-400" />
-          <span className="text-[10px] uppercase tracking-wider text-acars-muted font-medium">Flight Reports</span>
+          <span className="text-[11px] uppercase tracking-wider text-acars-muted font-medium">Flight Reports</span>
         </div>
-        <p className="text-[11px] text-acars-muted/60 italic">No flights recorded for this aircraft</p>
+        <p className="text-[12px] text-acars-muted/60 italic">No flights recorded for this aircraft</p>
       </div>
 
       {/* Section 4: Utilization Statistics */}
@@ -747,10 +747,10 @@ function FleetDetailPanel({ aircraft, isAdmin, onSave, onDelete }: FleetDetailPa
       {/* Remarks (pilot view) */}
       {a.remarks && !isAdmin && (
         <div className="rounded-md border border-acars-border bg-acars-panel/50 p-3">
-          <div className="flex items-center gap-1.5 text-[10px] text-acars-muted mb-1">
+          <div className="flex items-center gap-1.5 text-[11px] text-acars-muted mb-1">
             <ChatText className="w-3 h-3" /> Remarks
           </div>
-          <p className="text-[11px] text-acars-muted/80">{a.remarks}</p>
+          <p className="text-[12px] text-acars-muted/80">{a.remarks}</p>
         </div>
       )}
 
@@ -759,14 +759,14 @@ function FleetDetailPanel({ aircraft, isAdmin, onSave, onDelete }: FleetDetailPa
         <div className="rounded-md border border-acars-border bg-acars-panel/50 p-4">
           <div className="flex items-center gap-2 mb-3">
             <GearSix className="w-3.5 h-3.5 text-red-400" />
-            <span className="text-[10px] uppercase tracking-wider text-acars-muted font-medium">Admin Controls</span>
+            <span className="text-[11px] uppercase tracking-wider text-acars-muted font-medium">Admin Controls</span>
           </div>
 
           <div className="space-y-3">
             {/* Row: Status + Base + Location */}
             <div className="grid grid-cols-3 gap-3">
               <div>
-                <label className="text-[10px] uppercase tracking-wider text-acars-muted font-medium mb-1 block">Status</label>
+                <label className="text-[11px] uppercase tracking-wider text-acars-muted font-medium mb-1 block">Status</label>
                 <select value={editStatus} onChange={e => setEditStatus(e.target.value as FleetStatus)} className={EDIT_INPUT.replace('tabular-nums ', '')}>
                   <option value="active">Active</option>
                   <option value="stored">Stored</option>
@@ -775,11 +775,11 @@ function FleetDetailPanel({ aircraft, isAdmin, onSave, onDelete }: FleetDetailPa
                 </select>
               </div>
               <div>
-                <label className="text-[10px] uppercase tracking-wider text-acars-muted font-medium mb-1 block">Base</label>
+                <label className="text-[11px] uppercase tracking-wider text-acars-muted font-medium mb-1 block">Base</label>
                 <input type="text" value={editBase} onChange={e => setEditBase(e.target.value.toUpperCase())} placeholder="KJFK" className={EDIT_INPUT} />
               </div>
               <div>
-                <label className="text-[10px] uppercase tracking-wider text-acars-muted font-medium mb-1 block">Location</label>
+                <label className="text-[11px] uppercase tracking-wider text-acars-muted font-medium mb-1 block">Location</label>
                 <input type="text" value={editLocation} onChange={e => setEditLocation(e.target.value.toUpperCase())} placeholder="KJFK" className={EDIT_INPUT} />
               </div>
             </div>
@@ -787,23 +787,23 @@ function FleetDetailPanel({ aircraft, isAdmin, onSave, onDelete }: FleetDetailPa
             {/* Row: Weight specs */}
             <div className="grid grid-cols-5 gap-3">
               <div>
-                <label className="text-[10px] uppercase tracking-wider text-acars-muted font-medium mb-1 block">OEW (lbs)</label>
+                <label className="text-[11px] uppercase tracking-wider text-acars-muted font-medium mb-1 block">OEW (lbs)</label>
                 <input type="number" value={editOew} onChange={e => setEditOew(e.target.value)} placeholder="91300" className={EDIT_INPUT} />
               </div>
               <div>
-                <label className="text-[10px] uppercase tracking-wider text-acars-muted font-medium mb-1 block">MZFW (lbs)</label>
+                <label className="text-[11px] uppercase tracking-wider text-acars-muted font-medium mb-1 block">MZFW (lbs)</label>
                 <input type="number" value={editMzfw} onChange={e => setEditMzfw(e.target.value)} placeholder="128600" className={EDIT_INPUT} />
               </div>
               <div>
-                <label className="text-[10px] uppercase tracking-wider text-acars-muted font-medium mb-1 block">MTOW (lbs)</label>
+                <label className="text-[11px] uppercase tracking-wider text-acars-muted font-medium mb-1 block">MTOW (lbs)</label>
                 <input type="number" value={editMtow} onChange={e => setEditMtow(e.target.value)} placeholder="174200" className={EDIT_INPUT} />
               </div>
               <div>
-                <label className="text-[10px] uppercase tracking-wider text-acars-muted font-medium mb-1 block">MLW (lbs)</label>
+                <label className="text-[11px] uppercase tracking-wider text-acars-muted font-medium mb-1 block">MLW (lbs)</label>
                 <input type="number" value={editMlw} onChange={e => setEditMlw(e.target.value)} placeholder="144000" className={EDIT_INPUT} />
               </div>
               <div>
-                <label className="text-[10px] uppercase tracking-wider text-acars-muted font-medium mb-1 block">Max GasPump (lbs)</label>
+                <label className="text-[11px] uppercase tracking-wider text-acars-muted font-medium mb-1 block">Max GasPump (lbs)</label>
                 <input type="number" value={editMaxFuel} onChange={e => setEditMaxFuel(e.target.value)} placeholder="46000" className={EDIT_INPUT} />
               </div>
             </div>
@@ -811,19 +811,19 @@ function FleetDetailPanel({ aircraft, isAdmin, onSave, onDelete }: FleetDetailPa
             {/* Row: Airframe details */}
             <div className="grid grid-cols-4 gap-3">
               <div>
-                <label className="text-[10px] uppercase tracking-wider text-acars-muted font-medium mb-1 block">Engines</label>
+                <label className="text-[11px] uppercase tracking-wider text-acars-muted font-medium mb-1 block">Engines</label>
                 <input type="text" value={editEngines} onChange={e => setEditEngines(e.target.value)} placeholder="2x CFM56-7B" className={EDIT_INPUT} />
               </div>
               <div>
-                <label className="text-[10px] uppercase tracking-wider text-acars-muted font-medium mb-1 block">Ceiling (ft)</label>
+                <label className="text-[11px] uppercase tracking-wider text-acars-muted font-medium mb-1 block">Ceiling (ft)</label>
                 <input type="number" value={editCeiling} onChange={e => setEditCeiling(e.target.value)} placeholder="41000" className={EDIT_INPUT} />
               </div>
               <div>
-                <label className="text-[10px] uppercase tracking-wider text-acars-muted font-medium mb-1 block">Configuration</label>
+                <label className="text-[11px] uppercase tracking-wider text-acars-muted font-medium mb-1 block">Configuration</label>
                 <input type="text" value={editConfig} onChange={e => setEditConfig(e.target.value)} placeholder="Y162" className={EDIT_INPUT} />
               </div>
               <div>
-                <label className="text-[10px] uppercase tracking-wider text-acars-muted font-medium mb-1 block">Wake Cat</label>
+                <label className="text-[11px] uppercase tracking-wider text-acars-muted font-medium mb-1 block">Wake Cat</label>
                 <input type="text" value={editCat} onChange={e => setEditCat(e.target.value.toUpperCase())} placeholder="M" className={EDIT_INPUT} />
               </div>
             </div>
@@ -831,30 +831,30 @@ function FleetDetailPanel({ aircraft, isAdmin, onSave, onDelete }: FleetDetailPa
             {/* Row: Equipment codes */}
             <div className="grid grid-cols-5 gap-3">
               <div>
-                <label className="text-[10px] uppercase tracking-wider text-acars-muted font-medium mb-1 block">Equip Code</label>
+                <label className="text-[11px] uppercase tracking-wider text-acars-muted font-medium mb-1 block">Equip Code</label>
                 <input type="text" value={editEquip} onChange={e => setEditEquip(e.target.value)} placeholder="SDE2E3FGHIJ2J3J5M1RWXY" className={EDIT_INPUT} />
               </div>
               <div>
-                <label className="text-[10px] uppercase tracking-wider text-acars-muted font-medium mb-1 block">Transponder</label>
+                <label className="text-[11px] uppercase tracking-wider text-acars-muted font-medium mb-1 block">Transponder</label>
                 <input type="text" value={editTransponder} onChange={e => setEditTransponder(e.target.value)} placeholder="LB1" className={EDIT_INPUT} />
               </div>
               <div>
-                <label className="text-[10px] uppercase tracking-wider text-acars-muted font-medium mb-1 block">PBN</label>
+                <label className="text-[11px] uppercase tracking-wider text-acars-muted font-medium mb-1 block">PBN</label>
                 <input type="text" value={editPbn} onChange={e => setEditPbn(e.target.value)} placeholder="A1B1C1D1O1S1S2" className={EDIT_INPUT} />
               </div>
               <div>
-                <label className="text-[10px] uppercase tracking-wider text-acars-muted font-medium mb-1 block">SELCAL</label>
+                <label className="text-[11px] uppercase tracking-wider text-acars-muted font-medium mb-1 block">SELCAL</label>
                 <input type="text" value={editSelcal} onChange={e => setEditSelcal(e.target.value.toUpperCase())} placeholder="AB-CD" className={EDIT_INPUT} />
               </div>
               <div>
-                <label className="text-[10px] uppercase tracking-wider text-acars-muted font-medium mb-1 block">Hex Code</label>
+                <label className="text-[11px] uppercase tracking-wider text-acars-muted font-medium mb-1 block">Hex Code</label>
                 <input type="text" value={editHexCode} onChange={e => setEditHexCode(e.target.value.toUpperCase())} placeholder="A12345" className={EDIT_INPUT} />
               </div>
             </div>
 
             {/* Remarks */}
             <div>
-              <label className="text-[10px] uppercase tracking-wider text-acars-muted font-medium mb-1 block">Remarks</label>
+              <label className="text-[11px] uppercase tracking-wider text-acars-muted font-medium mb-1 block">Remarks</label>
               <textarea
                 value={editRemarks}
                 onChange={e => setEditRemarks(e.target.value)}
@@ -877,7 +877,7 @@ function FleetDetailPanel({ aircraft, isAdmin, onSave, onDelete }: FleetDetailPa
               {!confirmDelete ? (
                 <button
                   onClick={() => setConfirmDelete(true)}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[11px] font-semibold text-red-400 bg-red-500/10 border border-red-400/20 hover:bg-red-500/20 transition-colors"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[12px] font-semibold text-red-400 bg-red-500/10 border border-red-400/20 hover:bg-red-500/20 transition-colors"
                 >
                   <Trash className="w-3 h-3" /> Delete
                 </button>
@@ -886,7 +886,7 @@ function FleetDetailPanel({ aircraft, isAdmin, onSave, onDelete }: FleetDetailPa
                   <button
                     disabled={deleting}
                     onClick={handleDelete}
-                    className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-md text-[10px] font-bold text-white bg-red-500 hover:bg-red-500/80 transition-colors disabled:opacity-50"
+                    className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-md text-[11px] font-bold text-white bg-red-500 hover:bg-red-500/80 transition-colors disabled:opacity-50"
                   >
                     {deleting ? <SpinnerGap className="w-3 h-3 animate-spin" /> : <Warning className="w-3 h-3" />}
                     Confirm
@@ -1034,16 +1034,16 @@ export function FleetPage() {
               <AirplaneTilt className="w-3.5 h-3.5 text-sky-400" />
             </div>
             <h2 className="text-[13px] font-semibold text-acars-text">Fleet Management</h2>
-            <span className="text-[10px] text-acars-muted tabular-nums">
+            <span className="text-[11px] text-acars-muted font-mono tabular-nums">
               {loading ? '' : `${fleet.length} aircraft`}
             </span>
             {!loading && (
               <div className="flex items-center gap-1.5 ml-2">
-                <span className="text-[10px] text-emerald-400 tabular-nums">{statusCounts.active} active</span>
-                {statusCounts.stored > 0 && <span className="text-[10px] text-amber-400 tabular-nums">{statusCounts.stored} stored</span>}
-                {statusCounts.retired > 0 && <span className="text-[10px] text-red-400 tabular-nums">{statusCounts.retired} retired</span>}
-                {statusCounts.reserved > 0 && <span className="text-[10px] text-amber-400 tabular-nums">{statusCounts.reserved} reserved</span>}
-                {statusCounts.inFlight > 0 && <span className="text-[10px] text-blue-400 tabular-nums">{statusCounts.inFlight} in flight</span>}
+                <span className="text-[11px] text-emerald-400 font-mono tabular-nums">{statusCounts.active} active</span>
+                {statusCounts.stored > 0 && <span className="text-[11px] text-amber-400 font-mono tabular-nums">{statusCounts.stored} stored</span>}
+                {statusCounts.retired > 0 && <span className="text-[11px] text-red-400 font-mono tabular-nums">{statusCounts.retired} retired</span>}
+                {statusCounts.reserved > 0 && <span className="text-[11px] text-amber-400 font-mono tabular-nums">{statusCounts.reserved} reserved</span>}
+                {statusCounts.inFlight > 0 && <span className="text-[11px] text-blue-400 font-mono tabular-nums">{statusCounts.inFlight} in flight</span>}
               </div>
             )}
             {loading && <SpinnerGap className="w-3.5 h-3.5 text-blue-400 animate-spin" />}
@@ -1110,8 +1110,8 @@ export function FleetPage() {
       <div className="flex-1 mx-5 mt-4 mb-5 panel flex flex-col overflow-hidden">
         <div className="flex-1 overflow-auto">
           <table className="w-full text-xs">
-            <thead className="sticky top-0 z-10 bg-acars-panel">
-              <tr className="text-[10px] uppercase tracking-wider text-acars-muted border-b border-acars-border">
+            <thead className="sticky top-0 z-10 bg-acars-bg">
+              <tr className="text-[11px] uppercase tracking-wider text-acars-muted border-b border-acars-border">
                 <th className="text-left px-4 py-2.5 font-medium">Registration</th>
                 <th className="text-left px-4 py-2.5 font-medium">Type</th>
                 <th className="text-left px-4 py-2.5 font-medium">Aircraft</th>
@@ -1149,28 +1149,28 @@ export function FleetPage() {
                       <tr
                         onClick={() => setExpandedId(isExpanded ? null : a.id)}
                         className={`border-b border-acars-border hover:bg-acars-hover transition-colors cursor-pointer ${
-                          isExpanded ? 'bg-acars-hover' : i % 2 === 0 ? 'bg-acars-panel' : 'bg-acars-bg'
+                          isExpanded ? 'bg-acars-hover' : i % 2 === 0 ? 'bg-acars-input' : 'bg-acars-bg'
                         }`}
                       >
                         <td className="px-4 py-2.5">
                           <div className="flex items-center gap-2">
                             <CaretDown className={`w-3.5 h-3.5 text-acars-muted/50 transition-transform duration-200 shrink-0 ${isExpanded ? 'rotate-0' : '-rotate-90'}`} />
-                            <span className="tabular-nums font-semibold text-acars-text">{a.registration}</span>
+                            <span className="font-mono tabular-nums font-semibold text-acars-text">{a.registration}</span>
                           </div>
                         </td>
-                        <td className="px-4 py-2.5 tabular-nums text-acars-muted">{a.icaoType}</td>
+                        <td className="px-4 py-2.5 font-mono tabular-nums text-acars-muted">{a.icaoType}</td>
                         <td className="px-4 py-2.5 text-acars-text">{a.name}</td>
-                        <td className="px-4 py-2.5 tabular-nums text-acars-muted">{a.baseIcao ?? '—'}</td>
-                        <td className="px-4 py-2.5 tabular-nums text-acars-muted">{a.locationIcao ?? '—'}</td>
-                        <td className="px-4 py-2.5 text-right tabular-nums text-acars-muted tabular-nums">{a.rangeNm.toLocaleString()} nm</td>
-                        <td className="px-4 py-2.5 text-right tabular-nums text-acars-muted tabular-nums">{a.paxCapacity}</td>
-                        <td className="px-4 py-2.5 text-right tabular-nums text-acars-muted tabular-nums">{a.cargoCapacityLbs.toLocaleString()}</td>
+                        <td className="px-4 py-2.5 font-mono tabular-nums text-acars-muted">{a.baseIcao ?? '—'}</td>
+                        <td className="px-4 py-2.5 font-mono tabular-nums text-acars-muted">{a.locationIcao ?? '—'}</td>
+                        <td className="px-4 py-2.5 text-right font-mono tabular-nums text-acars-muted">{a.rangeNm.toLocaleString()} nm</td>
+                        <td className="px-4 py-2.5 text-right font-mono tabular-nums text-acars-muted">{a.paxCapacity}</td>
+                        <td className="px-4 py-2.5 text-right font-mono tabular-nums text-acars-muted">{a.cargoCapacityLbs.toLocaleString()}</td>
                         <td className="px-4 py-2.5 text-center">
                           <FleetStatusDisplay aircraft={a} />
                         </td>
                       </tr>
                       {isExpanded && (
-                        <tr className="bg-acars-panel border-b border-acars-border">
+                        <tr className="bg-acars-input border-b border-acars-border">
                           <td colSpan={9}>
                             <FleetDetailPanel
                               aircraft={a}

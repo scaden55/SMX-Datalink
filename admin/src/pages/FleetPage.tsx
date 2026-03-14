@@ -1047,7 +1047,7 @@ export function FleetPage() {
                 </div>
                 <div
                   className="flex items-center"
-                  style={{ padding: '8px 14px', gap: 8, borderTop: '1px solid var(--border-primary)', backgroundColor: 'rgba(59, 91, 219, 0.03)' }}
+                  style={{ padding: '8px 14px', gap: 8, borderTop: '1px solid var(--border-primary)', backgroundColor: 'rgba(79, 108, 205, 0.03)' }}
                 >
                   <span style={{ fontSize: 10, color: 'var(--text-tertiary)', flexShrink: 0 }}>Registration:</span>
                   <input
@@ -1162,7 +1162,7 @@ export function FleetPage() {
                       padding: '8px 14px',
                       gap: 8,
                       borderTop: '1px solid var(--border-primary)',
-                      backgroundColor: 'rgba(59, 91, 219, 0.03)',
+                      backgroundColor: 'rgba(79, 108, 205, 0.03)',
                     }}
                   >
                     <span style={{ fontSize: 10, color: 'var(--text-tertiary)', flexShrink: 0 }}>Registration:</span>
