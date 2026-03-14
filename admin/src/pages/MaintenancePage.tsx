@@ -3,19 +3,15 @@ import { motion } from 'motion/react';
 import {
   Wrench,
   Search,
-  Plus,
   Pencil,
-  Trash2,
   MoreVertical,
-  CheckCircle2,
   RotateCw,
   AlertTriangle,
-  ChevronLeft,
-  ChevronRight,
+  BookOpen,
 } from 'lucide-react';
 import { api, ApiError } from '@/lib/api';
 import { toast } from '@/stores/toastStore';
-import { pageVariants, staggerContainer, staggerItem, fadeUp, tableContainer, tableRow, cardHover } from '@/lib/motion';
+import { pageVariants, fadeUp, tableContainer, tableRow } from '@/lib/motion';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -31,7 +27,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
@@ -42,12 +37,18 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { DetailPanel } from '@/components/shared/DetailPanel';
+import { SectionHeader, DataRow } from '@/components/primitives';
+import { ComplianceTab } from '@/pages/maintenance/ComplianceTab';
+import { DiscrepanciesTab } from '@/pages/maintenance/DiscrepanciesTab';
+import { MelDeferralsTab } from '@/pages/maintenance/MelDeferralsTab';
+import { AircraftLogbook } from '@/pages/maintenance/AircraftLogbook';
+import { ConfigurationTab } from '@/pages/maintenance/ConfigurationTab';
 
 // ── Types (mirroring @acars/shared) ──────────────────────────
 
 type MaintenanceCheckType = 'A' | 'B' | 'C' | 'D';
 type MaintenanceLogType = 'A' | 'B' | 'C' | 'D' | 'LINE' | 'UNSCHEDULED' | 'AD' | 'MEL' | 'SFP';
-type MaintenanceLogStatus = 'scheduled' | 'in_progress' | 'completed' | 'deferred';
 
 interface CheckDueStatus {
   checkType: MaintenanceCheckType;
@@ -75,29 +76,10 @@ interface FleetMaintenanceStatus {
   hasOverdueChecks: boolean;
   hasOverdueADs: boolean;
   hasExpiredMEL: boolean;
+  openDiscrepancies: number;
+  activeMELs: number;
   nextCheckType: string | null;
   nextCheckDueIn: number | null;
-}
-
-interface MaintenanceLogEntry {
-  id: number;
-  aircraftId: number;
-  aircraftRegistration?: string;
-  checkType: MaintenanceLogType;
-  title: string;
-  description: string | null;
-  performedBy: string | null;
-  performedAt: string | null;
-  hoursAtCheck: number | null;
-  cyclesAtCheck: number | null;
-  cost: number | null;
-  status: MaintenanceLogStatus;
-  sfpDestination: string | null;
-  sfpExpiry: string | null;
-  createdBy: number | null;
-  createdAt: string;
-  updatedAt: string;
-  durationHours?: number | null;
 }
 
 // ── Helpers ──────────────────────────────────────────────────
@@ -114,11 +96,6 @@ function formatDate(iso: string | null): string {
 function formatHours(h: number | null): string {
   if (h === null || h === undefined) return '--';
   return h.toLocaleString('en-US', { maximumFractionDigits: 1 });
-}
-
-function formatCurrency(v: number | null): string {
-  if (v === null || v === undefined) return '--';
-  return `$${v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
 // ── Badge Component ─────────────────────────────────────────
@@ -240,6 +217,8 @@ const cellStyle: React.CSSProperties = {
   verticalAlign: 'middle',
 };
 
+// (AircraftDetailPanel content is rendered inside the shared DetailPanel below)
+
 // ═══════════════════════════════════════════════════════════════
 // Fleet Status Tab Content
 // ═══════════════════════════════════════════════════════════════
@@ -249,6 +228,8 @@ function FleetStatusContent() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [selectedAircraft, setSelectedAircraft] = useState<FleetMaintenanceStatus | null>(null);
+  const [logbookAircraftId, setLogbookAircraftId] = useState<number | null>(null);
 
   // Adjust hours dialog
   const [adjustTarget, setAdjustTarget] = useState<FleetMaintenanceStatus | null>(null);
@@ -301,6 +282,7 @@ function FleetStatusContent() {
       setAdjustHours('');
       setAdjustCycles('');
       setAdjustReason('');
+      setSelectedAircraft(null);
       fetchFleet();
     } catch (err) {
       toast.error(err instanceof ApiError ? err.message : 'Failed to adjust hours');
@@ -319,6 +301,7 @@ function FleetStatusContent() {
       } else {
         toast.warning(res.message);
       }
+      setSelectedAircraft(null);
       fetchFleet();
     } catch (err) {
       toast.error(err instanceof ApiError ? err.message : 'Failed to return aircraft to service');
@@ -332,6 +315,20 @@ function FleetStatusContent() {
   }
 
   if (loading) return <TableSkeleton />;
+
+  if (logbookAircraftId !== null) {
+    return <AircraftLogbook aircraftId={logbookAircraftId} onBack={() => setLogbookAircraftId(null)} />;
+  }
+
+  const detailOpen = selectedAircraft !== null;
+
+  const statusLabel = selectedAircraft
+    ? selectedAircraft.hasOverdueChecks || selectedAircraft.hasOverdueADs || selectedAircraft.hasExpiredMEL
+      ? 'Overdue'
+      : selectedAircraft.checksDue.some((c) => c.isInOverflight)
+      ? 'Warning'
+      : selectedAircraft.status
+    : '';
 
   return (
     <>
@@ -399,126 +396,338 @@ function FleetStatusContent() {
         </Select>
       </div>
 
-      {/* Table */}
-      <div style={{ overflowX: 'auto' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-          <thead>
-            <tr>
-              <th style={colHeaderStyle}>REGISTRATION</th>
-              <th style={colHeaderStyle}>TYPE</th>
-              <th style={colHeaderStyle}>NAME</th>
-              <th style={colHeaderStyle}>HOURS</th>
-              <th style={colHeaderStyle}>CYCLES</th>
-              <th style={colHeaderStyle}>NEXT CHECK</th>
-              <th style={colHeaderStyle}>REMAINING</th>
-              <th style={colHeaderStyle}>STATUS</th>
-              <th style={{ ...colHeaderStyle, width: 50 }} />
-            </tr>
-          </thead>
-          <motion.tbody variants={tableContainer} initial="hidden" animate="visible">
-            {filtered.length === 0 ? (
-              <tr>
-                <td
-                  colSpan={9}
-                  style={{ padding: '40px 16px', textAlign: 'center', color: 'var(--text-tertiary)', fontSize: 13 }}
-                >
-                  No aircraft found
-                </td>
-              </tr>
-            ) : (
-              filtered.map((aircraft) => (
-                <motion.tr
-                  key={aircraft.aircraftId}
-                  variants={tableRow}
-                  style={{ cursor: 'default' }}
-                  onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = 'var(--surface-2)'; }}
-                  onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
-                >
-                  <td style={{ ...cellStyle, fontWeight: 600, color: 'var(--text-primary)', fontFamily: 'var(--font-mono)' }}>
-                    {aircraft.registration}
-                  </td>
-                  <td style={cellStyle}>
-                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11 }}>{aircraft.icaoType}</span>
-                  </td>
-                  <td style={{ ...cellStyle, color: 'var(--text-secondary)', fontSize: 11 }}>
-                    {aircraft.name}
-                  </td>
-                  <td style={{ ...cellStyle, fontFamily: 'var(--font-mono)' }}>
-                    {formatHours(aircraft.totalHours)}
-                  </td>
-                  <td style={{ ...cellStyle, fontFamily: 'var(--font-mono)' }}>
-                    {aircraft.totalCycles.toLocaleString()}
-                  </td>
-                  <td style={cellStyle}>
-                    {aircraft.nextCheckType ? (
-                      <TypeBadge type={aircraft.nextCheckType as MaintenanceLogType} />
-                    ) : (
-                      <span style={{ color: 'var(--text-tertiary)' }}>--</span>
-                    )}
-                  </td>
-                  <td style={{ ...cellStyle, fontFamily: 'var(--font-mono)' }}>
-                    {aircraft.nextCheckDueIn !== null ? (
-                      <span
-                        style={{
-                          color:
-                            aircraft.hasOverdueChecks
-                              ? 'var(--accent-red)'
-                              : aircraft.checksDue.some((c) => c.isInOverflight)
-                              ? 'var(--accent-amber)'
-                              : 'var(--text-secondary)',
-                        }}
-                      >
-                        {formatHours(aircraft.nextCheckDueIn)} hrs
-                      </span>
-                    ) : (
-                      '--'
-                    )}
-                  </td>
-                  <td style={cellStyle}>
-                    <StatusBadgeInline status={getFleetStatusLabel(aircraft)} />
-                  </td>
-                  <td style={cellStyle}>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <button
-                          style={{
-                            background: 'none',
-                            border: 'none',
-                            cursor: 'pointer',
-                            padding: 4,
-                            borderRadius: 4,
-                            color: 'var(--text-tertiary)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                          }}
-                        >
-                          <MoreVertical size={16} />
-                        </button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem
-                          onClick={() => {
-                            setAdjustTarget(aircraft);
-                            setAdjustHours(aircraft.totalHours.toString());
-                            setAdjustCycles(aircraft.totalCycles.toString());
-                          }}
-                        >
-                          <Pencil size={14} /> Adjust Hours
-                        </DropdownMenuItem>
-                        {aircraft.status === 'maintenance' && (
-                          <DropdownMenuItem onClick={() => handleReturnToService(aircraft)}>
-                            <RotateCw size={14} /> Return to Service
-                          </DropdownMenuItem>
+      {/* ═══ Table + Detail Split ═══ */}
+      <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+        <div
+          style={{
+            width: detailOpen ? '55%' : '100%',
+            display: 'flex',
+            flexDirection: 'column',
+            transition: 'width 200ms ease-out',
+            overflow: 'hidden',
+          }}
+        >
+          <div style={{ padding: '0 24px', flex: 1, overflow: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr>
+                  <th style={colHeaderStyle}>REGISTRATION</th>
+                  <th style={colHeaderStyle}>TYPE</th>
+                  <th style={colHeaderStyle}>NAME</th>
+                  <th style={colHeaderStyle}>HOURS</th>
+                  <th style={colHeaderStyle}>CYCLES</th>
+                  <th style={colHeaderStyle}>DISCREP</th>
+                  <th style={colHeaderStyle}>MELs</th>
+                  <th style={colHeaderStyle}>NEXT CHECK</th>
+                  <th style={colHeaderStyle}>REMAINING</th>
+                  <th style={colHeaderStyle}>STATUS</th>
+                  <th style={{ ...colHeaderStyle, width: 50 }} />
+                </tr>
+              </thead>
+              <motion.tbody variants={tableContainer} initial="hidden" animate="visible">
+                {filtered.length === 0 ? (
+                  <tr>
+                    <td
+                      colSpan={11}
+                      style={{ padding: '40px 16px', textAlign: 'center', color: 'var(--text-tertiary)', fontSize: 13 }}
+                    >
+                      No aircraft found
+                    </td>
+                  </tr>
+                ) : (
+                  filtered.map((aircraft) => {
+                    const isSelected = selectedAircraft?.aircraftId === aircraft.aircraftId;
+                    return (
+                    <motion.tr
+                      key={aircraft.aircraftId}
+                      variants={tableRow}
+                      onClick={() => setSelectedAircraft(isSelected ? null : aircraft)}
+                      style={{
+                        cursor: 'pointer',
+                        background: isSelected ? 'rgba(79,108,205,0.08)' : undefined,
+                        transition: 'background 0.15s ease',
+                      }}
+                      className="row-interactive"
+                    >
+                      <td style={{ ...cellStyle, fontWeight: 600, color: 'var(--text-primary)', fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums' }}>
+                        {aircraft.registration}
+                      </td>
+                      <td style={cellStyle}>
+                        <span style={{ fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums', fontSize: 11 }}>{aircraft.icaoType}</span>
+                      </td>
+                      <td style={{ ...cellStyle, color: 'var(--text-secondary)', fontSize: 11 }}>
+                        {aircraft.name}
+                      </td>
+                      <td style={{ ...cellStyle, fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums' }}>
+                        {formatHours(aircraft.totalHours)}
+                      </td>
+                      <td style={{ ...cellStyle, fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums' }}>
+                        {aircraft.totalCycles.toLocaleString()}
+                      </td>
+                      <td style={{ ...cellStyle, fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums', textAlign: 'center' }}>
+                        {aircraft.openDiscrepancies > 0 ? (
+                          <span style={{ color: 'var(--accent-amber)', fontWeight: 600 }}>{aircraft.openDiscrepancies}</span>
+                        ) : (
+                          <span style={{ color: 'var(--text-tertiary)' }}>0</span>
                         )}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </td>
-                </motion.tr>
-              ))
-            )}
-          </motion.tbody>
-        </table>
+                      </td>
+                      <td style={{ ...cellStyle, fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums', textAlign: 'center' }}>
+                        {aircraft.activeMELs > 0 ? (
+                          <span style={{ color: 'var(--accent-amber)', fontWeight: 600 }}>{aircraft.activeMELs}</span>
+                        ) : (
+                          <span style={{ color: 'var(--text-tertiary)' }}>0</span>
+                        )}
+                      </td>
+                      <td style={cellStyle}>
+                        {aircraft.nextCheckType ? (
+                          <TypeBadge type={aircraft.nextCheckType as MaintenanceLogType} />
+                        ) : (
+                          <span style={{ color: 'var(--text-tertiary)' }}>--</span>
+                        )}
+                      </td>
+                      <td style={{ ...cellStyle, fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums' }}>
+                        {aircraft.nextCheckDueIn !== null ? (
+                          <span
+                            style={{
+                              color:
+                                aircraft.hasOverdueChecks
+                                  ? 'var(--accent-red)'
+                                  : aircraft.checksDue.some((c) => c.isInOverflight)
+                                  ? 'var(--accent-amber)'
+                                  : 'var(--text-secondary)',
+                            }}
+                          >
+                            {formatHours(aircraft.nextCheckDueIn)} hrs
+                          </span>
+                        ) : (
+                          '--'
+                        )}
+                      </td>
+                      <td style={cellStyle}>
+                        <StatusBadgeInline status={getFleetStatusLabel(aircraft)} />
+                      </td>
+                      <td style={cellStyle}>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <button
+                              onClick={(e) => e.stopPropagation()}
+                              style={{
+                                background: 'none',
+                                border: 'none',
+                                cursor: 'pointer',
+                                padding: 4,
+                                borderRadius: 4,
+                                color: 'var(--text-tertiary)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                              }}
+                            >
+                              <MoreVertical size={16} />
+                            </button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem
+                              onClick={() => {
+                                setAdjustTarget(aircraft);
+                                setAdjustHours(aircraft.totalHours.toString());
+                                setAdjustCycles(aircraft.totalCycles.toString());
+                              }}
+                            >
+                              <Pencil size={14} /> Adjust Hours
+                            </DropdownMenuItem>
+                            {aircraft.status === 'maintenance' && (
+                              <DropdownMenuItem onClick={() => handleReturnToService(aircraft)}>
+                                <RotateCw size={14} /> Return to Service
+                              </DropdownMenuItem>
+                            )}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </td>
+                    </motion.tr>
+                    );
+                  })
+                )}
+              </motion.tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* ═══ Aircraft Detail Panel ═══ */}
+        {detailOpen && selectedAircraft && (
+          <DetailPanel
+            open={detailOpen}
+            onClose={() => setSelectedAircraft(null)}
+            title={selectedAircraft.registration}
+            subtitle={`${selectedAircraft.icaoType} — ${selectedAircraft.name}`}
+            actions={
+              <div style={{ display: 'flex', gap: 8, width: '100%' }}>
+                <button
+                  onClick={() => {
+                    setAdjustTarget(selectedAircraft);
+                    setAdjustHours(selectedAircraft.totalHours.toString());
+                    setAdjustCycles(selectedAircraft.totalCycles.toString());
+                  }}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 5,
+                    padding: '6px 10px',
+                    borderRadius: 6,
+                    border: '1px solid var(--border-primary)',
+                    background: 'var(--surface-3)',
+                    color: 'var(--text-primary)',
+                    fontSize: 11,
+                    fontWeight: 500,
+                    cursor: 'pointer',
+                    fontFamily: 'inherit',
+                  }}
+                >
+                  <Pencil size={12} /> Adjust Hours
+                </button>
+                {selectedAircraft.status === 'maintenance' && (
+                  <button
+                    onClick={() => handleReturnToService(selectedAircraft)}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 5,
+                      padding: '6px 10px',
+                      borderRadius: 6,
+                      border: '1px solid var(--border-primary)',
+                      background: 'var(--surface-3)',
+                      color: 'var(--accent-emerald)',
+                      fontSize: 11,
+                      fontWeight: 500,
+                      cursor: 'pointer',
+                      fontFamily: 'inherit',
+                    }}
+                  >
+                    <RotateCw size={12} /> Return to Service
+                  </button>
+                )}
+                <button
+                  onClick={() => { setSelectedAircraft(null); setLogbookAircraftId(selectedAircraft.aircraftId); }}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 5,
+                    padding: '6px 10px',
+                    borderRadius: 6,
+                    border: '1px solid var(--accent-blue-ring, var(--border-primary))',
+                    background: 'var(--accent-blue-bg)',
+                    color: 'var(--accent-blue-bright)',
+                    fontSize: 11,
+                    fontWeight: 500,
+                    cursor: 'pointer',
+                    fontFamily: 'inherit',
+                  }}
+                >
+                  <BookOpen size={12} /> Full Logbook
+                </button>
+              </div>
+            }
+          >
+            <div className="space-y-5">
+              {/* Status */}
+              <div>
+                <StatusBadgeInline status={statusLabel} />
+              </div>
+
+              {/* Aircraft Info */}
+              <section>
+                <SectionHeader title="Aircraft Info" />
+                <div className="space-y-0.5">
+                  <DataRow label="Total Hours" value={formatHours(selectedAircraft.totalHours)} mono />
+                  <DataRow label="Total Cycles" value={selectedAircraft.totalCycles.toLocaleString()} mono />
+                  <DataRow label="Status" value={statusLabel} />
+                  <DataRow
+                    label="Open Discrepancies"
+                    value={
+                      <span style={{ color: selectedAircraft.openDiscrepancies > 0 ? 'var(--accent-amber)' : undefined, fontWeight: selectedAircraft.openDiscrepancies > 0 ? 600 : undefined }}>
+                        {selectedAircraft.openDiscrepancies}
+                      </span>
+                    }
+                    mono
+                  />
+                  <DataRow
+                    label="Active MELs"
+                    value={
+                      <span style={{ color: selectedAircraft.activeMELs > 0 ? 'var(--accent-amber)' : undefined, fontWeight: selectedAircraft.activeMELs > 0 ? 600 : undefined }}>
+                        {selectedAircraft.activeMELs}
+                      </span>
+                    }
+                    mono
+                  />
+                </div>
+              </section>
+
+              {/* Check Status */}
+              {selectedAircraft.checksDue.length > 0 && (
+                <section>
+                  <SectionHeader title="Check Status" />
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                    {selectedAircraft.checksDue.map((check) => {
+                      const color = check.isOverdue
+                        ? 'var(--accent-red)'
+                        : check.isInOverflight
+                        ? 'var(--accent-amber)'
+                        : 'var(--accent-emerald)';
+                      return (
+                        <div
+                          key={check.checkType}
+                          style={{
+                            borderRadius: 6,
+                            border: '1px solid var(--border-primary)',
+                            background: 'var(--surface-3)',
+                            padding: '10px 12px',
+                          }}
+                        >
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                            <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-primary)' }}>{check.checkType}</span>
+                            <StatusBadgeInline status={check.isOverdue ? 'Overdue' : check.isInOverflight ? 'Warning' : 'Ok'} />
+                          </div>
+                          <div style={{ fontSize: 11, color, fontFamily: 'var(--font-mono, monospace)' }}>
+                            {check.remainingHours != null ? `${formatHours(check.remainingHours)} hrs remaining` : '--'}
+                          </div>
+                          {check.remainingCycles != null && (
+                            <div style={{ fontSize: 10, color: 'var(--text-tertiary)', fontFamily: 'var(--font-mono, monospace)', marginTop: 2 }}>
+                              {check.remainingCycles.toLocaleString()} cycles remaining
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </section>
+              )}
+
+              {/* Alerts */}
+              {(selectedAircraft.hasOverdueChecks || selectedAircraft.hasOverdueADs || selectedAircraft.hasExpiredMEL) && (
+                <section>
+                  <SectionHeader title="Alerts" />
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    {selectedAircraft.hasOverdueChecks && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: 'var(--accent-red)' }}>
+                        <AlertTriangle size={14} /> Overdue maintenance checks
+                      </div>
+                    )}
+                    {selectedAircraft.hasOverdueADs && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: 'var(--accent-red)' }}>
+                        <AlertTriangle size={14} /> Overdue airworthiness directives
+                      </div>
+                    )}
+                    {selectedAircraft.hasExpiredMEL && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: 'var(--accent-amber)' }}>
+                        <AlertTriangle size={14} /> Expired MEL deferrals
+                      </div>
+                    )}
+                  </div>
+                </section>
+              )}
+            </div>
+          </DetailPanel>
+        )}
       </div>
 
       {/* Adjust Hours Dialog */}
@@ -564,626 +773,19 @@ function FleetStatusContent() {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// Maintenance Log Tab Content
-// ═══════════════════════════════════════════════════════════════
-
-function MaintenanceLogContent({ onOpenCreate }: { onOpenCreate: () => void }) {
-  const [entries, setEntries] = useState<MaintenanceLogEntry[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [total, setTotal] = useState(0);
-  const [page, setPage] = useState(1);
-  const [pageSize] = useState(25);
-
-  // Filters
-  const [search, setSearch] = useState('');
-  const [dateFilter, setDateFilter] = useState('all');
-  const [statusFilter, setStatusFilter] = useState('all');
-
-  // Dialogs
-  const [editEntry, setEditEntry] = useState<MaintenanceLogEntry | null>(null);
-  const [deleteEntry, setDeleteEntry] = useState<MaintenanceLogEntry | null>(null);
-  const [deleteLoading, setDeleteLoading] = useState(false);
-
-  // Form state
-  const [formAircraftId, setFormAircraftId] = useState('');
-  const [formCheckType, setFormCheckType] = useState<MaintenanceLogType>('LINE');
-  const [formTitle, setFormTitle] = useState('');
-  const [formDescription, setFormDescription] = useState('');
-  const [formPerformedBy, setFormPerformedBy] = useState('');
-  const [formStatus, setFormStatus] = useState<MaintenanceLogStatus>('scheduled');
-  const [formCost, setFormCost] = useState('');
-  const [formLoading, setFormLoading] = useState(false);
-
-  const fetchEntries = useCallback(async () => {
-    try {
-      const params = new URLSearchParams();
-      params.set('page', page.toString());
-      params.set('pageSize', pageSize.toString());
-      if (statusFilter !== 'all') params.set('status', statusFilter);
-
-      const res = await api.get<{ entries: MaintenanceLogEntry[]; total: number; page: number; pageSize: number }>(
-        `/api/admin/maintenance/log?${params.toString()}`,
-      );
-      setEntries(res.entries);
-      setTotal(res.total);
-    } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : 'Failed to load maintenance log');
-    } finally {
-      setLoading(false);
-    }
-  }, [page, pageSize, statusFilter]);
-
-  useEffect(() => { fetchEntries(); }, [fetchEntries]);
-
-  const filtered = useMemo(() => {
-    let list = entries;
-    if (search) {
-      const q = search.toLowerCase();
-      list = list.filter(
-        (e) =>
-          e.title.toLowerCase().includes(q) ||
-          (e.aircraftRegistration?.toLowerCase().includes(q) ?? false) ||
-          (e.performedBy?.toLowerCase().includes(q) ?? false),
-      );
-    }
-    if (dateFilter !== 'all') {
-      const now = new Date();
-      list = list.filter((e) => {
-        const d = new Date(e.createdAt);
-        if (dateFilter === '7d') return now.getTime() - d.getTime() < 7 * 86400000;
-        if (dateFilter === '30d') return now.getTime() - d.getTime() < 30 * 86400000;
-        if (dateFilter === '90d') return now.getTime() - d.getTime() < 90 * 86400000;
-        return true;
-      });
-    }
-    return list;
-  }, [entries, search, dateFilter]);
-
-  function resetForm() {
-    setFormAircraftId('');
-    setFormCheckType('LINE');
-    setFormTitle('');
-    setFormDescription('');
-    setFormPerformedBy('');
-    setFormStatus('scheduled');
-    setFormCost('');
-  }
-
-  function openEdit(entry: MaintenanceLogEntry) {
-    setEditEntry(entry);
-    setFormAircraftId(entry.aircraftId.toString());
-    setFormCheckType(entry.checkType);
-    setFormTitle(entry.title);
-    setFormDescription(entry.description ?? '');
-    setFormPerformedBy(entry.performedBy ?? '');
-    setFormStatus(entry.status);
-    setFormCost(entry.cost?.toString() ?? '');
-  }
-
-  async function handleUpdate() {
-    if (!editEntry || !formTitle.trim()) return;
-    setFormLoading(true);
-    try {
-      await api.patch(`/api/admin/maintenance/log/${editEntry.id}`, {
-        checkType: formCheckType,
-        title: formTitle.trim(),
-        description: formDescription.trim() || undefined,
-        performedBy: formPerformedBy.trim() || undefined,
-        status: formStatus,
-        cost: formCost ? parseFloat(formCost) : undefined,
-      });
-      toast.success('Log entry updated');
-      setEditEntry(null);
-      resetForm();
-      fetchEntries();
-    } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : 'Failed to update log entry');
-    } finally {
-      setFormLoading(false);
-    }
-  }
-
-  async function handleComplete(entry: MaintenanceLogEntry) {
-    try {
-      await api.post(`/api/admin/maintenance/log/${entry.id}/complete`);
-      toast.success('Check marked as completed');
-      fetchEntries();
-    } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : 'Failed to complete check');
-    }
-  }
-
-  async function handleDelete() {
-    if (!deleteEntry) return;
-    setDeleteLoading(true);
-    try {
-      await api.delete(`/api/admin/maintenance/log/${deleteEntry.id}`);
-      toast.success('Log entry deleted');
-      setDeleteEntry(null);
-      fetchEntries();
-    } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : 'Failed to delete log entry');
-    } finally {
-      setDeleteLoading(false);
-    }
-  }
-
-  const logTypes: MaintenanceLogType[] = ['A', 'B', 'C', 'D', 'LINE', 'UNSCHEDULED', 'AD', 'MEL', 'SFP'];
-  const logStatuses: MaintenanceLogStatus[] = ['scheduled', 'in_progress', 'completed', 'deferred'];
-
-  const totalPages = Math.max(1, Math.ceil(total / pageSize));
-
-  if (loading) return <TableSkeleton />;
-
-  return (
-    <>
-      {/* Filter Bar */}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 10,
-          padding: '12px 24px',
-          borderBottom: '1px solid var(--border-primary)',
-        }}
-      >
-        <div style={{ position: 'relative', width: 220 }}>
-          <Search
-            size={14}
-            style={{
-              position: 'absolute',
-              left: 10,
-              top: '50%',
-              transform: 'translateY(-50%)',
-              color: 'var(--text-tertiary)',
-            }}
-          />
-          <input
-            type="text"
-            placeholder="Search entries..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="input-glow"
-            style={{
-              width: '100%',
-              height: 32,
-              paddingLeft: 30,
-              paddingRight: 10,
-              background: 'var(--input-bg)',
-              border: '1px solid var(--input-border)',
-              borderRadius: 6,
-              color: 'var(--text-primary)',
-              fontSize: 12,
-              outline: 'none',
-            }}
-          />
-        </div>
-        <Select value={dateFilter} onValueChange={setDateFilter}>
-          <SelectTrigger
-            style={{
-              width: 130,
-              height: 32,
-              background: 'var(--input-bg)',
-              border: '1px solid var(--input-border)',
-              borderRadius: 6,
-              color: 'var(--text-primary)',
-              fontSize: 12,
-            }}
-          >
-            <SelectValue placeholder="Date: All" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Date: All</SelectItem>
-            <SelectItem value="7d">Last 7 days</SelectItem>
-            <SelectItem value="30d">Last 30 days</SelectItem>
-            <SelectItem value="90d">Last 90 days</SelectItem>
-          </SelectContent>
-        </Select>
-        <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setPage(1); }}>
-          <SelectTrigger
-            style={{
-              width: 140,
-              height: 32,
-              background: 'var(--input-bg)',
-              border: '1px solid var(--input-border)',
-              borderRadius: 6,
-              color: 'var(--text-primary)',
-              fontSize: 12,
-            }}
-          >
-            <SelectValue placeholder="Status: All" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Status: All</SelectItem>
-            {logStatuses.map((s) => (
-              <SelectItem key={s} value={s}>
-                {s.charAt(0).toUpperCase() + s.slice(1).replace('_', ' ')}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      {/* Table */}
-      <div style={{ overflowX: 'auto' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-          <thead>
-            <tr>
-              <th style={colHeaderStyle}>DATE</th>
-              <th style={colHeaderStyle}>AIRCRAFT</th>
-              <th style={colHeaderStyle}>TYPE</th>
-              <th style={colHeaderStyle}>DESCRIPTION</th>
-              <th style={colHeaderStyle}>COST</th>
-              <th style={colHeaderStyle}>DURATION</th>
-              <th style={colHeaderStyle}>STATUS</th>
-              <th style={{ ...colHeaderStyle, width: 50 }} />
-            </tr>
-          </thead>
-          <motion.tbody variants={tableContainer} initial="hidden" animate="visible">
-            {filtered.length === 0 ? (
-              <tr>
-                <td
-                  colSpan={8}
-                  style={{ padding: '40px 16px', textAlign: 'center', color: 'var(--text-tertiary)', fontSize: 13 }}
-                >
-                  No log entries found
-                </td>
-              </tr>
-            ) : (
-              filtered.map((entry) => (
-                <motion.tr
-                  key={entry.id}
-                  variants={tableRow}
-                  style={{ cursor: 'default' }}
-                  onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = 'var(--surface-2)'; }}
-                  onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
-                >
-                  <td style={{ ...cellStyle, color: 'var(--text-tertiary)', fontSize: 11 }}>
-                    {formatDate(entry.createdAt)}
-                  </td>
-                  <td style={{ ...cellStyle, fontWeight: 600, color: 'var(--text-primary)', fontSize: 12, fontFamily: 'var(--font-mono)' }}>
-                    {entry.aircraftRegistration ?? `#${entry.aircraftId}`}
-                  </td>
-                  <td style={cellStyle}>
-                    <TypeBadge type={entry.checkType} />
-                  </td>
-                  <td
-                    style={{
-                      ...cellStyle,
-                      color: 'var(--text-secondary)',
-                      fontSize: 11,
-                      maxWidth: 260,
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap',
-                    }}
-                  >
-                    {entry.title}
-                  </td>
-                  <td style={{ ...cellStyle, color: 'var(--text-secondary)', fontSize: 11, fontFamily: 'var(--font-mono)' }}>
-                    {formatCurrency(entry.cost)}
-                  </td>
-                  <td style={{ ...cellStyle, color: 'var(--text-secondary)', fontFamily: 'var(--font-mono)' }}>
-                    {entry.durationHours != null ? `${formatHours(entry.durationHours)}h` : '--'}
-                  </td>
-                  <td style={cellStyle}>
-                    <StatusBadgeInline status={entry.status} />
-                  </td>
-                  <td style={cellStyle}>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <button
-                          style={{
-                            background: 'none',
-                            border: 'none',
-                            cursor: 'pointer',
-                            padding: 4,
-                            borderRadius: 4,
-                            color: 'var(--text-tertiary)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                          }}
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <MoreVertical size={16} />
-                        </button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => openEdit(entry)}>
-                          <Pencil size={14} /> Edit
-                        </DropdownMenuItem>
-                        {entry.status !== 'completed' && (
-                          <DropdownMenuItem onClick={() => handleComplete(entry)}>
-                            <CheckCircle2 size={14} className="text-[var(--accent-emerald)]" /> Complete
-                          </DropdownMenuItem>
-                        )}
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem
-                          className="text-[var(--accent-red)] focus:text-[var(--accent-red)]"
-                          onClick={() => setDeleteEntry(entry)}
-                        >
-                          <Trash2 size={14} /> Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </td>
-                </motion.tr>
-              ))
-            )}
-          </motion.tbody>
-        </table>
-      </div>
-
-      {/* Pagination */}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          padding: '12px 24px',
-          borderTop: '1px solid var(--border-primary)',
-          fontSize: 12,
-          color: 'var(--text-tertiary)',
-        }}
-      >
-        <span>
-          {total === 0 ? 'No results' : `${(page - 1) * pageSize + 1}--${Math.min(page * pageSize, total)} of ${total}`}
-        </span>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-          <button
-            disabled={page <= 1}
-            onClick={() => setPage((p) => Math.max(1, p - 1))}
-            style={{
-              background: 'none',
-              border: '1px solid var(--border-primary)',
-              borderRadius: 4,
-              padding: '4px 8px',
-              cursor: page <= 1 ? 'not-allowed' : 'pointer',
-              color: page <= 1 ? 'var(--text-quaternary)' : 'var(--text-secondary)',
-              display: 'flex',
-              alignItems: 'center',
-              opacity: page <= 1 ? 0.5 : 1,
-            }}
-          >
-            <ChevronLeft size={14} />
-          </button>
-          <span style={{ padding: '0 8px', color: 'var(--text-secondary)', fontSize: 12 }}>
-            {page} / {totalPages}
-          </span>
-          <button
-            disabled={page >= totalPages}
-            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-            style={{
-              background: 'none',
-              border: '1px solid var(--border-primary)',
-              borderRadius: 4,
-              padding: '4px 8px',
-              cursor: page >= totalPages ? 'not-allowed' : 'pointer',
-              color: page >= totalPages ? 'var(--text-quaternary)' : 'var(--text-secondary)',
-              display: 'flex',
-              alignItems: 'center',
-              opacity: page >= totalPages ? 0.5 : 1,
-            }}
-          >
-            <ChevronRight size={14} />
-          </button>
-        </div>
-      </div>
-
-      {/* Edit Dialog */}
-      <Dialog
-        open={!!editEntry}
-        onOpenChange={(open) => { if (!open) { setEditEntry(null); resetForm(); } }}
-      >
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Edit Log Entry</DialogTitle>
-            <DialogDescription>Update this maintenance log entry.</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-2">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Check Type *</Label>
-                <Select value={formCheckType} onValueChange={(v) => setFormCheckType(v as MaintenanceLogType)}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {logTypes.map((t) => (
-                      <SelectItem key={t} value={t}>{t}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>Status</Label>
-                <Select value={formStatus} onValueChange={(v) => setFormStatus(v as MaintenanceLogStatus)}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {logStatuses.map((s) => (
-                      <SelectItem key={s} value={s}>{s.replace('_', ' ')}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label>Title *</Label>
-              <Input value={formTitle} onChange={(e) => setFormTitle(e.target.value)} placeholder="Maintenance action title" />
-            </div>
-            <div className="space-y-2">
-              <Label>Description</Label>
-              <Textarea value={formDescription} onChange={(e) => setFormDescription(e.target.value)} rows={3} />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Performed By</Label>
-                <Input value={formPerformedBy} onChange={(e) => setFormPerformedBy(e.target.value)} placeholder="Technician name" />
-              </div>
-              <div className="space-y-2">
-                <Label>Cost</Label>
-                <Input type="number" step="0.01" value={formCost} onChange={(e) => setFormCost(e.target.value)} placeholder="0.00" />
-              </div>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => { setEditEntry(null); resetForm(); }} disabled={formLoading}>
-              Cancel
-            </Button>
-            <Button onClick={handleUpdate} disabled={formLoading || !formTitle.trim()}>
-              {formLoading ? 'Saving...' : 'Update'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Delete Confirm */}
-      <Dialog open={!!deleteEntry} onOpenChange={(open) => { if (!open) setDeleteEntry(null); }}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Delete Log Entry</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to delete &ldquo;{deleteEntry?.title}&rdquo;? This cannot be undone.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteEntry(null)} disabled={deleteLoading}>Cancel</Button>
-            <Button variant="destructive" onClick={handleDelete} disabled={deleteLoading}>
-              {deleteLoading ? 'Deleting...' : 'Delete'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </>
-  );
-}
-
-// ═══════════════════════════════════════════════════════════════
-// Create Entry Dialog (shared)
-// ═══════════════════════════════════════════════════════════════
-
-function CreateEntryDialog({ open, onClose, onCreated }: { open: boolean; onClose: () => void; onCreated: () => void }) {
-  const [formAircraftId, setFormAircraftId] = useState('');
-  const [formCheckType, setFormCheckType] = useState<MaintenanceLogType>('LINE');
-  const [formTitle, setFormTitle] = useState('');
-  const [formDescription, setFormDescription] = useState('');
-  const [formPerformedBy, setFormPerformedBy] = useState('');
-  const [formStatus, setFormStatus] = useState<MaintenanceLogStatus>('scheduled');
-  const [formCost, setFormCost] = useState('');
-  const [formLoading, setFormLoading] = useState(false);
-
-  const logTypes: MaintenanceLogType[] = ['A', 'B', 'C', 'D', 'LINE', 'UNSCHEDULED', 'AD', 'MEL', 'SFP'];
-  const logStatuses: MaintenanceLogStatus[] = ['scheduled', 'in_progress', 'completed', 'deferred'];
-
-  function resetForm() {
-    setFormAircraftId('');
-    setFormCheckType('LINE');
-    setFormTitle('');
-    setFormDescription('');
-    setFormPerformedBy('');
-    setFormStatus('scheduled');
-    setFormCost('');
-  }
-
-  async function handleCreate() {
-    if (!formAircraftId || !formTitle.trim()) return;
-    setFormLoading(true);
-    try {
-      await api.post('/api/admin/maintenance/log', {
-        aircraftId: parseInt(formAircraftId),
-        checkType: formCheckType,
-        title: formTitle.trim(),
-        description: formDescription.trim() || undefined,
-        performedBy: formPerformedBy.trim() || undefined,
-        status: formStatus,
-        cost: formCost ? parseFloat(formCost) : undefined,
-      });
-      toast.success('Log entry created');
-      resetForm();
-      onClose();
-      onCreated();
-    } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : 'Failed to create log entry');
-    } finally {
-      setFormLoading(false);
-    }
-  }
-
-  return (
-    <Dialog open={open} onOpenChange={(o) => { if (!o) { resetForm(); onClose(); } }}>
-      <DialogContent className="max-w-lg">
-        <DialogHeader>
-          <DialogTitle>New Log Entry</DialogTitle>
-          <DialogDescription>Create a new maintenance log entry.</DialogDescription>
-        </DialogHeader>
-        <div className="space-y-4 py-2">
-          <div className="space-y-2">
-            <Label>Aircraft ID *</Label>
-            <Input type="number" value={formAircraftId} onChange={(e) => setFormAircraftId(e.target.value)} placeholder="Aircraft ID" />
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Check Type *</Label>
-              <Select value={formCheckType} onValueChange={(v) => setFormCheckType(v as MaintenanceLogType)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {logTypes.map((t) => (
-                    <SelectItem key={t} value={t}>{t}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label>Status</Label>
-              <Select value={formStatus} onValueChange={(v) => setFormStatus(v as MaintenanceLogStatus)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {logStatuses.map((s) => (
-                    <SelectItem key={s} value={s}>{s.replace('_', ' ')}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          <div className="space-y-2">
-            <Label>Title *</Label>
-            <Input value={formTitle} onChange={(e) => setFormTitle(e.target.value)} placeholder="Maintenance action title" />
-          </div>
-          <div className="space-y-2">
-            <Label>Description</Label>
-            <Textarea value={formDescription} onChange={(e) => setFormDescription(e.target.value)} rows={3} />
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Performed By</Label>
-              <Input value={formPerformedBy} onChange={(e) => setFormPerformedBy(e.target.value)} placeholder="Technician name" />
-            </div>
-            <div className="space-y-2">
-              <Label>Cost</Label>
-              <Input type="number" step="0.01" value={formCost} onChange={(e) => setFormCost(e.target.value)} placeholder="0.00" />
-            </div>
-          </div>
-        </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={() => { resetForm(); onClose(); }} disabled={formLoading}>
-            Cancel
-          </Button>
-          <Button onClick={handleCreate} disabled={formLoading || !formTitle.trim() || !formAircraftId}>
-            {formLoading ? 'Saving...' : 'Create'}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-// ═══════════════════════════════════════════════════════════════
 // Main Page
 // ═══════════════════════════════════════════════════════════════
 
 export function MaintenancePage() {
-  const [activeTab, setActiveTab] = useState<'fleet' | 'log'>('fleet');
-  const [createOpen, setCreateOpen] = useState(false);
-  const [refreshKey, setRefreshKey] = useState(0);
+  const [activeTab, setActiveTab] = useState<'fleet' | 'discrepancies' | 'mel' | 'compliance' | 'configuration'>('fleet');
+
+  const tabs: { key: typeof activeTab; label: string }[] = [
+    { key: 'fleet', label: 'Fleet Status' },
+    { key: 'discrepancies', label: 'Discrepancies' },
+    { key: 'mel', label: 'MEL Deferrals' },
+    { key: 'compliance', label: 'Compliance' },
+    { key: 'configuration', label: 'Configuration' },
+  ];
 
   return (
     <motion.div
@@ -1194,7 +796,7 @@ export function MaintenancePage() {
         display: 'flex',
         flexDirection: 'column',
         height: '100%',
-        background: 'var(--surface-0)',
+        overflow: 'hidden',
         color: 'var(--text-primary)',
       }}
     >
@@ -1214,30 +816,6 @@ export function MaintenancePage() {
           <span style={{ fontSize: 20, fontWeight: 700, color: 'var(--text-primary)' }}>
             Maintenance
           </span>
-          <div style={{ flex: 1 }} />
-          <button
-            onClick={() => setCreateOpen(true)}
-            className="btn-glow"
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 6,
-              padding: '8px 16px',
-              background: 'var(--accent-blue)',
-              color: '#fff',
-              border: 'none',
-              borderRadius: 6,
-              fontSize: 13,
-              fontWeight: 600,
-              cursor: 'pointer',
-              transition: 'opacity 120ms',
-            }}
-            onMouseEnter={(e) => { e.currentTarget.style.opacity = '0.85'; }}
-            onMouseLeave={(e) => { e.currentTarget.style.opacity = '1'; }}
-          >
-            <Plus size={14} />
-            Log Entry
-          </button>
         </div>
 
         {/* Tabs */}
@@ -1248,58 +826,36 @@ export function MaintenancePage() {
             borderBottom: '1px solid var(--border-primary)',
           }}
         >
-          <button
-            onClick={() => setActiveTab('fleet')}
-            style={{
-              background: 'none',
-              border: 'none',
-              borderBottom: activeTab === 'fleet' ? '2px solid var(--accent-blue)' : '2px solid transparent',
-              padding: '8px 16px',
-              fontSize: 13,
-              fontWeight: 500,
-              color: activeTab === 'fleet' ? 'var(--accent-blue-bright)' : 'var(--text-tertiary)',
-              cursor: 'pointer',
-              transition: 'color 120ms',
-            }}
-          >
-            Fleet Status
-          </button>
-          <button
-            onClick={() => setActiveTab('log')}
-            style={{
-              background: 'none',
-              border: 'none',
-              borderBottom: activeTab === 'log' ? '2px solid var(--accent-blue)' : '2px solid transparent',
-              padding: '8px 16px',
-              fontSize: 13,
-              fontWeight: 500,
-              color: activeTab === 'log' ? 'var(--accent-blue-bright)' : 'var(--text-tertiary)',
-              cursor: 'pointer',
-              transition: 'color 120ms',
-            }}
-          >
-            Maintenance Log
-          </button>
+          {tabs.map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key)}
+              style={{
+                background: 'none',
+                border: 'none',
+                borderBottom: activeTab === tab.key ? '2px solid var(--accent-blue)' : '2px solid transparent',
+                padding: '8px 16px',
+                fontSize: 13,
+                fontWeight: 500,
+                color: activeTab === tab.key ? 'var(--accent-blue-bright)' : 'var(--text-tertiary)',
+                cursor: 'pointer',
+                transition: 'color 120ms',
+              }}
+            >
+              {tab.label}
+            </button>
+          ))}
         </div>
       </motion.div>
 
       {/* ── Tab Content ──────────────────────────────────────── */}
-      <div style={{ flex: 1, overflow: 'auto' }}>
+      <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
         {activeTab === 'fleet' && <FleetStatusContent />}
-        {activeTab === 'log' && (
-          <MaintenanceLogContent
-            key={refreshKey}
-            onOpenCreate={() => setCreateOpen(true)}
-          />
-        )}
+        {activeTab === 'discrepancies' && <DiscrepanciesTab />}
+        {activeTab === 'mel' && <MelDeferralsTab />}
+        {activeTab === 'compliance' && <ComplianceTab />}
+        {activeTab === 'configuration' && <ConfigurationTab />}
       </div>
-
-      {/* ── Create Entry Dialog ──────────────────────────────── */}
-      <CreateEntryDialog
-        open={createOpen}
-        onClose={() => setCreateOpen(false)}
-        onCreated={() => setRefreshKey((k) => k + 1)}
-      />
     </motion.div>
   );
 }
