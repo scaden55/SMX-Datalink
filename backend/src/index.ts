@@ -209,10 +209,16 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const adminDistPath = join(__dirname, '../admin-dist');
 // Redirect /admin to /admin/ so relative asset paths resolve correctly
-app.get('/admin', (_req, res) => res.redirect(301, '/admin/'));
-app.use('/admin', express.static(adminDistPath));
-// SPA fallback — serve index.html for all admin sub-routes
-app.get('/admin/*', (_req, res) => {
+app.get('/admin', (req, res, next) => {
+  if (req.path === '/admin' && !req.originalUrl.endsWith('/')) {
+    return res.redirect(301, '/admin/');
+  }
+  next();
+});
+// Serve admin static assets (JS, CSS, fonts, images)
+app.use('/admin', express.static(adminDistPath, { redirect: false, index: false }));
+// SPA fallback — serve index.html for /admin/ and all admin sub-routes
+app.use('/admin', (_req, res) => {
   res.sendFile(join(adminDistPath, 'index.html'));
 });
 
