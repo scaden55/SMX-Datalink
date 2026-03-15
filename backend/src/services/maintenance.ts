@@ -86,7 +86,7 @@ export class MaintenanceService {
              h.total_hours, h.total_cycles,
              h.hours_at_last_a, h.hours_at_last_b,
              h.hours_at_last_c, h.cycles_at_last_c,
-             h.last_d_check_date
+             h.last_d_check_date, h.hours_at_last_d
       FROM fleet f
       LEFT JOIN aircraft_hours h ON h.aircraft_id = f.id
       ORDER BY f.icao_type, f.registration
@@ -102,7 +102,7 @@ export class MaintenanceService {
              h.total_hours, h.total_cycles,
              h.hours_at_last_a, h.hours_at_last_b,
              h.hours_at_last_c, h.cycles_at_last_c,
-             h.last_d_check_date
+             h.last_d_check_date, h.hours_at_last_d
       FROM fleet f
       LEFT JOIN aircraft_hours h ON h.aircraft_id = f.id
       WHERE f.id = ?
@@ -160,8 +160,8 @@ export class MaintenanceService {
   ensureAircraftHours(aircraftId: number): void {
     getDb().prepare(`
       INSERT OR IGNORE INTO aircraft_hours (aircraft_id, total_hours, total_cycles,
-        hours_at_last_a, hours_at_last_b, hours_at_last_c, cycles_at_last_c)
-      VALUES (?, 0, 0, 0, 0, 0, 0)
+        hours_at_last_a, hours_at_last_b, hours_at_last_c, cycles_at_last_c, hours_at_last_d)
+      VALUES (?, 0, 0, 0, 0, 0, 0, 0)
     `).run(aircraftId);
   }
 
@@ -249,16 +249,13 @@ export class MaintenanceService {
               isOverdue = true;
             }
           } else if (!hours.last_d_check_date && check.interval_months != null) {
-            // No D check recorded — consider overdue
+            // No D check on record — mark overdue with negative remainingHours for correct sorting
             isOverdue = true;
+            remainingHours = -1;
           }
           // D checks can also have interval_hours
           if (check.interval_hours != null) {
-            // For D checks, use hours_at_last_c as a proxy if no specific D hours field
-            // In practice the total_hours since last D check matters
-            // Since we track last_d_check_date but not hours at last D, we use total_hours directly
-            // if interval_hours is set; this is a secondary trigger
-            dueAtHours = check.interval_hours;
+            dueAtHours = hours.hours_at_last_d + check.interval_hours;
             remainingHours = dueAtHours - hours.total_hours;
             if (hours.total_hours >= dueAtHours) {
               isOverdue = true;
@@ -346,13 +343,21 @@ export class MaintenanceService {
       reasons.push(`${expiredMELs.count} expired MEL deferral(s)`);
     }
 
-    // Check for grounding discrepancies
+    // Check for grounding discrepancies (status = 'grounded' OR open/in_review with severity = 'grounding')
     const groundedDiscrepancies = db.prepare(
       `SELECT COUNT(*) as c FROM discrepancies WHERE aircraft_id = ? AND status = 'grounded'`
     ).get(aircraftId) as { c: number };
     if (groundedDiscrepancies.c > 0) {
       shouldGround = true;
       reasons.push(`${groundedDiscrepancies.c} grounding discrepancy(ies)`);
+    }
+
+    const groundingSeverityDiscrepancies = db.prepare(
+      `SELECT COUNT(*) as c FROM discrepancies WHERE aircraft_id = ? AND status IN ('open', 'in_review') AND severity = 'grounding'`
+    ).get(aircraftId) as { c: number };
+    if (groundingSeverityDiscrepancies.c > 0) {
+      shouldGround = true;
+      reasons.push(`${groundingSeverityDiscrepancies.c} open discrepancy(ies) with grounding severity`);
     }
 
     if (shouldGround && fleet.status !== 'maintenance') {
@@ -582,55 +587,59 @@ export class MaintenanceService {
     const now = new Date().toISOString();
     const aircraftId = existing.aircraft_id;
 
-    this.ensureAircraftHours(aircraftId);
-    const hours = db.prepare('SELECT * FROM aircraft_hours WHERE aircraft_id = ?')
-      .get(aircraftId) as AircraftHoursRow;
+    const txn = db.transaction(() => {
+      this.ensureAircraftHours(aircraftId);
+      const hours = db.prepare('SELECT * FROM aircraft_hours WHERE aircraft_id = ?')
+        .get(aircraftId) as AircraftHoursRow;
 
-    // Mark log entry as completed
-    db.prepare(`
-      UPDATE maintenance_log
-      SET status = 'completed',
-          performed_at = COALESCE(performed_at, ?),
-          hours_at_check = ?,
-          cycles_at_check = ?,
-          updated_at = datetime('now')
-      WHERE id = ?
-    `).run(now, hours.total_hours, hours.total_cycles, id);
+      // Mark log entry as completed
+      db.prepare(`
+        UPDATE maintenance_log
+        SET status = 'completed',
+            performed_at = COALESCE(performed_at, ?),
+            hours_at_check = ?,
+            cycles_at_check = ?,
+            updated_at = datetime('now')
+        WHERE id = ?
+      `).run(now, hours.total_hours, hours.total_cycles, id);
 
-    // Update aircraft_hours snapshot fields based on check_type
-    const checkType = existing.check_type as MaintenanceCheckType;
-    switch (checkType) {
-      case 'A':
-        db.prepare('UPDATE aircraft_hours SET hours_at_last_a = ?, updated_at = datetime(\'now\') WHERE aircraft_id = ?')
-          .run(hours.total_hours, aircraftId);
-        break;
-      case 'B':
-        db.prepare('UPDATE aircraft_hours SET hours_at_last_b = ?, updated_at = datetime(\'now\') WHERE aircraft_id = ?')
-          .run(hours.total_hours, aircraftId);
-        break;
-      case 'C':
-        db.prepare('UPDATE aircraft_hours SET hours_at_last_c = ?, cycles_at_last_c = ?, updated_at = datetime(\'now\') WHERE aircraft_id = ?')
-          .run(hours.total_hours, hours.total_cycles, aircraftId);
-        break;
-      case 'D':
-        db.prepare('UPDATE aircraft_hours SET last_d_check_date = ?, updated_at = datetime(\'now\') WHERE aircraft_id = ?')
-          .run(now.split('T')[0], aircraftId);
-        break;
-    }
+      // Update aircraft_hours snapshot fields based on check_type
+      const checkType = existing.check_type as MaintenanceCheckType;
+      switch (checkType) {
+        case 'A':
+          db.prepare('UPDATE aircraft_hours SET hours_at_last_a = ?, updated_at = datetime(\'now\') WHERE aircraft_id = ?')
+            .run(hours.total_hours, aircraftId);
+          break;
+        case 'B':
+          db.prepare('UPDATE aircraft_hours SET hours_at_last_b = ?, updated_at = datetime(\'now\') WHERE aircraft_id = ?')
+            .run(hours.total_hours, aircraftId);
+          break;
+        case 'C':
+          db.prepare('UPDATE aircraft_hours SET hours_at_last_c = ?, cycles_at_last_c = ?, updated_at = datetime(\'now\') WHERE aircraft_id = ?')
+            .run(hours.total_hours, hours.total_cycles, aircraftId);
+          break;
+        case 'D':
+          db.prepare('UPDATE aircraft_hours SET last_d_check_date = ?, hours_at_last_d = ?, updated_at = datetime(\'now\') WHERE aircraft_id = ?')
+            .run(now.split('T')[0], hours.total_hours, aircraftId);
+          break;
+      }
 
-    auditService.log({
-      actorId,
-      action: 'maintenance.complete_check',
-      targetType: 'maintenance_log',
-      targetId: id,
-      before: { status: existing.status },
-      after: { status: 'completed', checkType, hoursAtCheck: hours.total_hours },
+      auditService.log({
+        actorId,
+        action: 'maintenance.complete_check',
+        targetType: 'maintenance_log',
+        targetId: id,
+        before: { status: existing.status },
+        after: { status: 'completed', checkType, hoursAtCheck: hours.total_hours },
+      });
+
+      logger.info(TAG, `Check ${checkType} completed for aircraft ${aircraftId} at ${hours.total_hours}h`);
+
+      // Attempt return to service
+      this.returnToService(aircraftId, actorId);
     });
 
-    logger.info(TAG, `Check ${checkType} completed for aircraft ${aircraftId} at ${hours.total_hours}h`);
-
-    // Attempt return to service
-    this.returnToService(aircraftId, actorId);
+    txn();
 
     return this.getLogEntry(id);
   }
@@ -670,6 +679,23 @@ export class MaintenanceService {
   createCheckSchedule(data: CreateCheckScheduleRequest, actorId: number): MaintenanceCheckSchedule {
     const db = getDb();
 
+    // Validate interval values are positive if provided
+    if (data.intervalHours !== undefined && data.intervalHours !== null && data.intervalHours <= 0) {
+      const error = new Error('intervalHours must be a positive number') as any;
+      error.status = 400;
+      throw error;
+    }
+    if (data.intervalCycles !== undefined && data.intervalCycles !== null && data.intervalCycles <= 0) {
+      const error = new Error('intervalCycles must be a positive number') as any;
+      error.status = 400;
+      throw error;
+    }
+    if (data.intervalMonths !== undefined && data.intervalMonths !== null && data.intervalMonths <= 0) {
+      const error = new Error('intervalMonths must be a positive number') as any;
+      error.status = 400;
+      throw error;
+    }
+
     const result = db.prepare(`
       INSERT INTO maintenance_checks (
         icao_type, check_type, interval_hours, interval_cycles,
@@ -706,6 +732,23 @@ export class MaintenanceService {
     const db = getDb();
     const existing = db.prepare('SELECT * FROM maintenance_checks WHERE id = ?').get(id) as MaintenanceCheckRow | undefined;
     if (!existing) return undefined;
+
+    // Validate interval values are positive if provided
+    if (data.intervalHours !== undefined && data.intervalHours !== null && data.intervalHours <= 0) {
+      const error = new Error('intervalHours must be a positive number') as any;
+      error.status = 400;
+      throw error;
+    }
+    if (data.intervalCycles !== undefined && data.intervalCycles !== null && data.intervalCycles <= 0) {
+      const error = new Error('intervalCycles must be a positive number') as any;
+      error.status = 400;
+      throw error;
+    }
+    if (data.intervalMonths !== undefined && data.intervalMonths !== null && data.intervalMonths <= 0) {
+      const error = new Error('intervalMonths must be a positive number') as any;
+      error.status = 400;
+      throw error;
+    }
 
     const sets: string[] = [];
     const params: unknown[] = [];
@@ -902,6 +945,11 @@ export class MaintenanceService {
       .get(id) as AirworthinessDirectiveRow | undefined;
     if (!existing) return false;
 
+    // Warn in audit log if deleting an AD with open compliance status
+    if (existing.compliance_status === 'open') {
+      logger.warn(TAG, `Deleting AD ${id} (${existing.ad_number}) with open compliance status`);
+    }
+
     db.prepare('DELETE FROM airworthiness_directives WHERE id = ?').run(id);
 
     auditService.log({
@@ -909,7 +957,13 @@ export class MaintenanceService {
       action: 'maintenance.delete_ad',
       targetType: 'airworthiness_directive',
       targetId: id,
-      before: { adNumber: existing.ad_number, title: existing.title, aircraftId: existing.aircraft_id },
+      before: {
+        adNumber: existing.ad_number,
+        title: existing.title,
+        aircraftId: existing.aircraft_id,
+        complianceStatus: existing.compliance_status,
+        ...(existing.compliance_status === 'open' ? { warning: 'AD deleted with open compliance status' } : {}),
+      },
     });
 
     logger.info(TAG, `AD ${id} deleted (${existing.ad_number})`);
@@ -1054,6 +1108,16 @@ export class MaintenanceService {
     const existing = db.prepare('SELECT * FROM mel_deferrals WHERE id = ?')
       .get(id) as MELDeferralRow | undefined;
     if (!existing) return false;
+
+    // Check for linked open discrepancies — prevent deletion if any exist
+    const openDiscrepancies = db.prepare(
+      `SELECT COUNT(*) as c FROM discrepancies WHERE mel_deferral_id = ? AND status IN ('open', 'in_review', 'deferred')`
+    ).get(id) as { c: number };
+    if (openDiscrepancies.c > 0) {
+      const error = new Error('Cannot delete MEL with open discrepancies') as any;
+      error.status = 400;
+      throw error;
+    }
 
     db.prepare('DELETE FROM mel_deferrals WHERE id = ?').run(id);
 
@@ -1229,6 +1293,60 @@ export class MaintenanceService {
   }
 
   // ═══════════════════════════════════════════════════════════
+  // MEL Auto-Expire
+  // ═══════════════════════════════════════════════════════════
+
+  expireOverdueMELs(): number {
+    const db = getDb();
+    const now = new Date().toISOString().split('T')[0];
+    const result = db.prepare(`
+      UPDATE mel_deferrals SET status = 'expired', updated_at = datetime('now')
+      WHERE status = 'open' AND expiry_date IS NOT NULL AND expiry_date < ?
+    `).run(now);
+    return result.changes;
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // Component Overhaul Reset
+  // ═══════════════════════════════════════════════════════════
+
+  resetComponentOverhaul(componentId: number, actorId: number): AircraftComponent | undefined {
+    const db = getDb();
+    const existing = db.prepare('SELECT * FROM aircraft_components WHERE id = ?')
+      .get(componentId) as AircraftComponentRow | undefined;
+    if (!existing) return undefined;
+
+    db.prepare(`
+      UPDATE aircraft_components
+      SET hours_since_overhaul = 0,
+          cycles_since_overhaul = 0,
+          last_overhaul_date = datetime('now'),
+          updated_at = datetime('now')
+      WHERE id = ?
+    `).run(componentId);
+
+    auditService.log({
+      actorId,
+      action: 'maintenance.reset_component_overhaul',
+      targetType: 'aircraft_component',
+      targetId: componentId,
+      before: {
+        hoursSinceOverhaul: existing.hours_since_overhaul,
+        cyclesSinceOverhaul: existing.cycles_since_overhaul,
+      },
+      after: { hoursSinceOverhaul: 0, cyclesSinceOverhaul: 0 },
+    });
+
+    logger.info(TAG, `Component #${componentId} overhaul reset (${existing.component_type})`);
+
+    const row = db.prepare(`
+      SELECT ac.*, f.registration FROM aircraft_components ac
+      LEFT JOIN fleet f ON f.id = ac.aircraft_id WHERE ac.id = ?
+    `).get(componentId) as ComponentJoinRow;
+    return this.toComponent(row);
+  }
+
+  // ═══════════════════════════════════════════════════════════
   // PIREP Hook
   // ═══════════════════════════════════════════════════════════
 
@@ -1292,6 +1410,7 @@ export class MaintenanceService {
       hours_at_last_c: row.hours_at_last_c ?? 0,
       cycles_at_last_c: row.cycles_at_last_c ?? 0,
       last_d_check_date: row.last_d_check_date,
+      hours_at_last_d: row.hours_at_last_d ?? 0,
       updated_at: '',
     };
 
@@ -1375,6 +1494,7 @@ export class MaintenanceService {
       hoursAtLastC: row.hours_at_last_c,
       cyclesAtLastC: row.cycles_at_last_c,
       lastDCheckDate: row.last_d_check_date,
+      hoursAtLastD: row.hours_at_last_d,
       updatedAt: row.updated_at,
     };
   }
@@ -1529,6 +1649,7 @@ export class MaintenanceService {
       hoursSinceOverhaul: row.hours_since_overhaul,
       cyclesSinceOverhaul: row.cycles_since_overhaul,
       overhaulIntervalHours: row.overhaul_interval_hours,
+      lastOverhaulDate: row.last_overhaul_date,
       installedDate: row.installed_date,
       status: row.status as ComponentStatus,
       remarks: row.remarks,

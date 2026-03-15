@@ -20,6 +20,7 @@ export interface AircraftHours {
   hoursAtLastC: number;
   cyclesAtLastC: number;
   lastDCheckDate: string | null;
+  hoursAtLastD: number;
   updatedAt: string;
 }
 
@@ -109,6 +110,7 @@ export interface AircraftComponent {
   hoursSinceOverhaul: number;
   cyclesSinceOverhaul: number;
   overhaulIntervalHours: number | null;
+  lastOverhaulDate: string | null;
   installedDate: string | null;
   status: ComponentStatus;
   remarks: string | null;

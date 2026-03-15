@@ -209,6 +209,7 @@ export interface AircraftHoursRow {
   hours_at_last_c: number;
   cycles_at_last_c: number;
   last_d_check_date: string | null;
+  hours_at_last_d: number;
   updated_at: string;
 }
 
@@ -300,6 +301,7 @@ export interface AircraftComponentRow {
   hours_since_overhaul: number;
   cycles_since_overhaul: number;
   overhaul_interval_hours: number | null;
+  last_overhaul_date: string | null;
   installed_date: string | null;
   status: string;
   remarks: string | null;
@@ -321,6 +323,7 @@ export interface FleetMaintenanceStatusRow {
   hours_at_last_c: number | null;
   cycles_at_last_c: number | null;
   last_d_check_date: string | null;
+  hours_at_last_d: number | null;
 }
 
 /** maintenance_log JOIN fleet for list queries */

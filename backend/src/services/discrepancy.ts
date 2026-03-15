@@ -299,6 +299,16 @@ export class DiscrepancyService {
       );
     }
 
+    // If this discrepancy was deferred under MEL, mark the linked deferral as rectified
+    if (existing.melDeferralId) {
+      db.prepare(`
+        UPDATE mel_deferrals SET status = 'rectified', rectified_date = ?, updated_at = ?
+        WHERE id = ?
+      `).run(now.split('T')[0], now, existing.melDeferralId);
+
+      logger.info(TAG, `MEL deferral #${existing.melDeferralId} rectified via discrepancy #${id} resolution`);
+    }
+
     // Notify reporting pilot
     if (existing.reportedBy !== userId) {
       notificationService.send({

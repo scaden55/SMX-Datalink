@@ -1,4 +1,5 @@
 import { getDb } from '../db/index.js';
+import { logger } from '../lib/logger.js';
 import { SettingsService } from './settings.js';
 import { FinanceService } from './finance.js';
 import { NotificationService } from './notification.js';
@@ -246,8 +247,21 @@ export class PirepService {
         }
 
         // Accumulate aircraft flight hours/cycles for maintenance tracking (auto-approve path)
-        if (aircraftReg) {
-          maintenanceService.accumulateFlightHours(aircraftReg, flightTimeMin);
+        let effectiveReg = aircraftReg;
+        if (!effectiveReg) {
+          // Fallback: look up registration from the schedule's aircraft type via fleet
+          const fleetLookup = db.prepare(
+            'SELECT registration FROM fleet WHERE icao_type = ? AND status = ? LIMIT 1'
+          ).get(schedule.aircraft_type, 'active') as { registration: string } | undefined;
+          if (fleetLookup) {
+            effectiveReg = fleetLookup.registration;
+            logger.warn('PIREP', `aircraftRegistration missing from flight plan, fell back to fleet lookup: ${effectiveReg}`);
+          }
+        }
+        if (effectiveReg) {
+          maintenanceService.accumulateFlightHours(effectiveReg, flightTimeMin);
+        } else {
+          logger.warn('PIREP', `Cannot accumulate flight hours for ${schedule.flight_number}: no aircraftRegistration available`);
         }
 
         // Back-fill discrepancies with logbook entry ID

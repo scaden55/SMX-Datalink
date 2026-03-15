@@ -61,6 +61,7 @@ import { ataChaptersRouter } from './routes/ata-chapters.js';
 import { melBriefingRouter } from './routes/mel-briefing.js';
 import { TrackService } from './services/track.js';
 import { FlightEventTracker } from './services/flight-event-tracker.js';
+import { MaintenanceService } from './services/maintenance.js';
 import { BidExpirationService } from './services/bid-expiration.js';
 import { CharterGeneratorService, currentMonth } from './services/charter-generator.js';
 import { VatsimEventsService } from './services/vatsim-events.js';
@@ -229,6 +230,7 @@ bidExpiration.start();
 // Periodic cleanup of expired refresh tokens (every hour)
 const authService = new AuthService();
 const trackCleanupService = new TrackService();
+const maintenanceService = new MaintenanceService();
 const cleanupInterval = setInterval(() => {
   try {
     authService.cleanupExpiredTokens();
@@ -240,6 +242,12 @@ const cleanupInterval = setInterval(() => {
     if (deleted > 0) logger.info('Server', `Track cleanup: removed ${deleted} rows older than 30 days`);
   } catch (err) {
     logger.error('Server', 'Track cleanup error', err);
+  }
+  try {
+    const expired = maintenanceService.expireOverdueMELs();
+    if (expired > 0) logger.info('Server', `MEL auto-expire: ${expired} deferral(s) expired`);
+  } catch (err) {
+    logger.error('Server', 'MEL auto-expire error', err);
   }
 }, 60 * 60 * 1000);
 cleanupInterval.unref();

@@ -189,7 +189,11 @@ export function adminMaintenanceRouter(): Router {
       }
       const schedule = service.createCheckSchedule(req.body, req.user!.userId);
       res.status(201).json(schedule);
-    } catch (err) {
+    } catch (err: any) {
+      if (err.status === 400) {
+        res.status(400).json({ error: err.message });
+        return;
+      }
       logger.error(TAG, 'Create check schedule error', err);
       res.status(500).json({ error: 'Failed to create check schedule' });
     }
@@ -204,7 +208,11 @@ export function adminMaintenanceRouter(): Router {
         return;
       }
       res.json(schedule);
-    } catch (err) {
+    } catch (err: any) {
+      if (err.status === 400) {
+        res.status(400).json({ error: err.message });
+        return;
+      }
       logger.error(TAG, 'Update check schedule error', err);
       res.status(500).json({ error: 'Failed to update check schedule' });
     }
@@ -356,7 +364,11 @@ export function adminMaintenanceRouter(): Router {
         return;
       }
       res.status(204).send();
-    } catch (err) {
+    } catch (err: any) {
+      if (err.status === 400) {
+        res.status(400).json({ error: err.message });
+        return;
+      }
       logger.error(TAG, 'Delete MEL deferral error', err);
       res.status(500).json({ error: 'Failed to delete MEL deferral' });
     }
@@ -410,6 +422,21 @@ export function adminMaintenanceRouter(): Router {
     } catch (err) {
       logger.error(TAG, 'Update component error', err);
       res.status(500).json({ error: 'Failed to update component' });
+    }
+  });
+
+  // POST /api/admin/maintenance/components/:id/overhaul
+  router.post('/admin/maintenance/components/:id/overhaul', authMiddleware, adminMiddleware, (req, res) => {
+    try {
+      const component = service.resetComponentOverhaul(parseInt(req.params.id as string), req.user!.userId);
+      if (!component) {
+        res.status(404).json({ error: 'Component not found' });
+        return;
+      }
+      res.json(component);
+    } catch (err) {
+      logger.error(TAG, 'Reset component overhaul error', err);
+      res.status(500).json({ error: 'Failed to reset component overhaul' });
     }
   });
 
