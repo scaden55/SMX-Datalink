@@ -125,6 +125,17 @@ export function FleetPage() {
     transponderCode: '',
     pbn: '',
     cat: '',
+    // Financing fields
+    acquisitionType: 'purchased' as 'purchased' | 'loan' | 'dry_lease' | 'wet_lease' | 'acmi',
+    acquisitionCost: '',
+    usefulLifeYears: '',
+    downPayment: '',
+    interestRate: '',
+    loanTermMonths: '',
+    leaseMonthly: '',
+    leaseStart: '',
+    leaseEnd: '',
+    insuranceMonthly: '',
   });
 
   // SimBrief search state (in Add dialog)
@@ -211,7 +222,35 @@ export function FleetPage() {
         ...(addForm.pbn ? { pbn: addForm.pbn } : {}),
         ...(addForm.cat ? { cat: addForm.cat } : {}),
       };
-      await api.post('/api/fleet/manage', body);
+      const created = await api.post<{ id: number }>('/api/fleet/manage', body);
+
+      // Save financing data if any fields are filled
+      const finBody: Record<string, unknown> = { acquisitionType: addForm.acquisitionType };
+      const stripCommas = (v: string) => v.replace(/,/g, '');
+      if (addForm.acquisitionType === 'purchased') {
+        if (addForm.acquisitionCost) finBody.acquisitionCost = Number(stripCommas(addForm.acquisitionCost));
+        if (addForm.usefulLifeYears) finBody.usefulLifeYears = Number(addForm.usefulLifeYears);
+      } else if (addForm.acquisitionType === 'loan') {
+        if (addForm.acquisitionCost) finBody.acquisitionCost = Number(stripCommas(addForm.acquisitionCost));
+        if (addForm.downPayment) finBody.downPayment = Number(stripCommas(addForm.downPayment));
+        if (addForm.interestRate) finBody.interestRate = Number(addForm.interestRate);
+        if (addForm.loanTermMonths) finBody.loanTermMonths = Number(addForm.loanTermMonths);
+      } else {
+        if (addForm.leaseMonthly) finBody.leaseMonthly = Number(stripCommas(addForm.leaseMonthly));
+        if (addForm.leaseStart) finBody.leaseStart = addForm.leaseStart;
+        if (addForm.leaseEnd) finBody.leaseEnd = addForm.leaseEnd;
+      }
+      if (addForm.acquisitionType !== 'acmi' && addForm.insuranceMonthly) {
+        finBody.insuranceMonthly = Number(stripCommas(addForm.insuranceMonthly));
+      }
+      if (Object.keys(finBody).length > 1) {
+        try {
+          await api.patch(`/api/admin/economics/fleet-financials/${created.id}`, finBody);
+        } catch {
+          toast.warning('Aircraft created but financing data failed to save');
+        }
+      }
+
       toast.success(`Aircraft ${body.registration} created`);
       resetAddDialog();
       fetchFleet();
@@ -238,7 +277,8 @@ export function FleetPage() {
   }, []);
 
   const selectSimBriefProfile = (profile: SimBriefAircraftType) => {
-    setAddForm({
+    setAddForm((prev) => ({
+      ...prev,
       icaoType: profile.aircraftIcao,
       name: profile.aircraftName,
       registration: '', // User must fill
@@ -258,7 +298,7 @@ export function FleetPage() {
       transponderCode: profile.transponderCode || '',
       pbn: profile.pbn || '',
       cat: profile.cat || '',
-    });
+    }));
     setSbShowResults(false);
     setSbQuery('');
     toast.success(`Imported ${profile.aircraftIcao} — ${profile.aircraftName}`);
@@ -266,7 +306,7 @@ export function FleetPage() {
 
   const resetAddDialog = () => {
     setAddOpen(false);
-    setAddForm({ icaoType: '', name: '', registration: '', rangeNm: '', cruiseSpeed: '', paxCapacity: '', cargoCapacityLbs: '', isCargo: true, oewLbs: '', mzfwLbs: '', mtowLbs: '', mlwLbs: '', maxFuelLbs: '', ceilingFt: '', engines: '', equipCode: '', transponderCode: '', pbn: '', cat: '' });
+    setAddForm({ icaoType: '', name: '', registration: '', rangeNm: '', cruiseSpeed: '', paxCapacity: '', cargoCapacityLbs: '', isCargo: true, oewLbs: '', mzfwLbs: '', mtowLbs: '', mlwLbs: '', maxFuelLbs: '', ceilingFt: '', engines: '', equipCode: '', transponderCode: '', pbn: '', cat: '', acquisitionType: 'purchased', acquisitionCost: '', usefulLifeYears: '', downPayment: '', interestRate: '', loanTermMonths: '', leaseMonthly: '', leaseStart: '', leaseEnd: '', insuranceMonthly: '' });
     setSbQuery('');
     setSbResults([]);
     setSbShowResults(false);
@@ -786,6 +826,8 @@ export function FleetPage() {
             border: '1px solid var(--border-primary)',
             color: 'var(--text-primary)',
             maxWidth: 560,
+            maxHeight: '85vh',
+            overflowY: 'auto',
           }}
         >
           <DialogHeader>
@@ -903,6 +945,81 @@ export function FleetPage() {
               />
               <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>Cargo aircraft</span>
             </div>
+          </div>
+
+          {/* ── Financing Section ─────────────────────────── */}
+          <div className="flex items-center" style={{ gap: 10, margin: '4px 0 0 0' }}>
+            <div style={{ flex: 1, height: 1, backgroundColor: 'var(--border-primary)' }} />
+            <span style={{ fontSize: 9, fontWeight: 600, color: 'var(--text-tertiary)', letterSpacing: 0.5 }}>FINANCING</span>
+            <div style={{ flex: 1, height: 1, backgroundColor: 'var(--border-primary)' }} />
+          </div>
+
+          <div className="flex flex-col" style={{ gap: 10 }}>
+            {/* Acquisition type */}
+            <div className="flex flex-col flex-1" style={{ gap: 4 }}>
+              <span style={{ fontSize: 10, color: 'var(--text-tertiary)', fontWeight: 600 }}>Acquisition Type</span>
+              <select
+                value={addForm.acquisitionType}
+                onChange={(e) => setAddForm((p) => ({ ...p, acquisitionType: e.target.value as typeof addForm.acquisitionType }))}
+                className="input-glow"
+                style={{
+                  padding: '8px 10px',
+                  borderRadius: 4,
+                  fontSize: 12,
+                  backgroundColor: 'var(--input-bg)',
+                  border: '1px solid var(--input-border)',
+                  color: 'var(--text-primary)',
+                  outline: 'none',
+                  width: '100%',
+                  fontFamily: 'Inter, sans-serif',
+                  cursor: 'pointer',
+                }}
+              >
+                <option value="purchased">Purchased</option>
+                <option value="loan">Loan</option>
+                <option value="dry_lease">Dry Lease</option>
+                <option value="wet_lease">Wet Lease</option>
+                <option value="acmi">ACMI</option>
+              </select>
+            </div>
+
+            {/* Purchased fields */}
+            {addForm.acquisitionType === 'purchased' && (
+              <div className="flex" style={{ gap: 12 }}>
+                <CostField label="Acquisition Cost ($)" value={addForm.acquisitionCost} onChange={(v) => setAddForm((p) => ({ ...p, acquisitionCost: v }))} placeholder="126,483,000" />
+                <AddField label="Useful Life (years)" value={addForm.usefulLifeYears} onChange={(v) => setAddForm((p) => ({ ...p, usefulLifeYears: v }))} type="number" placeholder="25" />
+              </div>
+            )}
+
+            {/* Loan fields */}
+            {addForm.acquisitionType === 'loan' && (
+              <>
+                <div className="flex" style={{ gap: 12 }}>
+                  <CostField label="Acquisition Cost ($)" value={addForm.acquisitionCost} onChange={(v) => setAddForm((p) => ({ ...p, acquisitionCost: v }))} placeholder="126,483,000" />
+                  <CostField label="Down Payment ($)" value={addForm.downPayment} onChange={(v) => setAddForm((p) => ({ ...p, downPayment: v }))} placeholder="25,000,000" />
+                </div>
+                <div className="flex" style={{ gap: 12 }}>
+                  <AddField label="Interest Rate (%)" value={addForm.interestRate} onChange={(v) => setAddForm((p) => ({ ...p, interestRate: v }))} type="number" placeholder="4.5" />
+                  <AddField label="Loan Term (months)" value={addForm.loanTermMonths} onChange={(v) => setAddForm((p) => ({ ...p, loanTermMonths: v }))} type="number" placeholder="180" />
+                </div>
+              </>
+            )}
+
+            {/* Lease fields (dry_lease, wet_lease, acmi) */}
+            {(addForm.acquisitionType === 'dry_lease' || addForm.acquisitionType === 'wet_lease' || addForm.acquisitionType === 'acmi') && (
+              <>
+                <CostField label="Monthly Lease ($)" value={addForm.leaseMonthly} onChange={(v) => setAddForm((p) => ({ ...p, leaseMonthly: v }))} placeholder="350,000" />
+                <div className="flex" style={{ gap: 12 }}>
+                  <AddField label="Lease Start" value={addForm.leaseStart} onChange={(v) => setAddForm((p) => ({ ...p, leaseStart: v }))} type="date" />
+                  <AddField label="Lease End" value={addForm.leaseEnd} onChange={(v) => setAddForm((p) => ({ ...p, leaseEnd: v }))} type="date" />
+                </div>
+              </>
+            )}
+
+            {/* Insurance (shown for all except ACMI) */}
+            {addForm.acquisitionType !== 'acmi' && (
+              <CostField label="Insurance Monthly ($)" value={addForm.insuranceMonthly} onChange={(v) => setAddForm((p) => ({ ...p, insuranceMonthly: v }))} placeholder="12,500" />
+            )}
           </div>
 
           <div className="flex justify-end" style={{ gap: 8, paddingTop: 4 }}>
@@ -1341,6 +1458,51 @@ function AddField({
           outline: 'none',
           width: '100%',
           fontFamily: 'Inter, sans-serif',
+        }}
+      />
+    </div>
+  );
+}
+
+function CostField({
+  label,
+  value,
+  onChange,
+  placeholder,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+}) {
+  const formatWithCommas = (raw: string) => {
+    // Strip non-numeric except dots
+    const clean = raw.replace(/[^0-9.]/g, '');
+    const parts = clean.split('.');
+    const intPart = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    return parts.length > 1 ? `${intPart}.${parts[1]}` : intPart;
+  };
+
+  return (
+    <div className="flex flex-col flex-1" style={{ gap: 4 }}>
+      <span style={{ fontSize: 10, color: 'var(--text-tertiary)', fontWeight: 600 }}>{label}</span>
+      <input
+        type="text"
+        inputMode="decimal"
+        value={value}
+        onChange={(e) => onChange(formatWithCommas(e.target.value))}
+        placeholder={placeholder}
+        className="input-glow font-mono"
+        style={{
+          padding: '8px 10px',
+          borderRadius: 4,
+          fontSize: 12,
+          backgroundColor: 'var(--input-bg)',
+          border: '1px solid var(--input-border)',
+          color: 'var(--text-primary)',
+          outline: 'none',
+          width: '100%',
+          fontVariantNumeric: 'tabular-nums',
         }}
       />
     </div>
