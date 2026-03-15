@@ -1923,6 +1923,9 @@ function FlightsTabInner({ triggerCreate }: { triggerCreate: number }) {
   // Selected schedule for detail panel
   const [selectedSchedule, setSelectedSchedule] = useState<Schedule | null>(null);
 
+  // Lane rates for economics columns
+  const [laneRates, setLaneRates] = useState<Map<string, { ratePerLb: number; demandScore: number; supplyScore: number }>>(new Map());
+
   // Dropdown open state for custom selects
   const [typeDropdownOpen, setTypeDropdownOpen] = useState(false);
   const [statusDropdownOpen, setStatusDropdownOpen] = useState(false);
@@ -1964,6 +1967,23 @@ function FlightsTabInner({ triggerCreate }: { triggerCreate: number }) {
     }, search ? 300 : 0);
     return () => clearTimeout(timeout);
   }, [fetchSchedules]);
+
+  // Fetch lane rates once on mount
+  useEffect(() => {
+    api.get<{ rates: any[] }>('/api/admin/economics/lane-rates')
+      .then((res) => {
+        const map = new Map<string, { ratePerLb: number; demandScore: number; supplyScore: number }>();
+        for (const r of (res as any).rates ?? (res as any)) {
+          map.set(`${r.origin_icao}-${r.dest_icao}`, {
+            ratePerLb: r.rate_per_lb,
+            demandScore: r.demand_score,
+            supplyScore: r.supply_score,
+          });
+        }
+        setLaneRates(map);
+      })
+      .catch(() => {});
+  }, []);
 
   // ── Filtered list ──
 
@@ -2306,6 +2326,9 @@ function FlightsTabInner({ triggerCreate }: { triggerCreate: number }) {
                 { label: 'ARR', width: 70 },
                 { label: 'DAYS', width: 100 },
                 { label: 'TYPE', width: 70 },
+                { label: 'RATE', width: 70, align: 'right' as const },
+                { label: 'EST. REV', width: 80, align: 'right' as const },
+                { label: 'DEMAND', width: 70, align: 'right' as const },
                 { label: 'STATUS', width: undefined },
                 { label: '', width: 40 },
               ].map((col) => (
@@ -2317,7 +2340,7 @@ function FlightsTabInner({ triggerCreate }: { triggerCreate: number }) {
                     fontWeight: 600,
                     letterSpacing: 0.8,
                     color: 'var(--text-tertiary)',
-                    textAlign: 'left',
+                    textAlign: (col as any).align || 'left',
                     textTransform: 'uppercase',
                     borderBottom: '1px solid var(--border-primary)',
                     width: col.width,
@@ -2331,13 +2354,13 @@ function FlightsTabInner({ triggerCreate }: { triggerCreate: number }) {
           <motion.tbody variants={tableContainer} initial="hidden" animate="visible">
             {loading ? (
               <tr>
-                <td colSpan={9} style={{ padding: '40px 16px', textAlign: 'center', color: 'var(--text-tertiary)', fontSize: 12 }}>
+                <td colSpan={12} style={{ padding: '40px 16px', textAlign: 'center', color: 'var(--text-tertiary)', fontSize: 12 }}>
                   Loading schedules...
                 </td>
               </tr>
             ) : paginatedSchedules.length === 0 ? (
               <tr>
-                <td colSpan={9} style={{ padding: '40px 16px', textAlign: 'center', color: 'var(--text-tertiary)', fontSize: 12 }}>
+                <td colSpan={12} style={{ padding: '40px 16px', textAlign: 'center', color: 'var(--text-tertiary)', fontSize: 12 }}>
                   No schedules found
                 </td>
               </tr>
@@ -2381,6 +2404,70 @@ function FlightsTabInner({ triggerCreate }: { triggerCreate: number }) {
                     <td style={{ padding: '10px 16px' }}>
                       <span style={typeBadgeStyle(fType)}>{fType.toUpperCase()}</span>
                     </td>
+                    {(() => {
+                      const lane = laneRates.get(`${schedule.depIcao}-${schedule.arrIcao}`);
+                      const DEFAULT_CARGO_LBS = 46000;
+                      const AVG_LOAD_FACTOR = 0.65;
+                      const cargoLbs = DEFAULT_CARGO_LBS * AVG_LOAD_FACTOR;
+                      const distFactor = Math.max(1, (schedule.distanceNm || 500) / 1000);
+                      const estRev = lane ? lane.ratePerLb * cargoLbs * distFactor : null;
+                      const demand = lane?.demandScore ?? null;
+                      const demandColor = demand === null ? 'var(--text-tertiary)'
+                        : demand > 0.7 ? 'var(--accent-emerald)'
+                        : demand >= 0.4 ? 'var(--accent-amber)'
+                        : 'var(--accent-red)';
+                      const demandBg = demand === null ? 'transparent'
+                        : demand > 0.7 ? 'rgba(74,222,128,0.13)'
+                        : demand >= 0.4 ? 'rgba(251,191,36,0.13)'
+                        : 'rgba(239,68,68,0.13)';
+                      return (
+                        <>
+                          <td style={{ padding: '10px 16px', textAlign: 'right', fontSize: 11, fontFamily: 'var(--font-mono, monospace)', fontVariantNumeric: 'tabular-nums', color: lane ? 'var(--text-primary)' : 'var(--text-tertiary)' }}>
+                            {lane ? `$${lane.ratePerLb.toFixed(2)}/lb` : '--'}
+                          </td>
+                          <td style={{ padding: '10px 16px', textAlign: 'right', fontSize: 11, fontFamily: 'var(--font-mono, monospace)', fontVariantNumeric: 'tabular-nums', color: estRev !== null ? 'var(--text-primary)' : 'var(--text-tertiary)' }}>
+                            {estRev !== null ? `$${Math.round(estRev).toLocaleString()}` : '--'}
+                          </td>
+                          <td style={{ padding: '10px 16px', textAlign: 'right' }}>
+                            {demand !== null ? (
+                              <span style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: 5,
+                                padding: '2px 8px',
+                                borderRadius: 3,
+                                fontSize: 10,
+                                fontWeight: 600,
+                                fontFamily: 'var(--font-mono, monospace)',
+                                fontVariantNumeric: 'tabular-nums',
+                                background: demandBg,
+                                color: demandColor,
+                              }}>
+                                <span style={{
+                                  width: 24,
+                                  height: 4,
+                                  borderRadius: 2,
+                                  background: 'rgba(255,255,255,0.08)',
+                                  overflow: 'hidden',
+                                  display: 'inline-block',
+                                }}>
+                                  <span style={{
+                                    display: 'block',
+                                    height: '100%',
+                                    width: `${Math.round(demand * 100)}%`,
+                                    background: demandColor,
+                                    borderRadius: 2,
+                                  }} />
+                                </span>
+                                {demand.toFixed(2)}
+                              </span>
+                            ) : (
+                              <span style={{ fontSize: 11, color: 'var(--text-tertiary)' }}>--</span>
+                            )}
+                          </td>
+                        </>
+                      );
+                    })()}
                     <td style={{ padding: '10px 16px' }}>
                       <span style={statusBadgeStyle(schedule.isActive)}>
                         {schedule.isActive ? 'ACTIVE' : 'INACTIVE'}
