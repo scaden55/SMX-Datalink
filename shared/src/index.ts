@@ -216,6 +216,21 @@ export type {
   MELListResponse,
 } from './types/maintenance.js';
 
+// Airline Economics
+export type {
+  AirportFeeTier,
+  AirportFeeTierRates,
+  AcquisitionType,
+  FleetFinancials,
+  FlightCostBreakdown,
+  FlightPnL,
+  LaneRate,
+  PeriodPnL,
+  DemandVolatility,
+  FuelVariability,
+  SimSettings,
+} from './types/airline-economics.js';
+
 // Discrepancies & MEL Master
 export type {
   DiscrepancySeverity, DiscrepancyStatus, ResolutionType, TimelineEntryType,
