@@ -1,10 +1,8 @@
 import { getDb } from '../db/index.js';
 import { AuditService } from './audit.js';
 import { NotificationService } from './notification.js';
-import { FinanceService } from './finance.js';
-import { SettingsService } from './settings.js';
 import { MaintenanceService } from './maintenance.js';
-import { RevenueModelService } from './revenue-model.js';
+import { FlightPnLService } from './flight-pnl.js';
 import type { LogbookEntry, LogbookStatus, LogbookFilters } from '@acars/shared';
 
 interface LogbookRow {
@@ -54,10 +52,7 @@ interface LogbookRow {
 
 const auditService = new AuditService();
 const notificationService = new NotificationService();
-const financeService = new FinanceService();
-const settingsService = new SettingsService();
 const maintenanceService = new MaintenanceService();
-const revenueModelService = new RevenueModelService();
 
 export class PirepAdminService {
 
@@ -125,33 +120,20 @@ export class PirepAdminService {
         WHERE id = ?
       `).run(status, reviewerId, notes ?? null, pirepId);
 
-      // On approve: create finance entries via revenue model
+      // On approve: calculate full flight P&L (revenue + costs + supply/demand)
       if (status === 'approved') {
-        const breakdown = revenueModelService.calculate({
-          cargoLbs: pirep.cargo_lbs,
-          distanceNm: pirep.distance_nm,
-          aircraftRegistration: pirep.aircraft_registration,
-          aircraftType: pirep.aircraft_type,
-          blockHours: pirep.flight_time_min / 60,
-        });
-
-        financeService.create({
-          pilotId: pirep.user_id,
-          type: 'pay',
-          amount: breakdown.pilotPay,
-          description: `Flight pay: ${pirep.flight_number} (${pirep.dep_icao}-${pirep.arr_icao})`,
+        const flightPnLService = new FlightPnLService();
+        const pnl = flightPnLService.calculateAndRecord({
           pirepId,
-        }, reviewerId);
-
-        if (breakdown.revenue.total > 0) {
-          financeService.create({
-            pilotId: pirep.user_id,
-            type: 'income',
-            amount: breakdown.revenue.total,
-            description: `Cargo revenue: ${pirep.flight_number} (${breakdown.cargoLbs.toLocaleString()} lbs, Class ${breakdown.aircraftClass})`,
-            pirepId,
-          }, reviewerId);
-        }
+          pilotId: pirep.user_id,
+          aircraftRegistration: pirep.aircraft_registration,
+          depIcao: pirep.dep_icao,
+          arrIcao: pirep.arr_icao,
+          distanceNm: pirep.distance_nm,
+          blockHours: pirep.flight_time_min / 60,
+          cargoLbs: pirep.cargo_lbs ?? 0,
+          fuelUsedLbs: pirep.fuel_used_lbs ?? 0,
+        });
 
         // Accumulate aircraft flight hours/cycles for maintenance tracking
         if (pirep.aircraft_registration) {
@@ -171,7 +153,7 @@ export class PirepAdminService {
 
         notificationService.send({
           userId: pirep.user_id,
-          message: `Your PIREP for ${pirep.flight_number} has been approved. Pay: $${breakdown.pilotPay.toFixed(2)}, Cargo Revenue: $${breakdown.revenue.total.toFixed(2)}`,
+          message: `Your PIREP for ${pirep.flight_number} has been approved. Revenue: $${pnl.totalRevenue.toFixed(2)}, DOC: $${pnl.costs.totalDoc.toFixed(2)}, Margin: ${pnl.marginPct.toFixed(1)}%`,
           type: 'success',
           link: `/logbook/${pirepId}`,
         });

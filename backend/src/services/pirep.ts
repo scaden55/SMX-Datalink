@@ -1,15 +1,14 @@
 import { getDb } from '../db/index.js';
 import { logger } from '../lib/logger.js';
 import { SettingsService } from './settings.js';
-import { FinanceService } from './finance.js';
 import { NotificationService } from './notification.js';
 import { AuditService } from './audit.js';
 import type { FlightEvents } from './flight-event-tracker.js';
 import type { LogbookEntry } from '@acars/shared';
 import { LogbookService } from './logbook.js';
 import { ExceedanceService } from './exceedance.js';
-import { RevenueModelService } from './revenue-model.js';
 import { MaintenanceService } from './maintenance.js';
+import { FlightPnLService } from './flight-pnl.js';
 
 // ── Score calculation (G-force based) ────────────────────────────
 
@@ -56,12 +55,10 @@ export interface PirepResult {
 // ── Service ──────────────────────────────────────────────────────
 
 const settingsService = new SettingsService();
-const financeService = new FinanceService();
 const notificationService = new NotificationService();
 const auditService = new AuditService();
 const logbookService = new LogbookService();
 const exceedanceService = new ExceedanceService();
-const revenueModelService = new RevenueModelService();
 const maintenanceService = new MaintenanceService();
 
 export class PirepService {
@@ -216,35 +213,20 @@ export class PirepService {
       // Link exceedances to the logbook entry
       exceedanceService.linkToLogbook(bidId, logbookId);
 
-      // Auto-approve: create finance entries via revenue model
+      // Auto-approve: calculate full flight P&L (revenue + costs + supply/demand)
       if (autoApprove && flightTimeMin > 0) {
-        const breakdown = revenueModelService.calculate({
-          cargoLbs: cargoLbs,
-          distanceNm: schedule.distance_nm,
-          aircraftRegistration: aircraftReg,
-          aircraftType: schedule.aircraft_type,
-          blockHours: flightTimeMin / 60,
-        });
-
-        // Pilot pay
-        financeService.create({
-          pilotId: userId,
-          type: 'pay',
-          amount: breakdown.pilotPay,
-          description: `Flight pay: ${schedule.flight_number} (${schedule.dep_icao}-${schedule.arr_icao})`,
+        const flightPnLService = new FlightPnLService();
+        const pnl = flightPnLService.calculateAndRecord({
           pirepId: logbookId,
-        }, userId);
-
-        // Cargo revenue
-        if (breakdown.revenue.total > 0) {
-          financeService.create({
-            pilotId: userId,
-            type: 'income',
-            amount: breakdown.revenue.total,
-            description: `Cargo revenue: ${schedule.flight_number} (${breakdown.cargoLbs.toLocaleString()} lbs, Class ${breakdown.aircraftClass})`,
-            pirepId: logbookId,
-          }, userId);
-        }
+          pilotId: userId,
+          aircraftRegistration: aircraftReg,
+          depIcao: schedule.dep_icao,
+          arrIcao: schedule.arr_icao,
+          distanceNm: schedule.distance_nm,
+          blockHours: flightTimeMin / 60,
+          cargoLbs: cargoLbs ?? 0,
+          fuelUsedLbs: fuelUsedLbs ?? 0,
+        });
 
         // Accumulate aircraft flight hours/cycles for maintenance tracking (auto-approve path)
         let effectiveReg = aircraftReg;
@@ -277,7 +259,7 @@ export class PirepService {
 
         notificationService.send({
           userId,
-          message: `PIREP auto-approved for ${schedule.flight_number}. Pay: $${breakdown.pilotPay.toFixed(2)}, Cargo Revenue: $${breakdown.revenue.total.toFixed(2)}`,
+          message: `PIREP auto-approved for ${schedule.flight_number}. Revenue: $${pnl.totalRevenue.toFixed(2)}, DOC: $${pnl.costs.totalDoc.toFixed(2)}, Margin: ${pnl.marginPct.toFixed(1)}%`,
           type: 'success',
           link: `/logbook/${logbookId}`,
         });
