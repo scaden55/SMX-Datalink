@@ -211,7 +211,14 @@ const cellStyle: React.CSSProperties = {
 // Create Entry Dialog
 // ═══════════════════════════════════════════════════════════════
 
+interface FleetAircraftShort {
+  aircraftId: number;
+  registration: string;
+  icaoType: string;
+}
+
 function CreateEntryDialog({ open, onClose, onCreated }: { open: boolean; onClose: () => void; onCreated: () => void }) {
+  const [fleet, setFleet] = useState<FleetAircraftShort[]>([]);
   const [formAircraftId, setFormAircraftId] = useState('');
   const [formCheckType, setFormCheckType] = useState<MaintenanceLogType>('LINE');
   const [formTitle, setFormTitle] = useState('');
@@ -223,6 +230,13 @@ function CreateEntryDialog({ open, onClose, onCreated }: { open: boolean; onClos
 
   const logTypes: MaintenanceLogType[] = ['A', 'B', 'C', 'D', 'LINE', 'UNSCHEDULED', 'AD', 'MEL', 'SFP'];
   const logStatuses: MaintenanceLogStatus[] = ['scheduled', 'in_progress', 'completed', 'deferred'];
+
+  useEffect(() => {
+    if (!open) return;
+    api.get<{ fleet: FleetAircraftShort[] }>('/api/admin/maintenance/fleet-status')
+      .then((res) => setFleet(res.fleet))
+      .catch(() => {});
+  }, [open]);
 
   function resetForm() {
     setFormAircraftId('');
@@ -267,8 +281,17 @@ function CreateEntryDialog({ open, onClose, onCreated }: { open: boolean; onClos
         </DialogHeader>
         <div className="space-y-4 py-2">
           <div className="space-y-2">
-            <Label>Aircraft ID *</Label>
-            <Input type="number" value={formAircraftId} onChange={(e) => setFormAircraftId(e.target.value)} placeholder="Aircraft ID" />
+            <Label>Aircraft *</Label>
+            <Select value={formAircraftId} onValueChange={setFormAircraftId}>
+              <SelectTrigger><SelectValue placeholder="Select aircraft..." /></SelectTrigger>
+              <SelectContent>
+                {fleet.map((a) => (
+                  <SelectItem key={a.aircraftId} value={a.aircraftId.toString()}>
+                    {a.registration} ({a.icaoType})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
@@ -288,7 +311,7 @@ function CreateEntryDialog({ open, onClose, onCreated }: { open: boolean; onClos
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {logStatuses.map((s) => (
-                    <SelectItem key={s} value={s}>{s.replace('_', ' ')}</SelectItem>
+                    <SelectItem key={s} value={s}>{s.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
