@@ -11,6 +11,7 @@ import {
   ChevronRight,
   Save,
   Loader2,
+  Gauge,
 } from 'lucide-react';
 import { api, ApiError } from '@/lib/api';
 import { toast } from '@/stores/toastStore';
@@ -340,6 +341,310 @@ function AccordionSection({ section, expanded, onToggle, values, localValues, on
   );
 }
 
+// ── Simulation Economy ──────────────────────────────────────────
+
+interface SimSettings {
+  cost_multiplier: string;
+  revenue_multiplier: string;
+  demand_volatility: string;
+  maintenance_cost_factor: string;
+  fuel_price_variability: string;
+  fuel_price_factor: string;
+}
+
+const SIM_DEFAULTS: SimSettings = {
+  cost_multiplier: '1.0',
+  revenue_multiplier: '1.0',
+  demand_volatility: 'medium',
+  maintenance_cost_factor: '1.0',
+  fuel_price_variability: 'moderate',
+  fuel_price_factor: '1.0',
+};
+
+const rangeThumbStyle = `
+  input[type="range"].sim-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--accent-blue-bright);
+    cursor: pointer;
+    border: 2px solid var(--surface-0);
+    box-shadow: 0 0 4px rgba(79, 108, 205, 0.5);
+  }
+  input[type="range"].sim-slider::-moz-range-thumb {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--accent-blue-bright);
+    cursor: pointer;
+    border: 2px solid var(--surface-0);
+    box-shadow: 0 0 4px rgba(79, 108, 205, 0.5);
+  }
+`;
+
+interface SimEconomySectionProps {
+  expanded: boolean;
+  onToggle: () => void;
+}
+
+function SimEconomySection({ expanded, onToggle }: SimEconomySectionProps) {
+  const [simSettings, setSimSettings] = useState<SimSettings>(SIM_DEFAULTS);
+  const [simLocal, setSimLocal] = useState<Partial<SimSettings>>({});
+  const [simLoading, setSimLoading] = useState(true);
+  const [simSaving, setSimSaving] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await api.get<SimSettings>('/api/admin/economics/sim-settings');
+        setSimSettings(res);
+      } catch {
+        // use defaults
+      } finally {
+        setSimLoading(false);
+      }
+    })();
+  }, []);
+
+  function handleChange<K extends keyof SimSettings>(key: K, value: string) {
+    setSimLocal((prev) => ({ ...prev, [key]: value }));
+  }
+
+  function getValue<K extends keyof SimSettings>(key: K): string {
+    return simLocal[key] ?? simSettings[key];
+  }
+
+  const hasSimChanges = Object.keys(simLocal).some(
+    (key) => simLocal[key as keyof SimSettings] !== simSettings[key as keyof SimSettings],
+  );
+
+  async function handleSaveSim() {
+    if (!hasSimChanges) return;
+    setSimSaving(true);
+    try {
+      const merged: SimSettings = { ...simSettings, ...simLocal };
+      await api.put('/api/admin/economics/sim-settings', merged);
+      setSimSettings(merged);
+      setSimLocal({});
+      toast.success('Simulation economy settings saved');
+    } catch (err) {
+      const message = err instanceof ApiError ? err.message : 'Failed to save simulation settings';
+      toast.error(message);
+    } finally {
+      setSimSaving(false);
+    }
+  }
+
+  const sliders: { key: keyof SimSettings; label: string; description: string }[] = [
+    { key: 'cost_multiplier', label: 'Cost Multiplier', description: 'Scales all operating costs' },
+    { key: 'revenue_multiplier', label: 'Revenue Multiplier', description: 'Scales cargo yield rates' },
+    { key: 'maintenance_cost_factor', label: 'Maintenance Cost Factor', description: 'Scales check costs and reserve rates' },
+  ];
+
+  return (
+    <div
+      className="card-interactive"
+      style={{
+        borderRadius: 6,
+        border: '1px solid var(--border-primary)',
+        overflow: 'hidden',
+      }}
+    >
+      <style>{rangeThumbStyle}</style>
+
+      {/* Header */}
+      <button
+        onClick={onToggle}
+        className="flex items-center w-full"
+        style={{
+          padding: '16px 20px',
+          backgroundColor: 'var(--surface-2)',
+          border: 'none',
+          cursor: 'pointer',
+          gap: 12,
+        }}
+      >
+        <Gauge size={16} style={{ color: 'var(--accent-blue-bright)', flexShrink: 0 }} />
+        <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' }}>Simulation Economy</span>
+        <span style={{ fontSize: 12, color: 'var(--text-tertiary)', marginLeft: 4 }}>Control the economic difficulty of the airline simulation</span>
+        <div className="flex-1" />
+        <ChevronRight
+          size={14}
+          style={{
+            color: 'var(--text-tertiary)',
+            transition: 'transform 200ms',
+            transform: expanded ? 'rotate(90deg)' : 'rotate(0deg)',
+            flexShrink: 0,
+          }}
+        />
+      </button>
+
+      {/* Expanded body */}
+      {expanded && (
+        <div
+          style={{
+            padding: '20px 20px',
+            borderTop: '1px solid var(--border-primary)',
+            backgroundColor: 'var(--surface-0)',
+          }}
+        >
+          {simLoading ? (
+            <div className="flex items-center justify-center" style={{ padding: 24, fontSize: 12, color: 'var(--text-tertiary)' }}>
+              <Loader2 size={14} className="animate-spin" style={{ marginRight: 8 }} />
+              Loading...
+            </div>
+          ) : (
+            <div className="flex flex-col" style={{ gap: 24 }}>
+              {/* Multiplier sliders group */}
+              <div className="flex flex-col" style={{ gap: 16 }}>
+                {sliders.map(({ key, label, description }) => {
+                  const val = getValue(key);
+                  return (
+                    <div key={key} className="flex flex-col" style={{ gap: 6 }}>
+                      <div className="flex items-center justify-between">
+                        <div className="flex flex-col" style={{ gap: 2 }}>
+                          <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-secondary)' }}>{label}</span>
+                          <span style={{ fontSize: 11, color: 'var(--text-tertiary)' }}>{description}</span>
+                        </div>
+                        <span
+                          className="font-mono"
+                          style={{
+                            fontSize: 13,
+                            fontWeight: 600,
+                            color: 'var(--accent-blue-bright)',
+                            minWidth: 36,
+                            textAlign: 'right',
+                            fontVariantNumeric: 'tabular-nums',
+                          }}
+                        >
+                          {parseFloat(val).toFixed(1)}x
+                        </span>
+                      </div>
+                      <input
+                        type="range"
+                        className="sim-slider"
+                        min="0.5"
+                        max="2.0"
+                        step="0.1"
+                        value={val}
+                        onChange={(e) => handleChange(key, e.target.value)}
+                        style={{
+                          appearance: 'none',
+                          WebkitAppearance: 'none',
+                          width: '100%',
+                          height: 4,
+                          borderRadius: 2,
+                          background: `linear-gradient(to right, var(--accent-blue) 0%, var(--accent-blue) ${((parseFloat(val) - 0.5) / 1.5) * 100}%, var(--surface-3) ${((parseFloat(val) - 0.5) / 1.5) * 100}%, var(--surface-3) 100%)`,
+                          outline: 'none',
+                          cursor: 'pointer',
+                        }}
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Divider */}
+              <div style={{ height: 1, backgroundColor: 'var(--border-primary)' }} />
+
+              {/* Dropdown selects group */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                {/* Demand Volatility */}
+                <div className="flex flex-col" style={{ gap: 6 }}>
+                  <label style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-secondary)' }}>Demand Volatility</label>
+                  <span style={{ fontSize: 11, color: 'var(--text-tertiary)', marginTop: -4 }}>How aggressively supply/demand rates fluctuate</span>
+                  <select
+                    value={getValue('demand_volatility')}
+                    onChange={(e) => handleChange('demand_volatility', e.target.value)}
+                    className="input-glow"
+                    style={{
+                      backgroundColor: 'var(--input-bg)',
+                      border: '1px solid var(--input-border)',
+                      borderRadius: 4,
+                      padding: '8px 12px',
+                      fontSize: 13,
+                      color: 'var(--text-primary)',
+                      outline: 'none',
+                      cursor: 'pointer',
+                      appearance: 'auto',
+                    }}
+                  >
+                    <option value="low">Low</option>
+                    <option value="medium">Medium</option>
+                    <option value="high">High</option>
+                  </select>
+                </div>
+
+                {/* Fuel Price Variability */}
+                <div className="flex flex-col" style={{ gap: 6 }}>
+                  <label style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-secondary)' }}>Fuel Price Variability</label>
+                  <span style={{ fontSize: 11, color: 'var(--text-tertiary)', marginTop: -4 }}>Fuel price stability over time</span>
+                  <select
+                    value={getValue('fuel_price_variability')}
+                    onChange={(e) => handleChange('fuel_price_variability', e.target.value)}
+                    className="input-glow"
+                    style={{
+                      backgroundColor: 'var(--input-bg)',
+                      border: '1px solid var(--input-border)',
+                      borderRadius: 4,
+                      padding: '8px 12px',
+                      fontSize: 13,
+                      color: 'var(--text-primary)',
+                      outline: 'none',
+                      cursor: 'pointer',
+                      appearance: 'auto',
+                    }}
+                  >
+                    <option value="fixed">Fixed</option>
+                    <option value="moderate">Moderate</option>
+                    <option value="volatile">Volatile</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Save button */}
+              <div className="flex justify-end">
+                <button
+                  onClick={handleSaveSim}
+                  disabled={!hasSimChanges || simSaving}
+                  className="flex items-center btn-glow"
+                  style={{
+                    gap: 6,
+                    padding: '8px 16px',
+                    borderRadius: 6,
+                    backgroundColor: hasSimChanges ? 'var(--accent-blue)' : 'var(--surface-3)',
+                    color: hasSimChanges ? '#fff' : 'var(--text-quaternary)',
+                    fontSize: 13,
+                    fontWeight: 600,
+                    border: 'none',
+                    cursor: hasSimChanges ? 'pointer' : 'default',
+                    opacity: simSaving ? 0.6 : 1,
+                    transition: 'background-color 200ms, color 200ms',
+                  }}
+                >
+                  {simSaving ? (
+                    <>
+                      <Loader2 size={14} className="animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Save size={14} />
+                      Save
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Page ────────────────────────────────────────────────────────
 
 export function SettingsPage() {
@@ -482,6 +787,14 @@ export function SettingsPage() {
                 />
               </motion.div>
             ))}
+            <motion.div variants={staggerItem} whileHover={cardHover}>
+              <SimEconomySection
+                expanded={expandedSection === 'sim-economy'}
+                onToggle={() =>
+                  setExpandedSection((prev) => (prev === 'sim-economy' ? null : 'sim-economy'))
+                }
+              />
+            </motion.div>
           </motion.div>
         </div>
       )}
