@@ -51,11 +51,15 @@ interface FlightPnl {
   fuel_surcharge: number;
   total_revenue: number;
   fuel_cost: number;
+  fuel_service_fee: number;
   landing_fee: number;
   handling_fee: number;
   nav_fee: number;
+  authority_fees: number;
   parking_fee: number;
   crew_cost: number;
+  dep_handler: string | null;
+  arr_handler: string | null;
   total_variable_cost: number;
   maint_reserve: number;
   lease_alloc: number;
@@ -1278,6 +1282,12 @@ export function PirepsPage() {
                             <span style={{ color: 'var(--text-tertiary)' }}>Fuel</span>
                             <span style={{ fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums', color: 'var(--text-secondary)' }}>{formatCurrency(detailPnl.fuel_cost)}</span>
                           </div>
+                          {detailPnl.fuel_service_fee > 0 && (
+                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
+                              <span style={{ color: 'var(--text-tertiary)' }}>Fuel Service</span>
+                              <span style={{ fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums', color: 'var(--text-secondary)' }}>{formatCurrency(detailPnl.fuel_service_fee)}</span>
+                            </div>
+                          )}
                           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
                             <span style={{ color: 'var(--text-tertiary)' }}>Crew</span>
                             <span style={{ fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums', color: 'var(--text-secondary)' }}>{formatCurrency(detailPnl.crew_cost)}</span>
@@ -1286,14 +1296,34 @@ export function PirepsPage() {
                             <span style={{ color: 'var(--text-tertiary)' }}>Landing Fees</span>
                             <span style={{ fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums', color: 'var(--text-secondary)' }}>{formatCurrency(detailPnl.landing_fee)}</span>
                           </div>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
-                            <span style={{ color: 'var(--text-tertiary)' }}>Handling</span>
-                            <span style={{ fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums', color: 'var(--text-secondary)' }}>{formatCurrency(detailPnl.handling_fee)}</span>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, alignItems: 'flex-start' }}>
+                            <span style={{ color: 'var(--text-tertiary)' }}>Handling (Dep)</span>
+                            <div style={{ textAlign: 'right' }}>
+                              <span style={{ fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums', color: 'var(--text-secondary)' }}>{formatCurrency(detailPnl.handling_fee / 2)}</span>
+                              {detailPnl.dep_handler && (
+                                <div style={{ fontSize: 10, color: 'var(--text-tertiary)' }}>({detailPnl.dep_handler})</div>
+                              )}
+                            </div>
+                          </div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, alignItems: 'flex-start' }}>
+                            <span style={{ color: 'var(--text-tertiary)' }}>Handling (Arr)</span>
+                            <div style={{ textAlign: 'right' }}>
+                              <span style={{ fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums', color: 'var(--text-secondary)' }}>{formatCurrency(detailPnl.handling_fee / 2)}</span>
+                              {detailPnl.arr_handler && (
+                                <div style={{ fontSize: 10, color: 'var(--text-tertiary)' }}>({detailPnl.arr_handler})</div>
+                              )}
+                            </div>
                           </div>
                           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
                             <span style={{ color: 'var(--text-tertiary)' }}>Nav Fees</span>
                             <span style={{ fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums', color: 'var(--text-secondary)' }}>{formatCurrency(detailPnl.nav_fee)}</span>
                           </div>
+                          {detailPnl.authority_fees > 0 && (
+                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
+                              <span style={{ color: 'var(--text-tertiary)' }}>Authority Fees</span>
+                              <span style={{ fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums', color: 'var(--text-secondary)' }}>{formatCurrency(detailPnl.authority_fees)}</span>
+                            </div>
+                          )}
                           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
                             <span style={{ color: 'var(--text-tertiary)' }}>Maint Reserve</span>
                             <span style={{ fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums', color: 'var(--text-secondary)' }}>{formatCurrency(detailPnl.maint_reserve)}</span>
