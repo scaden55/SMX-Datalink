@@ -12,6 +12,31 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 
 // ── Types ───────────────────────────────────────────────────
 
+interface AirportTier {
+  tier: string;
+  landing_per_1000lbs: number;
+  handling_per_1000lbs: number;
+  parking_per_hour: number;
+  nav_per_nm: number;
+  fuel_price_per_lb: number;
+}
+
+const TIER_ORDER = ['international_hub', 'major_hub', 'regional', 'small'] as const;
+const TIER_LABELS: Record<string, string> = {
+  international_hub: "Int'l Hub",
+  major_hub: 'Major Hub',
+  regional: 'Regional',
+  small: 'Small',
+};
+
+const TIER_RATE_ROWS: { key: keyof Omit<AirportTier, 'tier'>; label: string; unit: string; step: string }[] = [
+  { key: 'landing_per_1000lbs', label: 'LANDING ($/1000 LBS)', unit: '$', step: '0.01' },
+  { key: 'handling_per_1000lbs', label: 'HANDLING ($/1000 LBS)', unit: '$', step: '0.01' },
+  { key: 'parking_per_hour', label: 'PARKING ($/HR)', unit: '$', step: '0.01' },
+  { key: 'nav_per_nm', label: 'NAV ($/NM)', unit: '$', step: '0.001' },
+  { key: 'fuel_price_per_lb', label: 'FUEL ($/LB)', unit: '$', step: '0.001' },
+];
+
 interface RevenueModelConfig {
   id: number;
   class_i_standard: number;
@@ -124,6 +149,11 @@ export function RevenueModelPage() {
   const [saving, setSaving] = useState(false);
   const [draft, setDraft] = useState<Partial<RevenueModelConfig>>({});
 
+  // Airport fee tiers state
+  const [tiers, setTiers] = useState<AirportTier[]>([]);
+  const [tierDraft, setTierDraft] = useState<AirportTier[]>([]);
+  const [savingTiers, setSavingTiers] = useState(false);
+
   useEffect(() => {
     api
       .get<RevenueModelConfig>('/api/admin/revenue-model')
@@ -133,7 +163,53 @@ export function RevenueModelPage() {
       })
       .catch(() => toast.error('Failed to load revenue model config'))
       .finally(() => setLoading(false));
+
+    api
+      .get('/api/admin/economics/airport-tiers')
+      .then((res: unknown) => {
+        const arr = Array.isArray(res) ? res : (res as Record<string, unknown>).tiers ?? [];
+        setTiers(arr as AirportTier[]);
+        setTierDraft(JSON.parse(JSON.stringify(arr)));
+      })
+      .catch(() => {});
   }, []);
+
+  const updateTierField = (tierName: string, field: keyof Omit<AirportTier, 'tier'>, value: string) => {
+    setTierDraft((prev) =>
+      prev.map((t) => (t.tier === tierName ? { ...t, [field]: value === '' ? 0 : Number(value) } : t))
+    );
+  };
+
+  const handleSaveTiers = async () => {
+    setSavingTiers(true);
+    try {
+      for (const td of tierDraft) {
+        const orig = tiers.find((t) => t.tier === td.tier);
+        const changed =
+          !orig ||
+          orig.landing_per_1000lbs !== td.landing_per_1000lbs ||
+          orig.handling_per_1000lbs !== td.handling_per_1000lbs ||
+          orig.parking_per_hour !== td.parking_per_hour ||
+          orig.nav_per_nm !== td.nav_per_nm ||
+          orig.fuel_price_per_lb !== td.fuel_price_per_lb;
+        if (changed) {
+          await api.put(`/api/admin/economics/airport-tiers/${td.tier}`, {
+            landingPer1000lbs: td.landing_per_1000lbs,
+            handlingPer1000lbs: td.handling_per_1000lbs,
+            parkingPerHour: td.parking_per_hour,
+            navPerNm: td.nav_per_nm,
+            fuelPricePerLb: td.fuel_price_per_lb,
+          });
+        }
+      }
+      setTiers(JSON.parse(JSON.stringify(tierDraft)));
+      toast.success('Airport fee tiers saved');
+    } catch {
+      toast.error('Failed to save airport fee tiers');
+    } finally {
+      setSavingTiers(false);
+    }
+  };
 
   const updateField = (field: keyof RevenueModelConfig, value: string) => {
     setDraft((prev) => ({ ...prev, [field]: value === '' ? '' : Number(value) }));
@@ -525,6 +601,126 @@ export function RevenueModelPage() {
           </Surface>
         </motion.div>
       </motion.div>
+
+      {/* ── Airport Fee Tiers ──────────────────────────── */}
+      {tierDraft.length > 0 && (
+        <motion.div variants={staggerItem}>
+          <Surface elevation={1} padding="spacious">
+            <div className="flex items-center justify-between mb-1">
+              <div className="flex items-center gap-2">
+                <SectionHeader title="Airport Fee Tiers" className="border-0 mb-0 pb-0" />
+                <InfoTip text="Landing, handling, parking, navigation, and fuel rates vary by airport tier classification. These fees are deducted from flight revenue when a PIREP is filed." />
+              </div>
+              <Button
+                onClick={handleSaveTiers}
+                disabled={savingTiers}
+                className="gap-2"
+                size="sm"
+                style={{
+                  background: 'var(--accent-blue)',
+                  color: '#fff',
+                  fontFamily: 'var(--font-sans)',
+                }}
+              >
+                {savingTiers ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
+                {savingTiers ? 'Saving...' : 'Save Tiers'}
+              </Button>
+            </div>
+            <p style={{ ...captionStyle, marginBottom: 20 }}>
+              Landing, handling, and fuel rates by airport classification
+            </p>
+
+            <div
+              className="rounded-lg overflow-hidden"
+              style={{ border: '1px solid var(--border-primary)' }}
+            >
+              {/* Table header */}
+              <div
+                className="grid items-center"
+                style={{
+                  gridTemplateColumns: '160px repeat(4, 1fr)',
+                  padding: '10px 16px',
+                  background: 'var(--surface-3)',
+                  borderBottom: '1px solid var(--border-primary)',
+                }}
+              >
+                <span />
+                {TIER_ORDER.map((tier) => (
+                  <span
+                    key={tier}
+                    style={{
+                      ...suffixStyle,
+                      fontWeight: 600,
+                      textTransform: 'uppercase',
+                      letterSpacing: 1,
+                      textAlign: 'center',
+                    }}
+                  >
+                    {TIER_LABELS[tier]}
+                  </span>
+                ))}
+              </div>
+
+              {/* Rate rows */}
+              {TIER_RATE_ROWS.map((row, ri) => (
+                <div
+                  key={row.key}
+                  className="grid items-center"
+                  style={{
+                    gridTemplateColumns: '160px repeat(4, 1fr)',
+                    padding: '8px 16px',
+                    borderBottom: ri < TIER_RATE_ROWS.length - 1 ? '1px solid var(--border-primary)' : 'none',
+                    background: 'var(--surface-2)',
+                  }}
+                >
+                  <span
+                    style={{
+                      fontSize: 'var(--text-caption-size)',
+                      color: 'var(--text-secondary)',
+                      fontWeight: 600,
+                      textTransform: 'uppercase',
+                      letterSpacing: 0.5,
+                      fontFamily: 'var(--font-sans)',
+                    }}
+                  >
+                    {row.label}
+                  </span>
+                  {TIER_ORDER.map((tierName) => {
+                    const tier = tierDraft.find((t) => t.tier === tierName);
+                    const val = tier ? tier[row.key] : 0;
+                    return (
+                      <div key={tierName} className="flex justify-center px-1">
+                        <div className="relative" style={{ maxWidth: 120, width: '100%' }}>
+                          <span
+                            className="absolute left-2 top-1/2 -translate-y-1/2 pointer-events-none"
+                            style={suffixStyle}
+                          >
+                            $
+                          </span>
+                          <Input
+                            type="number"
+                            step={row.step}
+                            min="0"
+                            value={String(val)}
+                            onChange={(e) => updateTierField(tierName, row.key, e.target.value)}
+                            className="text-right font-mono"
+                            style={{
+                              ...inputStyle,
+                              paddingLeft: 20,
+                              fontFamily: 'ui-monospace, Cascadia Mono, Consolas, monospace',
+                              fontVariantNumeric: 'tabular-nums',
+                            }}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ))}
+            </div>
+          </Surface>
+        </motion.div>
+      )}
     </motion.div>
   );
 }
