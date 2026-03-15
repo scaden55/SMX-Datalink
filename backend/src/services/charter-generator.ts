@@ -47,6 +47,27 @@ interface GenerationLogRow {
   event_count: number;
 }
 
+/** Airports with particularly good MSFS 2024 scenery — biased for selection */
+const MSFS_NOTABLE_AIRPORTS = new Set([
+  // Major US cargo hubs
+  'KMEM', 'KSDF', 'PANC', 'KJFK', 'KORD', 'KLAX', 'KMIA', 'KDFW', 'KATL',
+  'KEWR', 'KBOS', 'KSEA', 'KDEN', 'KPHX', 'KSFO', 'KIAD', 'KBWI', 'KMSP',
+  'KDTW', 'KCLE', 'KCVG', 'KONT', 'KOAK', 'KSAN', 'KTPA', 'KMCO', 'KLAS',
+  'KPDX', 'KSTL', 'KPIT', 'KBNA', 'KRDU', 'KIND', 'KCHS', 'KSAW',
+  // Major international cargo hubs
+  'VHHH', 'WSSS', 'OMDB', 'OMDW', 'EDDF', 'EHAM', 'EGLL', 'LFPG', 'LEMD',
+  'LIMC', 'LTFM', 'RJTT', 'RJAA', 'RKSI', 'RPLL', 'VTBS', 'WMKK', 'VIDP',
+  'VABB', 'ZBAA', 'ZSPD', 'ZGGG', 'RCTP', 'NZAA', 'YSSY', 'YMML',
+  // Major European
+  'EGCC', 'EDDM', 'EDDK', 'ELLX', 'EBLG', 'LSZH', 'LOWW', 'ENGM', 'EKCH',
+  'ESSA', 'EFHK', 'EPWA', 'LKPR', 'LHBP', 'LGAV',
+  // Americas
+  'CYYZ', 'CYVR', 'CYMX', 'MMMX', 'SBGR', 'SCEL', 'SAEZ', 'SKBO', 'SVMI',
+  'MROC', 'MPTO', 'TNCM', 'TJSJ',
+  // Africa / Middle East
+  'FAOR', 'HECA', 'DNMM', 'GOBD', 'OEJN', 'OERK', 'OTHH', 'OMAA',
+]);
+
 /** SQL fragment to exclude military airports from charter generation. */
 const EXCLUDE_MILITARY_SQL = `
   AND a.name NOT LIKE '%Air Force Base%'
@@ -172,17 +193,17 @@ export class CharterGeneratorService {
         if (roll < 0.70) {
           // Domestic: hub → same-country destination
           origin = pickWeightedAirport(hubs);
-          destination = this.findRandomDestination(db, origin, maxRange, origin.country, minRunway);
+          destination = this.findRandomDestination(db, origin, maxRange, origin.country, minRunway, aircraft.cat, hubs);
         } else if (roll < 0.90) {
           // International: hub → any country
           origin = pickWeightedAirport(hubs);
-          destination = this.findRandomDestination(db, origin, maxRange, null, minRunway);
+          destination = this.findRandomDestination(db, origin, maxRange, null, minRunway, aircraft.cat, hubs);
         } else {
           // Global: any large airport → any within range
           const globalOrigin = this.findRandomLargeAirport(db, minRunway);
           if (!globalOrigin) continue;
           origin = { icao: globalOrigin.ident, lat: globalOrigin.latitude_deg, lon: globalOrigin.longitude_deg, country: globalOrigin.iso_country, is_hub: 0, handler: null };
-          destination = this.findRandomDestination(db, origin, maxRange, null, minRunway);
+          destination = this.findRandomDestination(db, origin, maxRange, null, minRunway, aircraft.cat, hubs);
         }
 
         if (!origin || !destination) continue;
@@ -243,7 +264,7 @@ export class CharterGeneratorService {
         // Generate 1-2 charters from this aircraft's location
         const chartersForAc = 1 + Math.floor(Math.random() * 2);
         for (let j = 0; j < chartersForAc && locationCount < locationTarget; j++) {
-          const dest = this.findRandomDestination(db, origin, maxRange, null, minRwy);
+          const dest = this.findRandomDestination(db, origin, maxRange, null, minRwy, ac.cat, hubs);
           if (!dest || origin.icao === dest.ident) continue;
 
           const distNm = haversineNm(origin.lat, origin.lon, dest.latitude_deg, dest.longitude_deg);
@@ -305,13 +326,20 @@ export class CharterGeneratorService {
     maxRangeNm: number,
     countryFilter: string | null,
     minRunwayFt: number,
+    aircraftCat: string | null,
+    hubs: AirportRow[],
   ): OaAirportRow | null {
     const bbox = boundingBox(origin.lat, origin.lon, maxRangeNm);
+
+    // Heavy aircraft (B77F, MD1F, etc.) only go to large airports
+    const typeFilter = aircraftCat?.toUpperCase() === 'H'
+      ? "a.type = 'large_airport'"
+      : "a.type IN ('large_airport', 'medium_airport')";
 
     let sql = `
       SELECT a.ident, a.latitude_deg, a.longitude_deg, a.type, a.iso_country
       FROM oa_airports a
-      WHERE a.type IN ('large_airport', 'medium_airport')
+      WHERE ${typeFilter}
         AND a.latitude_deg BETWEEN ? AND ?
         AND a.longitude_deg BETWEEN ? AND ?
         AND a.ident != ?
@@ -331,20 +359,39 @@ export class CharterGeneratorService {
       params.push(countryFilter);
     }
 
-    // Bias towards large airports: large_airport gets 4× higher selection probability
+    // Bias towards large airports: large_airport gets 6× higher selection probability
     // ABS() required because SQLite RANDOM() returns signed integers — dividing
-    // a negative value by 4 makes it LESS negative (higher), reversing the bias.
-    sql += ' ORDER BY (ABS(RANDOM()) / (CASE WHEN a.type = \'large_airport\' THEN 4.0 ELSE 1.0 END)) LIMIT 20';
+    // a negative value by 6 makes it LESS negative (higher), reversing the bias.
+    sql += ' ORDER BY (ABS(RANDOM()) / (CASE WHEN a.type = \'large_airport\' THEN 6.0 ELSE 1.0 END)) LIMIT 40';
 
     const candidates = db.prepare(sql).all(...params) as OaAirportRow[];
 
-    // Filter by exact haversine distance
+    // Weight candidates in TypeScript for MSFS-notable and network bias
+    const weighted: { candidate: OaAirportRow; weight: number }[] = [];
     for (const c of candidates) {
       const dist = haversineNm(origin.lat, origin.lon, c.latitude_deg, c.longitude_deg);
-      if (dist <= maxRangeNm && dist >= 50) return c;
+      if (dist > maxRangeNm || dist < 50) continue;
+
+      let weight = 1.0;
+      if (c.type === 'large_airport') weight *= 6.0;
+      if (MSFS_NOTABLE_AIRPORTS.has(c.ident)) weight *= 3.0;
+      // Bias toward airports in our route network
+      const inNetwork = hubs.some(h => h.icao === c.ident);
+      if (inNetwork) weight *= 5.0;
+
+      weighted.push({ candidate: c, weight });
     }
 
-    return null;
+    if (weighted.length === 0) return null;
+
+    // Weighted random selection
+    const totalW = weighted.reduce((s, w) => s + w.weight, 0);
+    let r = Math.random() * totalW;
+    for (const w of weighted) {
+      r -= w.weight;
+      if (r <= 0) return w.candidate;
+    }
+    return weighted[weighted.length - 1].candidate;
   }
 
   private findRandomLargeAirport(db: ReturnType<typeof getDb>, minRunwayFt: number): OaAirportRow | null {
