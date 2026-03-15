@@ -316,6 +316,7 @@ export interface FleetMaintenanceStatusRow {
   icao_type: string;
   name: string;
   status: string;
+  created_at: string | null;
   total_hours: number | null;
   total_cycles: number | null;
   hours_at_last_a: number | null;

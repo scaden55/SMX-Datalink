@@ -82,7 +82,7 @@ export class MaintenanceService {
   getFleetStatus(): FleetMaintenanceStatus[] {
     const db = getDb();
     const rows = db.prepare(`
-      SELECT f.id, f.registration, f.icao_type, f.name, f.status,
+      SELECT f.id, f.registration, f.icao_type, f.name, f.status, f.created_at,
              h.total_hours, h.total_cycles,
              h.hours_at_last_a, h.hours_at_last_b,
              h.hours_at_last_c, h.cycles_at_last_c,
@@ -98,7 +98,7 @@ export class MaintenanceService {
   getAircraftStatus(aircraftId: number): FleetMaintenanceStatus | undefined {
     const db = getDb();
     const row = db.prepare(`
-      SELECT f.id, f.registration, f.icao_type, f.name, f.status,
+      SELECT f.id, f.registration, f.icao_type, f.name, f.status, f.created_at,
              h.total_hours, h.total_cycles,
              h.hours_at_last_a, h.hours_at_last_b,
              h.hours_at_last_c, h.cycles_at_last_c,
@@ -169,7 +169,7 @@ export class MaintenanceService {
   // Check Due Computation (Critical Business Logic)
   // ═══════════════════════════════════════════════════════════
 
-  computeChecksDue(hours: AircraftHoursRow, checks: MaintenanceCheckRow[]): CheckDueStatus[] {
+  computeChecksDue(hours: AircraftHoursRow, checks: MaintenanceCheckRow[], fleetCreatedAt?: string): CheckDueStatus[] {
     const results: CheckDueStatus[] = [];
     const now = new Date();
 
@@ -249,9 +249,20 @@ export class MaintenanceService {
               isOverdue = true;
             }
           } else if (!hours.last_d_check_date && check.interval_months != null) {
-            // No D check on record — mark overdue with negative remainingHours for correct sorting
-            isOverdue = true;
-            remainingHours = -1;
+            // No D check on record — use fleet creation date as baseline
+            const baseline = fleetCreatedAt ? new Date(fleetCreatedAt) : null;
+            if (baseline) {
+              const dueDate = new Date(baseline);
+              dueDate.setMonth(dueDate.getMonth() + check.interval_months);
+              dueAtDate = dueDate.toISOString().split('T')[0];
+              if (now >= dueDate) {
+                isOverdue = true;
+              }
+            } else {
+              // No creation date available — mark overdue
+              isOverdue = true;
+              remainingHours = -1;
+            }
           }
           // D checks can also have interval_hours
           if (check.interval_hours != null) {
@@ -292,8 +303,8 @@ export class MaintenanceService {
     const db = getDb();
 
     // Get aircraft info
-    const fleet = db.prepare('SELECT id, registration, icao_type, status FROM fleet WHERE id = ?')
-      .get(aircraftId) as { id: number; registration: string; icao_type: string; status: string } | undefined;
+    const fleet = db.prepare('SELECT id, registration, icao_type, status, created_at FROM fleet WHERE id = ?')
+      .get(aircraftId) as { id: number; registration: string; icao_type: string; status: string; created_at: string | null } | undefined;
     if (!fleet) return;
 
     // Check overdue maintenance checks
@@ -306,7 +317,7 @@ export class MaintenanceService {
     if (hours) {
       const checks = getChecksForType(fleet.icao_type);
 
-      const checksDue = this.computeChecksDue(hours, checks);
+      const checksDue = this.computeChecksDue(hours, checks, fleet.created_at ?? undefined);
       const overdueChecks = checksDue.filter(c => c.isOverdue);
       if (overdueChecks.length > 0) {
         shouldGround = true;
@@ -370,8 +381,8 @@ export class MaintenanceService {
   returnToService(aircraftId: number, actorId: number): boolean {
     const db = getDb();
 
-    const fleet = db.prepare('SELECT id, registration, icao_type, status FROM fleet WHERE id = ?')
-      .get(aircraftId) as { id: number; registration: string; icao_type: string; status: string } | undefined;
+    const fleet = db.prepare('SELECT id, registration, icao_type, status, created_at FROM fleet WHERE id = ?')
+      .get(aircraftId) as { id: number; registration: string; icao_type: string; status: string; created_at: string | null } | undefined;
     if (!fleet) return false;
 
     // Check for outstanding items
@@ -380,7 +391,7 @@ export class MaintenanceService {
 
     if (hours) {
       const checks = getChecksForType(fleet.icao_type);
-      const checksDue = this.computeChecksDue(hours, checks);
+      const checksDue = this.computeChecksDue(hours, checks, fleet.created_at ?? undefined);
       if (checksDue.some(c => c.isOverdue)) {
         logger.warn(TAG, `Cannot return ${fleet.registration} to service: overdue checks remain`);
         return false;
@@ -1416,7 +1427,7 @@ export class MaintenanceService {
 
     const checks = getChecksForType(row.icao_type);
 
-    const checksDue = this.computeChecksDue(hoursRow, checks);
+    const checksDue = this.computeChecksDue(hoursRow, checks, row.created_at ?? undefined);
     const hasOverdueChecks = checksDue.some(c => c.isOverdue);
 
     // Check for overdue ADs
