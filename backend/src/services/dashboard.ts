@@ -6,6 +6,27 @@ export interface FlightsPerDay {
   count: number;
 }
 
+export interface PeriodPnlEntry {
+  periodKey: string;
+  totalRevenue: number;
+  totalDoc: number;
+  totalFixed: number;
+  ebitda: number;
+  netIncome: number;
+  ratm: number;
+  catm: number;
+  avgLoadFactor: number;
+  avgUtilizationHrs: number;
+  totalFlights: number;
+}
+
+export interface RouteMarginEntry {
+  depIcao: string;
+  arrIcao: string;
+  avgMarginPct: number;
+  flights: number;
+}
+
 export interface DashboardData {
   activeFlights: number;
   pendingPireps: number;
@@ -16,6 +37,8 @@ export interface DashboardData {
   maintenanceAlerts: MaintenanceAlert[];
   pilotActivity: PilotActivity[];
   financialSummary: FinancialSummary;
+  periodPnl: PeriodPnlEntry[];
+  routeMargins: RouteMarginEntry[];
 }
 
 interface RecentFlight {
@@ -258,6 +281,72 @@ export function getDashboardData(db: Database.Database): DashboardData {
 
   const financialSummary: FinancialSummary = { months, income, costs, profit };
 
+  // 9. Period P&L from finance_period_pnl (last 6 monthly periods)
+  let periodPnl: PeriodPnlEntry[] = [];
+  try {
+    const pnlRows = db.prepare(`
+      SELECT period_key, total_revenue, total_variable_cost, total_fixed_cost,
+             ebitda, net_income, ratm, catm, avg_load_factor, avg_utilization_hrs, total_flights
+      FROM finance_period_pnl
+      WHERE period_type = 'monthly'
+      ORDER BY period_key DESC
+      LIMIT 6
+    `).all() as Array<{
+      period_key: string;
+      total_revenue: number;
+      total_variable_cost: number;
+      total_fixed_cost: number;
+      ebitda: number;
+      net_income: number;
+      ratm: number;
+      catm: number;
+      avg_load_factor: number;
+      avg_utilization_hrs: number;
+      total_flights: number;
+    }>;
+    periodPnl = pnlRows.map(r => ({
+      periodKey: r.period_key,
+      totalRevenue: Math.round(r.total_revenue * 100) / 100,
+      totalDoc: Math.round(r.total_variable_cost * 100) / 100,
+      totalFixed: Math.round(r.total_fixed_cost * 100) / 100,
+      ebitda: Math.round(r.ebitda * 100) / 100,
+      netIncome: Math.round(r.net_income * 100) / 100,
+      ratm: Math.round(r.ratm * 100) / 100,
+      catm: Math.round(r.catm * 100) / 100,
+      avgLoadFactor: Math.round(r.avg_load_factor * 10) / 10,
+      avgUtilizationHrs: Math.round(r.avg_utilization_hrs * 10) / 10,
+      totalFlights: r.total_flights,
+    }));
+  } catch {
+    // finance_period_pnl table may not exist yet
+  }
+
+  // 10. Route margins from finance_flight_pnl (top 10 by margin)
+  let routeMargins: RouteMarginEntry[] = [];
+  try {
+    const routeRows = db.prepare(`
+      SELECT l.dep_icao, l.arr_icao, AVG(p.margin_pct) AS avg_margin_pct, COUNT(*) AS flights
+      FROM finance_flight_pnl p
+      JOIN logbook l ON l.id = p.logbook_id
+      GROUP BY l.dep_icao, l.arr_icao
+      ORDER BY avg_margin_pct DESC
+      LIMIT 10
+    `).all() as Array<{
+      dep_icao: string;
+      arr_icao: string;
+      avg_margin_pct: number;
+      flights: number;
+    }>;
+    routeMargins = routeRows.map(r => ({
+      depIcao: r.dep_icao,
+      arrIcao: r.arr_icao,
+      avgMarginPct: Math.round(r.avg_margin_pct * 10) / 10,
+      flights: r.flights,
+    }));
+  } catch {
+    // finance_flight_pnl table may not exist yet
+  }
+
   return {
     activeFlights,
     pendingPireps,
@@ -268,5 +357,7 @@ export function getDashboardData(db: Database.Database): DashboardData {
     maintenanceAlerts,
     pilotActivity,
     financialSummary,
+    periodPnl,
+    routeMargins,
   };
 }

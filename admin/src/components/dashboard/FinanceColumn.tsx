@@ -1,5 +1,5 @@
 import { memo } from 'react';
-import type { FinancialKPIs } from '../../types/dashboard';
+import type { FinancialKPIs, PeriodPnlEntry, RouteMarginEntry } from '../../types/dashboard';
 import { AreaChart, BarTrend, Sparkline } from './MiniCharts';
 
 const Divider = () => <div style={{ height: 1, background: 'rgba(255,255,255,0.04)' }} />;
@@ -14,23 +14,79 @@ function fmtPct(n: number): string {
   return `${Math.round(n)}%`;
 }
 
-export const FinanceColumn = memo(function FinanceColumn({ data }: { data: FinancialKPIs }) {
+interface FinanceColumnProps {
+  data: FinancialKPIs;
+  periodPnl?: PeriodPnlEntry[];
+  routeMargins?: RouteMarginEntry[];
+}
+
+export const FinanceColumn = memo(function FinanceColumn({ data, periodPnl, routeMargins }: FinanceColumnProps) {
   const { balance, revenue, costs, profitability, network } = data;
 
-  // Per-unit rates: revenue per RTM and cost per ATM (in $/ton-mile)
-  const revenuePerRtm = profitability.ratm > 0 ? balance.totalIncome / profitability.ratm : 0;
-  const costPerAtm = profitability.catm > 0 ? balance.totalExpenses / profitability.catm : 0;
-  const spread = revenuePerRtm - costPerAtm;
-  const spreadPct = revenuePerRtm > 0 ? (spread / revenuePerRtm) * 100 : 0;
+  // Use period P&L data when available (pre-computed RATM/CATM from finance_period_pnl)
+  const latestPeriod = periodPnl && periodPnl.length > 0 ? periodPnl[0] : null;
+  // Period P&L is ordered DESC, reverse for chronological sparklines
+  const chronologicalPnl = periodPnl ? [...periodPnl].reverse() : [];
 
-  // Route margins: top 2 best + bottom 2 worst
-  const sorted = [...profitability.marginByRoute].sort((a, b) => b.marginPct - a.marginPct);
-  const routeMargins = [...sorted.slice(0, 2), ...sorted.slice(-2)].slice(0, 4);
+  // RATM / CATM: prefer period P&L values, fall back to computed
+  const ratmValue = latestPeriod && latestPeriod.ratm > 0
+    ? latestPeriod.ratm
+    : (profitability.ratm > 0 ? balance.totalIncome / profitability.ratm : 0);
+  const catmValue = latestPeriod && latestPeriod.catm > 0
+    ? latestPeriod.catm
+    : (profitability.catm > 0 ? balance.totalExpenses / profitability.catm : 0);
+  const spread = ratmValue - catmValue;
+  const spreadPct = ratmValue > 0 ? (spread / ratmValue) * 100 : 0;
 
-  const yieldData = network.yieldTrend.map(y => y.yield);
-  const yieldLabels = network.yieldTrend.length > 0
-    ? [network.yieldTrend[0].label, network.yieldTrend[network.yieldTrend.length - 1].label]
-    : [];
+  // RATM/CATM trend from period P&L history
+  const ratmTrendData = chronologicalPnl.length > 0
+    ? chronologicalPnl.map(p => p.ratm)
+    : (profitability.ratmTrend ?? []);
+  const catmTrendData = chronologicalPnl.length > 0
+    ? chronologicalPnl.map(p => p.catm)
+    : (profitability.catmTrend ?? []);
+
+  // Route margins: prefer dashboard routeMargins, fall back to profitability.marginByRoute
+  let displayRoutes: { route: string; marginPct: number }[];
+  if (routeMargins && routeMargins.length > 0) {
+    // Show top 2 + bottom 2
+    const top2 = routeMargins.slice(0, 2).map(r => ({
+      route: `${r.depIcao}-${r.arrIcao}`,
+      marginPct: r.avgMarginPct,
+    }));
+    const bottom2 = routeMargins.slice(-2).map(r => ({
+      route: `${r.depIcao}-${r.arrIcao}`,
+      marginPct: r.avgMarginPct,
+    }));
+    // Deduplicate if fewer than 4 routes
+    const seen = new Set<string>();
+    displayRoutes = [...top2, ...bottom2].filter(r => {
+      if (seen.has(r.route)) return false;
+      seen.add(r.route);
+      return true;
+    }).slice(0, 4);
+  } else {
+    const sorted = [...profitability.marginByRoute].sort((a, b) => b.marginPct - a.marginPct);
+    displayRoutes = [...sorted.slice(0, 2), ...sorted.slice(-2)]
+      .slice(0, 4)
+      .map(r => ({ route: r.route, marginPct: r.marginPct }));
+  }
+
+  // Yield trend: prefer period P&L revenue for sparkline, fall back to network yieldTrend
+  const yieldData = chronologicalPnl.length > 0
+    ? chronologicalPnl.map(p => p.totalRevenue)
+    : network.yieldTrend.map(y => y.yield);
+  const yieldLabels = chronologicalPnl.length > 0
+    ? [chronologicalPnl[0].periodKey, chronologicalPnl[chronologicalPnl.length - 1].periodKey]
+    : network.yieldTrend.length > 0
+      ? [network.yieldTrend[0].label, network.yieldTrend[network.yieldTrend.length - 1].label]
+      : [];
+
+  // Key metrics: prefer period P&L values when available
+  const totalFlights = latestPeriod ? latestPeriod.totalFlights : revenue.totalFlights;
+  const loadFactor = latestPeriod && latestPeriod.avgLoadFactor > 0
+    ? latestPeriod.avgLoadFactor
+    : revenue.fleetAvgLoadFactor;
 
   return (
     <div className="flex flex-col gap-4 overflow-hidden pt-0.5">
@@ -66,18 +122,18 @@ export const FinanceColumn = memo(function FinanceColumn({ data }: { data: Finan
       {/* RATM + CATM side by side */}
       <div className="flex gap-4">
         <div className="flex-1">
-          <BarTrend data={profitability.ratmTrend ?? []} color="#4ade80" height={32} />
+          <BarTrend data={ratmTrendData} color="#4ade80" height={32} />
           <div className="mt-1.5" style={{ color: '#5a5a5a', fontSize: 10 }}>RATM</div>
           <div className="font-mono font-semibold" style={{ color: '#4ade80', fontSize: 20, lineHeight: 1 }}>
-            ${revenuePerRtm.toFixed(2)}
+            ${ratmValue.toFixed(2)}
           </div>
           <div style={{ color: '#4a4a4a', fontSize: 9 }}>/ton-mi</div>
         </div>
         <div className="flex-1">
-          <BarTrend data={profitability.catmTrend ?? []} color="#4F6CCD" height={32} />
+          <BarTrend data={catmTrendData} color="#4F6CCD" height={32} />
           <div className="mt-1.5" style={{ color: '#5a5a5a', fontSize: 10 }}>CATM</div>
           <div className="font-mono font-semibold" style={{ color: '#f0f0f0', fontSize: 20, lineHeight: 1 }}>
-            ${costPerAtm.toFixed(2)}
+            ${catmValue.toFixed(2)}
           </div>
           <div style={{ color: '#4a4a4a', fontSize: 9 }}>/ton-mi</div>
         </div>
@@ -98,8 +154,8 @@ export const FinanceColumn = memo(function FinanceColumn({ data }: { data: Finan
       <div className="grid grid-cols-3" style={{ gap: '8px 10px' }}>
         {[
           { label: 'RTM', value: fmt(revenue.totalRtm, '') },
-          { label: 'Fleet LF', value: fmtPct(revenue.fleetAvgLoadFactor) },
-          { label: 'Flights', value: String(revenue.totalFlights) },
+          { label: 'Fleet LF', value: fmtPct(loadFactor) },
+          { label: 'Flights', value: String(totalFlights) },
           { label: 'Fuel/BH', value: fmt(costs.fuelPerBlockHour) },
           { label: 'Crew/BH', value: fmt(costs.crewPerBlockHour) },
           { label: 'Fuel Srchg', value: fmtPct(revenue.fuelSurchargeRecovery) },
@@ -117,7 +173,7 @@ export const FinanceColumn = memo(function FinanceColumn({ data }: { data: Finan
       <div className="flex-1">
         <div className="uppercase" style={{ color: '#4a4a4a', fontSize: 9, letterSpacing: 0.5, marginBottom: 6 }}>Route Margins</div>
         <div className="font-mono flex flex-col gap-1" style={{ fontSize: 12 }}>
-          {routeMargins.map(r => (
+          {displayRoutes.map(r => (
             <div key={r.route} className="flex justify-between">
               <span style={{ color: '#8a8a8a' }}>{r.route}</span>
               <span style={{ color: r.marginPct >= 0 ? '#4ade80' : '#f87171' }}>
@@ -130,7 +186,9 @@ export const FinanceColumn = memo(function FinanceColumn({ data }: { data: Finan
 
       {/* Yield Trend */}
       <div>
-        <div className="uppercase" style={{ color: '#4a4a4a', fontSize: 9, letterSpacing: 0.5 }}>Yield Trend</div>
+        <div className="uppercase" style={{ color: '#4a4a4a', fontSize: 9, letterSpacing: 0.5 }}>
+          {chronologicalPnl.length > 0 ? 'Revenue Trend' : 'Yield Trend'}
+        </div>
         <div className="mt-1">
           <Sparkline data={yieldData} height={24} />
         </div>

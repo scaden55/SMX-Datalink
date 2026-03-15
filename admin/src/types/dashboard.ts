@@ -1,3 +1,25 @@
+// ── Period P&L (from finance_period_pnl) ─────────────────────
+export interface PeriodPnlEntry {
+  periodKey: string;
+  totalRevenue: number;
+  totalDoc: number;
+  totalFixed: number;
+  ebitda: number;
+  netIncome: number;
+  ratm: number;
+  catm: number;
+  avgLoadFactor: number;
+  avgUtilizationHrs: number;
+  totalFlights: number;
+}
+
+export interface RouteMarginEntry {
+  depIcao: string;
+  arrIcao: string;
+  avgMarginPct: number;
+  flights: number;
+}
+
 // ── Financial KPIs (existing endpoint, extended) ─────────────
 export interface MonthData {
   label: string;

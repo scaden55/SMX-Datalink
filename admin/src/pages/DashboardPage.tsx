@@ -15,6 +15,8 @@ import type {
   VatsimPilotSummary,
   AcarsMessage,
   HubWeather,
+  PeriodPnlEntry,
+  RouteMarginEntry,
 } from '@/types/dashboard';
 import { FinanceColumn } from '@/components/dashboard/FinanceColumn';
 import { MaintenanceColumn } from '@/components/dashboard/MaintenanceColumn';
@@ -63,6 +65,8 @@ export function DashboardPage() {
   const [vatsimPilots, setVatsimPilots] = useState<VatsimPilotSummary[]>([]);
   const [acarsMessages, setAcarsMessages] = useState<AcarsMessage[]>([]);
   const [hubWeather, setHubWeather] = useState<HubWeather[]>([]);
+  const [periodPnl, setPeriodPnl] = useState<PeriodPnlEntry[]>([]);
+  const [routeMargins, setRouteMargins] = useState<RouteMarginEntry[]>([]);
 
   // ── Socket ──────────────────────────────────────────────
   useEffect(() => {
@@ -120,8 +124,14 @@ export function DashboardPage() {
 
   const fetchDashboard = useCallback(async () => {
     try {
-      const data = await api.get<{ pilotActivity: PilotActivityEntry[] }>('/api/admin/dashboard');
+      const data = await api.get<{
+        pilotActivity: PilotActivityEntry[];
+        periodPnl?: PeriodPnlEntry[];
+        routeMargins?: RouteMarginEntry[];
+      }>('/api/admin/dashboard');
       if (data.pilotActivity) setPilotActivity(data.pilotActivity);
+      if (data.periodPnl) setPeriodPnl(data.periodPnl);
+      if (data.routeMargins) setRouteMargins(data.routeMargins);
     } catch { /* ignore */ }
   }, []);
 
@@ -235,7 +245,7 @@ export function DashboardPage() {
         <div className="min-h-0 overflow-y-auto" style={{ scrollbarWidth: 'none', maxHeight: '100%' }}>
           <div className="flex flex-col gap-2">
             <div className="rounded-lg p-4" style={{ background: 'rgba(0, 0, 0, 0.45)' }}>
-              <FinanceColumn data={kpis} />
+              <FinanceColumn data={kpis} periodPnl={periodPnl} routeMargins={routeMargins} />
             </div>
             <div className="rounded-lg p-4" style={{ background: 'rgba(0, 0, 0, 0.45)' }}>
               <OpsFleetColumn
