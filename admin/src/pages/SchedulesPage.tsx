@@ -1426,6 +1426,16 @@ interface RevenueEstimate {
   blockHours: number;
 }
 
+interface CostEstimate {
+  fuelCost: number;
+  crewCost: number;
+  landingFees: number;
+  handlingFees: number;
+  navFees: number;
+  maintenanceReserve: number;
+  totalDoc: number;
+}
+
 function RouteDetailPanel({
   schedule,
   onClose,
@@ -1433,6 +1443,7 @@ function RouteDetailPanel({
   onClone,
   onToggle,
   onDelete,
+  laneRates,
 }: {
   schedule: Schedule;
   onClose: () => void;
@@ -1440,10 +1451,14 @@ function RouteDetailPanel({
   onClone: (s: Schedule) => void;
   onToggle: (s: Schedule) => void;
   onDelete: (s: Schedule) => void;
+  laneRates: Map<string, { ratePerLb: number; demandScore: number; supplyScore: number }>;
 }) {
   const [estimate, setEstimate] = useState<RevenueEstimate | null>(null);
   const [estimateLoading, setEstimateLoading] = useState(false);
+  const [costEstimate, setCostEstimate] = useState<CostEstimate | null>(null);
+  const [tiers, setTiers] = useState<any[]>([]);
 
+  // Fetch revenue estimate
   useEffect(() => {
     if (schedule.distanceNm > 0 && schedule.flightTimeMin > 0) {
       setEstimateLoading(true);
@@ -1456,6 +1471,38 @@ function RouteDetailPanel({
         .finally(() => setEstimateLoading(false));
     }
   }, [schedule.distanceNm, schedule.flightTimeMin]);
+
+  // Fetch airport tiers for cost estimation
+  useEffect(() => {
+    api.get<any[]>('/api/admin/economics/airport-tiers')
+      .then((res) => setTiers(Array.isArray(res) ? res : (res as any).tiers ?? []))
+      .catch(() => {});
+  }, []);
+
+  // Calculate cost estimate when we have tiers and estimate data
+  useEffect(() => {
+    if (!estimate || tiers.length === 0) { setCostEstimate(null); return; }
+    const getTierRates = (tier: string) => tiers.find((t: any) => t.tier === tier) ?? tiers.find((t: any) => t.tier === 'regional');
+    const depTier = getTierRates('major_hub'); // default assumption
+    const arrTier = getTierRates('regional');
+    if (!depTier || !arrTier) return;
+
+    const blockHours = schedule.flightTimeMin / 60;
+    const mtow = 150000; // mid-range default
+    const fuelBurnLbs = blockHours * 5000; // ~5000 lbs/hr average
+
+    const fuelCost = fuelBurnLbs * (depTier.fuel_price_per_lb ?? 0.35);
+    const crewCost = estimate.pilotPay;
+    const landingFees = (mtow / 1000) * ((depTier.landing_per_1000lbs ?? 5.5) + (arrTier.landing_per_1000lbs ?? 3.0));
+    const handlingFees = (mtow / 1000) * ((depTier.handling_per_1000lbs ?? 4.0) + (arrTier.handling_per_1000lbs ?? 2.5));
+    const navFees = schedule.distanceNm * (depTier.nav_per_nm ?? 0.06);
+    const maintenanceReserve = blockHours * 195; // ~$195/FH default reserve
+    const totalDoc = fuelCost + crewCost + landingFees + handlingFees + navFees + maintenanceReserve;
+
+    setCostEstimate({ fuelCost, crewCost, landingFees, handlingFees, navFees, maintenanceReserve, totalDoc });
+  }, [estimate, tiers, schedule.distanceNm, schedule.flightTimeMin]);
+
+  const lane = laneRates.get(`${schedule.depIcao}-${schedule.arrIcao}`);
 
   const fType = getFlightType(schedule.aircraftType, schedule.flightType);
   const flightHours = schedule.flightTimeMin > 0 ? Math.floor(schedule.flightTimeMin / 60) : 0;
@@ -1578,11 +1625,39 @@ function RouteDetailPanel({
           </div>
         </div>
 
-        {/* Revenue Estimate */}
+        {/* Lane Rate & Demand */}
+        {lane && (
+          <div>
+            <div style={sectionLabel}>
+              <DollarSign size={10} style={{ display: 'inline', verticalAlign: 'middle', marginRight: 4 }} />
+              Lane Economics
+            </div>
+            <div style={{
+              display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 6,
+            }}>
+              {[
+                { label: 'Lane Rate', value: `$${lane.ratePerLb.toFixed(2)}/lb`, color: 'var(--text-primary)' },
+                { label: 'Demand', value: lane.demandScore.toFixed(2), color: lane.demandScore > 0.7 ? 'var(--accent-emerald)' : lane.demandScore > 0.4 ? 'var(--accent-amber)' : 'var(--accent-red)' },
+                { label: 'Supply', value: lane.supplyScore.toFixed(1), color: lane.supplyScore > 2 ? 'var(--accent-red)' : lane.supplyScore > 1 ? 'var(--accent-amber)' : 'var(--accent-emerald)' },
+              ].map((item) => (
+                <div key={item.label} style={{
+                  padding: '8px 10px', borderRadius: 6,
+                  border: '1px solid var(--border-primary)', background: 'var(--surface-2)',
+                  textAlign: 'center',
+                }}>
+                  <div style={{ fontSize: 9, color: 'var(--text-tertiary)', textTransform: 'uppercase', fontWeight: 600, letterSpacing: 0.5 }}>{item.label}</div>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: item.color, fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums', marginTop: 2 }}>{item.value}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Flight P&L Estimate */}
         <div>
           <div style={sectionLabel}>
             <DollarSign size={10} style={{ display: 'inline', verticalAlign: 'middle', marginRight: 4 }} />
-            Estimated Revenue (per flight)
+            Estimated P&L (per flight)
           </div>
           {estimateLoading ? (
             <div style={{ display: 'flex', justifyContent: 'center', padding: 20 }}>
@@ -1595,48 +1670,82 @@ function RouteDetailPanel({
               background: 'var(--surface-2)',
               overflow: 'hidden',
             }}>
-              {/* Total revenue highlight */}
+              {/* Revenue section */}
               <div style={{
-                padding: '12px',
+                padding: '10px 12px',
                 borderBottom: '1px solid var(--border-primary)',
                 background: 'var(--accent-blue-bg)',
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
               }}>
-                <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--accent-blue-bright)' }}>Total Revenue</span>
-                <span style={{ fontSize: 18, fontWeight: 700, color: 'var(--accent-blue-bright)', fontFamily: 'var(--font-sans)' }}>
-                  ${estimate.revenue.total.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
-                </span>
-              </div>
-              {[
-                { label: 'Standard Cargo', value: `$${estimate.revenue.standard.toLocaleString(undefined, { maximumFractionDigits: 0 })}` },
-                { label: 'Non-Standard', value: `$${estimate.revenue.nonstandard.toLocaleString(undefined, { maximumFractionDigits: 0 })}` },
-                { label: 'Hazard', value: `$${estimate.revenue.hazard.toLocaleString(undefined, { maximumFractionDigits: 0 })}` },
-                { label: 'Pilot Pay', value: `$${estimate.pilotPay.toLocaleString(undefined, { maximumFractionDigits: 0 })}` },
-                { label: 'Net (Rev - Pay)', value: `$${(estimate.revenue.total - estimate.pilotPay).toLocaleString(undefined, { maximumFractionDigits: 0 })}`, highlight: true },
-              ].map((row, i, arr) => (
-                <div
-                  key={row.label}
-                  style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    padding: '8px 12px',
-                    borderBottom: i < arr.length - 1 ? '1px solid var(--border-primary)' : 'none',
-                    fontSize: 12,
-                  }}
-                >
-                  <span style={{ color: 'var(--text-secondary)' }}>{row.label}</span>
-                  <span style={{
-                    color: row.highlight ? 'var(--accent-emerald)' : 'var(--text-primary)',
-                    fontWeight: row.highlight ? 600 : 500,
-                    fontFamily: 'var(--font-sans)',
-                  }}>
-                    {row.value}
+                <div style={{ fontSize: 9, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5, color: 'var(--text-tertiary)', marginBottom: 4 }}>Revenue</div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Total Revenue</span>
+                  <span style={{ fontSize: 16, fontWeight: 700, color: 'var(--accent-emerald)', fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums' }}>
+                    ${estimate.revenue.total.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                   </span>
                 </div>
+              </div>
+              {[
+                { label: 'Standard Cargo', value: estimate.revenue.standard },
+                { label: 'Non-Standard', value: estimate.revenue.nonstandard },
+                { label: 'Hazard', value: estimate.revenue.hazard },
+              ].map((row) => (
+                <div key={row.label} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 12px', fontSize: 11, borderBottom: '1px solid var(--border-primary)' }}>
+                  <span style={{ color: 'var(--text-tertiary)' }}>{row.label}</span>
+                  <span style={{ color: 'var(--text-secondary)', fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums' }}>${row.value.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
+                </div>
               ))}
+
+              {/* Cost section */}
+              {costEstimate && (
+                <>
+                  <div style={{ padding: '10px 12px', borderBottom: '1px solid var(--border-primary)' }}>
+                    <div style={{ fontSize: 9, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5, color: 'var(--text-tertiary)', marginBottom: 4 }}>Direct Operating Costs</div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Total DOC</span>
+                      <span style={{ fontSize: 16, fontWeight: 700, color: 'var(--accent-red)', fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums' }}>
+                        -${costEstimate.totalDoc.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                      </span>
+                    </div>
+                  </div>
+                  {[
+                    { label: 'Fuel', value: costEstimate.fuelCost },
+                    { label: 'Crew', value: costEstimate.crewCost },
+                    { label: 'Landing Fees', value: costEstimate.landingFees },
+                    { label: 'Handling', value: costEstimate.handlingFees },
+                    { label: 'Nav Fees', value: costEstimate.navFees },
+                    { label: 'Maint Reserve', value: costEstimate.maintenanceReserve },
+                  ].map((row) => (
+                    <div key={row.label} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 12px', fontSize: 11, borderBottom: '1px solid var(--border-primary)' }}>
+                      <span style={{ color: 'var(--text-tertiary)' }}>{row.label}</span>
+                      <span style={{ color: 'var(--text-secondary)', fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums' }}>-${row.value.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
+                    </div>
+                  ))}
+                </>
+              )}
+
+              {/* Operating Margin */}
+              {costEstimate && (() => {
+                const margin = estimate.revenue.total - costEstimate.totalDoc;
+                const marginPct = estimate.revenue.total > 0 ? (margin / estimate.revenue.total) * 100 : 0;
+                const isPositive = margin >= 0;
+                return (
+                  <div style={{
+                    padding: '10px 12px',
+                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                    background: isPositive ? 'rgba(74,222,128,0.06)' : 'rgba(248,113,113,0.06)',
+                  }}>
+                    <span style={{ fontSize: 12, fontWeight: 600, color: isPositive ? 'var(--accent-emerald)' : 'var(--accent-red)' }}>Operating Margin</span>
+                    <div style={{ textAlign: 'right' }}>
+                      <span style={{ fontSize: 16, fontWeight: 700, color: isPositive ? 'var(--accent-emerald)' : 'var(--accent-red)', fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums' }}>
+                        {isPositive ? '+' : ''}${margin.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                      </span>
+                      <span style={{ fontSize: 11, color: isPositive ? 'var(--accent-emerald)' : 'var(--accent-red)', marginLeft: 6, fontFamily: 'var(--font-mono)' }}>
+                        {marginPct.toFixed(1)}%
+                      </span>
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
           ) : (
             <div style={{
@@ -1654,7 +1763,8 @@ function RouteDetailPanel({
 
           {estimate && (
             <div style={{ marginTop: 8, fontSize: 10, color: 'var(--text-tertiary)', lineHeight: 1.5 }}>
-              Based on {Math.round(estimate.cargoLbs).toLocaleString()} lbs avg fleet capacity, Class {estimate.aircraftClass}, distance factor {estimate.distanceFactor.toFixed(2)}x
+              Based on {Math.round(estimate.cargoLbs).toLocaleString()} lbs avg fleet capacity, Class {estimate.aircraftClass}, distance factor {estimate.distanceFactor.toFixed(2)}x.
+              Costs estimated using default MTOW and tier rates.
             </div>
           )}
         </div>
@@ -2528,6 +2638,7 @@ function FlightsTabInner({ triggerCreate }: { triggerCreate: number }) {
           onClone={(s) => { handleClone(s); setSelectedSchedule(null); }}
           onToggle={(s) => { handleToggle(s); setSelectedSchedule(null); }}
           onDelete={(s) => { setDeleteSchedule(s); setSelectedSchedule(null); }}
+          laneRates={laneRates}
         />
       )}
       </div>
