@@ -1,6 +1,7 @@
 import { getDb } from '../db/index.js';
 import { logger } from '../lib/logger.js';
 import { AuditService } from './audit.js';
+import { FinanceService } from './finance.js';
 import type {
   AircraftHours,
   MaintenanceCheckSchedule,
@@ -52,10 +53,10 @@ const auditService = new AuditService();
 
 /** Universal default check intervals — used when no type-specific rows exist in maintenance_checks */
 const DEFAULT_CHECKS: Omit<MaintenanceCheckRow, 'id' | 'icao_type'>[] = [
-  { check_type: 'A', interval_hours: 500,  interval_cycles: null, interval_months: null, overflight_pct: 10, estimated_duration_hours: 8,   description: 'A Check - Routine inspection' },
-  { check_type: 'B', interval_hours: 4500, interval_cycles: null, interval_months: null, overflight_pct: 0,  estimated_duration_hours: 48,  description: 'B Check - Intermediate inspection' },
-  { check_type: 'C', interval_hours: 6000, interval_cycles: 3000, interval_months: 18,   overflight_pct: 0,  estimated_duration_hours: 336, description: 'C Check - Heavy inspection (2 weeks)' },
-  { check_type: 'D', interval_hours: null, interval_cycles: null, interval_months: 72,   overflight_pct: 0,  estimated_duration_hours: 672, description: 'D Check - Structural overhaul (4 weeks)' },
+  { check_type: 'A', interval_hours: 500,  interval_cycles: null, interval_months: null, overflight_pct: 10, estimated_duration_hours: 8,   description: 'A Check - Routine inspection', default_cost: 40000 },
+  { check_type: 'B', interval_hours: 4500, interval_cycles: null, interval_months: null, overflight_pct: 0,  estimated_duration_hours: 48,  description: 'B Check - Intermediate inspection', default_cost: 200000 },
+  { check_type: 'C', interval_hours: 6000, interval_cycles: 3000, interval_months: 18,   overflight_pct: 0,  estimated_duration_hours: 336, description: 'C Check - Heavy inspection (2 weeks)', default_cost: 1500000 },
+  { check_type: 'D', interval_hours: null, interval_cycles: null, interval_months: 72,   overflight_pct: 0,  estimated_duration_hours: 672, description: 'D Check - Structural overhaul (4 weeks)', default_cost: 8000000 },
 ];
 
 /** Get maintenance check intervals for an aircraft type, falling back to universal defaults */
@@ -645,6 +646,56 @@ export class MaintenanceService {
       });
 
       logger.info(TAG, `Check ${checkType} completed for aircraft ${aircraftId} at ${hours.total_hours}h`);
+
+      // ── Maintenance reserve settlement ──────────────────────
+      // Determine check cost
+      let checkCost = existing.cost;
+      if (checkCost == null) {
+        const aircraft = db.prepare('SELECT icao_type FROM fleet WHERE id = ?').get(aircraftId) as { icao_type: string } | undefined;
+        if (aircraft) {
+          const checkRow = db.prepare(
+            'SELECT default_cost FROM maintenance_checks WHERE icao_type = ? AND check_type = ?',
+          ).get(aircraft.icao_type, checkType) as { default_cost: number } | undefined;
+          checkCost = checkRow?.default_cost ?? 0;
+        } else {
+          checkCost = 0;
+        }
+      }
+
+      if (checkCost > 0) {
+        const costFactorRow = db.prepare("SELECT value FROM finance_rate_config WHERE key = 'maintenance_cost_factor'").get() as { value: string } | undefined;
+        const costFactor = costFactorRow ? parseFloat(costFactorRow.value) : 1.0;
+        const adjustedCost = checkCost * costFactor;
+
+        const reserveBalance = hours.maintenance_reserve_balance ?? 0;
+        const registration = (db.prepare('SELECT registration FROM fleet WHERE id = ?').get(aircraftId) as { registration: string } | undefined)?.registration ?? `aircraft#${aircraftId}`;
+
+        if (reserveBalance >= adjustedCost) {
+          // Reserve fully covers the check
+          db.prepare('UPDATE aircraft_hours SET maintenance_reserve_balance = maintenance_reserve_balance - ? WHERE aircraft_id = ?')
+            .run(adjustedCost, aircraftId);
+          logger.info(TAG, `Maintenance check covered by reserve: $${adjustedCost.toFixed(2)} of $${reserveBalance.toFixed(2)} reserve used`);
+        } else {
+          // Reserve insufficient — drain it and record shortfall
+          db.prepare('UPDATE aircraft_hours SET maintenance_reserve_balance = 0 WHERE aircraft_id = ?')
+            .run(aircraftId);
+          const shortfall = adjustedCost - reserveBalance;
+          const financeService = new FinanceService();
+          financeService.create({
+            pilotId: null,
+            type: 'expense',
+            amount: shortfall,
+            description: `Maintenance shortfall: ${checkType} check on ${registration} ($${shortfall.toFixed(2)} over reserve)`,
+            category: 'maintenance_shortfall',
+          }, actorId);
+          logger.warn(TAG, `Maintenance reserve shortfall: $${shortfall.toFixed(2)} for ${checkType} check on ${registration}`);
+        }
+
+        // Persist cost on the log entry if it wasn't already set
+        if (existing.cost == null) {
+          db.prepare('UPDATE maintenance_log SET cost = ? WHERE id = ?').run(adjustedCost, id);
+        }
+      }
 
       // Attempt return to service
       this.returnToService(aircraftId, actorId);
@@ -1422,6 +1473,7 @@ export class MaintenanceService {
       cycles_at_last_c: row.cycles_at_last_c ?? 0,
       last_d_check_date: row.last_d_check_date,
       hours_at_last_d: row.hours_at_last_d ?? 0,
+      maintenance_reserve_balance: 0,
       updated_at: '',
     };
 

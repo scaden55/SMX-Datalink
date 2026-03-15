@@ -210,6 +210,7 @@ export interface AircraftHoursRow {
   cycles_at_last_c: number;
   last_d_check_date: string | null;
   hours_at_last_d: number;
+  maintenance_reserve_balance: number;
   updated_at: string;
 }
 
@@ -224,6 +225,7 @@ export interface MaintenanceCheckRow {
   overflight_pct: number;
   estimated_duration_hours: number | null;
   description: string | null;
+  default_cost: number;
 }
 
 /** maintenance_log table — SELECT * shape */
