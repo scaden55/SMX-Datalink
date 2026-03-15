@@ -230,6 +230,109 @@ All on the admin Settings page. Single place to control economic feel.
 
 ---
 
+## 8. Migration Strategy
+
+Migration 037 (`finance-engine.sql`) defined 10+ finance tables that were never wired up. Several conflict with this spec:
+
+### Tables to DROP and Recreate
+- `finance_aircraft_profiles` — uses `lease_type ('dry','wet')`, incompatible with 5 acquisition types. Replace with fleet table columns.
+- `finance_station_fees` — uses flat per-airport rates, incompatible with tier × MTOW model. Replace with `airport_fee_tiers` table.
+- `finance_maint_thresholds` — uses check types `(A, C, D, ESV)`, no B-check or per-FH reserve rates. Replace with `maintenance_reserve_rates` fields on `maintenance_checks`.
+- `finance_commodity_rates` — not used in this spec. Drop (can re-add later if needed).
+- `finance_rated_manifests`, `finance_rated_shipments` — replaced by existing revenue model manifest split. Drop.
+
+### Tables to ALTER
+- `finance_flight_pnl` — keep structure but update columns to match spec (add `fuel_surcharge_revenue`, `lane_rate_modifier`, `maintenance_reserve`; rename `rasm` → `ratm`; drop unused columns like `deice_fee`, `uld_fee`).
+- `finance_period_pnl` — keep structure, rename `rasm` → `ratm` (cargo airline uses ton-miles not seat-miles).
+- `finance_rate_config` — keep and extend for difficulty settings storage.
+- `finance_lane_rates` — keep as snapshot table for dashboard display.
+
+### New Tables/Columns
+- `airports.demand_score` REAL DEFAULT 0.5 — seeded from hub status and country. For airports not in the VA's `airports` table, use a default of 0.3 (unknown airport).
+- `airports.fee_tier` TEXT DEFAULT 'regional' — auto-assigned, admin-overridable.
+- `airport_fee_tiers` — 4 rows (international_hub, major_hub, regional, small) with landing/handling/parking/nav/fuel rates.
+- `aircraft_hours.maintenance_reserve_balance` REAL DEFAULT 0.
+- `maintenance_checks.reserve_rate_per_hour` REAL DEFAULT 0 — per-FH reserve accrual rate per check type.
+- `maintenance_checks.default_cost` REAL — default cost for completing this check type.
+- Fleet table: acquisition/financing fields (Section 3).
+
+### finances Ledger
+Make `pilot_id` NULLABLE on the `finances` table. Airline-level costs (lease, insurance, depreciation, maintenance shortfall) use `pilot_id = NULL`. Per-flight costs continue using the pilot's ID. This preserves the existing ledger while supporting airline-level entries.
+
+---
+
+## 9. Formula Definitions
+
+### Supply Score Normalization
+- `supply_score = flights_in_30d / 10` (10 flights/month = supply score 1.0 = "adequately served")
+- Capped at 3.0 (30+ flights/month = max supply pressure)
+- Computed at query time from `logbook` table (30-day rolling window, no materialized state)
+- Routes with zero flights naturally have supply_score = 0, hitting the floor of 0.1 in the rate formula
+
+### Demand Volatility Multiplier
+- Low: rate swing capped at 0.8x – 1.3x of base
+- Medium: rate swing capped at 0.5x – 2.0x of base (default)
+- High: rate swing capped at 0.3x – 2.5x of base
+
+### RATM (Revenue per Available Ton-Mile)
+`RATM = total_cargo_revenue / (cargo_capacity_lbs × distance_nm / 2000)`
+Where cargo_capacity_lbs comes from fleet table, distance_nm from the schedule.
+
+### CATM (Cost per Available Ton-Mile)
+`CATM = total_operating_costs / (cargo_capacity_lbs × distance_nm / 2000)`
+
+### Break-Even Load Factor
+`BELF = total_operating_costs / (RATM × cargo_capacity_lbs × distance_nm / 2000)`
+The minimum load factor needed for a route to cover its costs.
+
+### Fleet Utilization
+`utilization = sum(block_hours_this_month) / (active_aircraft_count × 720)`
+720 = hours in a 30-day month.
+
+### Fuel Price Variability
+- **Fixed**: fuel price per tier is constant (from `airport_fee_tiers`)
+- **Moderate**: ±5% random perturbation per month, applied globally to all tiers
+- **Volatile**: ±15% perturbation per month, with momentum (trending up or down for 2-4 months)
+- Perturbation stored as `fuel_price_factor` in `finance_rate_config`, updated by monthly job
+
+### Hangar/Parking Monthly Cost
+`hangar_monthly = tier_parking_rate × 24 × 30` (24 hrs/day × 30 days, but only charged for days NOT flying)
+Simplified: `hangar_monthly = tier_parking_rate × 500` (assumes ~21 idle days/month for typical utilization)
+Uses the aircraft's `base_icao` tier. If `base_icao` is null, uses Regional tier as default.
+
+---
+
+## 10. Monthly Close Semantics
+
+### Idempotency
+- Monthly close keyed by `period_key` (e.g., "2026-03" for March 2026)
+- Re-running the close for the same period UPSERTs the `finance_period_pnl` row and replaces fixed-cost finance entries for that period
+- This allows corrections without double-counting
+
+### Retroactive PIREPs
+- PIREPs approved after month close hit the CURRENT month's P&L, not the closed month
+- The `finance_flight_pnl` row uses the PIREP approval date, not the flight date
+- This avoids reopening closed periods
+
+### Missed Close
+- On server startup, check if any months since the last close are unclosed
+- Auto-close any missed months before processing the current month
+
+---
+
+## 11. Difficulty Settings Storage
+
+All difficulty settings stored in the existing `va_settings` table (key-value pairs):
+- `sim.cost_multiplier` = "1.0"
+- `sim.revenue_multiplier` = "1.0"
+- `sim.demand_volatility` = "medium"
+- `sim.maintenance_cost_factor` = "1.0"
+- `sim.fuel_price_variability` = "moderate"
+
+Multipliers are snapshotted into each `finance_flight_pnl` row at computation time so historical P&L is not affected by setting changes.
+
+---
+
 ## Implementation Phases
 
 1. **Per-flight P&L** — wire cost breakdown into PIREP approval flow, populate `finance_flight_pnl`
