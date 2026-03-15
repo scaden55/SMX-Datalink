@@ -80,6 +80,9 @@ export class MonthlyCloseService {
 
     logger.info(TAG, `Closing month ${periodKey}`, { periodStart, periodEnd });
 
+    // ── 0. Adjust fuel price for next month ──────────────────────
+    this.adjustFuelPrice();
+
     // ── 1. Aggregate flight P&L ──────────────────────────────────
     const flightAgg = db.prepare(`
       SELECT
@@ -338,6 +341,56 @@ export class MonthlyCloseService {
     const periodKey = this.getCurrentPeriodKey();
     this.closeMonth(periodKey);
     return periodKey;
+  }
+
+  /**
+   * Adjust the global fuel_price_factor based on the fuel_price_variability setting.
+   * Called monthly. The factor drifts with momentum — trending up or down for 2-4 months
+   * before reversing, simulating real-world fuel market cycles.
+   *
+   * - fixed: no change (factor stays at current value)
+   * - moderate: ±5% max swing per month, momentum-driven
+   * - volatile: ±15% max swing per month, momentum-driven
+   *
+   * Factor is clamped to [0.5, 2.0] to prevent absurd prices.
+   */
+  adjustFuelPrice(): void {
+    const db = getDb();
+
+    const variabilityRow = db.prepare("SELECT value FROM finance_rate_config WHERE key = 'fuel_price_variability'")
+      .get() as { value: string } | undefined;
+    const variability = (variabilityRow?.value ?? 'moderate') as string;
+
+    if (variability === 'fixed') return;
+
+    const currentRow = db.prepare("SELECT value FROM finance_rate_config WHERE key = 'fuel_price_factor'")
+      .get() as { value: string } | undefined;
+    const currentFactor = currentRow ? parseFloat(currentRow.value) : 1.0;
+
+    // Read momentum direction (persisted as 1 or -1)
+    const momentumRow = db.prepare("SELECT value FROM finance_rate_config WHERE key = 'fuel_momentum'")
+      .get() as { value: string } | undefined;
+    let momentum = momentumRow ? parseInt(momentumRow.value, 10) : 1;
+
+    // Momentum reversal: ~30% chance each month to flip direction
+    if (Math.random() < 0.30) {
+      momentum = -momentum;
+    }
+
+    // Calculate drift based on variability
+    const maxSwing = variability === 'volatile' ? 0.15 : 0.05;
+    const drift = momentum * (Math.random() * maxSwing);
+    const newFactor = Math.max(0.5, Math.min(2.0, currentFactor + drift));
+
+    // Persist
+    db.prepare("INSERT INTO finance_rate_config (key, value) VALUES ('fuel_price_factor', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value")
+      .run(newFactor.toFixed(4));
+    db.prepare("INSERT INTO finance_rate_config (key, value) VALUES ('fuel_momentum', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value")
+      .run(momentum.toString());
+
+    const direction = drift >= 0 ? 'up' : 'down';
+    const pctChange = ((newFactor / currentFactor - 1) * 100).toFixed(1);
+    logger.info(TAG, `Fuel price adjusted ${direction}: factor ${currentFactor.toFixed(4)} → ${newFactor.toFixed(4)} (${pctChange}%), variability=${variability}`);
   }
 
   // ── Helpers ──────────────────────────────────────────────────────
