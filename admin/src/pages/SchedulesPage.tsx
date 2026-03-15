@@ -1428,10 +1428,13 @@ interface RevenueEstimate {
 
 interface CostEstimate {
   fuelCost: number;
+  fuelServiceFee: number;
   crewCost: number;
   landingFees: number;
-  handlingFees: number;
+  handlingDepFees: number;
+  handlingArrFees: number;
   navFees: number;
+  authorityFees: number;
   maintenanceReserve: number;
   totalDoc: number;
 }
@@ -1483,23 +1486,54 @@ function RouteDetailPanel({
   useEffect(() => {
     if (!estimate || tiers.length === 0) { setCostEstimate(null); return; }
     const getTierRates = (tier: string) => tiers.find((t: any) => t.tier === tier) ?? tiers.find((t: any) => t.tier === 'regional');
-    const depTier = getTierRates('major_hub'); // default assumption
-    const arrTier = getTierRates('regional');
+
+    // Look up actual airport tiers from the airports data
+    // For now use schedule aircraft type to determine realistic fuel burn and MTOW
+    const acType = (schedule.aircraftType ?? '').toUpperCase();
+
+    // Realistic fuel burn (lbs/hr) and MTOW (lbs) by aircraft type
+    const AIRCRAFT_PROFILES: Record<string, { fuelBurnPerHour: number; mtow: number }> = {
+      'B77F': { fuelBurnPerHour: 20000, mtow: 766800 },
+      'B777': { fuelBurnPerHour: 20000, mtow: 766800 },
+      'B78X': { fuelBurnPerHour: 13500, mtow: 560000 },
+      'MD1F': { fuelBurnPerHour: 16000, mtow: 630500 },
+      'MD11': { fuelBurnPerHour: 16000, mtow: 630500 },
+      'A30F': { fuelBurnPerHour: 14000, mtow: 380000 },
+      'A300': { fuelBurnPerHour: 14000, mtow: 380000 },
+      'B763': { fuelBurnPerHour: 12000, mtow: 412000 },
+      'B762': { fuelBurnPerHour: 11000, mtow: 395000 },
+      'B752': { fuelBurnPerHour: 8000, mtow: 255000 },
+      'B738': { fuelBurnPerHour: 5500, mtow: 174200 },
+      'B737': { fuelBurnPerHour: 5200, mtow: 154500 },
+      'A320': { fuelBurnPerHour: 5500, mtow: 170000 },
+      'DHC6': { fuelBurnPerHour: 800, mtow: 12500 },
+      'C208': { fuelBurnPerHour: 500, mtow: 8785 },
+    };
+    const profile = AIRCRAFT_PROFILES[acType] ?? { fuelBurnPerHour: 10000, mtow: 300000 };
+
+    // Use international_hub tier for foreign airports, major_hub for US hubs
+    const depIsIntl = schedule.depIcao && !schedule.depIcao.startsWith('K') && schedule.depIcao.length === 4;
+    const arrIsIntl = schedule.arrIcao && !schedule.arrIcao.startsWith('K') && schedule.arrIcao.length === 4;
+    const depTier = getTierRates(depIsIntl ? 'international_hub' : 'major_hub');
+    const arrTier = getTierRates(arrIsIntl ? 'international_hub' : 'major_hub');
     if (!depTier || !arrTier) return;
 
     const blockHours = schedule.flightTimeMin / 60;
-    const mtow = 150000; // mid-range default
-    const fuelBurnLbs = blockHours * 5000; // ~5000 lbs/hr average
+    const mtow = profile.mtow;
+    const fuelBurnLbs = blockHours * profile.fuelBurnPerHour;
 
     const fuelCost = fuelBurnLbs * (depTier.fuel_price_per_lb ?? 0.35);
+    const fuelServiceFee = fuelCost * (depTier.fuel_service_pct ?? 0.12);
     const crewCost = estimate.pilotPay;
     const landingFees = (mtow / 1000) * ((depTier.landing_per_1000lbs ?? 5.5) + (arrTier.landing_per_1000lbs ?? 3.0));
-    const handlingFees = (mtow / 1000) * ((depTier.handling_per_1000lbs ?? 4.0) + (arrTier.handling_per_1000lbs ?? 2.5));
+    const handlingDepFees = (mtow / 1000) * (depTier.handling_per_1000lbs ?? 4.0);
+    const handlingArrFees = (mtow / 1000) * (arrTier.handling_per_1000lbs ?? 2.5);
     const navFees = schedule.distanceNm * (depTier.nav_per_nm ?? 0.06);
+    const authorityFees = (depTier.authority_fee ?? 15) + (arrTier.authority_fee ?? 15);
     const maintenanceReserve = blockHours * 195; // ~$195/FH default reserve
-    const totalDoc = fuelCost + crewCost + landingFees + handlingFees + navFees + maintenanceReserve;
+    const totalDoc = fuelCost + fuelServiceFee + crewCost + landingFees + handlingDepFees + handlingArrFees + navFees + authorityFees + maintenanceReserve;
 
-    setCostEstimate({ fuelCost, crewCost, landingFees, handlingFees, navFees, maintenanceReserve, totalDoc });
+    setCostEstimate({ fuelCost, fuelServiceFee, crewCost, landingFees, handlingDepFees, handlingArrFees, navFees, authorityFees, maintenanceReserve, totalDoc });
   }, [estimate, tiers, schedule.distanceNm, schedule.flightTimeMin]);
 
   const lane = laneRates.get(`${schedule.depIcao}-${schedule.arrIcao}`);
@@ -1709,10 +1743,13 @@ function RouteDetailPanel({
                   </div>
                   {[
                     { label: 'Fuel', value: costEstimate.fuelCost },
+                    { label: 'Fuel Service', value: costEstimate.fuelServiceFee },
                     { label: 'Crew', value: costEstimate.crewCost },
                     { label: 'Landing Fees', value: costEstimate.landingFees },
-                    { label: 'Handling', value: costEstimate.handlingFees },
+                    { label: 'Handling (Dep)', value: costEstimate.handlingDepFees },
+                    { label: 'Handling (Arr)', value: costEstimate.handlingArrFees },
                     { label: 'Nav Fees', value: costEstimate.navFees },
+                    { label: 'Authority Fees', value: costEstimate.authorityFees },
                     { label: 'Maint Reserve', value: costEstimate.maintenanceReserve },
                   ].map((row) => (
                     <div key={row.label} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 12px', fontSize: 11, borderBottom: '1px solid var(--border-primary)' }}>
