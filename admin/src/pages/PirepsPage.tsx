@@ -43,6 +43,37 @@ import { StatusBadge, SectionHeader, DataRow } from '@/components/primitives';
 
 // ── Types ───────────────────────────────────────────────────────
 
+interface FlightPnl {
+  logbook_id: number;
+  cargo_revenue: number;
+  pax_revenue: number;
+  charter_premium: number;
+  fuel_surcharge: number;
+  total_revenue: number;
+  fuel_cost: number;
+  landing_fee: number;
+  handling_fee: number;
+  nav_fee: number;
+  parking_fee: number;
+  crew_cost: number;
+  total_variable_cost: number;
+  maint_reserve: number;
+  lease_alloc: number;
+  insurance_alloc: number;
+  depreciation_alloc: number;
+  total_fixed_alloc: number;
+  gross_profit: number;
+  net_profit: number;
+  margin_pct: number;
+  block_hours: number;
+  distance_nm: number;
+  payload_lbs: number;
+  load_factor: number;
+  fuel_price_snapshot: number;
+  lane_rate_snapshot: number;
+  demand_multiplier: number;
+}
+
 type PirepStatus = 'pending' | 'approved' | 'completed' | 'diverted' | 'rejected' | 'cancelled';
 
 interface PirepEntry {
@@ -121,6 +152,19 @@ function formatDateTime(iso: string): string {
     hour: '2-digit',
     minute: '2-digit',
   });
+}
+
+function formatCurrency(val: number): string {
+  return '$' + val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function formatMarginPct(val: number): string {
+  const sign = val >= 0 ? '+' : '';
+  return `${sign}${val.toFixed(1)}%`;
+}
+
+function marginColor(val: number): string {
+  return val >= 0 ? 'var(--accent-emerald)' : 'var(--accent-red)';
 }
 
 function landingRateColor(fpm: number | null): string {
@@ -212,6 +256,11 @@ export function PirepsPage() {
   const [reviewNotes, setReviewNotes] = useState('');
   const [reviewSubmitting, setReviewSubmitting] = useState(false);
 
+  // Flight P&L data (keyed by pirepId for table columns)
+  const [pnlMap, setPnlMap] = useState<Map<number, FlightPnl>>(new Map());
+  const [detailPnl, setDetailPnl] = useState<FlightPnl | null>(null);
+  const [detailPnlLoading, setDetailPnlLoading] = useState(false);
+
   // ── Debounce search ──────────────────────────────────────────
 
   useEffect(() => {
@@ -256,6 +305,33 @@ export function PirepsPage() {
     fetchPireps();
   }, [fetchPireps]);
 
+  // ── Fetch P&L for visible PIREPs (table columns) ──────────
+
+  useEffect(() => {
+    if (pireps.length === 0) {
+      setPnlMap(new Map());
+      return;
+    }
+    let cancelled = false;
+    const ids = pireps.map((p) => p.id);
+    Promise.allSettled(
+      ids.map((id) =>
+        api.get<FlightPnl>(`/api/admin/economics/flight-pnl/${id}`)
+          .then((pnl) => ({ id, pnl }))
+      )
+    ).then((results) => {
+      if (cancelled) return;
+      const map = new Map<number, FlightPnl>();
+      for (const r of results) {
+        if (r.status === 'fulfilled') {
+          map.set(r.value.id, r.value.pnl);
+        }
+      }
+      setPnlMap(map);
+    });
+    return () => { cancelled = true; };
+  }, [pireps]);
+
   // ── Stats ───────────────────────────────────────────────────
 
   const stats = useMemo(() => {
@@ -299,12 +375,20 @@ export function PirepsPage() {
     setDetailPirep(pirep);
     setDetailOpen(true);
     setReviewNotes('');
+    // Fetch P&L for detail panel
+    setDetailPnl(null);
+    setDetailPnlLoading(true);
+    api.get<FlightPnl>(`/api/admin/economics/flight-pnl/${pirep.id}`)
+      .then((pnl) => setDetailPnl(pnl))
+      .catch(() => setDetailPnl(null))
+      .finally(() => setDetailPnlLoading(false));
   }
 
   function handleCloseDetail() {
     setDetailOpen(false);
     setDetailPirep(null);
     setReviewNotes('');
+    setDetailPnl(null);
   }
 
   // ── Single Actions ──────────────────────────────────────────
@@ -444,6 +528,52 @@ export function PirepsPage() {
         size: 90,
       },
       {
+        id: 'revenue',
+        header: 'Revenue',
+        cell: ({ row }) => {
+          const pnl = pnlMap.get(row.original.id);
+          if (!pnl) return <span style={{ fontSize: 11, color: 'var(--text-quaternary)' }}>--</span>;
+          return (
+            <span style={{ fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums', fontSize: 12, fontWeight: 600, color: 'var(--accent-emerald)' }}>
+              ${pnl.total_revenue.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+            </span>
+          );
+        },
+        enableSorting: false,
+        size: 90,
+      },
+      {
+        id: 'cost',
+        header: 'Cost',
+        cell: ({ row }) => {
+          const pnl = pnlMap.get(row.original.id);
+          const totalDoc = pnl ? pnl.total_variable_cost + pnl.total_fixed_alloc : null;
+          if (!pnl || totalDoc === null) return <span style={{ fontSize: 11, color: 'var(--text-quaternary)' }}>--</span>;
+          return (
+            <span style={{ fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums', fontSize: 12, color: 'var(--text-secondary)' }}>
+              ${totalDoc.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+            </span>
+          );
+        },
+        enableSorting: false,
+        size: 90,
+      },
+      {
+        id: 'margin',
+        header: 'Margin',
+        cell: ({ row }) => {
+          const pnl = pnlMap.get(row.original.id);
+          if (!pnl) return <span style={{ fontSize: 11, color: 'var(--text-quaternary)' }}>--</span>;
+          return (
+            <span style={{ fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums', fontSize: 12, fontWeight: 600, color: marginColor(pnl.margin_pct) }}>
+              {formatMarginPct(pnl.margin_pct)}
+            </span>
+          );
+        },
+        enableSorting: false,
+        size: 80,
+      },
+      {
         id: 'actions',
         enableHiding: false,
         enableSorting: false,
@@ -501,7 +631,7 @@ export function PirepsPage() {
       },
     ],
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    []
+    [pnlMap]
   );
 
   // ── Render ──────────────────────────────────────────────────
@@ -1104,6 +1234,95 @@ export function PirepsPage() {
                     }
                   />
                 </div>
+              </section>
+
+              {/* ── Flight Economics ──────────────────────────── */}
+              <section>
+                <SectionHeader title="Flight Economics" />
+                {detailPnlLoading ? (
+                  <p style={{ fontSize: 12, color: 'var(--text-quaternary)', padding: '8px 0' }}>Loading financial data...</p>
+                ) : !detailPnl ? (
+                  <p style={{ fontSize: 12, color: 'var(--text-quaternary)', padding: '8px 0' }}>No financial data</p>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                    {/* Revenue & Cost two-column layout */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                      {/* Revenue side */}
+                      <div style={{ backgroundColor: 'var(--surface-3)', borderRadius: 6, padding: 12 }}>
+                        <p style={{ fontSize: 10, color: 'var(--text-quaternary)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8, fontWeight: 600 }}>Revenue</p>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
+                            <span style={{ color: 'var(--text-tertiary)' }}>Cargo Revenue</span>
+                            <span style={{ fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums', color: 'var(--text-secondary)' }}>{formatCurrency(detailPnl.cargo_revenue)}</span>
+                          </div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
+                            <span style={{ color: 'var(--text-tertiary)' }}>Fuel Surcharge</span>
+                            <span style={{ fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums', color: 'var(--text-secondary)' }}>{formatCurrency(detailPnl.fuel_surcharge)}</span>
+                          </div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
+                            <span style={{ color: 'var(--text-tertiary)' }}>Demand Multiplier</span>
+                            <span style={{ fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums', color: 'var(--text-secondary)' }}>{detailPnl.demand_multiplier.toFixed(2)}x</span>
+                          </div>
+                          <div style={{ borderTop: '1px solid var(--border-primary)', marginTop: 4, paddingTop: 4, display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
+                            <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>Total Revenue</span>
+                            <span style={{ fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums', color: 'var(--accent-emerald)', fontWeight: 700 }}>{formatCurrency(detailPnl.total_revenue)}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Cost side */}
+                      <div style={{ backgroundColor: 'var(--surface-3)', borderRadius: 6, padding: 12 }}>
+                        <p style={{ fontSize: 10, color: 'var(--text-quaternary)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8, fontWeight: 600 }}>Costs</p>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
+                            <span style={{ color: 'var(--text-tertiary)' }}>Fuel</span>
+                            <span style={{ fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums', color: 'var(--text-secondary)' }}>{formatCurrency(detailPnl.fuel_cost)}</span>
+                          </div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
+                            <span style={{ color: 'var(--text-tertiary)' }}>Crew</span>
+                            <span style={{ fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums', color: 'var(--text-secondary)' }}>{formatCurrency(detailPnl.crew_cost)}</span>
+                          </div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
+                            <span style={{ color: 'var(--text-tertiary)' }}>Landing Fees</span>
+                            <span style={{ fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums', color: 'var(--text-secondary)' }}>{formatCurrency(detailPnl.landing_fee)}</span>
+                          </div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
+                            <span style={{ color: 'var(--text-tertiary)' }}>Handling</span>
+                            <span style={{ fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums', color: 'var(--text-secondary)' }}>{formatCurrency(detailPnl.handling_fee)}</span>
+                          </div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
+                            <span style={{ color: 'var(--text-tertiary)' }}>Nav Fees</span>
+                            <span style={{ fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums', color: 'var(--text-secondary)' }}>{formatCurrency(detailPnl.nav_fee)}</span>
+                          </div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
+                            <span style={{ color: 'var(--text-tertiary)' }}>Maint Reserve</span>
+                            <span style={{ fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums', color: 'var(--text-secondary)' }}>{formatCurrency(detailPnl.maint_reserve)}</span>
+                          </div>
+                          <div style={{ borderTop: '1px solid var(--border-primary)', marginTop: 4, paddingTop: 4, display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
+                            <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>Total DOC</span>
+                            <span style={{ fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums', color: 'var(--text-secondary)', fontWeight: 700 }}>{formatCurrency(detailPnl.total_variable_cost + detailPnl.total_fixed_alloc)}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Bottom line */}
+                    <div style={{ backgroundColor: 'var(--surface-3)', borderRadius: 6, padding: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                        <span style={{ fontSize: 10, color: 'var(--text-quaternary)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Operating Margin</span>
+                        <span style={{ fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums', fontSize: 18, fontWeight: 700, color: marginColor(detailPnl.net_profit) }}>
+                          {formatCurrency(detailPnl.net_profit)}
+                        </span>
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 2 }}>
+                        <span style={{ fontSize: 10, color: 'var(--text-quaternary)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Margin</span>
+                        <span style={{ fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums', fontSize: 18, fontWeight: 700, color: marginColor(detailPnl.margin_pct) }}>
+                          {formatMarginPct(detailPnl.margin_pct)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </section>
 
               {/* ── Score ─────────────────────────────────────── */}
