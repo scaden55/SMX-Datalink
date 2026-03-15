@@ -62,6 +62,7 @@ interface CheckDueStatus {
   remainingHours: number | null;
   remainingCycles: number | null;
   overflightPct: number;
+  estimatedCost?: number;
 }
 
 interface FleetMaintenanceStatus {
@@ -80,6 +81,8 @@ interface FleetMaintenanceStatus {
   activeMELs: number;
   nextCheckType: string | null;
   nextCheckDueIn: number | null;
+  maintenanceReserveBalance?: number;
+  reserveRatePerHour?: number;
 }
 
 // ── Helpers ──────────────────────────────────────────────────
@@ -96,6 +99,22 @@ function formatDate(iso: string | null): string {
 function formatHours(h: number | null): string {
   if (h === null || h === undefined) return '--';
   return h.toLocaleString('en-US', { maximumFractionDigits: 1 });
+}
+
+function formatCurrency(amount: number, decimals = 0): string {
+  return '$' + amount.toLocaleString('en-US', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+}
+
+function reserveColor(balance: number): string {
+  if (balance <= 0) return 'var(--accent-red)';
+  if (balance < 10000) return 'var(--accent-amber)';
+  return 'var(--accent-emerald)';
+}
+
+function tableReserveColor(balance: number): string {
+  if (balance < 10000) return 'var(--accent-red)';
+  if (balance < 50000) return 'var(--accent-amber)';
+  return 'var(--accent-emerald)';
 }
 
 // ── Badge Component ─────────────────────────────────────────
@@ -420,6 +439,7 @@ function FleetStatusContent() {
                   <th style={colHeaderStyle}>MELs</th>
                   <th style={colHeaderStyle}>NEXT CHECK</th>
                   <th style={colHeaderStyle}>REMAINING</th>
+                  <th style={colHeaderStyle}>RESERVE</th>
                   <th style={colHeaderStyle}>STATUS</th>
                   <th style={{ ...colHeaderStyle, width: 50 }} />
                 </tr>
@@ -428,7 +448,7 @@ function FleetStatusContent() {
                 {filtered.length === 0 ? (
                   <tr>
                     <td
-                      colSpan={11}
+                      colSpan={12}
                       style={{ padding: '40px 16px', textAlign: 'center', color: 'var(--text-tertiary)', fontSize: 13 }}
                     >
                       No aircraft found
@@ -502,6 +522,16 @@ function FleetStatusContent() {
                         ) : (
                           '--'
                         )}
+                      </td>
+                      <td style={{ ...cellStyle, fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums' }}>
+                        {(() => {
+                          const balance = aircraft.maintenanceReserveBalance ?? 0;
+                          return (
+                            <span style={{ color: tableReserveColor(balance), fontWeight: 600, fontSize: 11 }}>
+                              {formatCurrency(balance)}
+                            </span>
+                          );
+                        })()}
                       </td>
                       <td style={cellStyle}>
                         <StatusBadgeInline status={getFleetStatusLabel(aircraft)} />
@@ -659,6 +689,24 @@ function FleetStatusContent() {
                     }
                     mono
                   />
+                  <DataRow
+                    label="Maint Reserve"
+                    value={
+                      <span style={{ color: reserveColor(selectedAircraft.maintenanceReserveBalance ?? 0), fontWeight: 600 }}>
+                        {formatCurrency(selectedAircraft.maintenanceReserveBalance ?? 0, 2)}
+                      </span>
+                    }
+                    mono
+                  />
+                  <DataRow
+                    label="Reserve Rate"
+                    value={
+                      <span style={{ color: 'var(--text-secondary)' }}>
+                        {formatCurrency(selectedAircraft.reserveRatePerHour ?? 0)}/FH
+                      </span>
+                    }
+                    mono
+                  />
                 </div>
               </section>
 
@@ -693,6 +741,11 @@ function FleetStatusContent() {
                           {check.remainingCycles != null && (
                             <div style={{ fontSize: 10, color: 'var(--text-tertiary)', fontFamily: 'var(--font-mono, monospace)', marginTop: 2 }}>
                               {check.remainingCycles.toLocaleString()} cycles remaining
+                            </div>
+                          )}
+                          {check.estimatedCost != null && check.estimatedCost > 0 && (
+                            <div style={{ fontSize: 10, color: 'var(--text-tertiary)', fontFamily: 'var(--font-mono, monospace)', marginTop: 2, fontVariantNumeric: 'tabular-nums' }}>
+                              Est. cost: {formatCurrency(check.estimatedCost)}
                             </div>
                           )}
                         </div>

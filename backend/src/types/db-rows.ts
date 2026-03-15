@@ -226,6 +226,7 @@ export interface MaintenanceCheckRow {
   estimated_duration_hours: number | null;
   description: string | null;
   default_cost: number;
+  reserve_rate_per_hour: number;
 }
 
 /** maintenance_log table — SELECT * shape */
@@ -327,6 +328,7 @@ export interface FleetMaintenanceStatusRow {
   cycles_at_last_c: number | null;
   last_d_check_date: string | null;
   hours_at_last_d: number | null;
+  maintenance_reserve_balance: number | null;
 }
 
 /** maintenance_log JOIN fleet for list queries */

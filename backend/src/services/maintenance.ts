@@ -53,10 +53,10 @@ const auditService = new AuditService();
 
 /** Universal default check intervals — used when no type-specific rows exist in maintenance_checks */
 const DEFAULT_CHECKS: Omit<MaintenanceCheckRow, 'id' | 'icao_type'>[] = [
-  { check_type: 'A', interval_hours: 500,  interval_cycles: null, interval_months: null, overflight_pct: 10, estimated_duration_hours: 8,   description: 'A Check - Routine inspection', default_cost: 40000 },
-  { check_type: 'B', interval_hours: 4500, interval_cycles: null, interval_months: null, overflight_pct: 0,  estimated_duration_hours: 48,  description: 'B Check - Intermediate inspection', default_cost: 200000 },
-  { check_type: 'C', interval_hours: 6000, interval_cycles: 3000, interval_months: 18,   overflight_pct: 0,  estimated_duration_hours: 336, description: 'C Check - Heavy inspection (2 weeks)', default_cost: 1500000 },
-  { check_type: 'D', interval_hours: null, interval_cycles: null, interval_months: 72,   overflight_pct: 0,  estimated_duration_hours: 672, description: 'D Check - Structural overhaul (4 weeks)', default_cost: 8000000 },
+  { check_type: 'A', interval_hours: 500,  interval_cycles: null, interval_months: null, overflight_pct: 10, estimated_duration_hours: 8,   description: 'A Check - Routine inspection', default_cost: 40000, reserve_rate_per_hour: 60 },
+  { check_type: 'B', interval_hours: 4500, interval_cycles: null, interval_months: null, overflight_pct: 0,  estimated_duration_hours: 48,  description: 'B Check - Intermediate inspection', default_cost: 200000, reserve_rate_per_hour: 15 },
+  { check_type: 'C', interval_hours: 6000, interval_cycles: 3000, interval_months: 18,   overflight_pct: 0,  estimated_duration_hours: 336, description: 'C Check - Heavy inspection (2 weeks)', default_cost: 1500000, reserve_rate_per_hour: 20 },
+  { check_type: 'D', interval_hours: null, interval_cycles: null, interval_months: 72,   overflight_pct: 0,  estimated_duration_hours: 672, description: 'D Check - Structural overhaul (4 weeks)', default_cost: 8000000, reserve_rate_per_hour: 0 },
 ];
 
 /** Get maintenance check intervals for an aircraft type, falling back to universal defaults */
@@ -87,7 +87,8 @@ export class MaintenanceService {
              h.total_hours, h.total_cycles,
              h.hours_at_last_a, h.hours_at_last_b,
              h.hours_at_last_c, h.cycles_at_last_c,
-             h.last_d_check_date, h.hours_at_last_d
+             h.last_d_check_date, h.hours_at_last_d,
+             h.maintenance_reserve_balance
       FROM fleet f
       LEFT JOIN aircraft_hours h ON h.aircraft_id = f.id
       ORDER BY f.icao_type, f.registration
@@ -103,7 +104,8 @@ export class MaintenanceService {
              h.total_hours, h.total_cycles,
              h.hours_at_last_a, h.hours_at_last_b,
              h.hours_at_last_c, h.cycles_at_last_c,
-             h.last_d_check_date, h.hours_at_last_d
+             h.last_d_check_date, h.hours_at_last_d,
+             h.maintenance_reserve_balance
       FROM fleet f
       LEFT JOIN aircraft_hours h ON h.aircraft_id = f.id
       WHERE f.id = ?
@@ -1473,13 +1475,29 @@ export class MaintenanceService {
       cycles_at_last_c: row.cycles_at_last_c ?? 0,
       last_d_check_date: row.last_d_check_date,
       hours_at_last_d: row.hours_at_last_d ?? 0,
-      maintenance_reserve_balance: 0,
+      maintenance_reserve_balance: row.maintenance_reserve_balance ?? 0,
       updated_at: '',
     };
 
     const checks = getChecksForType(row.icao_type);
 
     const checksDue = this.computeChecksDue(hoursRow, checks, row.created_at ?? undefined);
+
+    // Build cost map from checks config
+    const checkCostMap: Record<string, number> = {};
+    const checkReserveRateMap: Record<string, number> = {};
+    for (const c of checks) {
+      checkCostMap[c.check_type] = c.default_cost ?? 0;
+      checkReserveRateMap[c.check_type] = c.reserve_rate_per_hour ?? 0;
+    }
+
+    // Enrich checksDue with default_cost
+    for (const cd of checksDue) {
+      (cd as CheckDueStatus & { estimatedCost: number }).estimatedCost = checkCostMap[cd.checkType] ?? 0;
+    }
+
+    // Compute total reserve rate per flight hour
+    const totalReserveRate = Object.values(checkReserveRateMap).reduce((sum, r) => sum + r, 0);
     const hasOverdueChecks = checksDue.some(c => c.isOverdue);
 
     // Check for overdue ADs
@@ -1540,6 +1558,8 @@ export class MaintenanceService {
       activeMELs: activeMELCount.count,
       nextCheckType,
       nextCheckDueIn,
+      maintenanceReserveBalance: row.maintenance_reserve_balance ?? 0,
+      reserveRatePerHour: totalReserveRate,
     };
   }
 

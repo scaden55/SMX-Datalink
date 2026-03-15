@@ -132,6 +132,7 @@ export interface CheckDueStatus {
   remainingHours: number | null;
   remainingCycles: number | null;
   overflightPct: number;
+  estimatedCost?: number;
 }
 
 export interface FleetMaintenanceStatus {
@@ -150,6 +151,8 @@ export interface FleetMaintenanceStatus {
   activeMELs: number;
   nextCheckType: string | null;
   nextCheckDueIn: number | null; // remaining hours to next check
+  maintenanceReserveBalance?: number;
+  reserveRatePerHour?: number;
 }
 
 // ─── Request Types ────────────────────────────────────────
