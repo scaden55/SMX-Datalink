@@ -13,6 +13,11 @@ import {
   Wallet,
   Calendar,
   Receipt,
+  TrendingUp,
+  TrendingDown,
+  Activity,
+  BarChart3,
+  Gauge,
 } from 'lucide-react';
 import {
   BarChart,
@@ -125,6 +130,50 @@ interface PilotPayEntry {
   bonuses: number;
   deductions: number;
   netPay: number;
+}
+
+interface PeriodPnl {
+  period_key: string;
+  total_revenue: number;
+  cargo_revenue: number;
+  fuel_surcharge_rev: number;
+  total_doc: number;
+  fuel_cost: number;
+  crew_cost: number;
+  landing_fees: number;
+  handling_fees: number;
+  nav_fees: number;
+  maintenance_reserve: number;
+  total_fixed: number;
+  lease_payments: number;
+  loan_payments: number;
+  insurance: number;
+  depreciation: number;
+  hangar_parking: number;
+  maintenance_shortfall: number;
+  operating_income: number;
+  ratm: number;
+  catm: number;
+  operating_margin_pct: number;
+  fleet_utilization_pct: number;
+  break_even_lf: number;
+  flights_count: number;
+  total_block_hours: number;
+}
+
+interface FlightPnlEntry {
+  pirep_id: number;
+  flight_number: string;
+  dep_icao: string;
+  arr_icao: string;
+  aircraft_type: string;
+  cargo_lbs: number;
+  revenue: number;
+  total_doc: number;
+  margin: number;
+  pilot_callsign: string;
+  pilot_name: string;
+  flight_date: string;
 }
 
 // ── Colors ──────────────────────────────────────────────────────
@@ -417,6 +466,7 @@ interface OverviewTabProps {
 
 function OverviewTab({ summary, dateFrom, dateTo }: OverviewTabProps) {
   const [monthlyData, setMonthlyData] = useState<Array<{ month: string; income: number; expenses: number }>>([]);
+  const [periodPnl, setPeriodPnl] = useState<PeriodPnl[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchData = useCallback(async () => {
@@ -426,9 +476,17 @@ function OverviewTab({ summary, dateFrom, dateTo }: OverviewTabProps) {
       if (dateFrom) params.set('dateFrom', dateFrom);
       if (dateTo) params.set('dateTo', dateTo);
       const queryStr = params.toString();
-      const suffix = queryStr ? `?${queryStr}` : '';
 
-      const entriesRes = await api.get<FinanceListResponse>(`/api/admin/finances?pageSize=500${queryStr ? `&${queryStr}` : ''}`);
+      const [entriesRes, pnlRes] = await Promise.all([
+        api.get<FinanceListResponse>(`/api/admin/finances?pageSize=500${queryStr ? `&${queryStr}` : ''}`),
+        api.get<any>('/api/admin/economics/period-pnl').catch(() => null),
+      ]);
+
+      // Period P&L
+      if (pnlRes) {
+        const periods: PeriodPnl[] = Array.isArray(pnlRes) ? pnlRes : pnlRes.periods ?? [];
+        setPeriodPnl(periods);
+      }
 
       // Build monthly chart data from entries
       const months = new Map<string, { month: string; income: number; expenses: number }>();
@@ -462,14 +520,18 @@ function OverviewTab({ summary, dateFrom, dateTo }: OverviewTabProps) {
     fetchData();
   }, [fetchData]);
 
-  // Expense breakdown items
-  const breakdownItems = [
-    { label: 'Fuel', amount: summary.totalExpenses * 0.45, color: ACCENT_BLUE },
-    { label: 'Operating', amount: summary.totalExpenses * 0.25, color: ACCENT_EMERALD },
-    { label: 'Maintenance', amount: summary.totalExpenses * 0.15, color: ACCENT_AMBER },
-    { label: 'Ground Handling', amount: summary.totalExpenses * 0.10, color: ACCENT_CYAN },
-    { label: 'Other', amount: summary.totalExpenses * 0.05, color: 'var(--text-tertiary)' },
-  ];
+  // Use latest period P&L for expense breakdown
+  const latestPeriod = periodPnl.length > 0 ? periodPnl[periodPnl.length - 1] : null;
+
+  const breakdownItems = latestPeriod && latestPeriod.total_doc > 0
+    ? [
+        { label: 'Fuel', amount: latestPeriod.fuel_cost, pct: (latestPeriod.fuel_cost / latestPeriod.total_doc) * 100, color: ACCENT_BLUE },
+        { label: 'Crew', amount: latestPeriod.crew_cost, pct: (latestPeriod.crew_cost / latestPeriod.total_doc) * 100, color: ACCENT_EMERALD },
+        { label: 'Landing & Handling', amount: latestPeriod.landing_fees + latestPeriod.handling_fees, pct: ((latestPeriod.landing_fees + latestPeriod.handling_fees) / latestPeriod.total_doc) * 100, color: ACCENT_AMBER },
+        { label: 'Nav Fees', amount: latestPeriod.nav_fees, pct: (latestPeriod.nav_fees / latestPeriod.total_doc) * 100, color: ACCENT_CYAN },
+        { label: 'Maint Reserve', amount: latestPeriod.maintenance_reserve, pct: (latestPeriod.maintenance_reserve / latestPeriod.total_doc) * 100, color: 'var(--text-tertiary)' },
+      ]
+    : null;
 
   if (loading) {
     return (
@@ -481,7 +543,160 @@ function OverviewTab({ summary, dateFrom, dateTo }: OverviewTabProps) {
   }
 
   return (
-    <motion.div variants={staggerContainer} initial="hidden" animate="visible" style={{ display: 'flex', gap: 16 }}>
+    <motion.div variants={staggerContainer} initial="hidden" animate="visible" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      {/* ── KPI Cards Row ─────────────────────────────────────── */}
+      {latestPeriod ? (
+        <motion.div
+          variants={staggerItem}
+          style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 12 }}
+        >
+          <div
+            style={{
+              borderRadius: 6,
+              background: 'var(--surface-2)',
+              border: '1px solid var(--border-primary)',
+              padding: '12px 16px',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+              {latestPeriod.operating_income >= 0 ? (
+                <TrendingUp size={12} style={{ color: ACCENT_EMERALD }} />
+              ) : (
+                <TrendingDown size={12} style={{ color: ACCENT_RED }} />
+              )}
+              <span style={{ fontSize: 10, color: 'var(--text-tertiary)' }}>Operating Income</span>
+            </div>
+            <div
+              className="font-mono"
+              style={{
+                fontSize: 20,
+                fontWeight: 700,
+                fontVariantNumeric: 'tabular-nums',
+                color: latestPeriod.operating_income >= 0 ? ACCENT_EMERALD : ACCENT_RED,
+              }}
+            >
+              {formatAmount(latestPeriod.operating_income)}
+            </div>
+          </div>
+
+          <div
+            style={{
+              borderRadius: 6,
+              background: 'var(--surface-2)',
+              border: '1px solid var(--border-primary)',
+              padding: '12px 16px',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+              <BarChart3 size={12} style={{ color: 'var(--text-tertiary)' }} />
+              <span style={{ fontSize: 10, color: 'var(--text-tertiary)' }}>Operating Margin</span>
+            </div>
+            <div
+              className="font-mono"
+              style={{
+                fontSize: 20,
+                fontWeight: 700,
+                fontVariantNumeric: 'tabular-nums',
+                color: latestPeriod.operating_margin_pct >= 0 ? ACCENT_EMERALD : ACCENT_RED,
+              }}
+            >
+              {latestPeriod.operating_margin_pct.toFixed(1)}%
+            </div>
+          </div>
+
+          <div
+            style={{
+              borderRadius: 6,
+              background: 'var(--surface-2)',
+              border: '1px solid var(--border-primary)',
+              padding: '12px 16px',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+              <DollarSign size={12} style={{ color: 'var(--text-tertiary)' }} />
+              <span style={{ fontSize: 10, color: 'var(--text-tertiary)' }}>RATM ($/ton-mi)</span>
+            </div>
+            <div
+              className="font-mono"
+              style={{
+                fontSize: 20,
+                fontWeight: 700,
+                fontVariantNumeric: 'tabular-nums',
+                color: 'var(--text-primary)',
+              }}
+            >
+              ${latestPeriod.ratm.toFixed(3)}
+            </div>
+          </div>
+
+          <div
+            style={{
+              borderRadius: 6,
+              background: 'var(--surface-2)',
+              border: '1px solid var(--border-primary)',
+              padding: '12px 16px',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+              <DollarSign size={12} style={{ color: 'var(--text-tertiary)' }} />
+              <span style={{ fontSize: 10, color: 'var(--text-tertiary)' }}>CATM ($/ton-mi)</span>
+            </div>
+            <div
+              className="font-mono"
+              style={{
+                fontSize: 20,
+                fontWeight: 700,
+                fontVariantNumeric: 'tabular-nums',
+                color: 'var(--text-primary)',
+              }}
+            >
+              ${latestPeriod.catm.toFixed(3)}
+            </div>
+          </div>
+
+          <div
+            style={{
+              borderRadius: 6,
+              background: 'var(--surface-2)',
+              border: '1px solid var(--border-primary)',
+              padding: '12px 16px',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+              <Gauge size={12} style={{ color: 'var(--text-tertiary)' }} />
+              <span style={{ fontSize: 10, color: 'var(--text-tertiary)' }}>Fleet Utilization</span>
+            </div>
+            <div
+              className="font-mono"
+              style={{
+                fontSize: 20,
+                fontWeight: 700,
+                fontVariantNumeric: 'tabular-nums',
+                color: ACCENT_BLUE,
+              }}
+            >
+              {latestPeriod.fleet_utilization_pct.toFixed(1)}%
+            </div>
+          </div>
+        </motion.div>
+      ) : (
+        <div
+          style={{
+            borderRadius: 6,
+            background: 'var(--surface-2)',
+            border: '1px solid var(--border-primary)',
+            padding: '16px 20px',
+            fontSize: 12,
+            color: 'var(--text-tertiary)',
+            textAlign: 'center',
+          }}
+        >
+          No P&L period data available yet. KPI metrics will appear once flights have been completed.
+        </div>
+      )}
+
+      {/* ── Charts Row ────────────────────────────────────────── */}
+      <div style={{ display: 'flex', gap: 16 }}>
       {/* Left: Revenue vs Expenses chart */}
       <motion.div
         variants={staggerItem}
@@ -579,52 +794,69 @@ function OverviewTab({ summary, dateFrom, dateTo }: OverviewTabProps) {
           </span>
         </div>
         <div style={{ padding: 16 }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            {breakdownItems.map((item) => (
+          {breakdownItems ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {breakdownItems.map((item) => (
+                <div
+                  key={item.label}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <div style={{ width: 8, height: 8, borderRadius: '50%', background: item.color, flexShrink: 0 }} />
+                    <span style={{ fontSize: 13, color: 'var(--text-primary)' }}>{item.label}</span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+                    <span className="font-mono" style={{ fontSize: 11, color: 'var(--text-tertiary)', fontVariantNumeric: 'tabular-nums' }}>
+                      {item.pct.toFixed(1)}%
+                    </span>
+                    <span className="font-mono" style={{ fontSize: 13, color: 'var(--text-primary)', fontVariantNumeric: 'tabular-nums' }}>
+                      {formatAmount(item.amount)}
+                    </span>
+                  </div>
+                </div>
+              ))}
+              {/* Total */}
               <div
-                key={item.label}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
+                  paddingTop: 12,
+                  borderTop: '1px solid var(--border-primary)',
+                  marginTop: 4,
                 }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <div style={{ width: 8, height: 8, borderRadius: '50%', background: item.color, flexShrink: 0 }} />
-                  <span style={{ fontSize: 13, color: 'var(--text-primary)' }}>{item.label}</span>
-                </div>
-                <span className="font-mono" style={{ fontSize: 13, color: 'var(--text-primary)' }}>
-                  {formatAmount(item.amount)}
+                <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>Total DOC</span>
+                <span className="font-mono" style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', fontVariantNumeric: 'tabular-nums' }}>
+                  {formatAmount(latestPeriod!.total_doc)}
                 </span>
               </div>
-            ))}
-            {/* Total */}
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                paddingTop: 12,
-                borderTop: '1px solid var(--border-primary)',
-                marginTop: 4,
-              }}
-            >
-              <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>Total</span>
-              <span className="font-mono" style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>
-                {formatAmount(summary.totalExpenses + summary.totalDeductions)}
-              </span>
             </div>
-          </div>
+          ) : (
+            <p style={{ fontSize: 12, color: 'var(--text-tertiary)', textAlign: 'center', padding: '40px 0' }}>
+              No financial data yet
+            </p>
+          )}
         </div>
       </motion.div>
+      </div>
     </motion.div>
   );
 }
 
 // ── Revenue Tab ─────────────────────────────────────────────────
 
+interface RevenueEntryWithCost extends RevenueEntry {
+  doc?: number;
+  margin?: number;
+}
+
 function RevenueTab() {
-  const [entries, setEntries] = useState<RevenueEntry[]>([]);
+  const [entries, setEntries] = useState<RevenueEntryWithCost[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
@@ -633,7 +865,7 @@ function RevenueTab() {
   const [dateTo, setDateTo] = useState('');
 
   // Detail panel
-  const [detailEntry, setDetailEntry] = useState<RevenueEntry | null>(null);
+  const [detailEntry, setDetailEntry] = useState<RevenueEntryWithCost | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
 
   const fetchData = useCallback(async () => {
@@ -645,8 +877,29 @@ function RevenueTab() {
       if (dateFrom) params.set('dateFrom', dateFrom);
       if (dateTo) params.set('dateTo', dateTo);
 
-      const revRes = await api.get<{ entries: RevenueEntry[]; total: number }>(`/api/admin/finances/revenue?${params}`);
-      setEntries(revRes.entries);
+      const [revRes, flightPnlRes] = await Promise.all([
+        api.get<{ entries: RevenueEntry[]; total: number }>(`/api/admin/finances/revenue?${params}`),
+        api.get<any>(`/api/admin/economics/flight-pnl?${params}`).catch(() => null),
+      ]);
+
+      // Build a map of pirep_id -> flight P&L for cost enrichment
+      const costMap = new Map<number, { doc: number; margin: number }>();
+      if (flightPnlRes) {
+        const flights: FlightPnlEntry[] = Array.isArray(flightPnlRes) ? flightPnlRes : flightPnlRes.flights ?? flightPnlRes.entries ?? [];
+        for (const f of flights) {
+          costMap.set(f.pirep_id, { doc: f.total_doc, margin: f.margin });
+        }
+      }
+
+      // Merge cost data into revenue entries
+      const enriched: RevenueEntryWithCost[] = revRes.entries.map((e) => {
+        const cost = costMap.get(e.pirepId ?? 0);
+        return cost
+          ? { ...e, doc: cost.doc, margin: cost.margin }
+          : { ...e };
+      });
+
+      setEntries(enriched);
       setTotal(revRes.total);
     } catch (err) {
       toast.error(err instanceof ApiError ? err.message : 'Failed to load revenue data');
@@ -663,7 +916,7 @@ function RevenueTab() {
     setPage(1);
   }, [dateFrom, dateTo]);
 
-  function handleRowClick(entry: RevenueEntry) {
+  function handleRowClick(entry: RevenueEntryWithCost) {
     setDetailEntry(entry);
     setDetailOpen(true);
   }
@@ -673,7 +926,7 @@ function RevenueTab() {
     setDetailEntry(null);
   }
 
-  const columns: ColumnDef<RevenueEntry, unknown>[] = useMemo(
+  const columns: ColumnDef<RevenueEntryWithCost, unknown>[] = useMemo(
     () => [
       {
         accessorKey: 'flightDate',
@@ -712,7 +965,7 @@ function RevenueTab() {
         cell: ({ row }) => (
           <span style={{ fontSize: 13, color: 'var(--text-tertiary)' }}>{row.original.aircraftType}</span>
         ),
-        size: 110,
+        size: 100,
       },
       {
         accessorKey: 'cargoLbs',
@@ -720,17 +973,50 @@ function RevenueTab() {
         cell: ({ row }) => (
           <span className="font-mono" style={{ fontSize: 13 }}>{formatNumber(row.original.cargoLbs)}</span>
         ),
-        size: 100,
+        size: 90,
       },
       {
         accessorKey: 'revenue',
         header: ({ column }) => <DataTableColumnHeader column={column} title="Revenue" />,
         cell: ({ row }) => (
-          <span className="font-mono" style={{ fontWeight: 500, color: ACCENT_EMERALD }}>
+          <span className="font-mono" style={{ fontWeight: 500, color: ACCENT_EMERALD, fontVariantNumeric: 'tabular-nums' }}>
             {formatAmount(row.original.revenue)}
           </span>
         ),
-        size: 110,
+        size: 100,
+      },
+      {
+        id: 'doc',
+        header: ({ column }) => <DataTableColumnHeader column={column} title="DOC" />,
+        accessorFn: (row) => row.doc ?? 0,
+        cell: ({ row }) => (
+          <span className="font-mono" style={{ fontSize: 13, color: ACCENT_RED, fontVariantNumeric: 'tabular-nums' }}>
+            {row.original.doc != null ? formatAmount(row.original.doc) : '\u2014'}
+          </span>
+        ),
+        size: 100,
+      },
+      {
+        id: 'margin',
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Margin" />,
+        accessorFn: (row) => row.margin ?? 0,
+        cell: ({ row }) => {
+          const m = row.original.margin;
+          if (m == null) return <span style={{ color: 'var(--text-quaternary)' }}>{'\u2014'}</span>;
+          return (
+            <span
+              className="font-mono"
+              style={{
+                fontWeight: 500,
+                fontVariantNumeric: 'tabular-nums',
+                color: m >= 0 ? ACCENT_EMERALD : ACCENT_RED,
+              }}
+            >
+              {formatAmount(m)}
+            </span>
+          );
+        },
+        size: 100,
       },
       {
         accessorKey: 'pilotCallsign',
