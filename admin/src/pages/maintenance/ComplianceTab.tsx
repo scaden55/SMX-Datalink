@@ -194,6 +194,7 @@ const colHeaderStyle: React.CSSProperties = {
   letterSpacing: 0.8,
   color: 'var(--text-tertiary)',
   textTransform: 'uppercase',
+  textAlign: 'left',
   padding: '10px 16px',
   borderBottom: '1px solid var(--border-primary)',
   userSelect: 'none',
@@ -224,6 +225,7 @@ function CreateEntryDialog({ open, onClose, onCreated }: { open: boolean; onClos
   const [formTitle, setFormTitle] = useState('');
   const [formDescription, setFormDescription] = useState('');
   const [formPerformedBy, setFormPerformedBy] = useState('');
+  const [formPerformedAt, setFormPerformedAt] = useState('');
   const [formStatus, setFormStatus] = useState<MaintenanceLogStatus>('scheduled');
   const [formCost, setFormCost] = useState('');
   const [formLoading, setFormLoading] = useState(false);
@@ -244,6 +246,7 @@ function CreateEntryDialog({ open, onClose, onCreated }: { open: boolean; onClos
     setFormTitle('');
     setFormDescription('');
     setFormPerformedBy('');
+    setFormPerformedAt('');
     setFormStatus('scheduled');
     setFormCost('');
   }
@@ -258,8 +261,9 @@ function CreateEntryDialog({ open, onClose, onCreated }: { open: boolean; onClos
         title: formTitle.trim(),
         description: formDescription.trim() || undefined,
         performedBy: formPerformedBy.trim() || undefined,
+        performedAt: formPerformedAt || undefined,
         status: formStatus,
-        cost: formCost ? parseFloat(formCost) : undefined,
+        cost: formCost ? parseFloat(formCost.replace(/,/g, '')) : undefined,
       });
       toast.success('Log entry created');
       resetForm();
@@ -331,9 +335,21 @@ function CreateEntryDialog({ open, onClose, onCreated }: { open: boolean; onClos
               <Input value={formPerformedBy} onChange={(e) => setFormPerformedBy(e.target.value)} placeholder="Technician name" />
             </div>
             <div className="space-y-2">
-              <Label>Cost</Label>
-              <Input type="number" step="0.01" value={formCost} onChange={(e) => setFormCost(e.target.value)} placeholder="0.00" />
+              <Label>Date Completed</Label>
+              <Input type="date" value={formPerformedAt} onChange={(e) => setFormPerformedAt(e.target.value)} />
             </div>
+          </div>
+          <div className="space-y-2">
+            <Label>Cost ($)</Label>
+            <Input
+              value={formCost}
+              onChange={(e) => {
+                const raw = e.target.value.replace(/[^0-9.,]/g, '');
+                setFormCost(raw);
+              }}
+              placeholder="126,483.22"
+              style={{ fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums' }}
+            />
           </div>
         </div>
         <DialogFooter>
@@ -375,6 +391,7 @@ function MaintenanceLogContent({ refreshKey }: { refreshKey: number }) {
   const [formTitle, setFormTitle] = useState('');
   const [formDescription, setFormDescription] = useState('');
   const [formPerformedBy, setFormPerformedBy] = useState('');
+  const [formPerformedAt, setFormPerformedAt] = useState('');
   const [formStatus, setFormStatus] = useState<MaintenanceLogStatus>('scheduled');
   const [formCost, setFormCost] = useState('');
   const [formLoading, setFormLoading] = useState(false);
@@ -429,6 +446,7 @@ function MaintenanceLogContent({ refreshKey }: { refreshKey: number }) {
     setFormTitle('');
     setFormDescription('');
     setFormPerformedBy('');
+    setFormPerformedAt('');
     setFormStatus('scheduled');
     setFormCost('');
   }
@@ -439,8 +457,9 @@ function MaintenanceLogContent({ refreshKey }: { refreshKey: number }) {
     setFormTitle(entry.title);
     setFormDescription(entry.description ?? '');
     setFormPerformedBy(entry.performedBy ?? '');
+    setFormPerformedAt(entry.performedAt ? entry.performedAt.split('T')[0] : '');
     setFormStatus(entry.status);
-    setFormCost(entry.cost?.toString() ?? '');
+    setFormCost(entry.cost != null ? entry.cost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '');
   }
 
   async function handleUpdate() {
@@ -452,8 +471,9 @@ function MaintenanceLogContent({ refreshKey }: { refreshKey: number }) {
         title: formTitle.trim(),
         description: formDescription.trim() || undefined,
         performedBy: formPerformedBy.trim() || undefined,
+        performedAt: formPerformedAt || undefined,
         status: formStatus,
-        cost: formCost ? parseFloat(formCost) : undefined,
+        cost: formCost ? parseFloat(formCost.replace(/,/g, '')) : undefined,
       });
       toast.success('Log entry updated');
       setEditEntry(null);
@@ -783,7 +803,7 @@ function MaintenanceLogContent({ refreshKey }: { refreshKey: number }) {
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     {logStatuses.map((s) => (
-                      <SelectItem key={s} value={s}>{s.replace('_', ' ')}</SelectItem>
+                      <SelectItem key={s} value={s}>{s.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -803,9 +823,21 @@ function MaintenanceLogContent({ refreshKey }: { refreshKey: number }) {
                 <Input value={formPerformedBy} onChange={(e) => setFormPerformedBy(e.target.value)} placeholder="Technician name" />
               </div>
               <div className="space-y-2">
-                <Label>Cost</Label>
-                <Input type="number" step="0.01" value={formCost} onChange={(e) => setFormCost(e.target.value)} placeholder="0.00" />
+                <Label>Date Completed</Label>
+                <Input type="date" value={formPerformedAt} onChange={(e) => setFormPerformedAt(e.target.value)} />
               </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Cost ($)</Label>
+              <Input
+                value={formCost}
+                onChange={(e) => {
+                  const raw = e.target.value.replace(/[^0-9.,]/g, '');
+                  setFormCost(raw);
+                }}
+                placeholder="126,483.22"
+                style={{ fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums' }}
+              />
             </div>
           </div>
           <DialogFooter>
