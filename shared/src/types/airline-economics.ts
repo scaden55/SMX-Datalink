@@ -8,6 +8,8 @@ export interface AirportFeeTierRates {
   parkingPerHour: number;
   navPerNm: number;
   fuelPricePerLb: number;
+  fuelServicePct: number;
+  authorityFee: number;
 }
 
 // ── Fleet Financing ───────────────────────────────────────
@@ -32,12 +34,17 @@ export interface FleetFinancials {
 // ── Per-Flight P&L ────────────────────────────────────────
 export interface FlightCostBreakdown {
   fuelCost: number;
+  fuelServiceFee: number;
   crewCost: number;
   landingFees: number;
-  handlingFees: number;
+  handlingDepFees: number;
+  handlingArrFees: number;
   navFees: number;
+  authorityFees: number;
   maintenanceReserve: number;
   totalDoc: number;
+  depHandler: string | null;
+  arrHandler: string | null;
 }
 
 export interface FlightPnL {
@@ -82,6 +89,8 @@ export interface PeriodPnL {
   landingFees: number;
   handlingFees: number;
   navFees: number;
+  fuelServiceFee: number;
+  authorityFees: number;
   maintenanceReserve: number;
   totalFixed: number;
   leasePayments: number;

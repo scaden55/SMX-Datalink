@@ -25,6 +25,8 @@ interface AirportFeeRow {
   parking_rate: number;
   nav_rate: number;
   fuel_markup: number;
+  fuel_service_pct: number;
+  authority_fee: number;
 }
 
 interface FleetMtowRow {
@@ -41,6 +43,10 @@ interface ReserveRateRow {
 
 interface AirportTierRow {
   fee_tier: string | null;
+}
+
+interface AirportHandlerRow {
+  handler: string | null;
 }
 
 // ── Params ──────────────────────────────────────────────────
@@ -148,6 +154,8 @@ export class FlightCostEngine {
         parkingPerHour: 0,
         navPerNm: 0,
         fuelPricePerLb: 0,
+        fuelServicePct: 0,
+        authorityFee: 0,
       };
     }
 
@@ -158,6 +166,8 @@ export class FlightCostEngine {
       parkingPerHour: feeRow.parking_rate,
       navPerNm: feeRow.nav_rate,
       fuelPricePerLb: feeRow.fuel_markup,
+      fuelServicePct: feeRow.fuel_service_pct,
+      authorityFee: feeRow.authority_fee,
     };
   }
 
@@ -225,41 +235,61 @@ export class FlightCostEngine {
 
     // Cost calculations
     const fuelCost = fuelUsedLbs * depRates.fuelPricePerLb * settings.fuelPriceFactor;
+    const fuelServiceFee = fuelCost * depRates.fuelServicePct;
     const crewCost = blockHours * pilotPayRate;
     const landingFees =
       (mtow / 1000) * (depRates.landingPer1000lbs + arrRates.landingPer1000lbs);
-    const handlingFees =
-      (mtow / 1000) * (depRates.handlingPer1000lbs + arrRates.handlingPer1000lbs);
+    const handlingDepFees = (mtow / 1000) * depRates.handlingPer1000lbs;
+    const handlingArrFees = (mtow / 1000) * arrRates.handlingPer1000lbs;
     const navFees = distanceNm * depRates.navPerNm;
+    const authorityFees = depRates.authorityFee + arrRates.authorityFee;
 
     const reserveRate = this.getMaintenanceReserveRate(aircraftId);
     const maintenanceReserve =
       blockHours * reserveRate * settings.maintenanceCostFactor;
 
     const totalDoc =
-      (fuelCost + crewCost + landingFees + handlingFees + navFees + maintenanceReserve) *
+      (fuelCost + fuelServiceFee + crewCost + landingFees + handlingDepFees + handlingArrFees + navFees + authorityFees + maintenanceReserve) *
       settings.costMultiplier;
 
     // Accrue maintenance reserve
     this.accrueMaintenanceReserve(aircraftId, maintenanceReserve);
 
+    // Look up handler names (schedule-level override falls back to airport default)
+    const depHandlerRow = db
+      .prepare('SELECT handler FROM airports WHERE icao = ?')
+      .get(depIcao) as AirportHandlerRow | undefined;
+    const arrHandlerRow = db
+      .prepare('SELECT handler FROM airports WHERE icao = ?')
+      .get(arrIcao) as AirportHandlerRow | undefined;
+    const depHandler = depHandlerRow?.handler ?? null;
+    const arrHandler = arrHandlerRow?.handler ?? null;
+
     logger.info(TAG, `Flight ${depIcao}-${arrIcao}: DOC $${totalDoc.toFixed(2)}`, {
       fuelCost,
+      fuelServiceFee,
       crewCost,
       landingFees,
-      handlingFees,
+      handlingDepFees,
+      handlingArrFees,
       navFees,
+      authorityFees,
       maintenanceReserve,
     });
 
     return {
       fuelCost,
+      fuelServiceFee,
       crewCost,
       landingFees,
-      handlingFees,
+      handlingDepFees,
+      handlingArrFees,
       navFees,
+      authorityFees,
       maintenanceReserve,
       totalDoc,
+      depHandler,
+      arrHandler,
     };
   }
 }

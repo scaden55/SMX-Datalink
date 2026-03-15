@@ -119,13 +119,27 @@ export class FlightPnLService {
       const arrRates = this.costEngine.getAirportTierRates(arrIcao);
       const defaultMtow = 150_000;
       const fuelCost = fuelUsedLbs * depRates.fuelPricePerLb * simSettings.fuelPriceFactor;
+      const fuelServiceFee = fuelCost * depRates.fuelServicePct;
       const crewCost = blockHours * pilotPayRate;
       const landingFees = (defaultMtow / 1000) * (depRates.landingPer1000lbs + arrRates.landingPer1000lbs);
-      const handlingFees = (defaultMtow / 1000) * (depRates.handlingPer1000lbs + arrRates.handlingPer1000lbs);
+      const handlingDepFees = (defaultMtow / 1000) * depRates.handlingPer1000lbs;
+      const handlingArrFees = (defaultMtow / 1000) * arrRates.handlingPer1000lbs;
       const navFees = distanceNm * depRates.navPerNm;
+      const authorityFees = depRates.authorityFee + arrRates.authorityFee;
       const maintenanceReserve = 0;
-      const totalDoc = (fuelCost + crewCost + landingFees + handlingFees + navFees) * simSettings.costMultiplier;
-      costs = { fuelCost, crewCost, landingFees, handlingFees, navFees, maintenanceReserve, totalDoc };
+      const totalDoc = (fuelCost + fuelServiceFee + crewCost + landingFees + handlingDepFees + handlingArrFees + navFees + authorityFees) * simSettings.costMultiplier;
+
+      // Look up handler names
+      const depHandlerRow = db.prepare('SELECT handler FROM airports WHERE icao = ?').get(depIcao) as { handler: string | null } | undefined;
+      const arrHandlerRow = db.prepare('SELECT handler FROM airports WHERE icao = ?').get(arrIcao) as { handler: string | null } | undefined;
+
+      costs = {
+        fuelCost, fuelServiceFee, crewCost, landingFees,
+        handlingDepFees, handlingArrFees, navFees, authorityFees,
+        maintenanceReserve, totalDoc,
+        depHandler: depHandlerRow?.handler ?? null,
+        arrHandler: arrHandlerRow?.handler ?? null,
+      };
     }
 
     // 8. Fuel surcharge: 15% pass-through of fuel cost
@@ -141,8 +155,9 @@ export class FlightPnLService {
       : 0;
 
     // 11. INSERT into finance_flight_pnl
-    const grossProfit = totalRevenue - (costs.fuelCost + costs.crewCost + costs.landingFees + costs.handlingFees + costs.navFees);
-    const totalVariableCost = costs.fuelCost + costs.crewCost + costs.landingFees + costs.handlingFees + costs.navFees;
+    const handlingFeesTotal = costs.handlingDepFees + costs.handlingArrFees;
+    const grossProfit = totalRevenue - (costs.fuelCost + costs.fuelServiceFee + costs.crewCost + costs.landingFees + handlingFeesTotal + costs.navFees + costs.authorityFees);
+    const totalVariableCost = costs.fuelCost + costs.fuelServiceFee + costs.crewCost + costs.landingFees + handlingFeesTotal + costs.navFees + costs.authorityFees;
     const totalFixedAlloc = costs.maintenanceReserve;
 
     db.prepare(`
@@ -150,6 +165,7 @@ export class FlightPnLService {
         logbook_id, aircraft_id,
         cargo_revenue, pax_revenue, charter_premium, fuel_surcharge, total_revenue,
         fuel_cost, landing_fee, handling_fee, nav_fee, parking_fee, crew_cost, total_variable_cost,
+        fuel_service_fee, authority_fees, dep_handler, arr_handler,
         maint_reserve, lease_alloc, insurance_alloc, depreciation_alloc, total_fixed_alloc,
         gross_profit, net_profit, margin_pct,
         block_hours, distance_nm, payload_lbs, load_factor,
@@ -158,6 +174,7 @@ export class FlightPnLService {
         ?, ?,
         ?, 0, 0, ?, ?,
         ?, ?, ?, ?, 0, ?, ?,
+        ?, ?, ?, ?,
         ?, 0, 0, 0, ?,
         ?, ?, ?,
         ?, ?, ?, 0,
@@ -166,7 +183,8 @@ export class FlightPnLService {
     `).run(
       pirepId, aircraftId > 0 ? aircraftId : null,
       adjustedRevenue, fuelSurchargeRev, totalRevenue,
-      costs.fuelCost, costs.landingFees, costs.handlingFees, costs.navFees, costs.crewCost, totalVariableCost,
+      costs.fuelCost, costs.landingFees, handlingFeesTotal, costs.navFees, costs.crewCost, totalVariableCost,
+      costs.fuelServiceFee, costs.authorityFees, costs.depHandler, costs.arrHandler,
       costs.maintenanceReserve, totalFixedAlloc,
       grossProfit, operatingMargin, marginPct,
       blockHours, distanceNm, cargoLbs,
