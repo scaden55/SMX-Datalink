@@ -59,6 +59,9 @@ import { cargoRouter } from './routes/cargo.js';
 import { discrepancyRouter } from './routes/discrepancies.js';
 import { ataChaptersRouter } from './routes/ata-chapters.js';
 import { melBriefingRouter } from './routes/mel-briefing.js';
+import { adminEconomicsRouter } from './routes/admin-economics.js';
+import { SupplyDemandEngine } from './services/supply-demand-engine.js';
+import { MonthlyCloseService } from './services/monthly-close.js';
 import { TrackService } from './services/track.js';
 import { FlightEventTracker } from './services/flight-event-tracker.js';
 import { MaintenanceService } from './services/maintenance.js';
@@ -194,6 +197,7 @@ app.use('/api', adminSearchRouter());
 app.use('/api', adminRevenueModelRouter());
 app.use('/api', adminDiscrepancyRouter());
 app.use('/api', adminMelMasterRouter());
+app.use('/api', adminEconomicsRouter());
 app.use('/api', notificationsRouter());
 app.use('/api', airportDetailRouter());       // /airports/:icao (AFTER scheduleRouter's /airports)
 app.use('/api', trackRouter());
@@ -252,6 +256,14 @@ const cleanupInterval = setInterval(() => {
 }, 60 * 60 * 1000);
 cleanupInterval.unref();
 
+// Check for missed monthly closes on startup
+try {
+  const monthlyClose = new MonthlyCloseService();
+  monthlyClose.checkAndCloseMissedMonths();
+} catch (err) {
+  logger.error('Server', 'Monthly close startup check error', err);
+}
+
 // Daily charter generation & VATSIM event refresh (every 24 hours)
 const charterDailyGen = new CharterGeneratorService();
 const vatsimEventsDaily = new VatsimEventsService();
@@ -265,6 +277,14 @@ const charterInterval = setInterval(() => {
     charterDailyGen.cleanupExpired();
   } catch (err) {
     logger.error('Server', 'Daily charter generation error', err);
+  }
+  // Nightly lane rate snapshot
+  try {
+    const supplyDemandEngine = new SupplyDemandEngine();
+    const count = supplyDemandEngine.snapshotLaneRates();
+    if (count > 0) logger.info('Server', `Lane rate snapshot: ${count} routes updated`);
+  } catch (err) {
+    logger.error('Server', 'Lane rate snapshot error', err);
   }
   // VATSIM events poll (async) — cleanup expired event charters, then regenerate for today
   vatsimEventsDaily.pollEvents()
