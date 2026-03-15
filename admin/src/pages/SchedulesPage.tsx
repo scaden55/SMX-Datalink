@@ -23,6 +23,7 @@ import {
   X,
   Globe,
   Navigation,
+  Sparkles,
 } from 'lucide-react';
 import {
   pageVariants,
@@ -1963,28 +1964,52 @@ export function SchedulesPage() {
           <span style={{ fontSize: 20, fontWeight: 700, color: 'var(--text-primary)' }}>Schedules</span>
           <div style={{ flex: 1 }} />
           {activeTab === 'flights' && (
-            <button
-              onClick={() => {
-                window.dispatchEvent(new CustomEvent('schedules:create'));
-              }}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 6,
-                background: 'var(--accent-blue)',
-                color: '#fff',
-                border: 'none',
-                borderRadius: 6,
-                padding: '8px 16px',
-                fontSize: 12,
-                fontWeight: 600,
-                cursor: 'pointer',
-                fontFamily: 'inherit',
-              }}
-            >
-              <Plus size={14} />
-              Add Schedule
-            </button>
+            <>
+              <button
+                onClick={() => {
+                  window.dispatchEvent(new CustomEvent('schedules:generate-open'));
+                }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  background: 'var(--surface-3)',
+                  color: 'var(--text-primary)',
+                  border: '1px solid var(--border-primary)',
+                  borderRadius: 6,
+                  padding: '8px 16px',
+                  fontSize: 12,
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  fontFamily: 'inherit',
+                }}
+              >
+                <Sparkles size={14} />
+                Generate Routes
+              </button>
+              <button
+                onClick={() => {
+                  window.dispatchEvent(new CustomEvent('schedules:create'));
+                }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  background: 'var(--accent-blue)',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: 6,
+                  padding: '8px 16px',
+                  fontSize: 12,
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  fontFamily: 'inherit',
+                }}
+              >
+                <Plus size={14} />
+                Add Schedule
+              </button>
+            </>
           )}
         </div>
 
@@ -2030,19 +2055,27 @@ export function SchedulesPage() {
 
 function FlightsTabWithHeaderButton() {
   const [triggerCreate, setTriggerCreate] = useState(0);
+  const [generateOpen, setGenerateOpen] = useState(false);
 
   useEffect(() => {
     function handler() {
       setTriggerCreate((c) => c + 1);
     }
+    function genHandler() {
+      setGenerateOpen(true);
+    }
     window.addEventListener('schedules:create', handler);
-    return () => window.removeEventListener('schedules:create', handler);
+    window.addEventListener('schedules:generate-open', genHandler);
+    return () => {
+      window.removeEventListener('schedules:create', handler);
+      window.removeEventListener('schedules:generate-open', genHandler);
+    };
   }, []);
 
-  return <FlightsTabInner triggerCreate={triggerCreate} />;
+  return <FlightsTabInner triggerCreate={triggerCreate} generateOpen={generateOpen} setGenerateOpen={setGenerateOpen} />;
 }
 
-function FlightsTabInner({ triggerCreate }: { triggerCreate: number }) {
+function FlightsTabInner({ triggerCreate, generateOpen, setGenerateOpen }: { triggerCreate: number; generateOpen: boolean; setGenerateOpen: (v: boolean) => void }) {
   const [schedules, setSchedules] = useState<Schedule[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -2066,6 +2099,10 @@ function FlightsTabInner({ triggerCreate }: { triggerCreate: number }) {
   const [cloneDialogSchedule, setCloneDialogSchedule] = useState<Schedule | null>(null);
   const [cloneFlightNumber, setCloneFlightNumber] = useState('');
   const [cloneLoading, setCloneLoading] = useState(false);
+
+  // Generate schedules
+  const [generateCount, setGenerateCount] = useState('50');
+  const [generateLoading, setGenerateLoading] = useState(false);
 
   // Selected schedule for detail panel
   const [selectedSchedule, setSelectedSchedule] = useState<Schedule | null>(null);
@@ -2845,6 +2882,73 @@ function FlightsTabInner({ triggerCreate }: { triggerCreate: number }) {
               disabled={deleteLoading}
             >
               {deleteLoading ? 'Deleting...' : 'Delete'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Generate Schedules Dialog */}
+      <Dialog open={generateOpen} onOpenChange={(open) => { if (!open) { setGenerateOpen(false); setGenerateCount('50'); } }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Generate Scheduled Routes</DialogTitle>
+            <DialogDescription>
+              Auto-generate permanent cargo routes using smart airport selection. Routes are biased toward major cargo hubs, MSFS-notable airports, and your network.
+            </DialogDescription>
+          </DialogHeader>
+          <div style={{ padding: '8px 0' }}>
+            <label style={{ display: 'block', fontSize: 12, fontWeight: 500, color: 'var(--text-secondary)', marginBottom: 6 }}>
+              Number of routes to generate
+            </label>
+            <Input
+              type="number"
+              min={10}
+              max={200}
+              value={generateCount}
+              onChange={(e) => setGenerateCount(e.target.value)}
+              style={{ fontFamily: 'var(--font-mono, monospace)' }}
+            />
+            <span style={{ fontSize: 11, color: 'var(--text-tertiary)', marginTop: 4, display: 'block' }}>
+              Min 10, max 200. Duplicate routes are automatically skipped.
+            </span>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => { setGenerateOpen(false); setGenerateCount('50'); }}
+              disabled={generateLoading}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={async () => {
+                setGenerateLoading(true);
+                try {
+                  const res = await api.post<{ count: number }>('/api/admin/schedules/generate', { count: parseInt(generateCount) || 50 });
+                  toast.success(`Generated ${res.count} scheduled routes`);
+                  setGenerateOpen(false);
+                  setGenerateCount('50');
+                  fetchSchedules();
+                } catch (err) {
+                  const message = err instanceof ApiError ? err.message : 'Failed to generate schedules';
+                  toast.error(message);
+                } finally {
+                  setGenerateLoading(false);
+                }
+              }}
+              disabled={generateLoading}
+            >
+              {generateLoading ? (
+                <>
+                  <Loader2 size={14} className="animate-spin" style={{ marginRight: 6 }} />
+                  Generating...
+                </>
+              ) : (
+                <>
+                  <Sparkles size={14} style={{ marginRight: 6 }} />
+                  Generate
+                </>
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>

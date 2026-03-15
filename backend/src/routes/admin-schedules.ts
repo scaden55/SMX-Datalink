@@ -117,6 +117,19 @@ export function adminSchedulesRouter(): Router {
     }
   });
 
+  // POST /api/admin/schedules/generate — auto-generate permanent schedules
+  router.post('/admin/schedules/generate', authMiddleware, adminMiddleware, (req, res) => {
+    try {
+      const count = parseInt(req.body.count as string) || 50;
+      const capped = Math.min(Math.max(count, 10), 200);
+      const result = charterGen.generatePermanentSchedules(capped);
+      res.json(result);
+    } catch (err) {
+      logger.error('Schedules', 'Generate schedules error', err);
+      res.status(500).json({ error: 'Failed to generate schedules' });
+    }
+  });
+
   // ── Dynamic Charter Management ──────────────────────────────
 
   // GET /api/admin/charters/status — generation status for current month

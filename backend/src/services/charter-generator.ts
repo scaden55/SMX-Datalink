@@ -303,6 +303,123 @@ export class CharterGeneratorService {
     return { charterCount, eventCount: 0 };
   }
 
+  /** Generate permanent scheduled cargo routes using smart airport selection. */
+  generatePermanentSchedules(count = 50): { count: number } {
+    const db = getDb();
+
+    // Query distinct fleet types with counts (weighted selection)
+    const fleetTypes = db.prepare(`
+      SELECT icao_type, range_nm, cruise_speed, is_cargo, cat, COUNT(*) as count
+      FROM fleet WHERE is_active = 1
+      GROUP BY icao_type
+    `).all() as FleetTypeRow[];
+
+    if (fleetTypes.length === 0) {
+      logger.warn('ScheduleGen', 'No active fleet found — skipping generation');
+      return { count: 0 };
+    }
+
+    // Load hub airports (route-network airports)
+    const hubs = db.prepare('SELECT icao, lat, lon, country, is_hub, handler FROM airports').all() as AirportRow[];
+
+    if (hubs.length === 0) {
+      logger.warn('ScheduleGen', 'No hub airports found — skipping generation');
+      return { count: 0 };
+    }
+
+    // Build set of existing permanent routes for duplicate detection
+    const existingRoutes = new Set(
+      (db.prepare(`
+        SELECT dep_icao || '|' || arr_icao || '|' || aircraft_type AS route_key
+        FROM scheduled_flights
+        WHERE expires_at IS NULL AND flight_type = 'C'
+      `).all() as { route_key: string }[]).map(r => r.route_key),
+    );
+
+    const insertStmt = db.prepare(`
+      INSERT INTO scheduled_flights
+        (flight_number, dep_icao, arr_icao, aircraft_type, dep_time, arr_time, distance_nm, flight_time_min, days_of_week, is_active, flight_type, expires_at, origin_handler, dest_handler)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, '1234567', 1, 'C', NULL, ?, ?)
+    `);
+
+    // Build weighted aircraft selection
+    const totalWeight = fleetTypes.reduce((s, f) => s + f.count, 0);
+
+    let created = 0;
+    let attempts = 0;
+    const maxAttempts = count * 5;
+
+    const txn = db.transaction(() => {
+      while (created < count && attempts < maxAttempts) {
+        attempts++;
+
+        // Pick random aircraft type (weighted by fleet count)
+        const aircraft = pickWeighted(fleetTypes, totalWeight);
+        const maxRange = Math.floor((aircraft.range_nm || 2000) * 0.9);
+
+        // Roll route type: 70% domestic, 20% international, 10% global
+        const roll = Math.random();
+        let origin: AirportRow | null = null;
+        let destination: OaAirportRow | null = null;
+
+        const minRunway = minRunwayForCategory(aircraft.cat);
+
+        if (roll < 0.70) {
+          origin = pickWeightedAirport(hubs);
+          destination = this.findRandomDestination(db, origin, maxRange, origin.country, minRunway, aircraft.cat, hubs);
+        } else if (roll < 0.90) {
+          origin = pickWeightedAirport(hubs);
+          destination = this.findRandomDestination(db, origin, maxRange, null, minRunway, aircraft.cat, hubs);
+        } else {
+          const globalOrigin = this.findRandomLargeAirport(db, minRunway);
+          if (!globalOrigin) continue;
+          origin = { icao: globalOrigin.ident, lat: globalOrigin.latitude_deg, lon: globalOrigin.longitude_deg, country: globalOrigin.iso_country, is_hub: 0, handler: null };
+          destination = this.findRandomDestination(db, origin, maxRange, null, minRunway, aircraft.cat, hubs);
+        }
+
+        if (!origin || !destination) continue;
+        if (origin.icao === destination.ident) continue;
+
+        // Skip duplicate routes
+        const routeKey = `${origin.icao}|${destination.ident}|${aircraft.icao_type}`;
+        if (existingRoutes.has(routeKey)) continue;
+
+        const distanceNm = haversineNm(origin.lat, origin.lon, destination.latitude_deg, destination.longitude_deg);
+        if (distanceNm < 50) continue;
+
+        const flightTimeMin = Math.round((distanceNm / aircraft.cruise_speed) * 60);
+
+        // Random departure time 06:00–22:00 UTC
+        const depHour = 6 + Math.floor(Math.random() * 17);
+        const depMin = Math.floor(Math.random() * 4) * 15;
+        const depTime = `${String(depHour).padStart(2, '0')}:${String(depMin).padStart(2, '0')}`;
+
+        const arrTotalMin = depHour * 60 + depMin + flightTimeMin;
+        const arrH = Math.floor(arrTotalMin / 60) % 24;
+        const arrM = arrTotalMin % 60;
+        const arrTime = `${String(arrH).padStart(2, '0')}:${String(arrM).padStart(2, '0')}`;
+
+        const flightNumber = randomFlightNumber(db, origin.icao, destination.ident);
+
+        const originHandler = origin.handler ?? null;
+        const destAirport = hubs.find(h => h.icao === destination!.ident);
+        const destHandler = destAirport?.handler ?? null;
+
+        insertStmt.run(
+          flightNumber, origin.icao, destination.ident, aircraft.icao_type,
+          depTime, arrTime, distanceNm, flightTimeMin,
+          originHandler, destHandler,
+        );
+        existingRoutes.add(routeKey);
+        created++;
+      }
+    });
+
+    txn();
+    logger.info('ScheduleGen', `Generated ${created} permanent schedules (${attempts} attempts)`);
+    return { count: created };
+  }
+
   /** Remove expired generated/event charters that have no active bids. */
   cleanupExpired(): number {
     const result = getDb().prepare(`
