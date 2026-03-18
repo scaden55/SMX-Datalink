@@ -172,7 +172,7 @@ export function getFinanceKpiSnapshot(db: Database): FinanceKpiSnapshot {
   // Maintenance reserve: sum from aircraft_hours table
   const reserve = db.prepare(`
     SELECT
-      COALESCE(SUM(maintenance_reserve), 0) AS reserveTotal
+      COALESCE(SUM(maintenance_reserve_balance), 0) AS reserveTotal
     FROM aircraft_hours
   `).get();
 
@@ -277,6 +277,8 @@ financeEvents.emitFinance('aircraft:finance-update', {
 
 **File:** Maintenance service/routes (wherever work orders are completed)
 
+> **Note:** The code below is illustrative pseudocode showing the event contract. Actual variable names and sources depend on the maintenance CRUD implementation (not yet built). The key requirement is: when a maintenance task completes, emit an event matching this shape.
+
 When a maintenance task is marked complete:
 
 ```typescript
@@ -290,7 +292,7 @@ const ledgerEntry = db.prepare(`
 
 // Get current reserve balance for this aircraft
 const reserveRow = db.prepare(`
-  SELECT COALESCE(maintenance_reserve, 0) AS reserve FROM aircraft_hours WHERE aircraft_id = ?
+  SELECT COALESCE(maintenance_reserve_balance, 0) AS reserve FROM aircraft_hours WHERE aircraft_id = ?
 `).get(aircraftId);
 
 financeEvents.emitFinance(isUnscheduled ? 'maintenance:unscheduled' : 'maintenance:work-order', {
@@ -336,8 +338,10 @@ for (const [busEvent, socketEvent] of financeSocketEvents) {
   });
 }
 
-// Inside the per-socket connection handler, after auth verification:
-if (socket.data.user?.role === 'admin') {
+// Inside io.on('connection'), after the socket is cast to AcarsSocket:
+// The handler's auth middleware sets (socket as AcarsSocket).user = payload via
+// socket.handshake.auth.token → authService.verifyAccessToken(). Match that pattern:
+if (socket.user?.role === 'admin') {
   socket.join('admin-finance');
 }
 ```
@@ -399,6 +403,9 @@ export interface FinanceAircraftPurchaseEvent {
   kpiSnapshot: FinanceKpiSnapshot;
 }
 
+// Note: This event intentionally omits kpiSnapshot — editing financial terms
+// (lease rate, insurance) does not create a ledger entry or change current-month KPIs.
+// The effect is deferred to the next MonthlyCloseService cycle.
 export interface FinanceAircraftUpdateEvent {
   eventId: number;
   aircraftId: number;
@@ -425,8 +432,8 @@ export interface FinanceMaintenanceEvent {
 **File:** `admin/src/hooks/useFinanceSocket.ts` (new)
 
 ```typescript
-import { useEffect, useRef, useCallback } from 'react';
-import { getSocket } from '../lib/socket';
+import { useEffect, useRef } from 'react';
+import { useSocketStore } from '../stores/socketStore';
 import type {
   FinancePirepPnlEvent,
   FinanceAircraftPurchaseEvent,
@@ -442,37 +449,38 @@ interface UseFinanceSocketOptions {
 }
 
 export function useFinanceSocket(options: UseFinanceSocketOptions) {
+  const socket = useSocketStore((s) => s.socket);
   const lastEventId = useRef(0);
-
-  const dedup = useCallback(<T extends { eventId: number }>(
-    data: T, handler?: (data: T) => void
-  ) => {
-    if (data.eventId <= lastEventId.current) return;
-    lastEventId.current = data.eventId;
-    handler?.(data);
-  }, []);
+  // Use refs for handlers to avoid re-subscribing on every render
+  const handlersRef = useRef(options);
+  handlersRef.current = options;
 
   useEffect(() => {
-    const socket = getSocket();
     if (!socket) return;
 
-    const handlers = {
-      'finance:pirep-pnl': (d: FinancePirepPnlEvent) => dedup(d, options.onPirepPnl),
-      'finance:aircraft-purchase': (d: FinanceAircraftPurchaseEvent) => dedup(d, options.onAircraftPurchase),
-      'finance:aircraft-update': (d: FinanceAircraftUpdateEvent) => dedup(d, options.onAircraftUpdate),
-      'finance:maintenance': (d: FinanceMaintenanceEvent) => dedup(d, options.onMaintenance),
+    function dedup<T extends { eventId: number }>(data: T, handler?: (data: T) => void) {
+      if (data.eventId <= lastEventId.current) return;
+      lastEventId.current = data.eventId;
+      handler?.(data);
+    }
+
+    const listeners = {
+      'finance:pirep-pnl': (d: FinancePirepPnlEvent) => dedup(d, handlersRef.current.onPirepPnl),
+      'finance:aircraft-purchase': (d: FinanceAircraftPurchaseEvent) => dedup(d, handlersRef.current.onAircraftPurchase),
+      'finance:aircraft-update': (d: FinanceAircraftUpdateEvent) => dedup(d, handlersRef.current.onAircraftUpdate),
+      'finance:maintenance': (d: FinanceMaintenanceEvent) => dedup(d, handlersRef.current.onMaintenance),
     };
 
-    for (const [event, handler] of Object.entries(handlers)) {
-      socket.on(event, handler);
+    for (const [event, handler] of Object.entries(listeners)) {
+      socket.on(event, handler as any);
     }
 
     return () => {
-      for (const [event, handler] of Object.entries(handlers)) {
-        socket.off(event, handler);
+      for (const [event, handler] of Object.entries(listeners)) {
+        socket.off(event, handler as any);
       }
     };
-  }, [options, dedup]);
+  }, [socket]);
 }
 ```
 
@@ -501,7 +509,30 @@ useFinanceSocket({
 });
 ```
 
-`mergeKpiSnapshot` replaces the current-month KPI values with the snapshot values. Sparkline trend arrays append the new data point if the month changed.
+`mergeKpiSnapshot` helper (used by both FinanceColumn and FinancesPage):
+
+```typescript
+function mergeKpiSnapshot(
+  prev: DashboardFinanceData,
+  snapshot: FinanceKpiSnapshot
+): DashboardFinanceData {
+  return {
+    ...prev,
+    monthlyRevenue: snapshot.totalRevenue,
+    monthlyExpenses: snapshot.totalExpenses,
+    netIncome: snapshot.netIncome,
+    flightCount: snapshot.flightCount,
+    maintenanceReserve: snapshot.maintenanceReserve,
+    maintenanceActual: snapshot.maintenanceActual,
+    // Append to sparkline trend if same month, otherwise start new series point
+    revenueTrend: prev.revenueTrend.map((pt) =>
+      pt.month === snapshot.monthKey
+        ? { ...pt, value: snapshot.totalRevenue }
+        : pt
+    ),
+  };
+}
+```
 
 #### 7b. FinancesPage
 
