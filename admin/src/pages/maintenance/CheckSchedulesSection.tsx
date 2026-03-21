@@ -63,20 +63,9 @@ function CheckTypeBadge({ type }: { type: CheckType }) {
   );
 }
 
-const labelStyle: React.CSSProperties = {
-  fontSize: 10,
-  fontWeight: 600,
-  letterSpacing: 0.8,
-  textTransform: 'uppercase',
-  color: 'var(--text-tertiary)',
-};
+const LABEL_CLASS = 'text-subheading';
 
-const monoValue: React.CSSProperties = {
-  fontSize: 13,
-  color: 'var(--text-primary)',
-  fontFamily: 'var(--font-mono)',
-  fontVariantNumeric: 'tabular-nums',
-};
+const MONO_VALUE_CLASS = 'data-md';
 
 // ── Skeleton ─────────────────────────────────────────────────
 
@@ -88,7 +77,8 @@ function CardSkeleton() {
           key={i}
           style={{
             height: 180,
-            background: 'var(--surface-2)',
+            background: 'transparent',
+            border: '1px solid var(--panel-border)',
             borderRadius: 'var(--radius-lg)',
             opacity: 0.5,
           }}
@@ -303,12 +293,12 @@ export function CheckSchedulesSection({ refreshKey }: { refreshKey: number }) {
       <div style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 16 }}>
         {/* Top bar */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' }}>
+          <div className="text-body" style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
             Check Schedules
           </div>
           <button
             onClick={() => setAddTypeOpen(true)}
-            className="btn-glow"
+            className="btn-glow text-caption"
             style={{
               display: 'inline-flex',
               alignItems: 'center',
@@ -318,7 +308,6 @@ export function CheckSchedulesSection({ refreshKey }: { refreshKey: number }) {
               color: '#fff',
               border: 'none',
               borderRadius: 6,
-              fontSize: 12,
               fontWeight: 600,
               cursor: 'pointer',
               transition: 'opacity 120ms',
@@ -334,12 +323,8 @@ export function CheckSchedulesSection({ refreshKey }: { refreshKey: number }) {
         {/* Empty state */}
         {sortedTypes.length === 0 && (
           <div
-            style={{
-              padding: '60px 24px',
-              textAlign: 'center',
-              color: 'var(--text-tertiary)',
-              fontSize: 13,
-            }}
+            className="text-body"
+            style={{ padding: '60px 24px', textAlign: 'center', color: 'var(--text-tertiary)' }}
           >
             No check schedules configured. Add an aircraft type to get started.
           </div>
@@ -368,14 +353,14 @@ export function CheckSchedulesSection({ refreshKey }: { refreshKey: number }) {
                   alignItems: 'center',
                   justifyContent: 'space-between',
                   padding: '10px 16px',
-                  background: 'var(--surface-2)',
+                  background: 'transparent',
+                  border: '1px solid var(--panel-border)',
                 }}
               >
                 <span
+                  className="data-md"
                   style={{
-                    fontSize: 14,
                     fontWeight: 700,
-                    fontFamily: 'var(--font-mono)',
                     color: 'var(--text-primary)',
                   }}
                 >
@@ -383,6 +368,7 @@ export function CheckSchedulesSection({ refreshKey }: { refreshKey: number }) {
                 </span>
                 <button
                   onClick={() => setDeleteAllType(icaoType)}
+                  className="text-caption"
                   style={{
                     display: 'inline-flex',
                     alignItems: 'center',
@@ -391,7 +377,6 @@ export function CheckSchedulesSection({ refreshKey }: { refreshKey: number }) {
                     background: 'none',
                     border: '1px solid var(--border-primary)',
                     borderRadius: 4,
-                    fontSize: 11,
                     fontWeight: 500,
                     color: 'var(--text-tertiary)',
                     cursor: 'pointer',
@@ -422,7 +407,7 @@ export function CheckSchedulesSection({ refreshKey }: { refreshKey: number }) {
                         borderTop: '1px solid var(--border-primary)',
                         transition: 'background 80ms',
                       }}
-                      onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--surface-2)'; }}
+                      onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--tint-subtle)'; }}
                       onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
                     >
                       {/* Badge */}
@@ -432,8 +417,8 @@ export function CheckSchedulesSection({ refreshKey }: { refreshKey: number }) {
 
                       {/* Interval Hours */}
                       <div style={{ minWidth: 90 }}>
-                        <div style={labelStyle}>Hours</div>
-                        <div style={monoValue}>
+                        <div className={LABEL_CLASS}>Hours</div>
+                        <div className={MONO_VALUE_CLASS} style={{ color: 'var(--text-primary)' }}>
                           {check.intervalHours != null ? `${check.intervalHours.toLocaleString()}h` : '--'}
                         </div>
                       </div>
@@ -441,8 +426,8 @@ export function CheckSchedulesSection({ refreshKey }: { refreshKey: number }) {
                       {/* Interval Cycles (C only) */}
                       {ct === 'C' && (
                         <div style={{ minWidth: 90 }}>
-                          <div style={labelStyle}>Cycles</div>
-                          <div style={monoValue}>
+                          <div className={LABEL_CLASS}>Cycles</div>
+                          <div className={MONO_VALUE_CLASS} style={{ color: 'var(--text-primary)' }}>
                             {check.intervalCycles != null ? check.intervalCycles.toLocaleString() : '--'}
                           </div>
                         </div>
@@ -451,8 +436,8 @@ export function CheckSchedulesSection({ refreshKey }: { refreshKey: number }) {
                       {/* Interval Months (D only) */}
                       {ct === 'D' && (
                         <div style={{ minWidth: 90 }}>
-                          <div style={labelStyle}>Months</div>
-                          <div style={monoValue}>
+                          <div className={LABEL_CLASS}>Months</div>
+                          <div className={MONO_VALUE_CLASS} style={{ color: 'var(--text-primary)' }}>
                             {check.intervalMonths != null ? `${check.intervalMonths}mo` : '--'}
                           </div>
                         </div>
@@ -461,8 +446,8 @@ export function CheckSchedulesSection({ refreshKey }: { refreshKey: number }) {
                       {/* Overflight % (A/B only) */}
                       {(ct === 'A' || ct === 'B') && (
                         <div style={{ minWidth: 90 }}>
-                          <div style={labelStyle}>Overflight</div>
-                          <div style={monoValue}>{check.overflightPct}%</div>
+                          <div className={LABEL_CLASS}>Overflight</div>
+                          <div className={MONO_VALUE_CLASS} style={{ color: 'var(--text-primary)' }}>{check.overflightPct}%</div>
                         </div>
                       )}
 
@@ -472,6 +457,7 @@ export function CheckSchedulesSection({ refreshKey }: { refreshKey: number }) {
                       {/* Edit button */}
                       <button
                         onClick={() => openEdit(check)}
+                        className="text-caption"
                         style={{
                           display: 'inline-flex',
                           alignItems: 'center',
@@ -480,7 +466,6 @@ export function CheckSchedulesSection({ refreshKey }: { refreshKey: number }) {
                           background: 'none',
                           border: '1px solid var(--border-primary)',
                           borderRadius: 4,
-                          fontSize: 11,
                           color: 'var(--text-tertiary)',
                           cursor: 'pointer',
                           transition: 'color 120ms',
@@ -511,6 +496,7 @@ export function CheckSchedulesSection({ refreshKey }: { refreshKey: number }) {
                     </div>
                     <button
                       onClick={() => handleAddMissingCheck(icaoType, ct)}
+                      className="text-caption"
                       style={{
                         display: 'inline-flex',
                         alignItems: 'center',
@@ -519,7 +505,6 @@ export function CheckSchedulesSection({ refreshKey }: { refreshKey: number }) {
                         background: 'none',
                         border: '1px dashed var(--border-primary)',
                         borderRadius: 4,
-                        fontSize: 11,
                         color: 'var(--text-tertiary)',
                         cursor: 'pointer',
                         transition: 'color 120ms, border-color 120ms',
@@ -569,7 +554,8 @@ export function CheckSchedulesSection({ refreshKey }: { refreshKey: number }) {
                 onChange={(e) => setAddIcaoType(e.target.value.toUpperCase().slice(0, 4))}
                 placeholder="B738"
                 maxLength={4}
-                style={{ fontFamily: 'var(--font-mono)', textTransform: 'uppercase' }}
+                className={MONO_VALUE_CLASS}
+                style={{ textTransform: 'uppercase' }}
               />
             </div>
           </div>

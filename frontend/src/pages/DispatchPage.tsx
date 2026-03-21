@@ -313,60 +313,28 @@ export function DispatchPage() {
   if (flights.length === 0) {
     return (
       <div className="flex h-full items-center justify-center">
-        <div className="text-center max-w-lg space-y-6">
-          <h2 className="text-[13px] font-semibold text-acars-text">
-            {isAdmin ? 'No Active Flights' : 'No Active Flight'}
-          </h2>
-
-          {!isAdmin && (
-            <>
-              <div className="flex items-center justify-center gap-3">
-                <div className="flex flex-col items-center gap-1.5">
-                  <div className="w-9 h-9 rounded-md bg-amber-500/10 border border-amber-400/20 flex items-center justify-center">
-                    <CalendarDots className="w-4 h-4 text-amber-400" />
-                  </div>
-                  <span className="text-[11px] font-medium text-amber-400">Schedule</span>
-                </div>
-                <ArrowRight className="w-4 h-4 text-sky-400/40" />
-                <div className="flex flex-col items-center gap-1.5">
-                  <div className="w-9 h-9 rounded-md bg-blue-500/10 border border-blue-400/20 flex items-center justify-center">
-                    <AirplaneTilt className="w-4 h-4 text-blue-400" />
-                  </div>
-                  <span className="text-[11px] font-medium text-blue-400">Bid</span>
-                </div>
-                <ArrowRight className="w-4 h-4 text-sky-400/40" />
-                <div className="flex flex-col items-center gap-1.5">
-                  <div className="w-9 h-9 rounded-md bg-blue-500/10 border border-blue-400/20 flex items-center justify-center">
-                    <Path className="w-4 h-4 text-blue-400" />
-                  </div>
-                  <span className="text-[11px] font-medium text-blue-400">Plan</span>
-                </div>
-                <ArrowRight className="w-4 h-4 text-sky-400/40" />
-                <div className="flex flex-col items-center gap-1.5">
-                  <div className="w-9 h-9 rounded-md bg-sky-500/10 border border-sky-400/20 flex items-center justify-center">
-                    <Broadcast className="w-4 h-4 text-sky-400" />
-                  </div>
-                  <span className="text-[11px] font-medium text-sky-400">Dispatch</span>
-                </div>
-              </div>
-
-              <p className="text-[12px] text-acars-muted leading-relaxed max-w-sm mx-auto">
-                Place a bid on the Schedule, create a flight plan on the Planning page, then your flight will appear here.
-              </p>
-
-              <button
-                onClick={() => navigate('/schedule')}
-                className="btn-primary btn-sm"
-              >
-                Go to Schedule
-              </button>
-            </>
-          )}
-
-          {isAdmin && (
-            <p className="text-[12px] text-acars-muted leading-relaxed max-w-sm mx-auto">
-              No pilots currently have flights with saved flight plans. Active flights will appear here once a pilot saves a flight plan from the Planning page.
+        <div className="flex flex-col items-center text-center gap-4">
+          <img src="./logos/chevron-light.png" alt="SMX" className="h-12 w-auto opacity-10" />
+          <div className="flex items-center justify-center w-12 h-12 rounded-md bg-sky-500/10 border border-sky-400/20">
+            <Broadcast className="w-5 h-5 text-sky-400" />
+          </div>
+          <div>
+            <h2 className="text-[13px] font-semibold text-acars-text">
+              {isAdmin ? 'No Active Flights' : 'No Active Flight'}
+            </h2>
+            <p className="text-[12px] text-acars-muted mt-1 max-w-sm mx-auto">
+              {isAdmin
+                ? 'No pilots currently have flights with saved flight plans. Active flights will appear here once a pilot saves a flight plan.'
+                : 'Place a bid on the Schedule, create a flight plan, then your flight will appear here.'}
             </p>
+          </div>
+          {!isAdmin && (
+            <button
+              onClick={() => navigate('/schedule')}
+              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md text-[11px] font-semibold text-amber-400 bg-amber-500/10 border border-amber-400/20 hover:bg-amber-500/20 transition-colors"
+            >
+              <CalendarDots className="w-3.5 h-3.5" /> Browse Schedule
+            </button>
           )}
         </div>
       </div>

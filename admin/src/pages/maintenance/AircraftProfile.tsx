@@ -8,6 +8,7 @@ import { fadeUp } from '@/lib/motion';
 import { WorkOrderBanner } from './WorkOrderBanner';
 import { AircraftLogbook } from './AircraftLogbook';
 import { DiscrepanciesTab } from './DiscrepanciesTab';
+import { AdsTab } from './AdsTab';
 
 // ── Types ────────────────────────────────────────────────────
 
@@ -279,7 +280,7 @@ export function AircraftProfile({ aircraftId, onBack }: AircraftProfileProps) {
           <TabPlaceholder tab="Checks" aircraftId={aircraftId} />
         )}
         {activeTab === 'ads' && (
-          <TabPlaceholder tab="ADs" aircraftId={aircraftId} />
+          <AdsTab aircraftId={aircraftId} />
         )}
         {activeTab === 'components' && (
           <TabPlaceholder tab="Components" aircraftId={aircraftId} />

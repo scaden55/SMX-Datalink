@@ -19,10 +19,10 @@ const elevationStyles: Record<Elevation, string> = {
 };
 
 const bgStyles: Record<Elevation, string> = {
-  0: 'bg-[var(--surface-0)]',
-  1: 'bg-[var(--surface-2)]',
-  2: 'bg-[var(--surface-2)]',
-  3: 'bg-[var(--surface-3)]',
+  0: 'bg-transparent',
+  1: 'bg-transparent',
+  2: 'bg-transparent',
+  3: 'bg-[var(--tint-alt-row)]',
 };
 
 const paddingStyles: Record<Padding, string> = {
@@ -46,7 +46,7 @@ export const Surface = forwardRef<HTMLDivElement, SurfaceProps>(
       <div
         ref={ref}
         className={cn(
-          'rounded-lg',
+          '',
           bgStyles[elevation],
           elevationStyles[elevation],
           paddingStyles[padding],

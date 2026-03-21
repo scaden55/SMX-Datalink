@@ -28,7 +28,7 @@ export const AreaChart = memo(function AreaChart({
 export const BarTrend = memo(function BarTrend({
   data,
   height = 24,
-  color = '#4ade80',
+  color = 'var(--accent-emerald)',
 }: {
   data: number[];
   height?: number;
@@ -62,7 +62,7 @@ export const BarTrend = memo(function BarTrend({
 export const Sparkline = memo(function Sparkline({
   data,
   height = 18,
-  color = '#4F6CCD',
+  color = 'var(--accent-blue)',
   strokeWidth = 1.5,
 }: {
   data: number[];

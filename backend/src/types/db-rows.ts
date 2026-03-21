@@ -259,9 +259,16 @@ export interface AirworthinessDirectiveRow {
   compliance_status: string;
   compliance_date: string | null;
   compliance_method: string | null;
+  compliance_notes: string | null;
   recurring_interval_hours: number | null;
   next_due_hours: number | null;
   next_due_date: string | null;
+  source: string | null;
+  federal_register_url: string | null;
+  applicability: string | null;
+  compliance_summary: string | null;
+  needs_review: number;
+  classification_reason: string | null;
   created_by: number | null;
   created_at: string;
   updated_at: string;

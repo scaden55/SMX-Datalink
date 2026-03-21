@@ -110,7 +110,6 @@ function InfoTip({ text }: { text: string }) {
             border: '1px solid var(--border-secondary)',
             color: 'var(--text-primary)',
             fontSize: 'var(--text-caption-size)',
-            fontFamily: 'var(--font-sans)',
             lineHeight: 1.5,
             padding: '8px 12px',
           }}
@@ -126,14 +125,12 @@ const inputStyle = {
   background: 'var(--input-bg)',
   borderColor: 'var(--input-border)',
   color: 'var(--text-primary)',
-  fontFamily: 'var(--font-sans)',
   fontSize: 'var(--text-body-size)',
 } as const;
 
 const captionStyle = {
   fontSize: 'var(--text-caption-size)',
   color: 'var(--text-secondary)',
-  fontFamily: 'var(--font-sans)',
 } as const;
 
 const suffixStyle = {
@@ -265,7 +262,7 @@ export function RevenueModelPage() {
   if (!config) {
     return (
       <div className="flex items-center justify-center h-full">
-        <p style={{ color: 'var(--text-secondary)', fontSize: 'var(--text-body-size)' }}>
+        <p className="text-body">
           No revenue model configuration found.
         </p>
       </div>
@@ -302,13 +299,10 @@ export function RevenueModelPage() {
           </div>
           <div>
             <h1
+              className="text-display"
               style={{
-                fontSize: 'var(--text-display-size)',
                 fontWeight: 600,
-                color: 'var(--text-primary)',
-                fontFamily: 'var(--font-sans)',
                 margin: 0,
-                lineHeight: 1.2,
               }}
             >
               Revenue Model
@@ -325,7 +319,6 @@ export function RevenueModelPage() {
           style={{
             background: 'var(--accent-blue)',
             color: '#fff',
-            fontFamily: 'var(--font-sans)',
           }}
         >
           {saving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
@@ -363,14 +356,14 @@ export function RevenueModelPage() {
                 style={{
                   gridTemplateColumns: '72px 1fr 1fr',
                   padding: '10px 16px',
-                  background: 'var(--surface-3)',
+                  background: 'var(--tint-subtle)',
                   borderBottom: '1px solid var(--border-primary)',
                 }}
               >
-                <span style={{ ...suffixStyle, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 1 }}>
+                <span className="text-subheading" style={{ ...suffixStyle, letterSpacing: 1 }}>
                   Code
                 </span>
-                <span style={{ ...suffixStyle, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 1 }}>
+                <span className="text-subheading" style={{ ...suffixStyle, letterSpacing: 1 }}>
                   Description
                 </span>
                 <span style={{ ...suffixStyle, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 1, textAlign: 'right' }}>
@@ -390,12 +383,8 @@ export function RevenueModelPage() {
                       ...(gi > 0 ? { borderTop: '1px solid var(--border-primary)' } : {}),
                     }}
                   >
-                    <span style={{
-                      fontSize: 'var(--text-caption-size)',
-                      fontWeight: 600,
+                    <span className="text-subheading" style={{
                       color: 'var(--accent-blue)',
-                      fontFamily: 'var(--font-sans)',
-                      textTransform: 'uppercase',
                       letterSpacing: 0.5,
                     }}>
                       {group.classLabel}
@@ -415,17 +404,13 @@ export function RevenueModelPage() {
                           borderBottom: isLast ? 'none' : '1px solid var(--border-primary)',
                         }}
                       >
-                        <span style={{
-                          fontSize: 'var(--text-body-size)',
-                          fontFamily: 'var(--font-sans)',
+                        <span className="text-body" style={{
                           fontWeight: 600,
                           color: 'var(--text-primary)',
                         }}>
                           {fare.code}
                         </span>
-                        <span style={{
-                          fontSize: 'var(--text-body-size)',
-                          fontFamily: 'var(--font-sans)',
+                        <span className="text-body" style={{
                           color: 'var(--text-secondary)',
                         }}>
                           {fare.label}
@@ -485,12 +470,10 @@ export function RevenueModelPage() {
 
             {!manifestValid && (
               <div
-                className="rounded-md mb-3"
+                className="rounded-md mb-3 text-caption"
                 style={{
                   padding: '8px 12px',
                   background: 'var(--accent-red-bg)',
-                  fontSize: 'var(--text-caption-size)',
-                  fontFamily: 'var(--font-sans)',
                   color: 'var(--accent-red)',
                   fontWeight: 500,
                 }}
@@ -619,7 +602,6 @@ export function RevenueModelPage() {
                 style={{
                   background: 'var(--accent-blue)',
                   color: '#fff',
-                  fontFamily: 'var(--font-sans)',
                 }}
               >
                 {savingTiers ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
@@ -640,7 +622,7 @@ export function RevenueModelPage() {
                 style={{
                   gridTemplateColumns: '160px repeat(4, 1fr)',
                   padding: '10px 16px',
-                  background: 'var(--surface-3)',
+                  background: 'var(--tint-subtle)',
                   borderBottom: '1px solid var(--border-primary)',
                 }}
               >
@@ -648,10 +630,9 @@ export function RevenueModelPage() {
                 {TIER_ORDER.map((tier) => (
                   <span
                     key={tier}
+                    className="text-subheading"
                     style={{
                       ...suffixStyle,
-                      fontWeight: 600,
-                      textTransform: 'uppercase',
                       letterSpacing: 1,
                       textAlign: 'center',
                     }}
@@ -670,17 +651,14 @@ export function RevenueModelPage() {
                     gridTemplateColumns: '160px repeat(4, 1fr)',
                     padding: '8px 16px',
                     borderBottom: ri < TIER_RATE_ROWS.length - 1 ? '1px solid var(--border-primary)' : 'none',
-                    background: 'var(--surface-2)',
+                    background: 'transparent',
                   }}
                 >
                   <span
+                    className="text-subheading"
                     style={{
-                      fontSize: 'var(--text-caption-size)',
                       color: 'var(--text-secondary)',
-                      fontWeight: 600,
-                      textTransform: 'uppercase',
                       letterSpacing: 0.5,
-                      fontFamily: 'var(--font-sans)',
                     }}
                   >
                     {row.label}
@@ -703,12 +681,10 @@ export function RevenueModelPage() {
                             min="0"
                             value={String(val)}
                             onChange={(e) => updateTierField(tierName, row.key, e.target.value)}
-                            className="text-right font-mono"
+                            className="text-right data-md"
                             style={{
                               ...inputStyle,
                               paddingLeft: 20,
-                              fontFamily: 'ui-monospace, Cascadia Mono, Consolas, monospace',
-                              fontVariantNumeric: 'tabular-nums',
                             }}
                           />
                         </div>

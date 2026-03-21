@@ -32,9 +32,9 @@ const DEFAULT_BASE_YIELD = 2.50; // $/lb
 const DEFAULT_DISTANCE_FACTOR = 1.0;
 
 const VOLATILITY_CAPS: Record<DemandVolatility, [number, number]> = {
-  low:    [0.8, 1.3],
-  medium: [0.5, 2.0],
-  high:   [0.3, 2.5],
+  low:    [0.85, 1.20],
+  medium: [0.70, 1.50],
+  high:   [0.50, 2.00],
 };
 
 // Demand volatility stored as REAL in finance_rate_config:

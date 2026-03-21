@@ -4,6 +4,7 @@ import type { ActiveFlightHeartbeat, AcarsMessagePayload, TrackPoint, FlightExce
 import { useAuthStore } from '@/stores/authStore';
 import { useSocketStore } from '@/stores/socketStore';
 import { useSocket } from '@/hooks/useSocket';
+import { api } from '@/lib/api';
 import { toast } from '@/stores/toastStore';
 import { FlightListPanel } from '@/components/dispatch/FlightListPanel';
 import { FlightMap } from '@/components/dispatch/FlightMap';
@@ -42,6 +43,41 @@ export function DispatchBoardPage() {
     unsubscribeEvent: 'livemap:unsubscribe',
   });
 
+  // DB fallback — fetch active flights via API so dispatch board works even without live heartbeats
+  useEffect(() => {
+    if (flights.length > 0) return; // socket data arrived, no need for fallback
+    api.get<Array<{
+      bid_id: number; user_id: number; callsign: string; flight_number: string;
+      dep_icao: string; arr_icao: string; aircraft_type: string;
+      dep_lat: number | null; dep_lon: number | null; arr_lat: number | null; arr_lon: number | null;
+    }>>('/api/admin/dashboard/active-flights')
+      .then((data) => {
+        if (data.length > 0 && flights.length === 0) {
+          setFlights(data.map((f) => ({
+            userId: f.user_id,
+            bidId: f.bid_id,
+            callsign: f.callsign,
+            flightNumber: f.flight_number,
+            aircraftType: f.aircraft_type,
+            latitude: f.dep_lat ?? 0,
+            longitude: f.dep_lon ?? 0,
+            altitude: 0,
+            heading: 0,
+            groundSpeed: 0,
+            phase: 'active',
+            timestamp: new Date().toISOString(),
+            depIcao: f.dep_icao,
+            arrIcao: f.arr_icao,
+            depLat: f.dep_lat ?? undefined,
+            depLon: f.dep_lon ?? undefined,
+            arrLat: f.arr_lat ?? undefined,
+            arrLon: f.arr_lon ?? undefined,
+          })));
+        }
+      })
+      .catch(() => {});
+  }, [flights.length]);
+
   // Subscribe to dispatch telemetry for the selected flight
   useEffect(() => {
     if (!socket) return;
@@ -65,6 +101,16 @@ export function DispatchBoardPage() {
       }
     };
   }, [socket, selectedFlight]);
+
+  // Listen for per-flight telemetry from the heartbeat relay
+  useSocket<ActiveFlightHeartbeat>('dispatch:telemetry', (data) => {
+    // Update the flight in the flights array
+    setFlights((prev) => prev.map((f) => f.bidId === data.bidId ? data : f));
+    // Update selected flight if it matches
+    if (selectedFlight?.bidId && data.bidId === selectedFlight.bidId) {
+      setSelectedFlight(data);
+    }
+  });
 
   // Listen for ACARS messages
   useSocket<AcarsMessagePayload>('acars:message', (msg) => {
@@ -135,13 +181,17 @@ export function DispatchBoardPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5, duration: 0.3 }}
         >
-          <span className={`inline-block h-2 w-2 rounded-full ${
-            connected
-              ? 'bg-[var(--accent-emerald)] pulse-dot'
-              : connecting
-                ? 'bg-[var(--accent-amber)] animate-pulse'
-                : 'bg-[var(--accent-red)]'
-          }`} />
+          <span
+            className={`inline-block h-2 w-2 rounded-full ${
+              connected
+                ? 'bg-[var(--accent-emerald)] pulse-dot'
+                : connecting
+                  ? 'bg-[var(--accent-amber)] animate-pulse'
+                  : 'bg-[var(--accent-red)]'
+            }`}
+            role="status"
+            aria-label={connected ? 'Connected' : connecting ? 'Connecting' : 'Offline'}
+          />
           <span className="text-[var(--text-secondary)]">{
             connected
               ? 'Live'

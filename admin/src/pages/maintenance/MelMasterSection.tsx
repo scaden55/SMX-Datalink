@@ -110,29 +110,21 @@ function StatusBadge({ active }: { active: boolean }) {
 
 // ── Shared Styles ────────────────────────────────────────────
 
+const COL_HEADER_CLASS = 'text-subheading';
 const colHeaderStyle: React.CSSProperties = {
-  fontSize: 10,
-  fontWeight: 600,
-  letterSpacing: 0.8,
-  color: 'var(--text-tertiary)',
-  textTransform: 'uppercase',
   padding: '10px 16px',
   borderBottom: '1px solid var(--border-primary)',
   userSelect: 'none',
 };
 
+const CELL_CLASS = 'text-caption';
 const cellStyle: React.CSSProperties = {
   padding: '10px 16px',
   borderBottom: '1px solid var(--border-primary)',
-  fontSize: 12,
-  color: 'var(--text-secondary)',
   verticalAlign: 'middle',
 };
 
-const monoStyle: React.CSSProperties = {
-  fontFamily: 'var(--font-mono)',
-  fontVariantNumeric: 'tabular-nums',
-};
+const MONO_CLASS = 'data-sm';
 
 // ── Skeleton ─────────────────────────────────────────────────
 
@@ -144,7 +136,8 @@ function TableSkeleton() {
           key={i}
           style={{
             height: 42,
-            background: 'var(--surface-2)',
+            background: 'transparent',
+            border: '1px solid var(--panel-border)',
             borderRadius: 4,
             marginBottom: 4,
             opacity: 0.5,
@@ -260,7 +253,7 @@ export function MelMasterSection({ refreshKey }: { refreshKey: number }) {
         }}
       >
         <Select value={typeFilter} onValueChange={setTypeFilter}>
-          <SelectTrigger style={{ width: 160, fontSize: 12 }}>
+          <SelectTrigger className="text-caption" style={{ width: 160 }}>
             <SelectValue placeholder="All Types" />
           </SelectTrigger>
           <SelectContent>
@@ -277,7 +270,7 @@ export function MelMasterSection({ refreshKey }: { refreshKey: number }) {
 
         <button
           onClick={() => setCreateOpen(true)}
-          className="btn-glow"
+          className="btn-glow text-caption"
           style={{
             display: 'inline-flex',
             alignItems: 'center',
@@ -287,7 +280,6 @@ export function MelMasterSection({ refreshKey }: { refreshKey: number }) {
             color: '#fff',
             border: 'none',
             borderRadius: 6,
-            fontSize: 12,
             fontWeight: 600,
             cursor: 'pointer',
             transition: 'opacity 120ms',
@@ -303,12 +295,8 @@ export function MelMasterSection({ refreshKey }: { refreshKey: number }) {
       {/* Empty state */}
       {filteredItems.length === 0 && (
         <div
-          style={{
-            padding: '60px 24px',
-            textAlign: 'center',
-            color: 'var(--text-tertiary)',
-            fontSize: 13,
-          }}
+          className="text-body"
+          style={{ padding: '60px 24px', textAlign: 'center', color: 'var(--text-tertiary)' }}
         >
           No MEL master items found. Add an item to get started.
         </div>
@@ -320,13 +308,13 @@ export function MelMasterSection({ refreshKey }: { refreshKey: number }) {
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr>
-                <th style={{ ...colHeaderStyle, width: 80 }}>Item #</th>
-                <th style={colHeaderStyle}>ATA</th>
-                <th style={colHeaderStyle}>Title</th>
-                <th style={{ ...colHeaderStyle, width: 80, textAlign: 'center' }}>Category</th>
-                <th style={{ ...colHeaderStyle, width: 100 }}>Repair Int.</th>
-                <th style={{ ...colHeaderStyle, width: 80, textAlign: 'center' }}>Status</th>
-                <th style={{ ...colHeaderStyle, width: 48 }} />
+                <th className={COL_HEADER_CLASS} style={{ ...colHeaderStyle, width: 80 }}>Item #</th>
+                <th className={COL_HEADER_CLASS} style={colHeaderStyle}>ATA</th>
+                <th className={COL_HEADER_CLASS} style={colHeaderStyle}>Title</th>
+                <th className={COL_HEADER_CLASS} style={{ ...colHeaderStyle, width: 80, textAlign: 'center' }}>Category</th>
+                <th className={COL_HEADER_CLASS} style={{ ...colHeaderStyle, width: 100 }}>Repair Int.</th>
+                <th className={COL_HEADER_CLASS} style={{ ...colHeaderStyle, width: 80, textAlign: 'center' }}>Status</th>
+                <th className={COL_HEADER_CLASS} style={{ ...colHeaderStyle, width: 48 }} />
               </tr>
             </thead>
             <motion.tbody variants={tableContainer} initial="hidden" animate="visible">
@@ -335,7 +323,7 @@ export function MelMasterSection({ refreshKey }: { refreshKey: number }) {
                   key={item.id}
                   variants={tableRow}
                   style={{
-                    background: hoveredId === item.id ? 'var(--surface-3)' : 'transparent',
+                    background: hoveredId === item.id ? 'var(--tint-subtle)' : 'transparent',
                     transition: 'background 80ms',
                     opacity: item.isActive ? 1 : 0.5,
                   }}
@@ -343,12 +331,12 @@ export function MelMasterSection({ refreshKey }: { refreshKey: number }) {
                   onMouseLeave={() => setHoveredId(null)}
                 >
                   {/* Item # */}
-                  <td style={{ ...cellStyle, ...monoStyle, fontSize: 12 }}>
+                  <td className={`${CELL_CLASS} ${MONO_CLASS}`} style={cellStyle}>
                     {item.itemNumber}
                   </td>
 
                   {/* ATA */}
-                  <td style={{ ...cellStyle, ...monoStyle, fontSize: 11 }}>
+                  <td className={`${CELL_CLASS} ${MONO_CLASS}`} style={cellStyle}>
                     {item.ataChapter}
                     {item.ataTitle && (
                       <span style={{ color: 'var(--text-tertiary)', marginLeft: 6 }}>
@@ -358,27 +346,27 @@ export function MelMasterSection({ refreshKey }: { refreshKey: number }) {
                   </td>
 
                   {/* Title */}
-                  <td style={{ ...cellStyle, fontSize: 12 }}>
+                  <td className={CELL_CLASS} style={cellStyle}>
                     {item.title}
                   </td>
 
                   {/* Category */}
-                  <td style={{ ...cellStyle, textAlign: 'center' }}>
+                  <td className={CELL_CLASS} style={{ ...cellStyle, textAlign: 'center' }}>
                     <CategoryBadge category={item.category} />
                   </td>
 
                   {/* Repair Interval */}
-                  <td style={{ ...cellStyle, ...monoStyle }}>
+                  <td className={`${CELL_CLASS} ${MONO_CLASS}`} style={cellStyle}>
                     {item.repairIntervalDays != null ? `${item.repairIntervalDays}d` : '\u2014'}
                   </td>
 
                   {/* Status */}
-                  <td style={{ ...cellStyle, textAlign: 'center' }}>
+                  <td className={CELL_CLASS} style={{ ...cellStyle, textAlign: 'center' }}>
                     <StatusBadge active={item.isActive} />
                   </td>
 
                   {/* Actions */}
-                  <td style={{ ...cellStyle, padding: '6px 8px' }}>
+                  <td className={CELL_CLASS} style={{ ...cellStyle, padding: '6px 8px' }}>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <button
@@ -580,7 +568,8 @@ function MelFormDialog({
               placeholder="B738"
               maxLength={4}
               disabled={isEdit}
-              style={{ fontFamily: 'var(--font-mono)', textTransform: 'uppercase' }}
+              className={MONO_CLASS}
+              style={{ textTransform: 'uppercase' }}
             />
           </div>
 
@@ -588,7 +577,7 @@ function MelFormDialog({
           <div className="space-y-2">
             <Label>ATA Chapter *</Label>
             <Select value={ataChapter} onValueChange={setAtaChapter} disabled={false}>
-              <SelectTrigger style={{ fontSize: 12 }}>
+              <SelectTrigger className="text-caption">
                 <SelectValue placeholder="Select ATA chapter" />
               </SelectTrigger>
               <SelectContent>
@@ -609,7 +598,7 @@ function MelFormDialog({
               onChange={(e) => setItemNumber(e.target.value)}
               placeholder="21-01"
               disabled={isEdit}
-              style={{ fontFamily: 'var(--font-mono)' }}
+              className={MONO_CLASS}
             />
           </div>
 
@@ -627,7 +616,7 @@ function MelFormDialog({
           <div className="space-y-2">
             <Label>Category *</Label>
             <Select value={category} onValueChange={(v) => setCategory(v as MelCategory)}>
-              <SelectTrigger style={{ fontSize: 12 }}>
+              <SelectTrigger className="text-caption">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>

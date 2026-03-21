@@ -90,6 +90,20 @@ export function setupWebSocket(
     findActiveBidByUser: () => getDb().prepare(
       `SELECT id FROM active_bids WHERE user_id = ? AND flight_plan_phase IN ('active', 'airborne') LIMIT 1`,
     ),
+    findBidRoute: () => getDb().prepare(
+      `SELECT sf.flight_number, sf.dep_icao, sf.arr_icao,
+              COALESCE(d.lat, oa_d.latitude_deg) AS dep_lat,
+              COALESCE(d.lon, oa_d.longitude_deg) AS dep_lon,
+              COALESCE(a.lat, oa_a.latitude_deg) AS arr_lat,
+              COALESCE(a.lon, oa_a.longitude_deg) AS arr_lon
+       FROM active_bids ab
+       JOIN scheduled_flights sf ON sf.id = ab.schedule_id
+       LEFT JOIN airports d ON d.icao = sf.dep_icao
+       LEFT JOIN airports a ON a.icao = sf.arr_icao
+       LEFT JOIN oa_airports oa_d ON oa_d.ident = sf.dep_icao
+       LEFT JOIN oa_airports oa_a ON oa_a.ident = sf.arr_icao
+       WHERE ab.id = ?`,
+    ),
     bidOwner: () => getDb().prepare('SELECT user_id FROM active_bids WHERE id = ?'),
     bidAircraft: () => getDb().prepare(
       `SELECT ab.aircraft_id, f.registration FROM active_bids ab
@@ -340,10 +354,19 @@ export function setupWebSocket(
         bidId = bid?.id;
       } catch { /* non-critical */ }
 
+      // Look up route info (dep/arr airports + coords) from the bid's schedule
+      let routeInfo: { flight_number: string; dep_icao: string; arr_icao: string; dep_lat: number | null; dep_lon: number | null; arr_lat: number | null; arr_lon: number | null } | undefined;
+      if (bidId) {
+        try {
+          routeInfo = stmts.findBidRoute().get(bidId) as typeof routeInfo;
+        } catch { /* non-critical */ }
+      }
+
       const sanitized: ActiveFlightHeartbeat = {
         userId: socket.user.userId,
         bidId,
         callsign: socket.user.callsign,
+        flightNumber: routeInfo?.flight_number,
         aircraftType: String(data.aircraftType || '').slice(0, 64),
         latitude: Number.isFinite(data.latitude) ? data.latitude : 0,
         longitude: Number.isFinite(data.longitude) ? data.longitude : 0,
@@ -352,6 +375,12 @@ export function setupWebSocket(
         groundSpeed: Number.isFinite(data.groundSpeed) ? data.groundSpeed : 0,
         phase: String(data.phase || 'unknown').slice(0, 32),
         timestamp: new Date().toISOString(),
+        depIcao: routeInfo?.dep_icao,
+        arrIcao: routeInfo?.arr_icao,
+        depLat: routeInfo?.dep_lat ?? undefined,
+        depLon: routeInfo?.dep_lon ?? undefined,
+        arrLat: routeInfo?.arr_lat ?? undefined,
+        arrLon: routeInfo?.arr_lon ?? undefined,
       };
       // Guard against unbounded growth — only allow updates for existing entries or if under cap
       if (activeFlights.has(socket.user.userId) || activeFlights.size < MAX_ACTIVE_FLIGHTS) {
@@ -360,6 +389,11 @@ export function setupWebSocket(
       }
       pilotSockets.set(socket.user.userId, socket.id);
       broadcastFlights();
+
+      // Relay heartbeat telemetry to dispatch observers in the bid room
+      if (bidId) {
+        io.to(`bid:${bidId}`).emit('dispatch:telemetry', sanitized);
+      }
     });
 
     socket.on('flight:ended', () => {
@@ -412,7 +446,6 @@ export function setupWebSocket(
     });
 
     socket.on('livemap:subscribe', () => {
-      if (!socket.user) return;
       if (livemapSubscribers.size >= MAX_SUBSCRIBERS) return;
       livemapSubscribers.add(socket.id);
       socket.join(ROOM_LIVEMAP);

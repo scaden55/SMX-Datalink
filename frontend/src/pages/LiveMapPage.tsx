@@ -38,6 +38,7 @@ import { useTrackStore } from '../stores/trackStore';
 import type { Airport, ActiveBidEntry, AllBidsResponse, VatsimPilot } from '@acars/shared';
 import { useActiveFlightsStore } from '../stores/activeFlightsStore';
 import { useSocketStore } from '../stores/socketStore';
+import { getAircraftIcon, getIconSize } from '../lib/aircraft-icons';
 
 // ─── Types ───────────────────────────────────────────────────
 
@@ -53,38 +54,32 @@ const TRAIL_INTERVAL_MS = 3000;
 const MAX_TRAIL_POINTS = 200;
 const REFETCH_INTERVAL_MS = 60_000;
 
-const PLANE_SVG = (heading: number, size: number, color: string, glow: boolean) => `
-  <svg viewBox="0 0 64 64" width="${size}" height="${size}" style="transform: rotate(${heading}deg); filter: drop-shadow(0 1px 3px rgba(0,0,0,0.6))${glow ? ` drop-shadow(0 0 8px ${color}80)` : ''};">
-    <path d="
-      M32 2
-      C33 2 34 3 34 5
-      L34 20
-      L54 30 C56 31 56 33 55 34 L34 32
-      L34 48
-      L42 54 C43 55 43 56 42 57 L34 55
-      L33 58 C32.5 59 31.5 59 31 58
-      L30 55
-      L22 57 C21 56 21 55 22 54 L30 48
-      L30 32
-      L9 34 C8 33 8 31 10 30 L30 20
-      L30 5
-      C30 3 31 2 32 2 Z"
-      fill="${color}" stroke="rgba(0,0,0,0.3)" stroke-width="0.5"/>
-  </svg>`;
+/** Build a DivIcon for an active airline flight using type-specific SVG shapes. */
+const activeFlightIconCache = new Map<string, L.DivIcon>();
 
-const activeFlightIconCache = new Map<number, L.DivIcon>();
-
-function getActiveFlightIcon(heading: number): L.DivIcon {
+function getActiveFlightIcon(heading: number, aircraftType?: string): L.DivIcon {
   const rounded = Math.round(heading / 5) * 5;
-  let icon = activeFlightIconCache.get(rounded);
+  const info = getAircraftIcon(aircraftType);
+  const size = Math.max(getIconSize(info), 24);
+  const color = '#4F6CCD';
+  const codeKey = aircraftType?.toUpperCase().split('/')[0].trim() || 'generic';
+  const key = `${codeKey}-${rounded}`;
+
+  let icon = activeFlightIconCache.get(key);
   if (!icon) {
+    const colored = info.svgRaw
+      .replace(/currentColor/g, color)
+      .replace(/fill="currentColor"/g, `fill="${color}"`);
+
     icon = L.divIcon({
-      html: PLANE_SVG(rounded, 28, '#4F6CCD', true),
+      html: `<div style="transform:rotate(${rounded}deg);filter:drop-shadow(0 1px 3px rgba(0,0,0,0.6)) drop-shadow(0 0 8px ${color}80);width:${size}px;height:${size}px;line-height:0;color:${color};">
+        <div style="width:${size}px;height:${size}px;">${colored}</div>
+      </div>`,
       className: '',
-      iconSize: [28, 28],
-      iconAnchor: [14, 14],
+      iconSize: [size, size],
+      iconAnchor: [size / 2, size / 2],
     });
-    activeFlightIconCache.set(rounded, icon);
+    activeFlightIconCache.set(key, icon);
   }
   return icon;
 }
@@ -316,11 +311,20 @@ function LiveAircraftMarker({
     const { latitude, longitude, heading } = aircraft.position;
     if (latitude === 0 && longitude === 0) return;
 
+    const ownColor = '#79c0ff';
+    const info = getAircraftIcon(aircraft.atcType || null);
+    const size = Math.max(getIconSize(info), 36);
+    const rounded = Math.round(heading / 5) * 5;
+    const colored = info.svgRaw
+      .replace(/currentColor/g, ownColor)
+      .replace(/fill="currentColor"/g, `fill="${ownColor}"`);
     const icon = L.divIcon({
-      html: PLANE_SVG(heading, 42, '#79c0ff', true),
+      html: `<div style="transform:rotate(${rounded}deg);filter:drop-shadow(0 1px 3px rgba(0,0,0,0.6)) drop-shadow(0 0 8px ${ownColor}80);width:${size}px;height:${size}px;line-height:0;color:${ownColor};">
+        <div style="width:${size}px;height:${size}px;">${colored}</div>
+      </div>`,
       className: '',
-      iconSize: [42, 42],
-      iconAnchor: [21, 21],
+      iconSize: [size, size],
+      iconAnchor: [size / 2, size / 2],
     });
 
     // Escape HTML to prevent XSS from telemetry data
@@ -699,7 +703,7 @@ export function LiveMapPage() {
           <Marker
             key={af.userId}
             position={[af.latitude, af.longitude]}
-            icon={getActiveFlightIcon(af.heading)}
+            icon={getActiveFlightIcon(af.heading, af.aircraftType)}
           >
             <Tooltip direction="top" offset={[0, -14]} opacity={0.95}>
               <span className="tabular-nums text-xs">{af.callsign} · FL{Math.round(af.altitude / 100)}</span>

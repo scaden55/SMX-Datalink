@@ -16,6 +16,7 @@ import {
 import { api, ApiError } from '@/lib/api';
 import { toast } from '@/stores/toastStore';
 import { fadeUp, tableContainer, tableRow } from '@/lib/motion';
+import { formatDate } from '@/lib/formatters';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -82,14 +83,7 @@ interface MelStats {
 
 // ── Helpers ──────────────────────────────────────────────────
 
-function formatDate(iso: string | null): string {
-  if (!iso) return '--';
-  return new Date(iso).toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  });
-}
+// formatDate imported from @/lib/formatters
 
 function daysRemaining(expiryDate: string): number {
   const now = new Date();
@@ -105,22 +99,17 @@ function remainingColor(days: number): string {
 
 // ── Shared Styles ────────────────────────────────────────────
 
+const COL_HEADER_CLASS = 'text-subheading';
 const colHeaderStyle: React.CSSProperties = {
-  fontSize: 10,
-  fontWeight: 600,
-  letterSpacing: 0.8,
-  color: 'var(--text-tertiary)',
-  textTransform: 'uppercase',
   padding: '10px 16px',
   borderBottom: '1px solid var(--border-primary)',
   userSelect: 'none',
 };
 
+const CELL_CLASS = 'text-caption';
 const cellStyle: React.CSSProperties = {
   padding: '10px 16px',
   borderBottom: '1px solid var(--border-primary)',
-  fontSize: 12,
-  color: 'var(--text-secondary)',
   verticalAlign: 'middle',
 };
 
@@ -203,7 +192,8 @@ function TableSkeleton() {
           key={i}
           style={{
             height: 42,
-            background: 'var(--surface-2)',
+            background: 'transparent',
+            border: '1px solid var(--panel-border)',
             borderRadius: 4,
             marginBottom: 4,
             opacity: 0.5,
@@ -239,23 +229,16 @@ function StatCard({
       }}
     >
       <div
-        style={{
-          fontSize: 10,
-          fontWeight: 600,
-          letterSpacing: 0.6,
-          color: 'var(--text-tertiary)',
-          textTransform: 'uppercase',
-          marginBottom: 6,
-        }}
+        className="text-subheading"
+        style={{ marginBottom: 6 }}
       >
         {label}
       </div>
       <div
+        className="data-lg"
         style={{
-          fontSize: 22,
           fontWeight: 700,
           color: borderColor,
-          fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums',
         }}
       >
         {value}
@@ -313,11 +296,10 @@ function DetailPanel({
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <CategoryBadge category={deferral.category} />
           <span
+            className="data-md"
             style={{
-              fontSize: 13,
               fontWeight: 600,
               color: 'var(--text-primary)',
-              fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums',
             }}
           >
             {deferral.itemNumber}
@@ -343,10 +325,10 @@ function DetailPanel({
       <div style={{ flex: 1, padding: 20, display: 'flex', flexDirection: 'column', gap: 16 }}>
         {/* Title */}
         <div>
-          <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-primary)', lineHeight: 1.4 }}>
+          <div className="text-body" style={{ fontWeight: 600, color: 'var(--text-primary)', lineHeight: 1.4 }}>
             {deferral.title}
           </div>
-          <div style={{ fontSize: 11, color: 'var(--text-tertiary)', marginTop: 4 }}>
+          <div className="text-caption" style={{ marginTop: 4 }}>
             Aircraft: {deferral.aircraftRegistration ?? `#${deferral.aircraftId}`}
           </div>
         </div>
@@ -366,7 +348,8 @@ function DetailPanel({
         {deferral.status === 'open' && (
           <div
             style={{
-              background: 'var(--surface-2)',
+              background: 'transparent',
+              border: '1px solid var(--panel-border)',
               borderRadius: 6,
               padding: '10px 14px',
               display: 'flex',
@@ -375,7 +358,7 @@ function DetailPanel({
             }}
           >
             <AlertTriangle size={14} style={{ color: remainingColor(days) }} />
-            <span style={{ fontSize: 12, fontWeight: 600, color: remainingColor(days) }}>
+            <span className="text-caption" style={{ fontWeight: 600, color: remainingColor(days) }}>
               {days <= 0 ? 'Expired' : `${days} day${days === 1 ? '' : 's'} remaining`}
             </span>
           </div>
@@ -396,18 +379,15 @@ function DetailPanel({
             }}
           >
             <div
+              className="text-subheading"
               style={{
-                fontSize: 10,
-                fontWeight: 600,
-                letterSpacing: 0.6,
                 color: 'var(--accent-amber)',
-                textTransform: 'uppercase',
                 marginBottom: 4,
               }}
             >
               Placard Info
             </div>
-            <div style={{ fontSize: 12, color: 'var(--text-primary)', lineHeight: 1.5 }}>
+            <div className="text-caption" style={{ color: 'var(--text-primary)', lineHeight: 1.5 }}>
               {deferral.placardInfo}
             </div>
           </div>
@@ -439,6 +419,7 @@ function DetailPanel({
         >
           <button
             onClick={() => onRectify(deferral.id)}
+            className="text-body"
             style={{
               width: '100%',
               display: 'inline-flex',
@@ -450,7 +431,6 @@ function DetailPanel({
               color: '#fff',
               border: 'none',
               borderRadius: 6,
-              fontSize: 13,
               fontWeight: 600,
               cursor: 'pointer',
               transition: 'opacity 120ms',
@@ -481,21 +461,14 @@ function DetailField({
   return (
     <div style={extraStyle}>
       <div
-        style={{
-          fontSize: 10,
-          fontWeight: 600,
-          letterSpacing: 0.6,
-          color: 'var(--text-tertiary)',
-          textTransform: 'uppercase',
-          marginBottom: 4,
-        }}
+        className="text-subheading"
+        style={{ marginBottom: 4 }}
       >
         {label}
       </div>
       <div
+        className="text-caption"
         style={{
-          fontSize: 12,
-          color: 'var(--text-secondary)',
           lineHeight: multiline ? 1.6 : 1.3,
           whiteSpace: multiline ? 'pre-wrap' : 'normal',
         }}
@@ -602,7 +575,7 @@ function ActiveDeferralsView({ refreshKey }: { refreshKey: number }) {
             placeholder="Search deferrals..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="input-glow"
+            className="input-glow text-caption"
             style={{
               width: '100%',
               height: 32,
@@ -612,7 +585,6 @@ function ActiveDeferralsView({ refreshKey }: { refreshKey: number }) {
               border: '1px solid var(--input-border)',
               borderRadius: 6,
               color: 'var(--text-primary)',
-              fontSize: 12,
               outline: 'none',
             }}
           />
@@ -625,6 +597,7 @@ function ActiveDeferralsView({ refreshKey }: { refreshKey: number }) {
           }}
         >
           <SelectTrigger
+            className="text-caption"
             style={{
               width: 140,
               height: 32,
@@ -632,7 +605,6 @@ function ActiveDeferralsView({ refreshKey }: { refreshKey: number }) {
               border: '1px solid var(--input-border)',
               borderRadius: 6,
               color: 'var(--text-primary)',
-              fontSize: 12,
             }}
           >
             <SelectValue placeholder="Status: All" />
@@ -651,14 +623,14 @@ function ActiveDeferralsView({ refreshKey }: { refreshKey: number }) {
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
             <tr>
-              <th style={colHeaderStyle}>Category</th>
-              <th style={colHeaderStyle}>Aircraft</th>
-              <th style={colHeaderStyle}>MEL Item #</th>
-              <th style={colHeaderStyle}>Title</th>
-              <th style={colHeaderStyle}>Deferred</th>
-              <th style={colHeaderStyle}>Expires</th>
-              <th style={colHeaderStyle}>Remaining</th>
-              <th style={colHeaderStyle}>Status</th>
+              <th className={COL_HEADER_CLASS} style={colHeaderStyle}>Category</th>
+              <th className={COL_HEADER_CLASS} style={colHeaderStyle}>Aircraft</th>
+              <th className={COL_HEADER_CLASS} style={colHeaderStyle}>MEL Item #</th>
+              <th className={COL_HEADER_CLASS} style={colHeaderStyle}>Title</th>
+              <th className={COL_HEADER_CLASS} style={colHeaderStyle}>Deferred</th>
+              <th className={COL_HEADER_CLASS} style={colHeaderStyle}>Expires</th>
+              <th className={COL_HEADER_CLASS} style={colHeaderStyle}>Remaining</th>
+              <th className={COL_HEADER_CLASS} style={colHeaderStyle}>Status</th>
             </tr>
           </thead>
           <motion.tbody variants={tableContainer} initial="hidden" animate="visible">
@@ -666,11 +638,11 @@ function ActiveDeferralsView({ refreshKey }: { refreshKey: number }) {
               <tr>
                 <td
                   colSpan={8}
+                  className="text-body"
                   style={{
                     padding: '40px 16px',
                     textAlign: 'center',
                     color: 'var(--text-tertiary)',
-                    fontSize: 13,
                   }}
                 >
                   No deferrals found
@@ -701,30 +673,27 @@ function ActiveDeferralsView({ refreshKey }: { refreshKey: number }) {
                         : 'transparent';
                     }}
                   >
-                    <td style={cellStyle}>
+                    <td className={CELL_CLASS} style={cellStyle}>
                       <CategoryBadge category={def.category} />
                     </td>
                     <td
+                      className={`${CELL_CLASS} data-sm`}
                       style={{
                         ...cellStyle,
                         fontWeight: 600,
                         color: 'var(--text-primary)',
-                        fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums',
-                        fontSize: 12,
                       }}
                     >
                       {def.aircraftRegistration ?? `#${def.aircraftId}`}
                     </td>
                     <td
-                      style={{
-                        ...cellStyle,
-                        fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums',
-                        fontSize: 11,
-                      }}
+                      className={`${CELL_CLASS} data-sm`}
+                      style={cellStyle}
                     >
                       {def.itemNumber}
                     </td>
                     <td
+                      className={CELL_CLASS}
                       style={{
                         ...cellStyle,
                         maxWidth: 220,
@@ -735,13 +704,13 @@ function ActiveDeferralsView({ refreshKey }: { refreshKey: number }) {
                     >
                       {def.title}
                     </td>
-                    <td style={{ ...cellStyle, color: 'var(--text-tertiary)', fontSize: 11 }}>
+                    <td className={CELL_CLASS} style={cellStyle}>
                       {formatDate(def.deferralDate)}
                     </td>
-                    <td style={{ ...cellStyle, color: 'var(--text-tertiary)', fontSize: 11 }}>
+                    <td className={CELL_CLASS} style={cellStyle}>
                       {formatDate(def.expiryDate)}
                     </td>
-                    <td style={{ ...cellStyle, fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums' }}>
+                    <td className={`${CELL_CLASS} data-sm`} style={cellStyle}>
                       {def.status === 'open' && days !== null ? (
                         <span style={{ color: remainingColor(days), fontWeight: 600 }}>
                           {days <= 0 ? 'Expired' : `${days}d`}
@@ -750,7 +719,7 @@ function ActiveDeferralsView({ refreshKey }: { refreshKey: number }) {
                         <span style={{ color: 'var(--text-tertiary)' }}>--</span>
                       )}
                     </td>
-                    <td style={cellStyle}>
+                    <td className={CELL_CLASS} style={cellStyle}>
                       <StatusBadge status={def.status} />
                     </td>
                   </motion.tr>
@@ -774,14 +743,13 @@ function ActiveDeferralsView({ refreshKey }: { refreshKey: number }) {
 
       {/* Pagination */}
       <div
+        className="text-caption"
         style={{
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
           padding: '12px 24px',
           borderTop: '1px solid var(--border-primary)',
-          fontSize: 12,
-          color: 'var(--text-tertiary)',
         }}
       >
         <span>
@@ -807,7 +775,7 @@ function ActiveDeferralsView({ refreshKey }: { refreshKey: number }) {
           >
             <ChevronLeft size={14} />
           </button>
-          <span style={{ padding: '0 8px', color: 'var(--text-secondary)', fontSize: 12 }}>
+          <span className="data-sm" style={{ padding: '0 8px', color: 'var(--text-secondary)' }}>
             {page} / {totalPages}
           </span>
           <button
@@ -1114,6 +1082,7 @@ function MelMasterListView() {
       >
         <Select value={typeFilter} onValueChange={setTypeFilter}>
           <SelectTrigger
+            className="text-caption"
             style={{
               width: 160,
               height: 32,
@@ -1121,7 +1090,6 @@ function MelMasterListView() {
               border: '1px solid var(--input-border)',
               borderRadius: 6,
               color: 'var(--text-primary)',
-              fontSize: 12,
             }}
           >
             <SelectValue placeholder="Type: All" />
@@ -1141,7 +1109,7 @@ function MelMasterListView() {
             setEditItem(null);
             setDialogOpen(true);
           }}
-          className="btn-glow"
+          className="btn-glow text-caption"
           style={{
             display: 'inline-flex',
             alignItems: 'center',
@@ -1151,7 +1119,6 @@ function MelMasterListView() {
             color: '#fff',
             border: 'none',
             borderRadius: 6,
-            fontSize: 12,
             fontWeight: 600,
             cursor: 'pointer',
             transition: 'opacity 120ms',
@@ -1173,13 +1140,13 @@ function MelMasterListView() {
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
             <tr>
-              <th style={colHeaderStyle}>Item #</th>
-              <th style={colHeaderStyle}>ATA Chapter</th>
-              <th style={colHeaderStyle}>Type</th>
-              <th style={colHeaderStyle}>Title</th>
-              <th style={colHeaderStyle}>Category</th>
-              <th style={colHeaderStyle}>Active</th>
-              <th style={{ ...colHeaderStyle, width: 80 }}>Actions</th>
+              <th className={COL_HEADER_CLASS} style={colHeaderStyle}>Item #</th>
+              <th className={COL_HEADER_CLASS} style={colHeaderStyle}>ATA Chapter</th>
+              <th className={COL_HEADER_CLASS} style={colHeaderStyle}>Type</th>
+              <th className={COL_HEADER_CLASS} style={colHeaderStyle}>Title</th>
+              <th className={COL_HEADER_CLASS} style={colHeaderStyle}>Category</th>
+              <th className={COL_HEADER_CLASS} style={colHeaderStyle}>Active</th>
+              <th className={COL_HEADER_CLASS} style={{ ...colHeaderStyle, width: 80 }}>Actions</th>
             </tr>
           </thead>
           <motion.tbody variants={tableContainer} initial="hidden" animate="visible">
@@ -1187,11 +1154,11 @@ function MelMasterListView() {
               <tr>
                 <td
                   colSpan={7}
+                  className="text-body"
                   style={{
                     padding: '40px 16px',
                     textAlign: 'center',
                     color: 'var(--text-tertiary)',
-                    fontSize: 13,
                   }}
                 >
                   No MEL master items found
@@ -1204,24 +1171,23 @@ function MelMasterListView() {
                   variants={tableRow}
                   style={{ cursor: 'default' }}
                   onMouseEnter={(e) => {
-                    (e.currentTarget as HTMLElement).style.background = 'var(--surface-2)';
+                    (e.currentTarget as HTMLElement).style.background = 'var(--tint-subtle)';
                   }}
                   onMouseLeave={(e) => {
                     (e.currentTarget as HTMLElement).style.background = 'transparent';
                   }}
                 >
                   <td
+                    className={`${CELL_CLASS} data-sm`}
                     style={{
                       ...cellStyle,
-                      fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums',
-                      fontSize: 11,
                       fontWeight: 600,
                       color: 'var(--text-primary)',
                     }}
                   >
                     {item.itemNumber}
                   </td>
-                  <td style={{ ...cellStyle, fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums', fontSize: 11 }}>
+                  <td className={`${CELL_CLASS} data-sm`} style={cellStyle}>
                     {item.ataChapter}
                     {item.ataChapterTitle && (
                       <span style={{ color: 'var(--text-tertiary)', marginLeft: 6 }}>
@@ -1229,10 +1195,11 @@ function MelMasterListView() {
                       </span>
                     )}
                   </td>
-                  <td style={{ ...cellStyle, fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums', fontSize: 11 }}>
+                  <td className={`${CELL_CLASS} data-sm`} style={cellStyle}>
                     {item.icaoType}
                   </td>
                   <td
+                    className={CELL_CLASS}
                     style={{
                       ...cellStyle,
                       maxWidth: 260,
@@ -1243,10 +1210,10 @@ function MelMasterListView() {
                   >
                     {item.title}
                   </td>
-                  <td style={cellStyle}>
+                  <td className={CELL_CLASS} style={cellStyle}>
                     <CategoryBadge category={item.category} />
                   </td>
-                  <td style={cellStyle}>
+                  <td className={CELL_CLASS} style={cellStyle}>
                     <span
                       style={{
                         display: 'inline-block',
@@ -1257,7 +1224,7 @@ function MelMasterListView() {
                       }}
                     />
                   </td>
-                  <td style={cellStyle}>
+                  <td className={CELL_CLASS} style={cellStyle}>
                     <div style={{ display: 'flex', gap: 4 }}>
                       <button
                         onClick={() => {
@@ -1397,13 +1364,13 @@ export function MelDeferralsTab() {
       >
         <button
           onClick={() => setView('deferrals')}
+          className="text-caption"
           style={{
             background: 'none',
             border: 'none',
             borderBottom:
               view === 'deferrals' ? '2px solid var(--accent-blue)' : '2px solid transparent',
             padding: '8px 16px',
-            fontSize: 12,
             fontWeight: 500,
             color: view === 'deferrals' ? 'var(--accent-blue-bright)' : 'var(--text-tertiary)',
             cursor: 'pointer',
@@ -1418,13 +1385,13 @@ export function MelDeferralsTab() {
         </button>
         <button
           onClick={() => setView('master')}
+          className="text-caption"
           style={{
             background: 'none',
             border: 'none',
             borderBottom:
               view === 'master' ? '2px solid var(--accent-blue)' : '2px solid transparent',
             padding: '8px 16px',
-            fontSize: 12,
             fontWeight: 500,
             color: view === 'master' ? 'var(--accent-blue-bright)' : 'var(--text-tertiary)',
             cursor: 'pointer',

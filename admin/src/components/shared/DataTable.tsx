@@ -159,7 +159,7 @@ export function DataTable<T>({
       )}
 
       {/* Table */}
-      <div className="overflow-auto rounded-md border border-[var(--border-primary)]">
+      <div className="overflow-auto rounded-md border border-[var(--border-primary)]" role="region" aria-label="Data table" aria-busy={loading}>
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
@@ -227,8 +227,8 @@ export function DataTable<T>({
                     data-state={row.getIsSelected() ? 'selected' : undefined}
                     className={cn(
                       'border-b border-[var(--border-primary)] transition-colors',
-                      index % 2 === 1 && 'bg-[var(--surface-2)]/50',
-                      'hover:bg-[var(--surface-3)]',
+                      index % 2 === 1 && 'bg-[var(--tint-alt-row)]',
+                      'hover:bg-[var(--tint-hover)]',
                       isSelected &&
                         'bg-[var(--accent-blue-bg)] border-l-2 border-l-[var(--accent-blue)]',
                       onRowClick && 'cursor-pointer'

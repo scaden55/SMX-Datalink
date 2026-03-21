@@ -139,6 +139,12 @@ export function FlightPlanningPage() {
       return;
     }
 
+    // Only allow opening own bids — show empty state for others
+    if (bidsLoaded && !bids.some((b) => b.id === numBidId)) {
+      setLoading(false);
+      return;
+    }
+
     resetForm();
     useCargoStore.getState().clearCargo();
     setActiveBidId(numBidId);

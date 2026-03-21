@@ -41,6 +41,8 @@ import type {
   FleetMaintenanceStatus,
   CheckDueStatus,
 } from '@acars/shared';
+import { StatusBadge } from '@/components/primitives/StatusBadge';
+import { formatDate, fmtNum, fmtTime } from '@/lib/formatters';
 
 // ── Types ──────────────────────────────────────────────
 
@@ -67,36 +69,7 @@ interface FlightRecord {
 
 // ── Helpers ────────────────────────────────────────────
 
-function statusBadge(status: string) {
-  switch (status) {
-    case 'active':
-      return { bg: 'rgba(74, 222, 128, 0.12)', text: 'var(--accent-emerald)', label: 'Active' };
-    case 'maintenance':
-      return { bg: 'rgba(251, 191, 36, 0.12)', text: 'var(--accent-amber)', label: 'Maintenance' };
-    case 'stored':
-      return { bg: 'var(--accent-blue-bg)', text: 'var(--accent-blue-bright)', label: 'Stored' };
-    case 'retired':
-      return { bg: 'var(--accent-red-bg)', text: 'var(--accent-red)', label: 'Retired' };
-    default:
-      return { bg: 'var(--surface-3)', text: 'var(--text-tertiary)', label: status };
-  }
-}
-
-function fmtNum(v: number | null | undefined): string {
-  if (v == null) return '—';
-  return v.toLocaleString();
-}
-
-function fmtDate(d: string | null | undefined): string {
-  if (!d) return '—';
-  return new Date(d).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
-}
-
-function fmtTime(min: number): string {
-  const h = Math.floor(min / 60);
-  const m = min % 60;
-  return `${h}h ${m}m`;
-}
+// formatDate, fmtNum, fmtTime imported from @/lib/formatters
 
 // ── Component ──────────────────────────────────────────
 
@@ -237,8 +210,6 @@ export function AircraftDetailPage() {
 
   if (!aircraft) return null;
 
-  const badge = statusBadge(aircraft.status);
-
   return (
     <motion.div
       className="flex flex-col h-full overflow-y-auto"
@@ -248,8 +219,7 @@ export function AircraftDetailPage() {
     >
       {/* Header */}
       <motion.div
-        className="flex items-center"
-        style={{ padding: '16px 24px', gap: 16 }}
+        className="flex items-center page-header" style={{ flexDirection: 'row' }}
         variants={fadeUp}
         initial="hidden"
         animate="visible"
@@ -262,36 +232,23 @@ export function AircraftDetailPage() {
             padding: '6px 12px',
             borderRadius: 6,
             color: 'var(--text-secondary)',
-            fontSize: 12,
-            fontFamily: 'Inter, sans-serif',
             border: '1px solid transparent',
           }}
         >
           <ArrowLeft size={14} />
-          <span>Back to Fleet</span>
+          <span className="text-caption">Back to Fleet</span>
         </button>
 
         <div className="flex-1" />
 
         <Plane size={18} style={{ color: 'var(--accent-blue)' }} />
-        <span style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)' }}>
+        <span className="text-heading" style={{ fontSize: 18, fontWeight: 700 }}>
           {aircraft.registration}
         </span>
-        <span style={{ fontSize: 14, color: 'var(--text-secondary)' }}>
+        <span className="text-body" style={{ color: 'var(--text-secondary)' }}>
           {aircraft.name}
         </span>
-        <span
-          style={{
-            padding: '3px 10px',
-            borderRadius: 3,
-            fontSize: 10,
-            fontWeight: 600,
-            backgroundColor: badge.bg,
-            color: badge.text,
-          }}
-        >
-          {badge.label}
-        </span>
+        <StatusBadge status={aircraft.status} />
 
         <button
           onClick={() => setDeleteOpen(true)}
@@ -301,8 +258,6 @@ export function AircraftDetailPage() {
             padding: '6px 12px',
             borderRadius: 6,
             color: 'var(--accent-red)',
-            fontSize: 12,
-            fontFamily: 'Inter, sans-serif',
             backgroundColor: 'transparent',
             border: '1px solid rgba(239, 68, 68, 0.2)',
             marginLeft: 8,
@@ -328,8 +283,8 @@ export function AircraftDetailPage() {
             className="flex flex-col flex-1"
             style={{
               borderRadius: 6,
-              backgroundColor: 'var(--surface-2)',
-              border: '1px solid var(--border-primary)',
+              background: 'transparent',
+              border: '1px solid var(--panel-border)',
             }}
             variants={staggerItem}
           >
@@ -395,8 +350,8 @@ export function AircraftDetailPage() {
             className="flex flex-col flex-1"
             style={{
               borderRadius: 6,
-              backgroundColor: 'var(--surface-2)',
-              border: '1px solid var(--border-primary)',
+              background: 'transparent',
+              border: '1px solid var(--panel-border)',
             }}
             variants={staggerItem}
           >
@@ -438,8 +393,8 @@ export function AircraftDetailPage() {
         <motion.div
           style={{
             borderRadius: 6,
-            backgroundColor: 'var(--surface-2)',
-            border: '1px solid var(--border-primary)',
+            background: 'transparent',
+            border: '1px solid var(--panel-border)',
           }}
           variants={fadeUp}
           initial="hidden"
@@ -450,17 +405,17 @@ export function AircraftDetailPage() {
             <div className="flex flex-col" style={{ padding: '0 16px 16px 16px', gap: 12 }}>
               {/* Overall health bar */}
               <div className="flex items-center" style={{ gap: 12, paddingBottom: 4 }}>
-                <span style={{ fontSize: 10, color: 'var(--text-tertiary)' }}>
+                <span className="data-xs" style={{ color: 'var(--text-tertiary)' }}>
                   Total: {fmtNum(maintenance.totalHours)} hrs · {fmtNum(maintenance.totalCycles)} cycles
                 </span>
                 <div className="flex-1" />
                 {maintenance.hasOverdueChecks && (
-                  <span className="flex items-center" style={{ gap: 4, fontSize: 10, color: 'var(--accent-red)' }}>
+                  <span className="flex items-center data-xs" style={{ gap: 4, color: 'var(--accent-red)' }}>
                     <AlertTriangle size={12} /> Overdue checks
                   </span>
                 )}
                 {!maintenance.hasOverdueChecks && (
-                  <span className="flex items-center" style={{ gap: 4, fontSize: 10, color: 'var(--accent-emerald)' }}>
+                  <span className="flex items-center data-xs" style={{ gap: 4, color: 'var(--accent-emerald)' }}>
                     <CheckCircle size={12} /> All checks current
                   </span>
                 )}
@@ -474,13 +429,13 @@ export function AircraftDetailPage() {
                   ))}
                 </div>
               ) : (
-                <div style={{ fontSize: 11, color: 'var(--text-tertiary)' }}>
+                <div className="text-caption" style={{ fontSize: 11 }}>
                   No check schedules configured for this aircraft type
                 </div>
               )}
             </div>
           ) : (
-            <div style={{ padding: '0 16px 16px 16px', fontSize: 11, color: 'var(--text-tertiary)' }}>
+            <div className="text-caption" style={{ padding: '0 16px 16px 16px', fontSize: 11 }}>
               No maintenance data available
             </div>
           )}
@@ -490,8 +445,8 @@ export function AircraftDetailPage() {
         <motion.div
           style={{
             borderRadius: 6,
-            backgroundColor: 'var(--surface-2)',
-            border: '1px solid var(--border-primary)',
+            background: 'transparent',
+            border: '1px solid var(--panel-border)',
           }}
           variants={fadeUp}
           initial="hidden"
@@ -511,13 +466,13 @@ export function AircraftDetailPage() {
                     borderBottom: '1px solid var(--border-primary)',
                   }}
                 >
-                  <span style={{ width: 80, fontSize: 9, fontWeight: 600, color: 'var(--text-tertiary)', letterSpacing: 0.5 }}>FLIGHT</span>
-                  <span style={{ width: 100, fontSize: 9, fontWeight: 600, color: 'var(--text-tertiary)', letterSpacing: 0.5 }}>ROUTE</span>
-                  <span style={{ width: 70, fontSize: 9, fontWeight: 600, color: 'var(--text-tertiary)', letterSpacing: 0.5 }}>TIME</span>
-                  <span style={{ width: 70, fontSize: 9, fontWeight: 600, color: 'var(--text-tertiary)', letterSpacing: 0.5 }}>FUEL</span>
-                  <span style={{ width: 70, fontSize: 9, fontWeight: 600, color: 'var(--text-tertiary)', letterSpacing: 0.5 }}>LANDING</span>
-                  <span className="flex-1" style={{ fontSize: 9, fontWeight: 600, color: 'var(--text-tertiary)', letterSpacing: 0.5 }}>PILOT</span>
-                  <span style={{ width: 80, fontSize: 9, fontWeight: 600, color: 'var(--text-tertiary)', letterSpacing: 0.5, textAlign: 'right' }}>DATE</span>
+                  <span style={{ width: 80, fontWeight: 600, color: 'var(--text-tertiary)', letterSpacing: 0.5, fontSize: 9, textTransform: 'uppercase' as const }}>FLIGHT</span>
+                  <span style={{ width: 100, fontWeight: 600, color: 'var(--text-tertiary)', letterSpacing: 0.5, fontSize: 9, textTransform: 'uppercase' as const }}>ROUTE</span>
+                  <span style={{ width: 70, fontWeight: 600, color: 'var(--text-tertiary)', letterSpacing: 0.5, fontSize: 9, textTransform: 'uppercase' as const }}>TIME</span>
+                  <span style={{ width: 70, fontWeight: 600, color: 'var(--text-tertiary)', letterSpacing: 0.5, fontSize: 9, textTransform: 'uppercase' as const }}>FUEL</span>
+                  <span style={{ width: 70, fontWeight: 600, color: 'var(--text-tertiary)', letterSpacing: 0.5, fontSize: 9, textTransform: 'uppercase' as const }}>LANDING</span>
+                  <span className="flex-1" style={{ fontWeight: 600, color: 'var(--text-tertiary)', letterSpacing: 0.5, fontSize: 9, textTransform: 'uppercase' as const }}>PILOT</span>
+                  <span style={{ width: 80, fontWeight: 600, color: 'var(--text-tertiary)', letterSpacing: 0.5, fontSize: 9, textTransform: 'uppercase' as const, textAlign: 'right' }}>DATE</span>
                 </div>
                 {/* Rows */}
                 {flights.map((f, i) => (
@@ -530,19 +485,19 @@ export function AircraftDetailPage() {
                       borderBottom: i < flights.length - 1 ? '1px solid var(--border-primary)' : 'none',
                     }}
                   >
-                    <span style={{ width: 80, fontSize: 11, fontWeight: 600, color: 'var(--accent-blue-bright)' }}>{f.flightNumber}</span>
-                    <span style={{ width: 100, fontSize: 11, color: 'var(--text-primary)' }}>{f.depIcao} → {f.arrIcao}</span>
-                    <span style={{ width: 70, fontSize: 11, color: 'var(--text-secondary)' }}>{fmtTime(f.blockTimeMin)}</span>
-                    <span style={{ width: 70, fontSize: 11, color: 'var(--text-secondary)' }}>{f.fuelUsedLbs != null ? `${fmtNum(f.fuelUsedLbs)} lbs` : '—'}</span>
-                    <span style={{ width: 70, fontSize: 11, color: landingColor(f.landingRateFpm) }}>{f.landingRateFpm != null ? `${f.landingRateFpm} fpm` : '—'}</span>
-                    <span className="flex-1" style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{f.pilotCallsign}</span>
-                    <span style={{ width: 80, fontSize: 10, color: 'var(--text-tertiary)', textAlign: 'right' }}>{fmtDate(f.createdAt)}</span>
+                    <span className="text-caption" style={{ width: 80, fontSize: 11, fontWeight: 600, color: 'var(--accent-blue-bright)' }}>{f.flightNumber}</span>
+                    <span className="text-caption" style={{ width: 100, fontSize: 11, color: 'var(--text-primary)' }}>{f.depIcao} → {f.arrIcao}</span>
+                    <span className="text-caption" style={{ width: 70, fontSize: 11, color: 'var(--text-secondary)' }}>{fmtTime(f.blockTimeMin)}</span>
+                    <span className="text-caption" style={{ width: 70, fontSize: 11, color: 'var(--text-secondary)' }}>{f.fuelUsedLbs != null ? `${fmtNum(f.fuelUsedLbs)} lbs` : '—'}</span>
+                    <span className="text-caption" style={{ width: 70, fontSize: 11, color: landingColor(f.landingRateFpm) }}>{f.landingRateFpm != null ? `${f.landingRateFpm} fpm` : '—'}</span>
+                    <span className="flex-1 text-caption" style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{f.pilotCallsign}</span>
+                    <span className="data-xs" style={{ width: 80, color: 'var(--text-tertiary)', textAlign: 'right' }}>{formatDate(f.createdAt)}</span>
                   </div>
                 ))}
               </div>
             </div>
           ) : (
-            <div style={{ padding: '0 16px 16px 16px', fontSize: 11, color: 'var(--text-tertiary)' }}>
+            <div className="text-caption" style={{ padding: '0 16px 16px 16px', fontSize: 11 }}>
               No flight reports yet
             </div>
           )}
@@ -552,8 +507,8 @@ export function AircraftDetailPage() {
         <motion.div
           style={{
             borderRadius: 6,
-            backgroundColor: 'var(--surface-2)',
-            border: '1px solid var(--border-primary)',
+            background: 'transparent',
+            border: '1px solid var(--panel-border)',
           }}
           variants={fadeUp}
           initial="hidden"
@@ -565,7 +520,7 @@ export function AircraftDetailPage() {
             <StatBlock icon={Gauge} label="Total Hours" value={stats?.totalHours != null ? `${stats.totalHours.toLocaleString()}h` : '—'} />
             <StatBlock icon={Fuel} label="Avg Landing Rate" value={stats?.avgLandingRate != null ? `${stats.avgLandingRate} fpm` : '—'} />
             <StatBlock icon={BarChart3} label="Avg Score" value={stats?.avgScore != null ? `${stats.avgScore}%` : '—'} />
-            <StatBlock icon={Navigation} label="Last Flight" value={fmtDate(stats?.lastFlightDate)} />
+            <StatBlock icon={Navigation} label="Last Flight" value={formatDate(stats?.lastFlightDate)} />
           </div>
         </motion.div>
       </div>
@@ -581,8 +536,8 @@ export function AircraftDetailPage() {
           }}
         >
           <DialogHeader>
-            <DialogTitle style={{ fontSize: 16, fontWeight: 700 }}>Delete Aircraft</DialogTitle>
-            <DialogDescription style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
+            <DialogTitle className="text-heading" style={{ fontSize: 16, fontWeight: 700 }}>Delete Aircraft</DialogTitle>
+            <DialogDescription className="text-caption" style={{ color: 'var(--text-secondary)' }}>
               This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
@@ -599,8 +554,8 @@ export function AircraftDetailPage() {
             >
               <Trash2 size={16} style={{ color: 'var(--accent-red)', flexShrink: 0 }} />
               <div className="flex flex-col" style={{ gap: 2 }}>
-                <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)' }}>{aircraft.registration}</span>
-                <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{aircraft.name} · {aircraft.icaoType}</span>
+                <span className="text-body" style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: 13 }}>{aircraft.registration}</span>
+                <span className="text-caption" style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{aircraft.name} · {aircraft.icaoType}</span>
               </div>
             </div>
 
@@ -611,11 +566,10 @@ export function AircraftDetailPage() {
                 style={{
                   padding: '8px 16px',
                   borderRadius: 6,
-                  backgroundColor: 'var(--surface-3)',
+                  background: 'var(--tint-subtle)',
+                  border: '1px solid var(--panel-border)',
                   color: 'var(--text-secondary)',
-                  fontSize: 12,
                   fontWeight: 600,
-                  fontFamily: 'Inter, sans-serif',
                 }}
               >
                 Cancel
@@ -629,9 +583,7 @@ export function AircraftDetailPage() {
                   borderRadius: 6,
                   backgroundColor: 'var(--accent-red)',
                   color: '#fff',
-                  fontSize: 12,
                   fontWeight: 600,
-                  fontFamily: 'Inter, sans-serif',
                   opacity: deleting ? 0.6 : 1,
                 }}
               >
@@ -667,13 +619,13 @@ function SectionHeader({
   return (
     <div className="flex items-center" style={{ padding: '12px 16px', gap: 8 }}>
       <Icon size={14} style={{ color: 'var(--accent-blue)' }} />
-      <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-primary)', letterSpacing: 0.5 }}>{title.toUpperCase()}</span>
+      <span className="text-subheading" style={{ fontSize: 11 }}>{title.toUpperCase()}</span>
       <div className="flex-1" />
       {onEdit && !editing && (
         <button
           onClick={onEdit}
           className="flex items-center border-none bg-transparent cursor-pointer btn-glow"
-          style={{ gap: 4, padding: '4px 8px', borderRadius: 4, fontSize: 10, color: 'var(--text-tertiary)', border: '1px solid transparent' }}
+          style={{ gap: 4, padding: '4px 8px', borderRadius: 4, color: 'var(--text-tertiary)', border: '1px solid transparent' }}
         >
           <Pencil size={10} /> Edit
         </button>
@@ -683,7 +635,7 @@ function SectionHeader({
           <button
             onClick={onCancel}
             className="flex items-center border-none bg-transparent cursor-pointer btn-glow"
-            style={{ gap: 4, padding: '4px 8px', borderRadius: 4, fontSize: 10, color: 'var(--text-tertiary)', border: '1px solid transparent' }}
+            style={{ gap: 4, padding: '4px 8px', borderRadius: 4, color: 'var(--text-tertiary)', border: '1px solid transparent' }}
           >
             <X size={10} /> Cancel
           </button>
@@ -695,7 +647,6 @@ function SectionHeader({
               gap: 4,
               padding: '4px 10px',
               borderRadius: 4,
-              fontSize: 10,
               fontWeight: 600,
               backgroundColor: 'var(--accent-blue)',
               color: '#fff',
@@ -732,7 +683,7 @@ function FieldRow({
       className="flex items-center"
       style={{ padding: '6px 0', borderBottom: '1px solid var(--border-primary)' }}
     >
-      <span style={{ width: 140, fontSize: 10, color: 'var(--text-tertiary)', flexShrink: 0 }}>{label}</span>
+      <span className="data-xs" style={{ width: 140, color: 'var(--text-tertiary)', flexShrink: 0 }}>{label}</span>
       {editing && onChange ? (
         options ? (
           <select
@@ -772,7 +723,7 @@ function FieldRow({
           />
         )
       ) : (
-        <span style={{ flex: 1, fontSize: 11, color: 'var(--text-primary)' }}>{value ?? '—'}</span>
+        <span className="text-caption" style={{ flex: 1, fontSize: 11, color: 'var(--text-primary)' }}>{value ?? '—'}</span>
       )}
     </div>
   );
@@ -798,7 +749,7 @@ function NumFieldRow({
       className="flex items-center"
       style={{ padding: '6px 0', borderBottom: '1px solid var(--border-primary)' }}
     >
-      <span style={{ width: 180, fontSize: 10, color: 'var(--text-tertiary)', flexShrink: 0 }}>{label}</span>
+      <span className="data-xs" style={{ width: 180, color: 'var(--text-tertiary)', flexShrink: 0 }}>{label}</span>
       {editing && onChange ? (
         <div className="flex items-center" style={{ flex: 1, gap: 6 }}>
           <input
@@ -820,7 +771,7 @@ function NumFieldRow({
           <span style={{ fontSize: 10, color: 'var(--text-tertiary)' }}>{unit}</span>
         </div>
       ) : (
-        <span style={{ flex: 1, fontSize: 11, color: 'var(--text-primary)' }}>
+        <span className="text-caption" style={{ flex: 1, fontSize: 11, color: 'var(--text-primary)' }}>
           {value != null ? `${fmtNum(value)} ${unit}` : '—'}
         </span>
       )}
@@ -856,30 +807,30 @@ function CheckCard({ check }: { check: CheckDueStatus }) {
       }}
     >
       <div className="flex items-center" style={{ gap: 6 }}>
-        <span style={{ fontSize: 12, fontWeight: 700, color: isOverdue ? 'var(--accent-red)' : colors.label }}>
+        <span className="text-caption" style={{ fontWeight: 700, color: isOverdue ? 'var(--accent-red)' : colors.label }}>
           {check.checkType}-Check
         </span>
         {isOverdue && <AlertTriangle size={12} style={{ color: 'var(--accent-red)' }} />}
       </div>
       {check.checkType === 'D' ? (
         <div className="flex items-center" style={{ gap: 8 }}>
-          <span style={{ fontSize: 9, color: 'var(--text-tertiary)', width: 70 }}>Due Date</span>
-          <span style={{ fontSize: 11, fontWeight: 600, color: isOverdue ? 'var(--accent-red)' : 'var(--text-primary)' }}>
-            {check.dueAtDate ? fmtDate(check.dueAtDate) : '—'}
+          <span className="data-xs" style={{ fontSize: 9, color: 'var(--text-tertiary)', width: 70 }}>Due Date</span>
+          <span className="text-caption" style={{ fontSize: 11, fontWeight: 600, color: isOverdue ? 'var(--accent-red)' : 'var(--text-primary)' }}>
+            {check.dueAtDate ? formatDate(check.dueAtDate) : '—'}
           </span>
         </div>
       ) : (
         <>
           <div className="flex flex-col" style={{ gap: 4 }}>
             <div className="flex items-center" style={{ gap: 8 }}>
-              <span style={{ fontSize: 9, color: 'var(--text-tertiary)', width: 70 }}>Rem. Hours</span>
-              <span style={{ fontSize: 11, fontWeight: 600, color: isOverdue ? 'var(--accent-red)' : 'var(--text-primary)' }}>
+              <span className="data-xs" style={{ fontSize: 9, color: 'var(--text-tertiary)', width: 70 }}>Rem. Hours</span>
+              <span className="text-caption" style={{ fontSize: 11, fontWeight: 600, color: isOverdue ? 'var(--accent-red)' : 'var(--text-primary)' }}>
                 {check.remainingHours != null ? fmtNum(check.remainingHours) : '—'}
               </span>
             </div>
             <div className="flex items-center" style={{ gap: 8 }}>
-              <span style={{ fontSize: 9, color: 'var(--text-tertiary)', width: 70 }}>Rem. Cycles</span>
-              <span style={{ fontSize: 11, fontWeight: 600, color: isOverdue ? 'var(--accent-red)' : 'var(--text-primary)' }}>
+              <span className="data-xs" style={{ fontSize: 9, color: 'var(--text-tertiary)', width: 70 }}>Rem. Cycles</span>
+              <span className="text-caption" style={{ fontSize: 11, fontWeight: 600, color: isOverdue ? 'var(--accent-red)' : 'var(--text-primary)' }}>
                 {check.remainingCycles != null ? fmtNum(check.remainingCycles) : '—'}
               </span>
             </div>
@@ -917,8 +868,8 @@ function StatBlock({
       }}
     >
       <Icon size={16} style={{ color: 'var(--accent-blue)' }} />
-      <span style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)' }}>{value}</span>
-      <span style={{ fontSize: 9, color: 'var(--text-tertiary)', letterSpacing: 0.5 }}>{label.toUpperCase()}</span>
+      <span className="text-heading" style={{ fontSize: 18, fontWeight: 700 }}>{value}</span>
+      <span className="data-xs" style={{ fontSize: 9, color: 'var(--text-tertiary)', letterSpacing: 0.5 }}>{label.toUpperCase()}</span>
     </div>
   );
 }

@@ -42,5 +42,38 @@ export function adminDashboardRouter(): Router {
     }
   });
 
+  // GET /api/admin/dashboard/active-flights — DB-backed active flights with route info
+  router.get('/admin/dashboard/active-flights', authMiddleware, dispatcherMiddleware, (_req, res) => {
+    try {
+      const db = getDb();
+      const rows = db.prepare(`
+        SELECT
+          ab.id AS bid_id,
+          u.id AS user_id,
+          u.callsign,
+          sf.flight_number,
+          sf.dep_icao,
+          sf.arr_icao,
+          sf.aircraft_type,
+          COALESCE(d.lat, oa_d.latitude_deg) AS dep_lat,
+          COALESCE(d.lon, oa_d.longitude_deg) AS dep_lon,
+          COALESCE(a.lat, oa_a.latitude_deg) AS arr_lat,
+          COALESCE(a.lon, oa_a.longitude_deg) AS arr_lon
+        FROM active_bids ab
+        JOIN users u ON u.id = ab.user_id
+        JOIN scheduled_flights sf ON sf.id = ab.schedule_id
+        LEFT JOIN airports d ON d.icao = sf.dep_icao
+        LEFT JOIN airports a ON a.icao = sf.arr_icao
+        LEFT JOIN oa_airports oa_d ON oa_d.ident = sf.dep_icao
+        LEFT JOIN oa_airports oa_a ON oa_a.ident = sf.arr_icao
+        WHERE ab.flight_plan_phase IN ('active', 'airborne')
+      `).all();
+      res.json(rows);
+    } catch (err) {
+      logger.error('Admin', 'Failed to fetch active flights', err);
+      res.status(500).json({ error: 'Failed to fetch active flights' });
+    }
+  });
+
   return router;
 }

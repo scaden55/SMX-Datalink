@@ -2,7 +2,7 @@ import { useMemo, useState, useCallback } from 'react';
 import { Marker, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import type { VatsimPilot } from '@acars/shared';
-import { getAircraftIcon, getIconSize, type AircraftCategory } from '../../lib/aircraft-icons';
+import { getAircraftIcon, getIconSize } from '../../lib/aircraft-icons';
 
 // ── Constants ────────────────────────────────────────────────
 
@@ -12,14 +12,14 @@ const LOW_ZOOM_THRESHOLD = 5;
 // ── Icon factory ─────────────────────────────────────────────
 
 /**
- * Build a Leaflet DivIcon that renders the aircraft SVG inline
- * with direct fill color for crisp, sharp rendering.
+ * Build a Leaflet DivIcon that renders the aircraft SVG inline.
+ * Handles both the old 64×64 viewBox category SVGs and the new
+ * RexKramer type-specific SVGs (80×80mm viewBox with varying offsets).
  */
 function buildIcon(svgRaw: string, size: number, heading: number): L.DivIcon {
-  // Replace currentColor with our blue and set explicit size + rotation
   const colored = svgRaw
-    .replace(/fill="currentColor"/g, `fill="${PILOT_COLOR}"`)
-    .replace(/viewBox="0 0 64 64"/, `viewBox="0 0 64 64" width="${size}" height="${size}"`);
+    .replace(/currentColor/g, PILOT_COLOR)
+    .replace(/fill="currentColor"/g, `fill="${PILOT_COLOR}"`);
 
   const html = `<div style="
     transform: rotate(${heading}deg);
@@ -27,7 +27,8 @@ function buildIcon(svgRaw: string, size: number, heading: number): L.DivIcon {
     width: ${size}px;
     height: ${size}px;
     line-height: 0;
-  ">${colored}</div>`;
+    color: ${PILOT_COLOR};
+  "><div style="width:${size}px;height:${size}px;">${colored}</div></div>`;
 
   return L.divIcon({
     html,
@@ -38,7 +39,7 @@ function buildIcon(svgRaw: string, size: number, heading: number): L.DivIcon {
 }
 
 // ── Icon cache ───────────────────────────────────────────────
-// Key: `${category}-${headingRounded5}-${size}`
+// Key: `${typeCode}-${headingRounded5}-${size}`
 
 const iconCache = new Map<string, L.DivIcon>();
 
@@ -47,7 +48,9 @@ function getCachedIcon(pilot: VatsimPilot): L.DivIcon {
   const info = getAircraftIcon(typeCode);
   const size = getIconSize(info);
   const headingRound = Math.round(pilot.heading / 5) * 5;
-  const key = `${info.category}-${headingRound}-${size}`;
+  // Use the actual type code in the key so each aircraft type gets its own cached icon
+  const codeKey = typeCode?.toUpperCase().split('/')[0].trim() || 'generic';
+  const key = `${codeKey}-${headingRound}-${size}`;
 
   let icon = iconCache.get(key);
   if (!icon) {

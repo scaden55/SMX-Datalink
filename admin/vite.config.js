@@ -10,10 +10,21 @@ export default defineConfig(({ mode }) => {
         resolve: {
             alias: {
                 '@': path.resolve(__dirname, './src'),
+                '@aircraft-shapes': path.resolve(__dirname, '../assets/aircraft-shapes'),
             },
         },
         build: {
             outDir: 'dist',
+            rollupOptions: {
+                output: {
+                    manualChunks: {
+                        'vendor-three': ['three', '@react-three/fiber', '@react-three/drei'],
+                        'vendor-leaflet': ['leaflet', 'react-leaflet'],
+                        'vendor-recharts': ['recharts'],
+                        'vendor-motion': ['motion'],
+                    },
+                },
+            },
         },
         server: {
             host: true,

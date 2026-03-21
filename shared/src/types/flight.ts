@@ -36,6 +36,7 @@ export interface ActiveFlightHeartbeat {
   userId: number;
   bidId?: number; // active_bids.id — populated by backend, used by admin dispatch board
   callsign: string;
+  flightNumber?: string;
   aircraftType: string;
   latitude: number;
   longitude: number;
@@ -44,4 +45,11 @@ export interface ActiveFlightHeartbeat {
   groundSpeed: number;
   phase: string;
   timestamp: string;
+  // Route endpoints — populated by backend from bid → schedule → airports
+  depIcao?: string;
+  arrIcao?: string;
+  depLat?: number;
+  depLon?: number;
+  arrLat?: number;
+  arrLon?: number;
 }

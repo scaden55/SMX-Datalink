@@ -12,7 +12,7 @@ export function SectionHeader({ title, count, action, className }: SectionHeader
   return (
     <div className={cn('flex items-center justify-between pb-2 mb-3 border-b border-[var(--border-primary)]', className)}>
       <div className="flex items-center gap-2">
-        <h3 className="text-[12px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">
+        <h3 className="text-subheading">
           {title}
         </h3>
         {count != null && (

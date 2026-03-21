@@ -24,7 +24,7 @@ function arg(name, fallback) {
 
 const BASE_URL = arg('url', 'http://localhost:3001');
 const SPEED = Number(arg('speed', '50'));
-const HEARTBEAT_INTERVAL_MS = 5000; // send heartbeat every 5s (simulated flight moves fast)
+const HEARTBEAT_INTERVAL_MS = Number(arg('heartbeat', '30000')); // match Electron's 30s default
 
 const TEST_PILOT = {
   email: 'testpilot@smavirtual.com',
@@ -336,14 +336,38 @@ async function main() {
     }
 
     if (fraction >= 1.0) {
-      console.log('\n  Flight complete! Sending flight:ended...');
-      socket.emit('flight:ended');
+      console.log('\n  Flight complete!');
       clearInterval(heartbeatLoop);
+
+      // File PIREP via API (same as Electron's DispatchActionBar)
+      try {
+        console.log('  Filing PIREP...');
+        const result = await api('POST', `/api/dispatch/flights/${bid.id}/complete`, {
+          remarks: 'Simulated flight via simulate-flight.mjs',
+          clientFlightEvents: {
+            landingRateFpm: -180,
+            landingGForce: 1.15,
+            takeoffFuelLbs: 15000,
+            takeoffTime: new Date(startTime + flightDurationSec * 0.015 * 1000).toISOString(),
+            oooiOut: new Date(startTime).toISOString(),
+            oooiOff: new Date(startTime + flightDurationSec * 0.005 * 1000).toISOString(),
+            oooiOn: new Date(startTime + flightDurationSec * 0.97 * 1000).toISOString(),
+            oooiIn: new Date(startTime + flightDurationSec * 1000).toISOString(),
+          },
+          clientFuelLbs: 5000,
+        }, token);
+        console.log(`  PIREP filed! Logbook entry #${result.logbookId}`);
+      } catch (err) {
+        console.log(`  PIREP filing failed: ${err.message}`);
+      }
+
+      // Clean up websocket
+      socket.emit('flight:ended');
       setTimeout(() => {
         socket.disconnect();
         console.log('  Disconnected. Goodbye.\n');
         process.exit(0);
-      }, 2000);
+      }, 1000);
     }
   }, HEARTBEAT_INTERVAL_MS);
 

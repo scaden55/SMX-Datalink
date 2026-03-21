@@ -69,6 +69,13 @@ export interface AirworthinessDirective {
   recurringIntervalHours: number | null;
   nextDueHours: number | null;
   nextDueDate: string | null;
+  source: string | null;
+  federalRegisterUrl: string | null;
+  applicability: string | null;
+  complianceSummary: string | null;
+  complianceNotes: string | null;
+  needsReview: boolean;
+  classificationReason: string | null;
   createdBy: number | null;
   createdAt: string;
   updatedAt: string;

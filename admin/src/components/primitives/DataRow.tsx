@@ -11,8 +11,8 @@ interface DataRowProps {
 export function DataRow({ label, value, mono = false, className }: DataRowProps) {
   return (
     <div className={cn('flex items-center justify-between py-1.5', className)}>
-      <span className="text-[12px] text-[var(--text-tertiary)] shrink-0">{label}</span>
-      <span className={cn('text-[13px] text-[var(--text-primary)] text-right', mono && 'font-mono')}>
+      <span className="text-caption shrink-0">{label}</span>
+      <span className={cn('text-[var(--text-primary)] text-right', mono ? 'data-sm' : 'text-[13px]')}>
         {value}
       </span>
     </div>

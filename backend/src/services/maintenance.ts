@@ -883,7 +883,7 @@ export class MaintenanceService {
   // ═══════════════════════════════════════════════════════════
 
   findAllADs(
-    filters: { aircraftId?: number; status?: string },
+    filters: { aircraftId?: number; status?: string; needsReview?: boolean },
     page = 1,
     pageSize = 50,
   ): ADListResponse {
@@ -898,6 +898,9 @@ export class MaintenanceService {
     if (filters.status) {
       conditions.push('ad.compliance_status = ?');
       params.push(filters.status);
+    }
+    if (filters.needsReview) {
+      conditions.push('ad.needs_review = 1');
     }
 
     const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
@@ -1649,6 +1652,13 @@ export class MaintenanceService {
       recurringIntervalHours: row.recurring_interval_hours,
       nextDueHours: row.next_due_hours,
       nextDueDate: row.next_due_date,
+      source: row.source ?? null,
+      federalRegisterUrl: row.federal_register_url ?? null,
+      applicability: row.applicability ?? null,
+      complianceSummary: row.compliance_summary ?? null,
+      complianceNotes: row.compliance_notes ?? null,
+      needsReview: !!row.needs_review,
+      classificationReason: row.classification_reason ?? null,
       createdBy: row.created_by,
       createdAt: row.created_at,
       updatedAt: row.updated_at,

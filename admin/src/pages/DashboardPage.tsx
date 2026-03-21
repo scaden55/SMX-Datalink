@@ -1,11 +1,9 @@
-import { useState, useEffect, useCallback, Suspense, lazy } from 'react';
-import { motion } from 'motion/react';
+import { useState, useEffect, useCallback, useMemo, Suspense, lazy } from 'react';
 import type { ActiveFlightHeartbeat, Airport } from '@acars/shared';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/stores/authStore';
 import { useSocketStore } from '@/stores/socketStore';
 import { useSocket } from '@/hooks/useSocket';
-import { pageVariants } from '@/lib/motion';
 import type {
   FinancialKPIs,
   MaintenanceSummary,
@@ -18,10 +16,10 @@ import type {
   PeriodPnlEntry,
   RouteMarginEntry,
 } from '@/types/dashboard';
-import { FinanceColumn } from '@/components/dashboard/FinanceColumn';
-import { MaintenanceColumn } from '@/components/dashboard/MaintenanceColumn';
-import { OpsFleetColumn } from '@/components/dashboard/OpsFleetColumn';
-import { NetworkFlightsColumn } from '@/components/dashboard/NetworkFlightsColumn';
+import { FinanceCard } from '@/components/dashboard/FinanceCard';
+import { MaintenanceCard } from '@/components/dashboard/MaintenanceCard';
+import { SchedulesCard } from '@/components/dashboard/SchedulesCard';
+import { FlightsCard } from '@/components/dashboard/FlightsCard';
 
 const WorldMap = lazy(() =>
   import('@/components/map/WorldMap').then((m) => ({ default: m.WorldMap })),
@@ -57,7 +55,6 @@ export function DashboardPage() {
   const [maintenance, setMaintenance] = useState<MaintenanceSummary>(EMPTY_MAINTENANCE);
   const [activity, setActivity] = useState<FlightActivity>(EMPTY_ACTIVITY);
   const [liveFlights, setLiveFlights] = useState<ActiveFlightHeartbeat[]>([]);
-  const [hubs, setHubs] = useState<{ lat: number; lon: number }[]>([]);
   const [pendingPireps, setPendingPireps] = useState(0);
   const [onTimePct, setOnTimePct] = useState(0);
   const [pilotActivity, setPilotActivity] = useState<PilotActivityEntry[]>([]);
@@ -67,6 +64,15 @@ export function DashboardPage() {
   const [hubWeather, setHubWeather] = useState<HubWeather[]>([]);
   const [periodPnl, setPeriodPnl] = useState<PeriodPnlEntry[]>([]);
   const [routeMargins, setRouteMargins] = useState<RouteMarginEntry[]>([]);
+  const [hubs, setHubs] = useState<{ lat: number; lon: number }[]>([
+    { lat: 35.04, lon: -89.98 }, // KMEM
+    { lat: 61.17, lon: -149.99 }, // PANC
+  ]);
+  const [dbFlights, setDbFlights] = useState<Array<{
+    bid_id: number; user_id: number; callsign: string; flight_number: string;
+    dep_icao: string; arr_icao: string; aircraft_type: string;
+    dep_lat: number | null; dep_lon: number | null; arr_lat: number | null; arr_lon: number | null;
+  }>>([]);
 
   // ── Socket ──────────────────────────────────────────────
   useEffect(() => {
@@ -93,32 +99,18 @@ export function DashboardPage() {
     } catch { /* ignore */ }
   }, []);
 
-  const fetchActivity = useCallback(async () => {
-    try {
-      const data = await api.get<FlightActivity>('/api/admin/dashboard/flight-activity');
-      setActivity(data);
-    } catch { /* ignore */ }
-  }, []);
-
   const fetchHubs = useCallback(async () => {
     try {
       const res = await api.get<{ airports: Airport[] }>('/api/admin/airports');
       const apiHubs = res.airports.filter((a: any) => a.isHub).map((a) => ({ lat: a.lat, lon: a.lon }));
       if (apiHubs.length > 0) setHubs(apiHubs);
-    } catch { /* keep mock */ }
-  }, []);
-
-  const fetchPireps = useCallback(async () => {
-    try {
-      const data = await api.get<{ pendingCount: number }>('/api/admin/pireps?pageSize=1');
-      if (typeof data.pendingCount === 'number') setPendingPireps(data.pendingCount);
     } catch { /* ignore */ }
   }, []);
 
-  const fetchOnTime = useCallback(async () => {
+  const fetchActiveFlights = useCallback(async () => {
     try {
-      const data = await api.get<{ percentage: number }>('/api/admin/reports/on-time');
-      if (typeof data.percentage === 'number') setOnTimePct(Math.round(data.percentage));
+      const data = await api.get<typeof dbFlights>('/api/admin/dashboard/active-flights');
+      if (Array.isArray(data)) setDbFlights(data);
     } catch { /* ignore */ }
   }, []);
 
@@ -135,153 +127,95 @@ export function DashboardPage() {
     } catch { /* ignore */ }
   }, []);
 
-  const fetchFleetUtil = useCallback(async () => {
-    try {
-      const data = await api.get<FleetUtilizationEntry[]>('/api/admin/reports/fleet-utilization');
-      if (Array.isArray(data)) setFleetUtilization(data);
-    } catch { /* ignore */ }
-  }, []);
-
-  const fetchVatsim = useCallback(async () => {
-    try {
-      const data = await api.get<Array<{ callsign: string; flight_plan?: { departure: string; arrival: string } }>>('/api/vatsim/pilots');
-      const smx = data
-        .filter((p) => p.callsign.startsWith('SMX'))
-        .map((p) => ({
-          callsign: p.callsign,
-          departure: p.flight_plan?.departure ?? '????',
-          arrival: p.flight_plan?.arrival ?? '????',
-        }));
-      setVatsimPilots(smx); // Always update — zero pilots is valid state
-    } catch { /* keep mock */ }
-  }, []);
-
-  const fetchAcars = useCallback(async () => {
-    try {
-      const data = await api.get<AcarsMessage[]>('/api/admin/dashboard/acars/recent');
-      if (Array.isArray(data)) setAcarsMessages(data); // Always update — empty is valid
-    } catch { /* keep mock */ }
-  }, []);
-
-  const fetchWeather = useCallback(async (hubs: string[]) => {
-    if (hubs.length === 0) return;
-    try {
-      const data = await api.get<Array<{ icaoId: string; temp: number; visib: string; fltcat: string }>>(
-        `/api/weather/metar?ids=${hubs.join(',')}`
-      );
-      if (Array.isArray(data) && data.length > 0) {
-        setHubWeather(
-          data.map((m) => ({
-            icao: m.icaoId,
-            flightRules: (['VFR', 'MVFR', 'IFR'].includes(m.fltcat) ? m.fltcat : 'VFR') as HubWeather['flightRules'],
-            tempC: Math.round(m.temp),
-            visibility: m.visib || '10SM',
-          }))
-        );
-      }
-    } catch { /* keep mock */ }
-  }, []);
-
   useEffect(() => {
     fetchKpis();
     fetchMaintenance();
-    fetchActivity();
     fetchHubs();
-    fetchPireps();
-    fetchOnTime();
+    fetchActiveFlights();
     fetchDashboard();
-    fetchFleetUtil();
-    fetchVatsim();
-    fetchAcars();
-  }, [fetchKpis, fetchMaintenance, fetchActivity, fetchHubs, fetchPireps, fetchOnTime, fetchDashboard, fetchFleetUtil, fetchVatsim, fetchAcars]);
+  }, [fetchKpis, fetchMaintenance, fetchHubs, fetchActiveFlights, fetchDashboard]);
 
-  useEffect(() => {
-    if (kpis.network.hubs.length > 0) fetchWeather(kpis.network.hubs);
-  }, [kpis.network.hubs, fetchWeather]);
+  // Merge live socket flights with DB fallback for map
+  const mapFlights = useMemo(() => {
+    if (liveFlights.length > 0) {
+      return liveFlights.map((f) => ({
+        latitude: f.latitude,
+        longitude: f.longitude,
+        heading: f.heading,
+        callsign: f.callsign,
+        flightNumber: f.flightNumber,
+        aircraftType: f.aircraftType,
+        depIcao: f.depIcao,
+        arrIcao: f.arrIcao,
+        depLat: f.depLat,
+        depLon: f.depLon,
+        arrLat: f.arrLat,
+        arrLon: f.arrLon,
+      }));
+    }
+    if (dbFlights.length > 0) {
+      return dbFlights.map((f) => ({
+        latitude: f.dep_lat ?? 0,
+        longitude: f.dep_lon ?? 0,
+        heading: 0,
+        callsign: f.callsign,
+        flightNumber: f.flight_number,
+        aircraftType: f.aircraft_type,
+        depIcao: f.dep_icao,
+        arrIcao: f.arr_icao,
+        depLat: f.dep_lat ?? undefined,
+        depLon: f.dep_lon ?? undefined,
+        arrLat: f.arr_lat ?? undefined,
+        arrLon: f.arr_lon ?? undefined,
+      }));
+    }
+    return [];
+  }, [liveFlights, dbFlights]);
 
-  // ── Derived ─────────────────────────────────────────────
-  const mapFlights = liveFlights.map((f) => ({
-    latitude: f.latitude,
-    longitude: f.longitude,
-    callsign: f.callsign,
-  }));
-
-  const networkStats = {
-    hubLoadFactor: kpis.network.hubLoadFactor,
-    outstationLoadFactor: kpis.network.outstationLoadFactor,
-    revenuePerDeparture:
-      kpis.network.revenueByStation.length > 0
-        ? kpis.network.revenueByStation.reduce((sum, s) => sum + s.revenuePerDeparture, 0) /
-          kpis.network.revenueByStation.length
-        : 0,
-  };
+  // ── Selection state (shared between map & flights table) ──
+  const [selectedCallsign, setSelectedCallsign] = useState<string | null>(null);
 
   return (
-    <motion.div
-      variants={pageVariants}
-      initial="initial"
-      animate="animate"
-      exit="exit"
-      className="relative h-full overflow-hidden"
-    >
-      {/* ── Full-bleed map background ─────────────────────── */}
-      <div className="absolute inset-0">
-        <Suspense fallback={null}>
-          <WorldMap hubs={hubs} flights={mapFlights} />
-        </Suspense>
-      </div>
-
-      {/* ── 3-column overlay grid ─────────────────────────── */}
+    <div className="h-full overflow-auto p-5">
       <div
-        className="relative h-full"
+        className="grid gap-3 h-full"
         style={{
-          display: 'grid',
-          gridTemplateColumns: '280px 1fr 280px',
-          padding: '16px 20px',
-          gap: '0 8px',
+          gridTemplateColumns: '30% 1fr',
+          gridTemplateRows: '1fr 1fr',
         }}
       >
-        {/* Col 1: Finance + Ops & Fleet (stacked) */}
-        <div className="min-h-0 overflow-y-auto" style={{ scrollbarWidth: 'none', maxHeight: '100%' }}>
-          <div className="flex flex-col gap-2">
-            <div className="rounded-lg p-4" style={{ background: 'rgba(0, 0, 0, 0.45)' }}>
-              <FinanceColumn data={kpis} periodPnl={periodPnl} routeMargins={routeMargins} />
-            </div>
-            <div className="rounded-lg p-4" style={{ background: 'rgba(0, 0, 0, 0.45)' }}>
-              <OpsFleetColumn
-                pendingPireps={pendingPireps}
-                onTimePct={onTimePct}
-                pilotsOnline={liveFlights.length}
-                pilotActivity={pilotActivity}
-                fleetUtilization={fleetUtilization}
-                kpis={kpis}
-              />
-            </div>
-          </div>
+        {/* ── Left column: Finance / Maintenance / Schedules ── */}
+        <div className="row-span-2 flex flex-col gap-3 min-h-0 overflow-y-auto" style={{ scrollbarWidth: 'none' }}>
+          {/* Finance Card */}
+          <FinanceCard data={kpis} periodPnl={periodPnl} />
+
+          {/* Maintenance Card */}
+          <MaintenanceCard data={maintenance} />
+
+          {/* Schedules Card */}
+          <SchedulesCard />
         </div>
 
-        {/* Col 2: Map (transparent center) */}
-        <div />
-
-        {/* Col 4: Network & Flights + Fleet Status (stacked) */}
-        <div className="min-h-0 overflow-y-auto" style={{ scrollbarWidth: 'none', maxHeight: '100%' }}>
-          <div className="flex flex-col gap-2">
-            <div className="rounded-lg p-4" style={{ background: 'rgba(0, 0, 0, 0.45)' }}>
-              <NetworkFlightsColumn
-                liveFlights={liveFlights}
-                activity={activity}
-                vatsimPilots={vatsimPilots}
-                acarsMessages={acarsMessages}
-                hubWeather={hubWeather}
-              />
-            </div>
-            <div className="rounded-lg p-4" style={{ background: 'rgba(0, 0, 0, 0.45)' }}>
-              <MaintenanceColumn data={maintenance} network={networkStats} />
-            </div>
-          </div>
+        {/* ── Right column: Map (50%) ── */}
+        <div className="rounded-lg border border-[var(--border-primary)] overflow-hidden relative">
+          <Suspense fallback={null}>
+            <WorldMap
+              hubs={hubs}
+              flights={mapFlights}
+              selectedCallsign={selectedCallsign}
+              onSelectCallsign={setSelectedCallsign}
+            />
+          </Suspense>
         </div>
+
+        {/* ── Right column: Live / Recent Flights (50%) ── */}
+        <FlightsCard
+          liveFlights={liveFlights}
+          selectedCallsign={selectedCallsign}
+          onSelectFlight={setSelectedCallsign}
+        />
       </div>
-    </motion.div>
+    </div>
   );
 }
 

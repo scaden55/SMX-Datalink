@@ -23,15 +23,18 @@ export function DetailPanel({
   children,
 }: DetailPanelProps) {
   return (
-    <div
+    <aside
+      role="complementary"
+      aria-label={title}
+      aria-hidden={!open}
       className={`flex-1 flex flex-col border-l transition-[transform,opacity] duration-200 ease-out ${
         open
           ? 'translate-x-0 opacity-100'
           : 'translate-x-full opacity-0 pointer-events-none'
       }`}
       style={{
-        backgroundColor: 'var(--surface-2)',
-        borderLeftColor: 'var(--border-primary)',
+        backgroundColor: 'transparent',
+        borderLeftColor: 'var(--panel-border)',
       }}
     >
       {/* Header */}
@@ -41,19 +44,11 @@ export function DetailPanel({
       >
         <div className="flex items-start justify-between">
           <div className="min-w-0 flex-1">
-            <h2
-              className="text-sm font-semibold truncate"
-              style={{ color: 'var(--text-primary)' }}
-            >
+            <h2 className="text-heading truncate" style={{ fontSize: 14 }}>
               {title}
             </h2>
             {subtitle && (
-              <p
-                className="text-xs mt-0.5 truncate"
-                style={{ color: 'var(--text-tertiary)' }}
-              >
-                {subtitle}
-              </p>
+              <p className="text-caption mt-0.5 truncate">{subtitle}</p>
             )}
           </div>
           <button
@@ -73,6 +68,6 @@ export function DetailPanel({
 
       {/* Content */}
       <div className="p-4 overflow-y-auto flex-1">{children}</div>
-    </div>
+    </aside>
   );
 }

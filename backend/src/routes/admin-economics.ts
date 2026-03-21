@@ -24,7 +24,7 @@ export function adminEconomicsRouter(): Router {
         SELECT fp.*, l.flight_number, u.callsign as pilot_callsign
         FROM finance_flight_pnl fp
         LEFT JOIN logbook l ON l.id = fp.logbook_id
-        LEFT JOIN users u ON u.id = fp.pilot_id
+        LEFT JOIN users u ON u.id = l.user_id
       `;
       const params: unknown[] = [];
 
@@ -35,7 +35,7 @@ export function adminEconomicsRouter(): Router {
         params.push(aircraftId);
       }
 
-      dataSql += ' ORDER BY fp.created_at DESC LIMIT ? OFFSET ?';
+      dataSql += ' ORDER BY fp.computed_at DESC LIMIT ? OFFSET ?';
 
       const totalRow = db.prepare(countSql).get(...params) as { total: number };
       const rows = db.prepare(dataSql).all(...params, pageSize, offset);
@@ -61,7 +61,7 @@ export function adminEconomicsRouter(): Router {
         SELECT fp.*, l.flight_number, u.callsign as pilot_callsign
         FROM finance_flight_pnl fp
         LEFT JOIN logbook l ON l.id = fp.logbook_id
-        LEFT JOIN users u ON u.id = fp.pilot_id
+        LEFT JOIN users u ON u.id = l.user_id
         WHERE fp.logbook_id = ?
       `).get(req.params.pirepId);
 

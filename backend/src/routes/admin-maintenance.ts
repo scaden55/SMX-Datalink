@@ -243,6 +243,7 @@ export function adminMaintenanceRouter(): Router {
       const filters = {
         aircraftId: req.query.aircraftId ? parseInt(req.query.aircraftId as string) : undefined,
         status: req.query.status as string | undefined,
+        needsReview: req.query.needsReview === 'true' ? true : undefined,
       };
       const page = Math.max(1, parseInt(req.query.page as string) || 1);
       const pageSize = Math.min(100, Math.max(1, parseInt(req.query.pageSize as string) || 50));

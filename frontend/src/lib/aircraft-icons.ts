@@ -1,15 +1,15 @@
 /**
- * Aircraft icon mapping — maps ICAO type codes to silhouette categories.
+ * Aircraft icon mapping — maps ICAO type codes to SVG silhouettes.
  *
- * 11 original SVG silhouettes cover the full range of VATSIM traffic:
- *   narrowbody, widebody, heavy, regional, turboprop,
- *   bizjet, ga-single, ga-twin, helicopter, fighter, generic
+ * 179 type-specific SVGs from RexKramer1/AircraftShapesSVG provide
+ * per-aircraft silhouettes (B738, A320, C172, etc.). When no exact
+ * match exists, falls back to 11 generic category shapes.
  *
  * Each type has a size coefficient (relative to a standard 30px base)
  * that keeps wide-bodies visually larger than Cessnas on the map.
  */
 
-// ── SVG imports (raw strings for inline embedding) ───────────────
+// ── Category SVG imports (fallback when no type-specific shape) ──
 
 import narrowbodySvg from '../assets/aircraft/narrowbody.svg?raw';
 import widebodySvg from '../assets/aircraft/widebody.svg?raw';
@@ -22,6 +22,24 @@ import gaTwinSvg from '../assets/aircraft/ga-twin.svg?raw';
 import helicopterSvg from '../assets/aircraft/helicopter.svg?raw';
 import fighterSvg from '../assets/aircraft/fighter.svg?raw';
 import genericSvg from '../assets/aircraft/generic.svg?raw';
+
+// ── Type-specific SVGs (179 silhouettes, eagerly loaded) ─────────
+
+const typeShapeModules = import.meta.glob<string>('@aircraft-shapes/*.svg', {
+  eager: true,
+  query: '?raw',
+  import: 'default',
+});
+
+/** Map of ICAO code → raw SVG string, e.g. "B738" → "<svg ...>" */
+const TYPE_SHAPES: Record<string, string> = {};
+for (const [path, svg] of Object.entries(typeShapeModules)) {
+  // Path looks like "/@aircraft-shapes/B738.svg" or similar
+  const match = path.match(/\/([^/]+)\.svg$/);
+  if (match) {
+    TYPE_SHAPES[match[1].toUpperCase()] = svg;
+  }
+}
 
 // ── Types ────────────────────────────────────────────────────────
 
@@ -205,8 +223,10 @@ const DEFAULT: AircraftIconInfo = {
 /**
  * Resolve an ICAO aircraft type code to an icon + size.
  *
- * @param typeCode ICAO short type (e.g. "B738", "A320", "C172")
- *                 Falls back to generic if null/unknown.
+ * Resolution order:
+ *  1. Exact match in 179 type-specific SVGs (B738.svg, A320.svg, etc.)
+ *  2. Category fallback via TYPE_MAP (e.g. B37M → narrowbody)
+ *  3. Generic silhouette
  */
 export function getAircraftIcon(typeCode: string | null | undefined): AircraftIconInfo {
   if (!typeCode) return DEFAULT;
@@ -215,10 +235,17 @@ export function getAircraftIcon(typeCode: string | null | undefined): AircraftIc
   const code = typeCode.toUpperCase().split('/')[0].trim();
   if (!code) return DEFAULT;
 
-  const category = TYPE_MAP[code];
-  if (!category) return DEFAULT;
+  const category = TYPE_MAP[code] ?? 'generic';
+  const sizeCoef = CATEGORIES[category].sizeCoef;
 
-  return { category, ...CATEGORIES[category] };
+  // Try type-specific SVG first
+  const typeSvg = TYPE_SHAPES[code];
+  if (typeSvg) {
+    return { category, svgRaw: typeSvg, sizeCoef };
+  }
+
+  // Fall back to category SVG
+  return { category, svgRaw: CATEGORIES[category].svgRaw, sizeCoef };
 }
 
 /**

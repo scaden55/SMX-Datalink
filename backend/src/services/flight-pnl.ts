@@ -122,8 +122,9 @@ export class FlightPnLService {
       const fuelServiceFee = fuelCost * depRates.fuelServicePct;
       const crewCost = blockHours * pilotPayRate;
       const landingFees = (defaultMtow / 1000) * (depRates.landingPer1000lbs + arrRates.landingPer1000lbs);
-      const handlingDepFees = (defaultMtow / 1000) * depRates.handlingPer1000lbs;
-      const handlingArrFees = (defaultMtow / 1000) * arrRates.handlingPer1000lbs;
+      // Handling rates are flat fees per movement, not per-1000lbs
+      const handlingDepFees = depRates.handlingPer1000lbs;
+      const handlingArrFees = arrRates.handlingPer1000lbs;
       const navFees = distanceNm * depRates.navPerNm;
       const authorityFees = depRates.authorityFee + arrRates.authorityFee;
       const maintenanceReserve = 0;

@@ -143,29 +143,21 @@ function StatusBadge({ status }: { status: ComponentStatus }) {
 
 // ── Shared Styles ────────────────────────────────────────────
 
+const COL_HEADER_CLASS = 'text-subheading';
 const colHeaderStyle: React.CSSProperties = {
-  fontSize: 10,
-  fontWeight: 600,
-  letterSpacing: 0.8,
-  color: 'var(--text-tertiary)',
-  textTransform: 'uppercase',
   padding: '10px 16px',
   borderBottom: '1px solid var(--border-primary)',
   userSelect: 'none',
 };
 
+const CELL_CLASS = 'text-caption';
 const cellStyle: React.CSSProperties = {
   padding: '10px 16px',
   borderBottom: '1px solid var(--border-primary)',
-  fontSize: 12,
-  color: 'var(--text-secondary)',
   verticalAlign: 'middle',
 };
 
-const monoStyle: React.CSSProperties = {
-  fontFamily: 'var(--font-mono)',
-  fontVariantNumeric: 'tabular-nums',
-};
+const MONO_CLASS = 'data-sm';
 
 // ── Skeleton ─────────────────────────────────────────────────
 
@@ -177,7 +169,8 @@ function TableSkeleton() {
           key={i}
           style={{
             height: 42,
-            background: 'var(--surface-2)',
+            background: 'transparent',
+            border: '1px solid var(--panel-border)',
             borderRadius: 4,
             marginBottom: 4,
             opacity: 0.5,
@@ -305,7 +298,7 @@ export function ComponentsSection({ refreshKey }: { refreshKey: number }) {
         }}
       >
         <Select value={aircraftFilter} onValueChange={setAircraftFilter}>
-          <SelectTrigger style={{ width: 160, fontSize: 12 }}>
+          <SelectTrigger className="text-caption" style={{ width: 160 }}>
             <SelectValue placeholder="All Aircraft" />
           </SelectTrigger>
           <SelectContent>
@@ -319,7 +312,7 @@ export function ComponentsSection({ refreshKey }: { refreshKey: number }) {
         </Select>
 
         <Select value={typeFilter} onValueChange={setTypeFilter}>
-          <SelectTrigger style={{ width: 160, fontSize: 12 }}>
+          <SelectTrigger className="text-caption" style={{ width: 160 }}>
             <SelectValue placeholder="All Types" />
           </SelectTrigger>
           <SelectContent>
@@ -333,7 +326,7 @@ export function ComponentsSection({ refreshKey }: { refreshKey: number }) {
         </Select>
 
         <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger style={{ width: 140, fontSize: 12 }}>
+          <SelectTrigger className="text-caption" style={{ width: 140 }}>
             <SelectValue placeholder="All Status" />
           </SelectTrigger>
           <SelectContent>
@@ -350,7 +343,7 @@ export function ComponentsSection({ refreshKey }: { refreshKey: number }) {
 
         <button
           onClick={() => setCreateOpen(true)}
-          className="btn-glow"
+          className="btn-glow text-caption"
           style={{
             display: 'inline-flex',
             alignItems: 'center',
@@ -360,7 +353,6 @@ export function ComponentsSection({ refreshKey }: { refreshKey: number }) {
             color: '#fff',
             border: 'none',
             borderRadius: 6,
-            fontSize: 12,
             fontWeight: 600,
             cursor: 'pointer',
             transition: 'opacity 120ms',
@@ -376,12 +368,8 @@ export function ComponentsSection({ refreshKey }: { refreshKey: number }) {
       {/* Empty state */}
       {filtered.length === 0 && (
         <div
-          style={{
-            padding: '60px 24px',
-            textAlign: 'center',
-            color: 'var(--text-tertiary)',
-            fontSize: 13,
-          }}
+          className="text-body"
+          style={{ padding: '60px 24px', textAlign: 'center', color: 'var(--text-tertiary)' }}
         >
           No components found. Add a component to get started.
         </div>
@@ -394,16 +382,16 @@ export function ComponentsSection({ refreshKey }: { refreshKey: number }) {
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
                 <tr>
-                  <th style={colHeaderStyle}>Aircraft</th>
-                  <th style={colHeaderStyle}>Type</th>
-                  <th style={colHeaderStyle}>Part #</th>
-                  <th style={colHeaderStyle}>Serial #</th>
-                  <th style={colHeaderStyle}>Position</th>
-                  <th style={{ ...colHeaderStyle, textAlign: 'right' }}>Hrs Since New</th>
-                  <th style={{ ...colHeaderStyle, textAlign: 'right' }}>Cyc Since New</th>
-                  <th style={{ ...colHeaderStyle, textAlign: 'right' }}>Overhaul Int.</th>
-                  <th style={{ ...colHeaderStyle, textAlign: 'center' }}>Status</th>
-                  <th style={{ ...colHeaderStyle, width: 48 }} />
+                  <th className={COL_HEADER_CLASS} style={colHeaderStyle}>Aircraft</th>
+                  <th className={COL_HEADER_CLASS} style={colHeaderStyle}>Type</th>
+                  <th className={COL_HEADER_CLASS} style={colHeaderStyle}>Part #</th>
+                  <th className={COL_HEADER_CLASS} style={colHeaderStyle}>Serial #</th>
+                  <th className={COL_HEADER_CLASS} style={colHeaderStyle}>Position</th>
+                  <th className={COL_HEADER_CLASS} style={{ ...colHeaderStyle, textAlign: 'right' }}>Hrs Since New</th>
+                  <th className={COL_HEADER_CLASS} style={{ ...colHeaderStyle, textAlign: 'right' }}>Cyc Since New</th>
+                  <th className={COL_HEADER_CLASS} style={{ ...colHeaderStyle, textAlign: 'right' }}>Overhaul Int.</th>
+                  <th className={COL_HEADER_CLASS} style={{ ...colHeaderStyle, textAlign: 'center' }}>Status</th>
+                  <th className={COL_HEADER_CLASS} style={{ ...colHeaderStyle, width: 48 }} />
                 </tr>
               </thead>
               <motion.tbody variants={tableContainer} initial="hidden" animate="visible">
@@ -412,59 +400,59 @@ export function ComponentsSection({ refreshKey }: { refreshKey: number }) {
                     key={item.id}
                     variants={tableRow}
                     style={{
-                      background: hoveredId === item.id ? 'var(--surface-3)' : 'transparent',
+                      background: hoveredId === item.id ? 'var(--tint-subtle)' : 'transparent',
                       transition: 'background 80ms',
                     }}
                     onMouseEnter={() => setHoveredId(item.id)}
                     onMouseLeave={() => setHoveredId(null)}
                   >
                     {/* Aircraft */}
-                    <td style={{ ...cellStyle, ...monoStyle, fontSize: 12 }}>
+                    <td className={`${CELL_CLASS} ${MONO_CLASS}`} style={cellStyle}>
                       {item.registration ?? '\u2014'}
                     </td>
 
                     {/* Type */}
-                    <td style={cellStyle}>
+                    <td className={CELL_CLASS} style={cellStyle}>
                       <TypeBadge type={item.componentType} />
                     </td>
 
                     {/* Part # */}
-                    <td style={{ ...cellStyle, ...monoStyle, fontSize: 12 }}>
+                    <td className={`${CELL_CLASS} ${MONO_CLASS}`} style={cellStyle}>
                       {item.partNumber}
                     </td>
 
                     {/* Serial # */}
-                    <td style={{ ...cellStyle, ...monoStyle, fontSize: 12 }}>
+                    <td className={`${CELL_CLASS} ${MONO_CLASS}`} style={cellStyle}>
                       {item.serialNumber}
                     </td>
 
                     {/* Position */}
-                    <td style={{ ...cellStyle, fontSize: 12 }}>
+                    <td className={CELL_CLASS} style={cellStyle}>
                       {item.position ?? '\u2014'}
                     </td>
 
                     {/* Hours Since New */}
-                    <td style={{ ...cellStyle, ...monoStyle, textAlign: 'right' }}>
+                    <td className={`${CELL_CLASS} ${MONO_CLASS}`} style={{ ...cellStyle, textAlign: 'right' }}>
                       {item.hoursSinceNew != null ? item.hoursSinceNew.toLocaleString() : '\u2014'}
                     </td>
 
                     {/* Cycles Since New */}
-                    <td style={{ ...cellStyle, ...monoStyle, textAlign: 'right' }}>
+                    <td className={`${CELL_CLASS} ${MONO_CLASS}`} style={{ ...cellStyle, textAlign: 'right' }}>
                       {item.cyclesSinceNew != null ? item.cyclesSinceNew.toLocaleString() : '\u2014'}
                     </td>
 
                     {/* Overhaul Interval */}
-                    <td style={{ ...cellStyle, ...monoStyle, textAlign: 'right' }}>
+                    <td className={`${CELL_CLASS} ${MONO_CLASS}`} style={{ ...cellStyle, textAlign: 'right' }}>
                       {item.overhaulIntervalHours != null ? `${item.overhaulIntervalHours.toLocaleString()}h` : '\u2014'}
                     </td>
 
                     {/* Status */}
-                    <td style={{ ...cellStyle, textAlign: 'center' }}>
+                    <td className={CELL_CLASS} style={{ ...cellStyle, textAlign: 'center' }}>
                       <StatusBadge status={item.status} />
                     </td>
 
                     {/* Actions */}
-                    <td style={{ ...cellStyle, padding: '6px 8px' }}>
+                    <td className={CELL_CLASS} style={{ ...cellStyle, padding: '6px 8px' }}>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <button
@@ -512,7 +500,7 @@ export function ComponentsSection({ refreshKey }: { refreshKey: number }) {
               borderTop: '1px solid var(--border-primary)',
             }}
           >
-            <span style={{ fontSize: 11, color: 'var(--text-tertiary)' }}>
+            <span className="text-caption">
               {Math.min((page - 1) * PAGE_SIZE + 1, filtered.length)}&ndash;{Math.min(page * PAGE_SIZE, filtered.length)} of {filtered.length}
             </span>
             <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
@@ -535,7 +523,7 @@ export function ComponentsSection({ refreshKey }: { refreshKey: number }) {
               >
                 <ChevronLeft size={14} />
               </button>
-              <span style={{ fontSize: 11, color: 'var(--text-tertiary)', padding: '0 6px', ...monoStyle }}>
+              <span className={`text-caption ${MONO_CLASS}`} style={{ padding: '0 6px' }}>
                 {page} / {totalPages}
               </span>
               <button
@@ -594,7 +582,7 @@ export function ComponentsSection({ refreshKey }: { refreshKey: number }) {
             <DialogTitle>Delete Component</DialogTitle>
             <DialogDescription>
               Are you sure you want to delete component{' '}
-              <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 600 }}>
+              <span className={MONO_CLASS} style={{ fontWeight: 600 }}>
                 {deleteItem?.partNumber}
               </span>
               {deleteItem?.serialNumber ? ` (S/N ${deleteItem.serialNumber})` : ''}? This action cannot be undone.
@@ -749,13 +737,13 @@ function ComponentFormDialog({
           <div className="space-y-2">
             <Label>Aircraft *</Label>
             <Select value={aircraftId} onValueChange={setAircraftId}>
-              <SelectTrigger style={{ fontSize: 12 }}>
+              <SelectTrigger className="text-caption">
                 <SelectValue placeholder="Select aircraft" />
               </SelectTrigger>
               <SelectContent>
                 {fleet.map((a) => (
                   <SelectItem key={a.id} value={String(a.id)}>
-                    <span style={{ fontFamily: 'var(--font-mono)' }}>{a.registration}</span>
+                    <span className={MONO_CLASS}>{a.registration}</span>
                     <span style={{ color: 'var(--text-tertiary)', marginLeft: 8 }}>{a.icaoType}</span>
                   </SelectItem>
                 ))}
@@ -767,7 +755,7 @@ function ComponentFormDialog({
           <div className="space-y-2">
             <Label>Component Type *</Label>
             <Select value={componentType} onValueChange={(v) => setComponentType(v as ComponentType)}>
-              <SelectTrigger style={{ fontSize: 12 }}>
+              <SelectTrigger className="text-caption">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -787,7 +775,7 @@ function ComponentFormDialog({
               value={partNumber}
               onChange={(e) => setPartNumber(e.target.value)}
               placeholder="e.g. CFM56-7B26"
-              style={{ fontFamily: 'var(--font-mono)' }}
+              className={MONO_CLASS}
             />
           </div>
 
@@ -798,7 +786,7 @@ function ComponentFormDialog({
               value={serialNumber}
               onChange={(e) => setSerialNumber(e.target.value)}
               placeholder="e.g. ESN-123456"
-              style={{ fontFamily: 'var(--font-mono)' }}
+              className={MONO_CLASS}
             />
           </div>
 
@@ -875,7 +863,7 @@ function ComponentFormDialog({
           <div className="space-y-2">
             <Label>Status *</Label>
             <Select value={status} onValueChange={(v) => setStatus(v as ComponentStatus)}>
-              <SelectTrigger style={{ fontSize: 12 }}>
+              <SelectTrigger className="text-caption">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>

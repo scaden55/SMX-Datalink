@@ -20,12 +20,12 @@ const VALID_TYPES = new Set<FinanceType>(['pay', 'bonus', 'deduction', 'expense'
 
 export class FinanceService {
 
-  create(data: { pilotId: number | null; type: FinanceType; amount: number; description?: string; pirepId?: number | null; category?: string }, createdBy: number): number {
+  create(data: { pilotId: number | null; type: FinanceType; amount: number; description?: string; pirepId?: number | null; category?: string }, createdBy: number | null): number {
     const category = data.category ?? (data.type === 'income' ? 'revenue' : data.type === 'pay' ? 'payroll' : data.type === 'expense' ? 'expense' : 'admin');
     const result = getDb().prepare(`
       INSERT INTO finances (pilot_id, pirep_id, type, amount, description, created_by, category)
       VALUES (?, ?, ?, ?, ?, ?, ?)
-    `).run(data.pilotId, data.pirepId ?? null, data.type, data.amount, data.description ?? null, createdBy, category);
+    `).run(data.pilotId, data.pirepId ?? null, data.type, data.amount, data.description ?? null, createdBy || null, category);
     return result.lastInsertRowid as number;
   }
 

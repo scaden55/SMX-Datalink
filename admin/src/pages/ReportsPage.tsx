@@ -72,11 +72,11 @@ interface FleetUtilizationEntry {
 
 // ── Chart Colors ────────────────────────────────────────────────
 
-const ACCENT_BLUE = '#4F6CCD';
-const ACCENT_EMERALD = '#4ade80';
-const ACCENT_AMBER = '#fbbf24';
-const ACCENT_RED = '#f87171';
-const ACCENT_CYAN = '#22d3ee';
+const ACCENT_BLUE = 'var(--accent-blue)';
+const ACCENT_EMERALD = 'var(--accent-emerald)';
+const ACCENT_AMBER = 'var(--accent-amber)';
+const ACCENT_RED = 'var(--accent-red)';
+const ACCENT_CYAN = 'var(--accent-cyan)';
 
 // ── Tooltip style constant ──────────────────────────────────────
 
@@ -120,8 +120,8 @@ function ChartCard({
   return (
     <div
       style={{
-        background: 'var(--surface-2)',
-        border: '1px solid var(--border-primary)',
+        background: 'transparent',
+        border: '1px solid var(--panel-border)',
         borderRadius: 6,
         display: 'flex',
         flexDirection: 'column',
@@ -138,10 +138,10 @@ function ChartCard({
           justifyContent: 'space-between',
         }}
       >
-        <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>
+        <span className="text-body" style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: 13 }}>
           {title}
         </span>
-        <span style={{ fontSize: 10, color: 'var(--text-tertiary)' }}>
+        <span className="data-xs" style={{ color: 'var(--text-tertiary)' }}>
           Last 12 Months
         </span>
       </div>
@@ -168,9 +168,9 @@ function ReportsPageSkeleton() {
             key={i}
             style={{
               height: 340,
-              background: 'var(--surface-2)',
+              background: 'transparent',
               borderRadius: 6,
-              border: '1px solid var(--border-primary)',
+              border: '1px solid var(--panel-border)',
             }}
             className="animate-pulse"
           />
@@ -198,7 +198,7 @@ function FlightHoursChart({ data }: { data: FlightHoursEntry[] }) {
 
   if (chartData.length === 0) {
     return (
-      <p style={{ fontSize: 12, color: 'var(--text-tertiary)', textAlign: 'center', padding: '40px 0' }}>
+      <p className="text-caption" style={{ textAlign: 'center', padding: '40px 0' }}>
         No data for this period
       </p>
     );
@@ -261,7 +261,7 @@ function LandingRateChart({ data }: { data: LandingRateData }) {
 
   if (chartData.length === 0) {
     return (
-      <p style={{ fontSize: 12, color: 'var(--text-tertiary)', textAlign: 'center', padding: '40px 0' }}>
+      <p className="text-caption" style={{ textAlign: 'center', padding: '40px 0' }}>
         No data for this period
       </p>
     );
@@ -314,7 +314,7 @@ function OnTimeChart({ data }: { data: OnTimeData }) {
 
   if (data.totalFlights === 0) {
     return (
-      <p style={{ fontSize: 12, color: 'var(--text-tertiary)', textAlign: 'center', padding: '40px 0' }}>
+      <p className="text-caption" style={{ textAlign: 'center', padding: '40px 0' }}>
         No data for this period
       </p>
     );
@@ -351,7 +351,7 @@ function OnTimeChart({ data }: { data: OnTimeData }) {
         {pieData.map((d) => (
           <div key={d.name} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <div style={{ width: 8, height: 8, borderRadius: '50%', background: d.fill }} />
-            <span style={{ fontSize: 11, color: 'var(--text-tertiary)' }}>
+            <span className="text-caption" style={{ fontSize: 11 }}>
               {d.name} ({d.value})
             </span>
           </div>
@@ -376,7 +376,7 @@ function FuelEfficiencyChart({ data }: { data: FuelEfficiencyEntry[] }) {
 
   if (chartData.length === 0) {
     return (
-      <p style={{ fontSize: 12, color: 'var(--text-tertiary)', textAlign: 'center', padding: '40px 0' }}>
+      <p className="text-caption" style={{ textAlign: 'center', padding: '40px 0' }}>
         No data for this period
       </p>
     );
@@ -450,7 +450,7 @@ function RoutePopularityChart({ data }: { data: RoutePopularityEntry[] }) {
 
   if (chartData.length === 0) {
     return (
-      <p style={{ fontSize: 12, color: 'var(--text-tertiary)', textAlign: 'center', padding: '40px 0' }}>
+      <p className="text-caption" style={{ textAlign: 'center', padding: '40px 0' }}>
         No data for this period
       </p>
     );
@@ -511,7 +511,7 @@ function FleetUtilizationChart({ data }: { data: FleetUtilizationEntry[] }) {
 
   if (chartData.length === 0) {
     return (
-      <p style={{ fontSize: 12, color: 'var(--text-tertiary)', textAlign: 'center', padding: '40px 0' }}>
+      <p className="text-caption" style={{ textAlign: 'center', padding: '40px 0' }}>
         No data for this period
       </p>
     );
@@ -784,9 +784,9 @@ export function ReportsPage() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <BarChart3 size={20} style={{ color: ACCENT_BLUE }} />
-              <span style={{ fontSize: 20, fontWeight: 700, color: 'var(--text-primary)' }}>Reports &amp; Analytics</span>
+              <span className="text-heading" style={{ fontSize: 20, fontWeight: 700 }}>Reports &amp; Analytics</span>
             </div>
-            <span style={{ fontSize: 12, color: 'var(--text-tertiary)' }}>Real-time and historical analytics</span>
+            <span className="text-caption">Real-time and historical analytics</span>
           </div>
         </div>
         <ReportsPageSkeleton />
@@ -849,7 +849,7 @@ export function ReportsPage() {
             className="w-[140px] input-glow"
             style={{ height: 32, fontSize: 12 }}
           />
-          <span style={{ fontSize: 12, color: 'var(--text-tertiary)' }}>to</span>
+          <span className="text-caption">to</span>
           <Input
             type="date"
             value={dateTo}
@@ -876,7 +876,7 @@ export function ReportsPage() {
       </motion.div>
 
       {/* Print-only date range header */}
-      <div className="hidden print:block" style={{ padding: '0 24px', marginBottom: 12, fontSize: 12, color: 'var(--text-tertiary)' }}>
+      <div className="hidden print:block text-caption" style={{ padding: '0 24px', marginBottom: 12 }}>
         Report period: {dateFrom} to {dateTo}
       </div>
 

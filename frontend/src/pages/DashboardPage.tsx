@@ -26,6 +26,7 @@ import { MapContainer, TileLayer, Marker, Tooltip } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { api } from '../lib/api';
+import { getAircraftIcon, getIconSize } from '../lib/aircraft-icons';
 import { toast } from '../stores/toastStore';
 import { useAuthStore } from '../stores/authStore';
 import { useSocketStore } from '../stores/socketStore';
@@ -224,38 +225,29 @@ function QuickActions() {
 
 // ─── Network Map ────────────────────────────────────────────────
 
-const DASH_PLANE_SVG = (heading: number) => `
-  <svg viewBox="0 0 64 64" width="22" height="22" style="transform: rotate(${heading}deg); filter: drop-shadow(0 1px 3px rgba(0,0,0,0.6)) drop-shadow(0 0 8px rgba(59,130,246,0.5));">
-    <path d="
-      M32 2
-      C33 2 34 3 34 5
-      L34 20
-      L54 30 C56 31 56 33 55 34 L34 32
-      L34 48
-      L42 54 C43 55 43 56 42 57 L34 55
-      L33 58 C32.5 59 31.5 59 31 58
-      L30 55
-      L22 57 C21 56 21 55 22 54 L30 48
-      L30 32
-      L9 34 C8 33 8 31 10 30 L30 20
-      L30 5
-      C30 3 31 2 32 2 Z"
-      fill="#4F6CCD" stroke="rgba(0,0,0,0.3)" stroke-width="0.5"/>
-  </svg>`;
+const dashPlaneIconCache = new Map<string, L.DivIcon>();
 
-const dashPlaneIconCache = new Map<number, L.DivIcon>();
-
-function getDashPlaneIcon(heading: number): L.DivIcon {
+function getDashPlaneIcon(heading: number, aircraftType?: string): L.DivIcon {
   const rounded = Math.round(heading / 5) * 5;
-  let icon = dashPlaneIconCache.get(rounded);
+  const codeKey = aircraftType?.toUpperCase().split('/')[0].trim() || 'generic';
+  const key = `${codeKey}-${rounded}`;
+  let icon = dashPlaneIconCache.get(key);
   if (!icon) {
+    const info = getAircraftIcon(aircraftType);
+    const size = Math.max(getIconSize(info), 20);
+    const color = '#4F6CCD';
+    const colored = info.svgRaw
+      .replace(/currentColor/g, color)
+      .replace(/fill="currentColor"/g, `fill="${color}"`);
     icon = L.divIcon({
-      html: DASH_PLANE_SVG(rounded),
+      html: `<div style="transform:rotate(${rounded}deg);filter:drop-shadow(0 1px 3px rgba(0,0,0,0.6)) drop-shadow(0 0 8px rgba(59,130,246,0.5));width:${size}px;height:${size}px;line-height:0;color:${color};">
+        <div style="width:${size}px;height:${size}px;">${colored}</div>
+      </div>`,
       className: '',
-      iconSize: [22, 22],
-      iconAnchor: [11, 11],
+      iconSize: [size, size],
+      iconAnchor: [size / 2, size / 2],
     });
-    dashPlaneIconCache.set(rounded, icon);
+    dashPlaneIconCache.set(key, icon);
   }
   return icon;
 }
@@ -302,7 +294,7 @@ function NetworkMapPreview({ activeFlights }: { activeFlights: ActiveFlightHeart
             <Marker
               key={af.userId}
               position={[af.latitude, af.longitude]}
-              icon={getDashPlaneIcon(af.heading)}
+              icon={getDashPlaneIcon(af.heading, af.aircraftType)}
             >
               <Tooltip direction="top" offset={[0, -12]} opacity={0.95}>
                 <span className="tabular-nums text-xs">{af.callsign} · FL{Math.round(af.altitude / 100)}</span>

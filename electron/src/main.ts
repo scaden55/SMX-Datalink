@@ -611,7 +611,7 @@ app.whenReady().then(async () => {
     // Initial setup — create new relay
     vpsRelay = new VpsRelay(sim, {
       vpsUrl: data.vpsUrl,
-      heartbeatIntervalMs: 30_000,
+      heartbeatIntervalMs: 3_000,
       token: data.token,
       userId: data.userId,
       callsign: data.callsign,
