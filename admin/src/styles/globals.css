@@ -325,3 +325,47 @@ input[type="number"] {
 .dispatch-popup .leaflet-popup-tip-container {
   display: none;
 }
+
+/* ── Map panel transitions ─────────────────────────────── */
+
+.map-panel-left {
+  transform: translateX(-100%);
+  opacity: 0;
+  transition: transform 300ms ease-out, opacity 300ms ease-out;
+}
+.map-panel-left.active {
+  transform: translateX(0);
+  opacity: 1;
+}
+
+.map-panel-right {
+  transform: translateX(100%);
+  opacity: 0;
+  transition: transform 300ms ease-out, opacity 300ms ease-out;
+}
+.map-panel-right.active {
+  transform: translateX(0);
+  opacity: 1;
+}
+
+.map-panel-top {
+  transform: translateY(-20px);
+  opacity: 0;
+  transition: transform 300ms ease-out, opacity 300ms ease-out;
+  transition-delay: 150ms;
+}
+.map-panel-top.active {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+.map-panel-bottom {
+  transform: translateY(100%);
+  opacity: 0;
+  transition: transform 300ms ease-out, opacity 300ms ease-out;
+  transition-delay: 200ms;
+}
+.map-panel-bottom.active {
+  transform: translateY(0);
+  opacity: 1;
+}
