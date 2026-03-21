@@ -311,19 +311,10 @@ input[type="number"] {
   color: var(--text-primary);
 }
 
-/* ── Leaflet dispatch popup (dark theme) ────────────── */
-.dispatch-popup .leaflet-popup-content-wrapper {
-  background: transparent;
-  box-shadow: none;
-  border-radius: 0;
-  padding: 0;
-}
-.dispatch-popup .leaflet-popup-content {
-  margin: 0;
-  line-height: 1;
-}
-.dispatch-popup .leaflet-popup-tip-container {
-  display: none;
+/* ── Fade-in animation (FloatingFlightCard, etc.) ─────── */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 /* ── Map panel transitions ─────────────────────────────── */
