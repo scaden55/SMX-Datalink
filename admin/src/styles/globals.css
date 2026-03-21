@@ -7,7 +7,7 @@
 
 @layer base {
   :root {
-    --radius: 0.5rem;
+    --radius: 0;
   }
 
   .dark {
@@ -78,9 +78,9 @@
 
 /* ── Gradient primary button ─────────────────────── */
 .btn-primary {
-  background: linear-gradient(135deg, #6384E6 0%, #4A66C4 100%);
+  background: var(--accent-blue);
   color: #ffffff;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.3), 0 2px 8px rgba(99,132,230,0.20);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.3), 0 2px 8px var(--accent-blue-ring);
   border: none;
   border-radius: var(--radius-md);
   font-size: 12px;
@@ -92,7 +92,7 @@
 .btn-primary:hover {
   filter: brightness(1.1);
   transform: translateY(-1px);
-  box-shadow: 0 2px 6px rgba(0,0,0,0.4), 0 4px 12px rgba(79,108,205,0.30);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.4), 0 4px 12px var(--accent-blue-ring);
 }
 .btn-primary:active {
   filter: brightness(0.95);
@@ -107,9 +107,9 @@
 
 /* ── Secondary outline button ────────────────────── */
 .btn-secondary {
-  background: rgba(79,108,205,0.10);
+  background: var(--accent-blue-dim);
   color: var(--accent-blue-bright);
-  border: 1px solid rgba(79,108,205,0.20);
+  border: 1px solid var(--accent-blue-ring);
   border-radius: var(--radius-md);
   font-size: 12px;
   font-weight: 500;
@@ -118,8 +118,8 @@
   transition: all 150ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 .btn-secondary:hover {
-  background: rgba(79,108,205,0.18);
-  border-color: rgba(79,108,205,0.30);
+  background: var(--accent-blue-dim);
+  border-color: var(--accent-blue-ring);
 }
 .btn-secondary:active {
   transform: scale(0.98);
@@ -222,7 +222,7 @@
 }
 .input-glow:focus-within {
   border-color: var(--accent-blue) !important;
-  box-shadow: 0 0 0 2px rgba(48, 61, 104, 0.15);
+  box-shadow: 0 0 0 2px var(--accent-blue-ring);
 }
 
 /* ── Chart line draw animation ─────────────────────── */
@@ -292,8 +292,36 @@ input[type="number"] {
   background: rgba(48, 61, 104, 0.14);
 }
 
+/* Dashboard widget glass panel */
+.glass-panel {
+  padding: 16px;
+  background: linear-gradient(
+    168deg,
+    rgba(3, 7, 38, 0.35) 0%,
+    rgba(3, 7, 38, 0.18) 100%
+  );
+  backdrop-filter: blur(32px);
+  -webkit-backdrop-filter: blur(32px);
+  border: 1px solid rgba(255, 255, 255, 0.03);
+}
+
 /* ── Selection ──────────────────────────────────────── */
 ::selection {
   background: rgba(48, 61, 104, 0.25);
   color: var(--text-primary);
+}
+
+/* ── Leaflet dispatch popup (dark theme) ────────────── */
+.dispatch-popup .leaflet-popup-content-wrapper {
+  background: transparent;
+  box-shadow: none;
+  border-radius: 0;
+  padding: 0;
+}
+.dispatch-popup .leaflet-popup-content {
+  margin: 0;
+  line-height: 1;
+}
+.dispatch-popup .leaflet-popup-tip-container {
+  display: none;
 }

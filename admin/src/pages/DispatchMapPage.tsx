@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo, useCallback, useRef } from 'react';
-import { MapContainer, TileLayer, CircleMarker, Tooltip, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, useMap } from 'react-leaflet';
+import { useNavigate } from 'react-router-dom';
 import type { ActiveFlightHeartbeat, DispatchFlightsResponse, DispatchFlight } from '@acars/shared';
 import { useAuthStore } from '@/stores/authStore';
 import { useSocketStore } from '@/stores/socketStore';
@@ -7,6 +8,8 @@ import { useSocket } from '@/hooks/useSocket';
 import { api } from '@/lib/api';
 import { FilterBar, type PhaseFilter } from '@/components/dispatch/FilterBar';
 import { FlightStrip } from '@/components/dispatch/FlightStrip';
+import { FlightMarker } from '@/components/dispatch/FlightMarker';
+import { FloatingFlightCard } from '@/components/dispatch/FloatingFlightCard';
 import 'leaflet/dist/leaflet.css';
 
 /* ─── Local type for unified map flights ───────────────────────── */
@@ -30,20 +33,6 @@ export interface DispatchMapFlight {
   arrLat?: number;
   arrLon?: number;
 }
-
-/* ─── Phase colors ─────────────────────────────────────────────── */
-
-const PHASE_COLORS = {
-  flying: '#22c55e',
-  planning: '#f59e0b',
-  completed: '#6b7280',
-} as const;
-
-const PHASE_COLORS_BRIGHT = {
-  flying: '#4ade80',
-  planning: '#fbbf24',
-  completed: '#9ca3af',
-} as const;
 
 /* ─── Map background setter ────────────────────────────────────── */
 
@@ -132,6 +121,7 @@ function mergeHeartbeats(
 /* ─── Main page component ──────────────────────────────────────── */
 
 export default function DispatchMapPage() {
+  const navigate = useNavigate();
   const accessToken = useAuthStore((s) => s.accessToken);
   const { acquire } = useSocketStore();
 
@@ -224,6 +214,13 @@ export default function DispatchMapPage() {
     return list;
   }, [allFlights, phaseFilter, searchQuery]);
 
+  /* ── Selected flight lookup ────────────────────────────────── */
+
+  const selectedFlight = useMemo(() => {
+    if (selectedBidId == null) return null;
+    return visibleFlights.find((f) => f.bidId === selectedBidId) ?? null;
+  }, [visibleFlights, selectedBidId]);
+
   /* ── Handlers ───────────────────────────────────────────────── */
 
   const handleSelectFlight = useCallback((bidId: number) => {
@@ -249,47 +246,23 @@ export default function DispatchMapPage() {
         />
 
         {/* Flight markers */}
-        {visibleFlights.map((f) => {
-          const lat = f.latitude;
-          const lon = f.longitude;
-          if (lat == null || lon == null) return null;
+        {visibleFlights.map((f) => (
+          <FlightMarker
+            key={f.bidId}
+            flight={f}
+            isSelected={f.bidId === selectedBidId}
+            onClick={() => handleSelectFlight(f.bidId)}
+          />
+        ))}
 
-          const isSelected = f.bidId === selectedBidId;
-          const color = isSelected ? PHASE_COLORS_BRIGHT[f.phase] : PHASE_COLORS[f.phase];
-          const radius = isSelected ? 8 : 5;
-
-          return (
-            <CircleMarker
-              key={f.bidId}
-              center={[lat, lon]}
-              radius={radius}
-              pathOptions={{
-                color,
-                fillColor: color,
-                fillOpacity: isSelected ? 0.9 : 0.7,
-                weight: isSelected ? 2 : 1,
-              }}
-              eventHandlers={{
-                click: () => handleSelectFlight(f.bidId),
-              }}
-            >
-              <Tooltip direction="top" offset={[0, -8]} opacity={0.95}>
-                <div className="text-xs leading-tight">
-                  <div className="font-mono font-semibold">{f.callsign}</div>
-                  <div className="font-mono text-gray-300">
-                    {f.depIcao}&rarr;{f.arrIcao}
-                  </div>
-                  {f.phase === 'flying' && f.altitude != null && (
-                    <div className="font-mono text-gray-400">
-                      FL{String(Math.round(f.altitude / 100)).padStart(3, '0')}{' '}
-                      {f.groundSpeed != null ? `${Math.round(f.groundSpeed)}kt` : ''}
-                    </div>
-                  )}
-                </div>
-              </Tooltip>
-            </CircleMarker>
-          );
-        })}
+        {/* Floating card for selected flight */}
+        {selectedFlight && (
+          <FloatingFlightCard
+            flight={selectedFlight}
+            onOpenDetails={() => navigate(`/dispatch/${selectedFlight.bidId}`)}
+            onClose={() => setSelectedBidId(null)}
+          />
+        )}
       </MapContainer>
 
       {/* Overlay controls */}
