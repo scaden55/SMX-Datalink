@@ -10,7 +10,8 @@ import { LoginPage } from '@/pages/LoginPage';
 import { DashboardPage } from '@/pages/DashboardPage';
 
 // Lazy-loaded pages — each becomes a separate chunk
-const DispatchBoardPage = lazy(() => import('@/pages/DispatchBoardPage').then((m) => ({ default: m.DispatchBoardPage })));
+const DispatchMapPage = lazy(() => import('@/pages/DispatchMapPage'));
+const FlightDetailsPage = lazy(() => import('@/pages/FlightDetailsPage'));
 const FleetPage = lazy(() => import('@/pages/FleetPage').then((m) => ({ default: m.FleetPage })));
 const AircraftDetailPage = lazy(() => import('@/pages/AircraftDetailPage').then((m) => ({ default: m.AircraftDetailPage })));
 const UsersPage = lazy(() => import('@/pages/UsersPage').then((m) => ({ default: m.UsersPage })));
@@ -46,7 +47,8 @@ export function App() {
         <Route path="/login" element={<LoginPage />} />
         <Route element={<AuthGuard><DashboardLayout /></AuthGuard>}>
           <Route index element={<DashboardPage />} />
-          <Route path="dispatch" element={<Suspense fallback={null}><DispatchBoardPage /></Suspense>} />
+          <Route path="dispatch" element={<Suspense fallback={null}><DispatchMapPage /></Suspense>} />
+          <Route path="dispatch/:bidId" element={<Suspense fallback={null}><FlightDetailsPage /></Suspense>} />
           <Route path="fleet" element={<Suspense fallback={null}><FleetPage /></Suspense>} />
           <Route path="fleet/:id" element={<Suspense fallback={null}><AircraftDetailPage /></Suspense>} />
           <Route path="users" element={<Suspense fallback={null}><UsersPage /></Suspense>} />
