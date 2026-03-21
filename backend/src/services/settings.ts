@@ -27,6 +27,7 @@ const DEFAULTS: Record<string, string> = {
   'system.log_level': 'info',
   'dev.enabled': 'false',
   'simbrief.pilot_id': '',
+  'maintenance_timer_speed': '1',
 };
 
 export class SettingsService {

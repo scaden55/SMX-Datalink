@@ -428,6 +428,21 @@ export class MaintenanceService {
       return false;
     }
 
+    // Check for in-maintenance discrepancies with incomplete work orders
+    const inMaintenanceCount = db.prepare(`
+      SELECT COUNT(*) as count FROM discrepancies d
+      WHERE d.aircraft_id = ? AND d.status = 'in_maintenance'
+      AND NOT EXISTS (
+        SELECT 1 FROM work_orders wo
+        WHERE wo.discrepancy_id = d.id AND wo.status IN ('completed', 'accepted')
+      )
+    `).get(aircraftId) as { count: number };
+
+    if (inMaintenanceCount.count > 0) {
+      logger.info(TAG, `Cannot RTS aircraft ${aircraftId}: ${inMaintenanceCount.count} in-maintenance discrepancies with incomplete work orders`);
+      return false;
+    }
+
     db.prepare('UPDATE fleet SET status = ?, updated_at = datetime(\'now\') WHERE id = ?')
       .run('active', aircraftId);
 

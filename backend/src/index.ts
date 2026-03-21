@@ -66,6 +66,9 @@ import { TrackService } from './services/track.js';
 import { FlightEventTracker } from './services/flight-event-tracker.js';
 import { MaintenanceService } from './services/maintenance.js';
 import { BidExpirationService } from './services/bid-expiration.js';
+import { WorkOrderService } from './services/work-order.js';
+import { adminWorkOrderRouter } from './routes/admin-work-orders.js';
+import { adminRepairEstimatesRouter } from './routes/admin-repair-estimates.js';
 import { CharterGeneratorService, currentMonth } from './services/charter-generator.js';
 import { VatsimEventsService } from './services/vatsim-events.js';
 import { needsAirportData, importAirportData } from './services/airport-data.js';
@@ -159,6 +162,9 @@ const vatsimService = new VatsimService(config.vatsim);
 // WebSocket (created early so routers that need `io` can be registered in order)
 const io = setupWebSocket(httpServer, telemetry, simConnect, vatsimService, flightEventTracker);
 
+// WorkOrderService — declared here so shutdown() can call .stop()
+const workOrderService = new WorkOrderService(io);
+
 // ── REST API routes ──────────────────────────────────────────────
 // IMPORTANT: Registration order matters! Routers with exact paths (e.g. /airports,
 // /fleet, /bids/my) must be registered BEFORE routers with param wildcards
@@ -198,6 +204,8 @@ app.use('/api', adminRevenueModelRouter());
 app.use('/api', adminDiscrepancyRouter());
 app.use('/api', adminMelMasterRouter());
 app.use('/api', adminEconomicsRouter());
+app.use('/api', adminWorkOrderRouter(workOrderService));
+app.use('/api', adminRepairEstimatesRouter());
 app.use('/api', notificationsRouter());
 app.use('/api', airportDetailRouter());       // /airports/:icao (AFTER scheduleRouter's /airports)
 app.use('/api', trackRouter());
@@ -230,6 +238,7 @@ app.use('/admin', (_req, res) => {
 // Bid expiration sweep (every 5 minutes)
 const bidExpiration = new BidExpirationService(io);
 bidExpiration.start();
+workOrderService.start();
 
 // Periodic cleanup of expired refresh tokens (every hour)
 const authService = new AuthService();
@@ -350,6 +359,7 @@ function shutdown(): void {
   clearInterval(cleanupInterval);
   clearInterval(charterInterval);
   bidExpiration.stop();
+  workOrderService.stop();
   vatsimService.stop();
   io.close();
   simConnect.disconnect();

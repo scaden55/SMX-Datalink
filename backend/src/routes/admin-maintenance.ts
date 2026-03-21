@@ -488,5 +488,18 @@ export function adminMaintenanceRouter(): Router {
     }
   });
 
+  // POST /api/admin/maintenance/ads/sync — trigger FAA AD sync
+  router.post('/admin/maintenance/ads/sync', authMiddleware, adminMiddleware, async (req, res) => {
+    try {
+      const { FaaAdSyncService } = await import('../services/faa-ad-sync.js');
+      const syncService = new FaaAdSyncService();
+      const result = await syncService.syncAll();
+      res.json(result);
+    } catch (err) {
+      logger.error(TAG, 'AD sync error', err);
+      res.status(500).json({ error: 'Failed to sync ADs' });
+    }
+  });
+
   return router;
 }

@@ -624,3 +624,37 @@ export interface ExceedanceRow {
   detected_at: string;
   created_at: string;
 }
+
+export interface WorkOrderRow {
+  id: number;
+  aircraft_id: number;
+  discrepancy_id: number;
+  ata_chapter: string;
+  severity: 'grounding' | 'non_grounding';
+  station: string | null;
+  estimated_hours: number;
+  estimated_cost: number;
+  actual_cost: number | null;
+  started_at: string;
+  completed_at: string | null;
+  status: 'in_progress' | 'completed' | 'accepted';
+  technician_name: string | null;
+  corrective_action: string | null;
+  authority: string | null;
+  created_by: number | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface RepairEstimateRow {
+  id: number;
+  ata_chapter_prefix: string;
+  ata_group_name: string;
+  grounding_hours: number;
+  grounding_cost: number;
+  non_grounding_hours: number;
+  non_grounding_cost: number;
+  reference_note: string | null;
+  created_at: string;
+  updated_at: string;
+}
