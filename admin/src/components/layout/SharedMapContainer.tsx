@@ -1,5 +1,7 @@
 import { Suspense, lazy, useMemo, useCallback } from 'react';
 import { SharedMapProvider, useSharedMap } from './SharedMapContext';
+import { OverviewOverlay } from './OverviewOverlay';
+import { DispatchOverlay } from './DispatchOverlay';
 import type { ActiveFlightHeartbeat } from '@acars/shared';
 
 const WorldMap = lazy(() =>
@@ -163,13 +165,21 @@ function MapBridge() {
   );
 }
 
+// ── Overlay bridges — read mode from context ─────────────────
+
+function OverviewOverlayBridge() {
+  const { mode } = useSharedMap();
+  return <OverviewOverlay active={mode === 'overview'} />;
+}
+
+function DispatchOverlayBridge() {
+  const { mode } = useSharedMap();
+  return <DispatchOverlay active={mode === 'dispatch'} />;
+}
+
 // ── SharedMapContainer — persistent map wrapper ──────────────
 
-export function SharedMapContainer({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export function SharedMapContainer() {
   return (
     <SharedMapProvider>
       <div className="absolute inset-0">
@@ -177,9 +187,10 @@ export function SharedMapContainer({
           <MapBridge />
         </Suspense>
       </div>
-      {/* Page overlays render on top */}
+      {/* Both overlays always mounted — CSS transitions handle enter/exit */}
       <div className="relative h-full" style={{ zIndex: 10 }}>
-        {children}
+        <OverviewOverlayBridge />
+        <DispatchOverlayBridge />
       </div>
     </SharedMapProvider>
   );
