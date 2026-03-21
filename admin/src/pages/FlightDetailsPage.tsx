@@ -6,6 +6,14 @@ import { useAuthStore } from '@/stores/authStore';
 import { useSocketStore } from '@/stores/socketStore';
 import { useSocket } from '@/hooks/useSocket';
 import { useDispatchEdit, DispatchEditProvider } from '@/components/dispatch/DispatchEditContext';
+import FlightHeader from '@/components/dispatch/FlightHeader';
+import AircraftSection from '@/components/dispatch/AircraftSection';
+import WeightsSummary from '@/components/dispatch/WeightsSummary';
+import FuelAccordion from '@/components/dispatch/FuelAccordion';
+import RouteAccordion from '@/components/dispatch/RouteAccordion';
+import CargoAccordion from '@/components/dispatch/CargoAccordion';
+import MelAccordion from '@/components/dispatch/MelAccordion';
+import RemarksAccordion from '@/components/dispatch/RemarksAccordion';
 import { api } from '@/lib/api';
 import { toast } from '@/stores/toastStore';
 
@@ -76,16 +84,6 @@ function TopBar({ flight }: { flight: DispatchFlight }) {
   );
 }
 
-/* ─── Placeholder Section ──────────────────────────────────────── */
-
-function PlaceholderSection({ title }: { title: string }) {
-  return (
-    <div className="bg-[var(--surface-1)] border border-[var(--surface-3)] rounded-md px-3 py-2">
-      <span className="text-[9px] text-[var(--text-muted)] uppercase tracking-wider">{title}</span>
-    </div>
-  );
-}
-
 /* ─── Loading Spinner ──────────────────────────────────────────── */
 
 function LoadingSpinner() {
@@ -117,10 +115,12 @@ function ErrorState({ message }: { message: string }) {
 
 function FlightDetailsInner({
   flight,
+  cargo,
   activeTab,
   setActiveTab,
 }: {
   flight: DispatchFlight;
+  cargo: CargoManifest | null;
   activeTab: string;
   setActiveTab: (tab: string) => void;
 }) {
@@ -133,15 +133,14 @@ function FlightDetailsInner({
       <div className="flex flex-1 overflow-hidden">
         {/* Left column: Flight plan details */}
         <div className="w-[42%] border-r border-[var(--surface-3)] overflow-y-auto p-3 space-y-2">
-          {/* Placeholder sections -- replaced in Tasks 9-10 */}
-          <PlaceholderSection title="Flight Header" />
-          <PlaceholderSection title="Aircraft" />
-          <PlaceholderSection title="Weights" />
-          <PlaceholderSection title="Fuel" />
-          <PlaceholderSection title="Route" />
-          <PlaceholderSection title="Cargo" />
-          <PlaceholderSection title="MEL" />
-          <PlaceholderSection title="Remarks" />
+          <FlightHeader flight={flight} />
+          <AircraftSection flight={flight} />
+          <WeightsSummary flight={flight} />
+          <FuelAccordion flight={flight} />
+          <RouteAccordion flight={flight} />
+          <CargoAccordion cargo={cargo} />
+          <MelAccordion flight={flight} />
+          <RemarksAccordion flight={flight} />
         </div>
 
         {/* Right column: Map + tabs */}
@@ -296,6 +295,7 @@ export default function FlightDetailsPage() {
     >
       <FlightDetailsInner
         flight={flight}
+        cargo={cargo}
         activeTab={activeTab}
         setActiveTab={setActiveTab}
       />
