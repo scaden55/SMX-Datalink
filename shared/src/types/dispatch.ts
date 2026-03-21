@@ -33,6 +33,12 @@ export interface DispatchEditPayload {
   melRestrictions?: string;
   dispatcherRemarks?: string;
   autoRemarks?: string;
+  // New dispatcher fields
+  depTime?: string;
+  depRunway?: string;
+  arrRunway?: string;
+  costIndex?: number;
+  paxCount?: number;
 }
 
 /** Payload sent when a dispatcher releases flight plan edits to the pilot */
