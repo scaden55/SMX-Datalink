@@ -1,9 +1,10 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { motion } from 'motion/react';
-import { Plus, Pencil, Trash2, MoreVertical, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Plus, Pencil, Trash2, MoreVertical, ChevronLeft, ChevronRight, RefreshCw, Loader2 } from 'lucide-react';
 import { api, ApiError } from '@/lib/api';
 import { toast } from '@/stores/toastStore';
 import { tableContainer, tableRow } from '@/lib/motion';
+import { formatDate } from '@/lib/formatters';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -46,6 +47,7 @@ interface AirworthinessDirective {
   nextDueHours: number | null;
   nextDueDate: string | null;
   recurringIntervalHours: number | null;
+  source?: string | null;
 }
 
 interface FleetAircraft {
@@ -97,40 +99,25 @@ function StatusBadge({ status }: { status: ComplianceStatus }) {
   );
 }
 
-function formatDate(iso: string | null): string {
-  if (!iso) return '\u2014';
-  return new Date(iso).toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  });
-}
+// formatDate imported from @/lib/formatters
 
 // ── Shared Styles ────────────────────────────────────────────
 
+const COL_HEADER_CLASS = 'text-subheading';
 const colHeaderStyle: React.CSSProperties = {
-  fontSize: 10,
-  fontWeight: 600,
-  letterSpacing: 0.8,
-  color: 'var(--text-tertiary)',
-  textTransform: 'uppercase',
   padding: '10px 16px',
   borderBottom: '1px solid var(--border-primary)',
   userSelect: 'none',
 };
 
+const CELL_CLASS = 'text-caption';
 const cellStyle: React.CSSProperties = {
   padding: '10px 16px',
   borderBottom: '1px solid var(--border-primary)',
-  fontSize: 12,
-  color: 'var(--text-secondary)',
   verticalAlign: 'middle',
 };
 
-const monoStyle: React.CSSProperties = {
-  fontFamily: 'var(--font-mono)',
-  fontVariantNumeric: 'tabular-nums',
-};
+const MONO_CLASS = 'data-sm';
 
 // ── Skeleton ─────────────────────────────────────────────────
 
@@ -142,7 +129,8 @@ function TableSkeleton() {
           key={i}
           style={{
             height: 42,
-            background: 'var(--surface-2)',
+            background: 'transparent',
+            border: '1px solid var(--panel-border)',
             borderRadius: 4,
             marginBottom: 4,
             opacity: 0.5,
@@ -182,6 +170,31 @@ export function AirworthinessDirectivesSection({ refreshKey }: { refreshKey: num
 
   // Row hover
   const [hoveredId, setHoveredId] = useState<number | null>(null);
+
+  // Sync state
+  const [syncing, setSyncing] = useState(false);
+
+  // ── Sync ADs from FAA ──────────────────────────────────
+
+  async function handleSyncAds() {
+    setSyncing(true);
+    try {
+      const res = await api.post<{ synced: number; errors: string[] }>(
+        '/api/admin/maintenance/ads/sync',
+        {},
+      );
+      if (res.errors && res.errors.length > 0) {
+        toast.warning(`Synced ${res.synced} ADs with ${res.errors.length} error(s)`);
+      } else {
+        toast.success(`Synced ${res.synced} ADs from FAA`);
+      }
+      fetchItems();
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : 'Failed to sync ADs from FAA');
+    } finally {
+      setSyncing(false);
+    }
+  }
 
   // ── Fetch ────────────────────────────────────────────────
 
@@ -265,7 +278,7 @@ export function AirworthinessDirectivesSection({ refreshKey }: { refreshKey: num
         }}
       >
         <Select value={aircraftFilter} onValueChange={setAircraftFilter}>
-          <SelectTrigger style={{ width: 160, fontSize: 12 }}>
+          <SelectTrigger className="text-caption" style={{ width: 160 }}>
             <SelectValue placeholder="All Aircraft" />
           </SelectTrigger>
           <SelectContent>
@@ -279,7 +292,7 @@ export function AirworthinessDirectivesSection({ refreshKey }: { refreshKey: num
         </Select>
 
         <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger style={{ width: 160, fontSize: 12 }}>
+          <SelectTrigger className="text-caption" style={{ width: 160 }}>
             <SelectValue placeholder="All Status" />
           </SelectTrigger>
           <SelectContent>
@@ -295,8 +308,37 @@ export function AirworthinessDirectivesSection({ refreshKey }: { refreshKey: num
         <div style={{ flex: 1 }} />
 
         <button
+          onClick={handleSyncAds}
+          disabled={syncing}
+          className="text-caption"
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 6,
+            padding: '6px 14px',
+            background: 'none',
+            color: syncing ? 'var(--text-tertiary)' : 'var(--text-secondary)',
+            border: '1px solid var(--border-primary)',
+            borderRadius: 6,
+            fontWeight: 600,
+            cursor: syncing ? 'default' : 'pointer',
+            transition: 'color 120ms, border-color 120ms',
+            opacity: syncing ? 0.6 : 1,
+          }}
+          onMouseEnter={(e) => { if (!syncing) e.currentTarget.style.borderColor = 'var(--accent-blue)'; }}
+          onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--border-primary)'; }}
+        >
+          {syncing ? (
+            <Loader2 size={13} className="animate-spin" />
+          ) : (
+            <RefreshCw size={13} />
+          )}
+          {syncing ? 'Syncing...' : 'Sync ADs from FAA'}
+        </button>
+
+        <button
           onClick={() => setCreateOpen(true)}
-          className="btn-glow"
+          className="btn-glow text-caption"
           style={{
             display: 'inline-flex',
             alignItems: 'center',
@@ -306,7 +348,6 @@ export function AirworthinessDirectivesSection({ refreshKey }: { refreshKey: num
             color: '#fff',
             border: 'none',
             borderRadius: 6,
-            fontSize: 12,
             fontWeight: 600,
             cursor: 'pointer',
             transition: 'opacity 120ms',
@@ -322,12 +363,8 @@ export function AirworthinessDirectivesSection({ refreshKey }: { refreshKey: num
       {/* Empty state */}
       {items.length === 0 && (
         <div
-          style={{
-            padding: '60px 24px',
-            textAlign: 'center',
-            color: 'var(--text-tertiary)',
-            fontSize: 13,
-          }}
+          className="text-body"
+          style={{ padding: '60px 24px', textAlign: 'center', color: 'var(--text-tertiary)' }}
         >
           No airworthiness directives found. Add an AD to get started.
         </div>
@@ -340,14 +377,15 @@ export function AirworthinessDirectivesSection({ refreshKey }: { refreshKey: num
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
                 <tr>
-                  <th style={colHeaderStyle}>AD Number</th>
-                  <th style={colHeaderStyle}>Aircraft</th>
-                  <th style={colHeaderStyle}>Title</th>
-                  <th style={{ ...colHeaderStyle, textAlign: 'center' }}>Status</th>
-                  <th style={colHeaderStyle}>Compliance Date</th>
-                  <th style={colHeaderStyle}>Next Due</th>
-                  <th style={{ ...colHeaderStyle, textAlign: 'right' }}>Recurring Int.</th>
-                  <th style={{ ...colHeaderStyle, width: 48 }} />
+                  <th className={COL_HEADER_CLASS} style={colHeaderStyle}>AD Number</th>
+                  <th className={COL_HEADER_CLASS} style={{ ...colHeaderStyle, width: 72 }}>Source</th>
+                  <th className={COL_HEADER_CLASS} style={colHeaderStyle}>Aircraft</th>
+                  <th className={COL_HEADER_CLASS} style={colHeaderStyle}>Title</th>
+                  <th className={COL_HEADER_CLASS} style={{ ...colHeaderStyle, textAlign: 'center' }}>Status</th>
+                  <th className={COL_HEADER_CLASS} style={colHeaderStyle}>Compliance Date</th>
+                  <th className={COL_HEADER_CLASS} style={colHeaderStyle}>Next Due</th>
+                  <th className={COL_HEADER_CLASS} style={{ ...colHeaderStyle, textAlign: 'right' }}>Recurring Int.</th>
+                  <th className={COL_HEADER_CLASS} style={{ ...colHeaderStyle, width: 48 }} />
                 </tr>
               </thead>
               <motion.tbody variants={tableContainer} initial="hidden" animate="visible">
@@ -356,27 +394,66 @@ export function AirworthinessDirectivesSection({ refreshKey }: { refreshKey: num
                     key={item.id}
                     variants={tableRow}
                     style={{
-                      background: hoveredId === item.id ? 'var(--surface-3)' : 'transparent',
+                      background: hoveredId === item.id ? 'var(--tint-subtle)' : 'transparent',
                       transition: 'background 80ms',
                     }}
                     onMouseEnter={() => setHoveredId(item.id)}
                     onMouseLeave={() => setHoveredId(null)}
                   >
                     {/* AD Number */}
-                    <td style={{ ...cellStyle, ...monoStyle, fontSize: 12, fontWeight: 600, color: 'var(--text-primary)' }}>
+                    <td className={`${CELL_CLASS} ${MONO_CLASS}`} style={{ ...cellStyle, fontWeight: 600, color: 'var(--text-primary)' }}>
                       {item.adNumber}
                     </td>
 
+                    {/* Source */}
+                    <td className={CELL_CLASS} style={cellStyle}>
+                      {item.source === 'faa_sync' ? (
+                        <span
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            padding: '2px 6px',
+                            borderRadius: 3,
+                            fontSize: 10,
+                            fontWeight: 600,
+                            lineHeight: '14px',
+                            background: 'var(--accent-cyan-bg)',
+                            color: 'var(--accent-cyan)',
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          FAA
+                        </span>
+                      ) : (
+                        <span
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            padding: '2px 6px',
+                            borderRadius: 3,
+                            fontSize: 10,
+                            fontWeight: 600,
+                            lineHeight: '14px',
+                            background: 'var(--surface-2)',
+                            color: 'var(--text-quaternary)',
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          Manual
+                        </span>
+                      )}
+                    </td>
+
                     {/* Aircraft */}
-                    <td style={{ ...cellStyle, ...monoStyle, fontSize: 12 }}>
+                    <td className={`${CELL_CLASS} ${MONO_CLASS}`} style={cellStyle}>
                       {item.registration ?? '\u2014'}
                     </td>
 
                     {/* Title */}
                     <td
+                      className={CELL_CLASS}
                       style={{
                         ...cellStyle,
-                        fontSize: 12,
                         maxWidth: 260,
                         overflow: 'hidden',
                         textOverflow: 'ellipsis',
@@ -387,17 +464,17 @@ export function AirworthinessDirectivesSection({ refreshKey }: { refreshKey: num
                     </td>
 
                     {/* Status */}
-                    <td style={{ ...cellStyle, textAlign: 'center' }}>
+                    <td className={CELL_CLASS} style={{ ...cellStyle, textAlign: 'center' }}>
                       <StatusBadge status={item.complianceStatus} />
                     </td>
 
                     {/* Compliance Date */}
-                    <td style={{ ...cellStyle, ...monoStyle }}>
+                    <td className={`${CELL_CLASS} ${MONO_CLASS}`} style={cellStyle}>
                       {formatDate(item.complianceDate)}
                     </td>
 
                     {/* Next Due */}
-                    <td style={{ ...cellStyle, ...monoStyle }}>
+                    <td className={`${CELL_CLASS} ${MONO_CLASS}`} style={cellStyle}>
                       {item.nextDueHours != null
                         ? `${item.nextDueHours.toLocaleString()}h`
                         : item.nextDueDate
@@ -406,14 +483,14 @@ export function AirworthinessDirectivesSection({ refreshKey }: { refreshKey: num
                     </td>
 
                     {/* Recurring Interval */}
-                    <td style={{ ...cellStyle, ...monoStyle, textAlign: 'right' }}>
+                    <td className={`${CELL_CLASS} ${MONO_CLASS}`} style={{ ...cellStyle, textAlign: 'right' }}>
                       {item.recurringIntervalHours != null
                         ? `${item.recurringIntervalHours.toLocaleString()}h`
                         : '\u2014'}
                     </td>
 
                     {/* Actions */}
-                    <td style={{ ...cellStyle, padding: '6px 8px' }}>
+                    <td className={CELL_CLASS} style={{ ...cellStyle, padding: '6px 8px' }}>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <button
@@ -461,7 +538,7 @@ export function AirworthinessDirectivesSection({ refreshKey }: { refreshKey: num
               borderTop: '1px solid var(--border-primary)',
             }}
           >
-            <span style={{ fontSize: 11, color: 'var(--text-tertiary)' }}>
+            <span className="text-caption">
               {total === 0
                 ? 'No results'
                 : `${(page - 1) * PAGE_SIZE + 1}\u2013${Math.min(page * PAGE_SIZE, total)} of ${total}`}
@@ -486,7 +563,7 @@ export function AirworthinessDirectivesSection({ refreshKey }: { refreshKey: num
               >
                 <ChevronLeft size={14} />
               </button>
-              <span style={{ fontSize: 11, color: 'var(--text-tertiary)', padding: '0 6px', ...monoStyle }}>
+              <span className={`text-caption ${MONO_CLASS}`} style={{ padding: '0 6px' }}>
                 {page} / {totalPages}
               </span>
               <button
@@ -545,7 +622,7 @@ export function AirworthinessDirectivesSection({ refreshKey }: { refreshKey: num
             <DialogTitle>Delete Airworthiness Directive</DialogTitle>
             <DialogDescription>
               Are you sure you want to delete AD{' '}
-              <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 600 }}>
+              <span className={MONO_CLASS} style={{ fontWeight: 600 }}>
                 {deleteItem?.adNumber}
               </span>
               ? This action cannot be undone.
@@ -692,13 +769,13 @@ function ADFormDialog({
           <div className="space-y-2">
             <Label>Aircraft *</Label>
             <Select value={aircraftId} onValueChange={setAircraftId}>
-              <SelectTrigger style={{ fontSize: 12 }}>
+              <SelectTrigger className="text-caption">
                 <SelectValue placeholder="Select aircraft" />
               </SelectTrigger>
               <SelectContent>
                 {fleet.map((a) => (
                   <SelectItem key={a.id} value={String(a.id)}>
-                    <span style={{ fontFamily: 'var(--font-mono)' }}>{a.registration}</span>
+                    <span className={MONO_CLASS}>{a.registration}</span>
                     <span style={{ color: 'var(--text-tertiary)', marginLeft: 8 }}>{a.icaoType}</span>
                   </SelectItem>
                 ))}
@@ -713,7 +790,7 @@ function ADFormDialog({
               value={adNumber}
               onChange={(e) => setAdNumber(e.target.value)}
               placeholder="e.g. 2024-15-06"
-              style={{ fontFamily: 'var(--font-mono)' }}
+              className={MONO_CLASS}
             />
           </div>
 
@@ -742,7 +819,7 @@ function ADFormDialog({
           <div className="space-y-2">
             <Label>Compliance Status *</Label>
             <Select value={complianceStatus} onValueChange={(v) => setComplianceStatus(v as ComplianceStatus)}>
-              <SelectTrigger style={{ fontSize: 12 }}>
+              <SelectTrigger className="text-caption">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>

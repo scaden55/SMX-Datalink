@@ -12,6 +12,7 @@ import {
   Save,
   Loader2,
   Gauge,
+  Timer,
 } from 'lucide-react';
 import { api, ApiError } from '@/lib/api';
 import { toast } from '@/stores/toastStore';
@@ -133,6 +134,25 @@ const SECTIONS: SectionDef[] = [
       { key: 'dev.enabled', label: 'Developer Mode', type: 'boolean', description: 'Enable developer tools and debug features' },
     ],
   },
+  {
+    id: 'simulation',
+    title: 'Simulation',
+    summary: 'Maintenance timer speed',
+    icon: Timer,
+    fields: [
+      {
+        key: 'maintenance_timer_speed',
+        label: 'Maintenance Timer Speed',
+        type: 'select',
+        description: 'Controls how fast work orders complete. Higher speeds reduce real-time wait for maintenance repairs.',
+        options: [
+          { value: '1', label: '1\u00D7 \u2014 Real Time' },
+          { value: '2', label: '2\u00D7 \u2014 Twice as Fast' },
+          { value: '5', label: '5\u00D7 \u2014 Five Times Faster' },
+        ],
+      },
+    ],
+  },
 ];
 
 // ── Skeleton ────────────────────────────────────────────────────
@@ -146,7 +166,8 @@ function SettingsPageSkeleton() {
           style={{
             height: 56,
             borderRadius: 6,
-            backgroundColor: 'var(--surface-2)',
+            background: 'transparent',
+            border: '1px solid var(--panel-border)',
           }}
           className="animate-pulse"
         />
@@ -184,15 +205,15 @@ function AccordionSection({ section, expanded, onToggle, values, localValues, on
         className="flex items-center w-full"
         style={{
           padding: '16px 20px',
-          backgroundColor: 'var(--surface-2)',
+          background: 'transparent',
           border: 'none',
           cursor: 'pointer',
           gap: 12,
         }}
       >
         <Icon size={16} style={{ color: 'var(--accent-blue-bright)', flexShrink: 0 }} />
-        <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' }}>{section.title}</span>
-        <span style={{ fontSize: 12, color: 'var(--text-tertiary)', marginLeft: 4 }}>{section.summary}</span>
+        <span className="text-body" style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{section.title}</span>
+        <span className="text-caption" style={{ marginLeft: 4 }}>{section.summary}</span>
         <div className="flex-1" />
         <ChevronRight
           size={14}
@@ -235,9 +256,9 @@ function AccordionSection({ section, expanded, onToggle, values, localValues, on
                     }}
                   >
                     <div className="flex flex-col" style={{ gap: 2 }}>
-                      <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-secondary)' }}>{field.label}</span>
+                      <span className="text-caption" style={{ fontWeight: 500, color: 'var(--text-secondary)' }}>{field.label}</span>
                       {field.description && (
-                        <span style={{ fontSize: 11, color: 'var(--text-tertiary)' }}>{field.description}</span>
+                        <span className="text-caption" style={{ fontSize: 11 }}>{field.description}</span>
                       )}
                     </div>
                     <button
@@ -277,9 +298,9 @@ function AccordionSection({ section, expanded, onToggle, values, localValues, on
                     className="flex flex-col"
                     style={{ gap: 6, gridColumn: field.half ? undefined : '1 / -1' }}
                   >
-                    <label style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-secondary)' }}>{field.label}</label>
+                    <label className="text-caption" style={{ fontWeight: 500, color: 'var(--text-secondary)' }}>{field.label}</label>
                     {field.description && (
-                      <span style={{ fontSize: 11, color: 'var(--text-tertiary)', marginTop: -4 }}>{field.description}</span>
+                      <span className="text-caption" style={{ fontSize: 11, marginTop: -4 }}>{field.description}</span>
                     )}
                     <select
                       value={localValues[field.key] ?? values[field.key] ?? ''}
@@ -327,7 +348,6 @@ function AccordionSection({ section, expanded, onToggle, values, localValues, on
                       border: '1px solid var(--input-border)',
                       borderRadius: 4,
                       padding: '8px 12px',
-                      fontSize: 13,
                       color: 'var(--text-primary)',
                     }}
                   />
@@ -460,15 +480,15 @@ function SimEconomySection({ expanded, onToggle }: SimEconomySectionProps) {
         className="flex items-center w-full"
         style={{
           padding: '16px 20px',
-          backgroundColor: 'var(--surface-2)',
+          background: 'transparent',
           border: 'none',
           cursor: 'pointer',
           gap: 12,
         }}
       >
         <Gauge size={16} style={{ color: 'var(--accent-blue-bright)', flexShrink: 0 }} />
-        <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' }}>Simulation Economy</span>
-        <span style={{ fontSize: 12, color: 'var(--text-tertiary)', marginLeft: 4 }}>Control the economic difficulty of the airline simulation</span>
+        <span className="text-body" style={{ fontWeight: 600, color: 'var(--text-primary)' }}>Simulation Economy</span>
+        <span className="text-caption" style={{ marginLeft: 4 }}>Control the economic difficulty of the airline simulation</span>
         <div className="flex-1" />
         <ChevronRight
           size={14}
@@ -491,7 +511,7 @@ function SimEconomySection({ expanded, onToggle }: SimEconomySectionProps) {
           }}
         >
           {simLoading ? (
-            <div className="flex items-center justify-center" style={{ padding: 24, fontSize: 12, color: 'var(--text-tertiary)' }}>
+            <div className="flex items-center justify-center text-caption" style={{ padding: 24 }}>
               <Loader2 size={14} className="animate-spin" style={{ marginRight: 8 }} />
               Loading...
             </div>
@@ -505,18 +525,17 @@ function SimEconomySection({ expanded, onToggle }: SimEconomySectionProps) {
                     <div key={key} className="flex flex-col" style={{ gap: 6 }}>
                       <div className="flex items-center justify-between">
                         <div className="flex flex-col" style={{ gap: 2 }}>
-                          <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-secondary)' }}>{label}</span>
-                          <span style={{ fontSize: 11, color: 'var(--text-tertiary)' }}>{description}</span>
+                          <span className="text-caption" style={{ fontWeight: 500, color: 'var(--text-secondary)' }}>{label}</span>
+                          <span className="text-caption" style={{ fontSize: 11 }}>{description}</span>
                         </div>
                         <span
-                          className="font-mono"
+                          className="data-md"
                           style={{
                             fontSize: 13,
                             fontWeight: 600,
                             color: 'var(--accent-blue-bright)',
                             minWidth: 36,
                             textAlign: 'right',
-                            fontVariantNumeric: 'tabular-nums',
                           }}
                         >
                           {parseFloat(val).toFixed(1)}x
@@ -553,8 +572,8 @@ function SimEconomySection({ expanded, onToggle }: SimEconomySectionProps) {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                 {/* Demand Volatility */}
                 <div className="flex flex-col" style={{ gap: 6 }}>
-                  <label style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-secondary)' }}>Demand Volatility</label>
-                  <span style={{ fontSize: 11, color: 'var(--text-tertiary)', marginTop: -4 }}>How aggressively supply/demand rates fluctuate</span>
+                  <label className="text-caption" style={{ fontWeight: 500, color: 'var(--text-secondary)' }}>Demand Volatility</label>
+                  <span className="text-caption" style={{ fontSize: 11, marginTop: -4 }}>How aggressively supply/demand rates fluctuate</span>
                   <select
                     value={getValue('demand_volatility')}
                     onChange={(e) => handleChange('demand_volatility', e.target.value)}
@@ -564,7 +583,6 @@ function SimEconomySection({ expanded, onToggle }: SimEconomySectionProps) {
                       border: '1px solid var(--input-border)',
                       borderRadius: 4,
                       padding: '8px 12px',
-                      fontSize: 13,
                       color: 'var(--text-primary)',
                       outline: 'none',
                       cursor: 'pointer',
@@ -579,8 +597,8 @@ function SimEconomySection({ expanded, onToggle }: SimEconomySectionProps) {
 
                 {/* Fuel Price Variability */}
                 <div className="flex flex-col" style={{ gap: 6 }}>
-                  <label style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-secondary)' }}>Fuel Price Variability</label>
-                  <span style={{ fontSize: 11, color: 'var(--text-tertiary)', marginTop: -4 }}>Fuel price stability over time</span>
+                  <label className="text-caption" style={{ fontWeight: 500, color: 'var(--text-secondary)' }}>Fuel Price Variability</label>
+                  <span className="text-caption" style={{ fontSize: 11, marginTop: -4 }}>Fuel price stability over time</span>
                   <select
                     value={getValue('fuel_price_variability')}
                     onChange={(e) => handleChange('fuel_price_variability', e.target.value)}
@@ -590,7 +608,6 @@ function SimEconomySection({ expanded, onToggle }: SimEconomySectionProps) {
                       border: '1px solid var(--input-border)',
                       borderRadius: 4,
                       padding: '8px 12px',
-                      fontSize: 13,
                       color: 'var(--text-primary)',
                       outline: 'none',
                       cursor: 'pointer',
@@ -721,13 +738,13 @@ export function SettingsPage() {
   return (
     <motion.div className="flex flex-col h-full" variants={pageVariants} initial="hidden" animate="visible">
       {/* Header */}
-      <motion.div className="flex flex-col" style={{ padding: '16px 24px', gap: 16 }} variants={fadeUp}>
+      <motion.div className="page-header" variants={fadeUp}>
         {/* Title row */}
         <div className="flex items-center" style={{ gap: 12 }}>
           <Settings size={20} style={{ color: 'var(--accent-blue)' }} />
           <div className="flex flex-col" style={{ gap: 2 }}>
-            <span style={{ fontSize: 20, fontWeight: 700, color: 'var(--text-primary)' }}>Settings</span>
-            <span style={{ fontSize: 12, color: 'var(--text-tertiary)' }}>Configure airline operations and system preferences</span>
+            <span className="text-heading" style={{ fontSize: 20, fontWeight: 700 }}>Settings</span>
+            <span className="text-caption">Configure airline operations and system preferences</span>
           </div>
           <div className="flex-1" />
           <button
@@ -767,7 +784,7 @@ export function SettingsPage() {
       {loading ? (
         <SettingsPageSkeleton />
       ) : error ? (
-        <div className="flex items-center justify-center flex-1" style={{ fontSize: 12, color: 'var(--text-tertiary)' }}>
+        <div className="flex items-center justify-center flex-1 text-caption">
           {error}
         </div>
       ) : (

@@ -2,19 +2,21 @@ import React, { useState } from 'react';
 import { CheckSchedulesSection } from './CheckSchedulesSection';
 import { MelMasterSection } from './MelMasterSection';
 import { ComponentsSection } from './ComponentsSection';
+import { RepairEstimatesSection } from './RepairEstimatesSection';
 
 // ═══════════════════════════════════════════════════════════════
-// Configuration Tab — Check Schedules / MEL Master / Components
+// Configuration Tab — Check Schedules / MEL Master / Components / Repair Estimates
 // ═══════════════════════════════════════════════════════════════
 
 export function ConfigurationTab() {
-  const [subTab, setSubTab] = useState<'schedules' | 'melMaster' | 'components'>('schedules');
+  const [subTab, setSubTab] = useState<'schedules' | 'melMaster' | 'components' | 'repairEstimates'>('schedules');
   const [refreshKey, setRefreshKey] = useState(0);
 
   const subTabs: { key: typeof subTab; label: string }[] = [
     { key: 'schedules', label: 'Check Schedules' },
     { key: 'melMaster', label: 'MEL Master' },
     { key: 'components', label: 'Components' },
+    { key: 'repairEstimates', label: 'Repair Estimates' },
   ];
 
   return (
@@ -33,12 +35,12 @@ export function ConfigurationTab() {
           <button
             key={tab.key}
             onClick={() => setSubTab(tab.key)}
+            className="text-caption"
             style={{
               background: 'none',
               border: 'none',
               borderBottom: subTab === tab.key ? '2px solid var(--accent-blue)' : '2px solid transparent',
               padding: '8px 16px',
-              fontSize: 12,
               fontWeight: 500,
               color: subTab === tab.key ? 'var(--accent-blue-bright)' : 'var(--text-tertiary)',
               cursor: 'pointer',
@@ -60,6 +62,9 @@ export function ConfigurationTab() {
         )}
         {subTab === 'components' && (
           <ComponentsSection refreshKey={refreshKey} />
+        )}
+        {subTab === 'repairEstimates' && (
+          <RepairEstimatesSection refreshKey={refreshKey} />
         )}
       </div>
     </div>

@@ -14,6 +14,7 @@ import {
 import { api, ApiError } from '@/lib/api';
 import { toast } from '@/stores/toastStore';
 import { tableContainer, tableRow } from '@/lib/motion';
+import { formatDate, formatHours } from '@/lib/formatters';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -69,19 +70,7 @@ export interface MaintenanceLogEntry {
 
 // ── Helpers ──────────────────────────────────────────────────
 
-function formatDate(iso: string | null): string {
-  if (!iso) return '--';
-  return new Date(iso).toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  });
-}
-
-function formatHours(h: number | null): string {
-  if (h === null || h === undefined) return '--';
-  return h.toLocaleString('en-US', { maximumFractionDigits: 1 });
-}
+// formatDate, formatHours imported from @/lib/formatters
 
 function formatCurrency(v: number | null): string {
   if (v === null || v === undefined) return '--';
@@ -174,7 +163,8 @@ function TableSkeleton() {
           key={i}
           style={{
             height: 42,
-            background: 'var(--surface-2)',
+            background: 'transparent',
+            border: '1px solid var(--panel-border)',
             borderRadius: 4,
             marginBottom: 4,
             opacity: 0.5,
@@ -188,23 +178,18 @@ function TableSkeleton() {
 
 // ── Shared Styles ────────────────────────────────────────────
 
+const COL_HEADER_CLASS = 'text-subheading';
 const colHeaderStyle: React.CSSProperties = {
-  fontSize: 10,
-  fontWeight: 600,
-  letterSpacing: 0.8,
-  color: 'var(--text-tertiary)',
-  textTransform: 'uppercase',
   textAlign: 'left',
   padding: '10px 16px',
   borderBottom: '1px solid var(--border-primary)',
   userSelect: 'none',
 };
 
+const CELL_CLASS = 'text-caption';
 const cellStyle: React.CSSProperties = {
   padding: '10px 16px',
   borderBottom: '1px solid var(--border-primary)',
-  fontSize: 12,
-  color: 'var(--text-secondary)',
   verticalAlign: 'middle',
 };
 
@@ -348,7 +333,7 @@ function CreateEntryDialog({ open, onClose, onCreated }: { open: boolean; onClos
                 setFormCost(raw);
               }}
               placeholder="126,483.22"
-              style={{ fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums' }}
+              className="data-md"
             />
           </div>
         </div>
@@ -546,7 +531,7 @@ function MaintenanceLogContent({ refreshKey }: { refreshKey: number }) {
             placeholder="Search entries..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="input-glow"
+            className="input-glow text-caption"
             style={{
               width: '100%',
               height: 32,
@@ -556,13 +541,13 @@ function MaintenanceLogContent({ refreshKey }: { refreshKey: number }) {
               border: '1px solid var(--input-border)',
               borderRadius: 6,
               color: 'var(--text-primary)',
-              fontSize: 12,
               outline: 'none',
             }}
           />
         </div>
         <Select value={dateFilter} onValueChange={setDateFilter}>
           <SelectTrigger
+            className="text-caption"
             style={{
               width: 130,
               height: 32,
@@ -570,7 +555,6 @@ function MaintenanceLogContent({ refreshKey }: { refreshKey: number }) {
               border: '1px solid var(--input-border)',
               borderRadius: 6,
               color: 'var(--text-primary)',
-              fontSize: 12,
             }}
           >
             <SelectValue placeholder="Date: All" />
@@ -584,6 +568,7 @@ function MaintenanceLogContent({ refreshKey }: { refreshKey: number }) {
         </Select>
         <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setPage(1); }}>
           <SelectTrigger
+            className="text-caption"
             style={{
               width: 140,
               height: 32,
@@ -591,7 +576,6 @@ function MaintenanceLogContent({ refreshKey }: { refreshKey: number }) {
               border: '1px solid var(--input-border)',
               borderRadius: 6,
               color: 'var(--text-primary)',
-              fontSize: 12,
             }}
           >
             <SelectValue placeholder="Status: All" />
@@ -612,14 +596,14 @@ function MaintenanceLogContent({ refreshKey }: { refreshKey: number }) {
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
             <tr>
-              <th style={colHeaderStyle}>DATE</th>
-              <th style={colHeaderStyle}>AIRCRAFT</th>
-              <th style={colHeaderStyle}>TYPE</th>
-              <th style={colHeaderStyle}>DESCRIPTION</th>
-              <th style={colHeaderStyle}>COST</th>
-              <th style={colHeaderStyle}>DURATION</th>
-              <th style={colHeaderStyle}>STATUS</th>
-              <th style={{ ...colHeaderStyle, width: 50 }} />
+              <th className={COL_HEADER_CLASS} style={colHeaderStyle}>DATE</th>
+              <th className={COL_HEADER_CLASS} style={colHeaderStyle}>AIRCRAFT</th>
+              <th className={COL_HEADER_CLASS} style={colHeaderStyle}>TYPE</th>
+              <th className={COL_HEADER_CLASS} style={colHeaderStyle}>DESCRIPTION</th>
+              <th className={COL_HEADER_CLASS} style={colHeaderStyle}>COST</th>
+              <th className={COL_HEADER_CLASS} style={colHeaderStyle}>DURATION</th>
+              <th className={COL_HEADER_CLASS} style={colHeaderStyle}>STATUS</th>
+              <th className={COL_HEADER_CLASS} style={{ ...colHeaderStyle, width: 50 }} />
             </tr>
           </thead>
           <motion.tbody variants={tableContainer} initial="hidden" animate="visible">
@@ -627,7 +611,8 @@ function MaintenanceLogContent({ refreshKey }: { refreshKey: number }) {
               <tr>
                 <td
                   colSpan={8}
-                  style={{ padding: '40px 16px', textAlign: 'center', color: 'var(--text-tertiary)', fontSize: 13 }}
+                  className="text-body"
+                  style={{ padding: '40px 16px', textAlign: 'center', color: 'var(--text-tertiary)' }}
                 >
                   No log entries found
                 </td>
@@ -638,23 +623,22 @@ function MaintenanceLogContent({ refreshKey }: { refreshKey: number }) {
                   key={entry.id}
                   variants={tableRow}
                   style={{ cursor: 'default' }}
-                  onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = 'var(--surface-2)'; }}
+                  onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = 'var(--tint-subtle)'; }}
                   onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
                 >
-                  <td style={{ ...cellStyle, color: 'var(--text-tertiary)', fontSize: 11 }}>
+                  <td className={CELL_CLASS} style={cellStyle}>
                     {formatDate(entry.createdAt)}
                   </td>
-                  <td style={{ ...cellStyle, fontWeight: 600, color: 'var(--text-primary)', fontSize: 12, fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums' }}>
+                  <td className={`${CELL_CLASS} data-sm`} style={{ ...cellStyle, fontWeight: 600, color: 'var(--text-primary)' }}>
                     {entry.aircraftRegistration ?? `#${entry.aircraftId}`}
                   </td>
-                  <td style={cellStyle}>
+                  <td className={CELL_CLASS} style={cellStyle}>
                     <TypeBadge type={entry.checkType} />
                   </td>
                   <td
+                    className={CELL_CLASS}
                     style={{
                       ...cellStyle,
-                      color: 'var(--text-secondary)',
-                      fontSize: 11,
                       maxWidth: 260,
                       overflow: 'hidden',
                       textOverflow: 'ellipsis',
@@ -663,16 +647,16 @@ function MaintenanceLogContent({ refreshKey }: { refreshKey: number }) {
                   >
                     {entry.title}
                   </td>
-                  <td style={{ ...cellStyle, color: 'var(--text-secondary)', fontSize: 11, fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums' }}>
+                  <td className={`${CELL_CLASS} data-sm`} style={cellStyle}>
                     {formatCurrency(entry.cost)}
                   </td>
-                  <td style={{ ...cellStyle, color: 'var(--text-secondary)', fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums' }}>
+                  <td className={`${CELL_CLASS} data-sm`} style={cellStyle}>
                     {entry.durationHours != null ? `${formatHours(entry.durationHours)}h` : '--'}
                   </td>
-                  <td style={cellStyle}>
+                  <td className={CELL_CLASS} style={cellStyle}>
                     <StatusBadgeInline status={entry.status} />
                   </td>
-                  <td style={cellStyle}>
+                  <td className={CELL_CLASS} style={cellStyle}>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <button
@@ -726,9 +710,8 @@ function MaintenanceLogContent({ refreshKey }: { refreshKey: number }) {
           justifyContent: 'space-between',
           padding: '12px 24px',
           borderTop: '1px solid var(--border-primary)',
-          fontSize: 12,
-          color: 'var(--text-tertiary)',
         }}
+        className="text-caption"
       >
         <span>
           {total === 0 ? 'No results' : `${(page - 1) * pageSize + 1}--${Math.min(page * pageSize, total)} of ${total}`}
@@ -751,7 +734,7 @@ function MaintenanceLogContent({ refreshKey }: { refreshKey: number }) {
           >
             <ChevronLeft size={14} />
           </button>
-          <span style={{ padding: '0 8px', color: 'var(--text-secondary)', fontSize: 12 }}>
+          <span className="data-sm" style={{ padding: '0 8px', color: 'var(--text-secondary)' }}>
             {page} / {totalPages}
           </span>
           <button
@@ -836,7 +819,7 @@ function MaintenanceLogContent({ refreshKey }: { refreshKey: number }) {
                   setFormCost(raw);
                 }}
                 placeholder="126,483.22"
-                style={{ fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums' }}
+                className="data-md"
               />
             </div>
           </div>
@@ -895,12 +878,12 @@ export function ComplianceTab() {
       >
         <button
           onClick={() => setSubTab('log')}
+          className="text-caption"
           style={{
             background: 'none',
             border: 'none',
             borderBottom: subTab === 'log' ? '2px solid var(--accent-blue)' : '2px solid transparent',
             padding: '8px 16px',
-            fontSize: 12,
             fontWeight: 500,
             color: subTab === 'log' ? 'var(--accent-blue-bright)' : 'var(--text-tertiary)',
             cursor: 'pointer',
@@ -911,12 +894,12 @@ export function ComplianceTab() {
         </button>
         <button
           onClick={() => setSubTab('ads')}
+          className="text-caption"
           style={{
             background: 'none',
             border: 'none',
             borderBottom: subTab === 'ads' ? '2px solid var(--accent-blue)' : '2px solid transparent',
             padding: '8px 16px',
-            fontSize: 12,
             fontWeight: 500,
             color: subTab === 'ads' ? 'var(--accent-blue-bright)' : 'var(--text-tertiary)',
             cursor: 'pointer',
@@ -929,7 +912,7 @@ export function ComplianceTab() {
         {subTab === 'log' && (
           <button
             onClick={() => setCreateOpen(true)}
-            className="btn-glow"
+            className="btn-glow text-caption"
             style={{
               display: 'inline-flex',
               alignItems: 'center',
@@ -939,7 +922,6 @@ export function ComplianceTab() {
               color: '#fff',
               border: 'none',
               borderRadius: 6,
-              fontSize: 12,
               fontWeight: 600,
               cursor: 'pointer',
               transition: 'opacity 120ms',
