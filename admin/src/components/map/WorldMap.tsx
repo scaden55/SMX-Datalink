@@ -44,12 +44,21 @@ interface HistoricalRoute {
   trackPoints: TrackPt[];
 }
 
+interface HubData {
+  lat: number;
+  lon: number;
+  icao?: string;
+  coverage?: number;
+}
+
 interface WorldMapProps {
-  hubs?: { lat: number; lon: number }[];
+  hubs?: HubData[];
   flights?: FlightData[];
   selectedCallsign?: string | null;
   onSelectCallsign?: (callsign: string | null) => void;
   historicalRoute?: HistoricalRoute | null;
+  mode?: 'overview' | 'dispatch';
+  onFlightClick?: (flight: FlightData, event: React.MouseEvent) => void;
 }
 
 const CENTER: [number, number] = [0, 30];
@@ -59,7 +68,7 @@ const CENTER: [number, number] = [0, 30];
 const dataUriCache = new Map<string, string>();
 
 function buildUri(typeCode: string | undefined, color: string, suffix = ''): string {
-  const key = (typeCode?.toUpperCase().split('/')[0].trim() || 'generic') + suffix;
+  const key = (typeCode?.toUpperCase().split('/')[0].trim() || 'generic') + color + suffix;
   let uri = dataUriCache.get(key);
   if (!uri) {
     const info = getAircraftIcon(typeCode);
@@ -72,13 +81,26 @@ function buildUri(typeCode: string | undefined, color: string, suffix = ''): str
   return uri;
 }
 
+// ── Phase color helper (dispatch mode) ───────────────────────
+
+function getMarkerColor(flight: FlightData, mode: string | undefined): string {
+  if (mode !== 'dispatch') return '#4ade80'; // default overview color (emerald)
+  switch (flight.phase) {
+    case 'planning': return '#f59e0b';   // amber
+    case 'completed': return '#6b7280';  // gray
+    default: return '#4ade80';           // flying/active — emerald
+  }
+}
+
 // ── Component ────────────────────────────────────────────────
 
 export const WorldMap = memo(function WorldMap({
   hubs = [], flights = [],
   selectedCallsign, onSelectCallsign,
   historicalRoute,
+  mode, onFlightClick,
 }: WorldMapProps) {
+  const [hoveredHub, setHoveredHub] = useState<number | null>(null);
   const [position, setPosition] = useState<{ coordinates: [number, number]; zoom: number }>({
     coordinates: CENTER,
     zoom: 1,
@@ -108,7 +130,7 @@ export const WorldMap = memo(function WorldMap({
   const z = position.zoom;
 
   return (
-    <div style={{ width: '100%', height: '100%', position: 'relative', background: '#050608' }}>
+    <div style={{ width: '100%', height: '100%', position: 'relative', background: 'transparent' }}>
       <ComposableMap
         projection="geoMercator"
         projectionConfig={{ scale: 140, center: [0, 30] }}
@@ -122,33 +144,80 @@ export const WorldMap = memo(function WorldMap({
           onMoveEnd={handleMoveEnd}
           minZoom={1}
           maxZoom={8}
-          translateExtent={[[-100, -50], [1060, 550]]}
+          translateExtent={[[-880, -200], [1840, 700]]}
         >
-          {/* ── Geography (very dark, subtle borders) ────── */}
-          <Geographies geography={GEO_URL}>
-            {({ geographies }) =>
-              geographies.map((geo) => (
-                <Geography
-                  key={geo.rsmKey}
-                  geography={geo}
-                  fill="#0c0e14"
-                  stroke="#1a1d28"
-                  strokeWidth={0.4}
-                  style={{
-                    default: { outline: 'none' },
-                    hover: { fill: '#0e1018', outline: 'none' },
-                    pressed: { outline: 'none' },
-                  }}
-                />
-              ))
-            }
-          </Geographies>
+          {/* ── Geography rendered 3x for wrap-around effect ────── */}
+          {/* Full world width for geoMercator = 2 * π * scale */}
+          {[-(2 * Math.PI * 140), 0, (2 * Math.PI * 140)].map((offset) => (
+            <g key={offset} transform={`translate(${offset}, 0)`}>
+              <Geographies geography={GEO_URL}>
+                {({ geographies }) =>
+                  geographies.map((geo) => (
+                    <Geography
+                      key={geo.rsmKey}
+                      geography={geo}
+                      fill="#0a0e1a"
+                      stroke="#151a28"
+                      strokeWidth={0.3}
+                      style={{
+                        default: { outline: 'none' },
+                        hover: { fill: '#0d1120', outline: 'none' },
+                        pressed: { outline: 'none' },
+                      }}
+                    />
+                  ))
+                }
+              </Geographies>
+            </g>
+          ))}
 
           {/* ── Hub airport badges ────────────────────────── */}
-          {hubs.map((hub, i) => (
-            <Marker key={`hub-${i}`} coordinates={[hub.lon, hub.lat]}>
+          {mode !== 'dispatch' && hubs.map((hub, i) => (
+            <Marker
+              key={`hub-${i}`}
+              coordinates={[hub.lon, hub.lat]}
+              onMouseEnter={() => setHoveredHub(i)}
+              onMouseLeave={() => setHoveredHub(null)}
+              style={{ cursor: 'pointer' }}
+            >
               <circle r={2.5 / z} fill="var(--accent-blue)" opacity={0.2} />
               <circle r={1.2 / z} fill="var(--accent-blue)" opacity={0.8} />
+              {hoveredHub === i && hub.icao && (
+                <g transform={`scale(${1 / z})`}>
+                  <rect
+                    x={6}
+                    y={-8}
+                    width={hub.coverage != null ? 78 : 36}
+                    height={16}
+                    rx={2}
+                    fill="rgba(3,7,38,0.85)"
+                    stroke="rgba(255,255,255,0.06)"
+                    strokeWidth={0.5}
+                  />
+                  <text
+                    x={10}
+                    y={4}
+                    fill="#ffffff"
+                    fontSize={8}
+                    fontFamily="ui-monospace, Cascadia Mono, Consolas, monospace"
+                    fontWeight={600}
+                  >
+                    {hub.icao}
+                  </text>
+                  {hub.coverage != null && (
+                    <text
+                      x={42}
+                      y={4}
+                      fill="rgba(255,255,255,0.45)"
+                      fontSize={7.5}
+                      fontFamily="ui-monospace, Cascadia Mono, Consolas, monospace"
+                      fontWeight={400}
+                    >
+                      {hub.coverage}%
+                    </text>
+                  )}
+                </g>
+              )}
             </Marker>
           ))}
 
@@ -337,8 +406,20 @@ export const WorldMap = memo(function WorldMap({
           {flights.map((f, i) => {
             const isSelected = i === selectedIdx;
             const iconSize = 24 / z;
+            const markerColor = getMarkerColor(f, mode);
+
+            // Position fallback: planning flights → dep airport, completed → arr airport
+            const lat = f.latitude || (f.phase === 'completed' ? (f.arrLat ?? 0) : (f.depLat ?? 0));
+            const lon = f.longitude || (f.phase === 'completed' ? (f.arrLon ?? 0) : (f.depLon ?? 0));
+
+            // Skip flights with no position data
+            if (lat === 0 && lon === 0) return null;
+
+            const isPlanning = mode === 'dispatch' && f.phase === 'planning';
+            const isCompleted = mode === 'dispatch' && f.phase === 'completed';
+
             return (
-              <Marker key={`ac-${i}`} coordinates={[f.longitude, f.latitude]}>
+              <Marker key={`ac-${i}`} coordinates={[lon, lat]}>
                 {/* Callsign label (offset above the icon) */}
                 <text
                   textAnchor="middle"
@@ -346,19 +427,22 @@ export const WorldMap = memo(function WorldMap({
                   style={{
                     fontFamily: 'ui-monospace, monospace',
                     fontSize: 3.2 / z,
-                    fill: isSelected ? '#ffffff' : 'rgba(74,222,128,0.7)',
+                    fill: isSelected ? '#ffffff' : `${markerColor}b3`,
                     fontWeight: isSelected ? 700 : 500,
                   }}
                 >
                   {f.callsign}
                 </text>
 
-                {/* Aircraft icon */}
+                {/* Aircraft icon or phase circle */}
                 <g
-                  transform={`rotate(${f.heading})`}
+                  transform={isPlanning || isCompleted ? undefined : `rotate(${f.heading})`}
                   onClick={(e) => {
                     e.stopPropagation();
                     handleSelect(isSelected ? null : i);
+                    if (mode === 'dispatch') {
+                      onFlightClick?.(f, e as any);
+                    }
                   }}
                   style={{ cursor: 'pointer' }}
                 >
@@ -370,13 +454,23 @@ export const WorldMap = memo(function WorldMap({
                       strokeWidth={0.5 / z}
                     />
                   )}
-                  <image
-                    href={buildUri(f.aircraftType, isSelected ? '#ffffff' : '#4ade80', isSelected ? '_sel' : '')}
-                    width={iconSize}
-                    height={iconSize}
-                    x={-iconSize / 2}
-                    y={-iconSize / 2}
-                  />
+                  {isPlanning || isCompleted ? (
+                    <circle
+                      r={3.5 / z}
+                      fill={markerColor}
+                      opacity={isCompleted ? 0.6 : 1}
+                      stroke={isSelected ? '#ffffff' : 'none'}
+                      strokeWidth={isSelected ? 0.5 / z : 0}
+                    />
+                  ) : (
+                    <image
+                      href={buildUri(f.aircraftType, isSelected ? '#ffffff' : markerColor, isSelected ? '_sel' : '')}
+                      width={iconSize}
+                      height={iconSize}
+                      x={-iconSize / 2}
+                      y={-iconSize / 2}
+                    />
+                  )}
                 </g>
               </Marker>
             );
@@ -385,7 +479,7 @@ export const WorldMap = memo(function WorldMap({
       </ComposableMap>
 
       {/* ── Flight detail panel (reference-style sidebar) ── */}
-      {selectedFlight && (
+      {mode !== 'dispatch' && selectedFlight && (
         <div
           className="absolute flex flex-col gap-3 overflow-y-auto"
           style={{
@@ -486,7 +580,7 @@ export const WorldMap = memo(function WorldMap({
       )}
 
       {/* ── Historical route panel ─────────────────────── */}
-      {historicalRoute && !selectedFlight && (
+      {mode !== 'dispatch' && historicalRoute && !selectedFlight && (
         <div
           className="absolute flex flex-col gap-2"
           style={{
