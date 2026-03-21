@@ -24,6 +24,26 @@ import { useSocket } from '@/hooks/useSocket';
 
 export type MapMode = 'overview' | 'dispatch';
 
+export interface DispatchMapFlight {
+  bidId: number;
+  callsign: string;
+  flightNumber: string;
+  depIcao: string;
+  arrIcao: string;
+  aircraftType: string;
+  phase: 'flying' | 'planning' | 'completed';
+  latitude?: number;
+  longitude?: number;
+  altitude?: number;
+  groundSpeed?: number;
+  heading?: number;
+  pilot?: { callsign: string; name: string };
+  depLat?: number;
+  depLon?: number;
+  arrLat?: number;
+  arrLon?: number;
+}
+
 export interface SharedMapContextValue {
   mode: MapMode;
   liveFlights: ActiveFlightHeartbeat[];

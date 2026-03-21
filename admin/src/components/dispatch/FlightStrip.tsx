@@ -1,4 +1,4 @@
-import type { DispatchMapFlight } from '@/pages/DispatchMapPage';
+import type { DispatchMapFlight } from '@/components/layout/SharedMapContext';
 
 interface FlightStripProps {
   flights: DispatchMapFlight[];
