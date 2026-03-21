@@ -229,7 +229,7 @@ The dispatch map page subscribes to `livemap:subscribe` for all active flights, 
 
 ### Backend Changes Required
 
-1. **Expand `GET /api/dispatch/flights`** to return flights in all phases (planning, active, completed) — currently it only returns flights with `flight_plan_phase = 'active'` or those with active heartbeats. Need to include `'planning'` and recently completed (e.g., last 24 hours).
+1. **Expand `GET /api/dispatch/flights`** to return flights in all phases (planning, active, completed) — currently it only returns flights with `flight_plan_phase = 'active'` or those with active heartbeats. Need to include `'planning'` phase flights. For recently completed flights (last 24 hours), note that completed bids are moved to the `logbook` table — this requires a UNION or separate query joining logbook data to show completed flights alongside active/planning ones.
 
 2. **Expand `PATCH /api/dispatch/flights/:bidId`** payload to accept new fields:
    - `depTime` (string, ISO timestamp)
