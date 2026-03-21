@@ -33,6 +33,10 @@ interface DispatchBidRow {
   vatsim_cid: number | null;
   expires_at: string | null;
   released_fields: string | null;
+  dep_lat: number | null;
+  dep_lon: number | null;
+  arr_lat: number | null;
+  arr_lon: number | null;
 }
 
 /** Shared SELECT columns + JOINs for dispatch flight queries */
@@ -57,7 +61,11 @@ const DISPATCH_FLIGHT_SQL = `
     f.name AS aircraft_name,
     u.callsign AS pilot_callsign,
     u.first_name AS pilot_first_name,
-    u.last_name AS pilot_last_name
+    u.last_name AS pilot_last_name,
+    COALESCE(dep.lat, oa_dep.latitude_deg) AS dep_lat,
+    COALESCE(dep.lon, oa_dep.longitude_deg) AS dep_lon,
+    COALESCE(arr.lat, oa_arr.latitude_deg) AS arr_lat,
+    COALESCE(arr.lon, oa_arr.longitude_deg) AS arr_lon
   FROM active_bids ab
   JOIN scheduled_flights sf ON sf.id = ab.schedule_id
   LEFT JOIN airports dep ON dep.icao = sf.dep_icao
@@ -149,6 +157,10 @@ export class DispatchService {
       vatsimConnected: row.vatsim_connected === 1,
       vatsimCallsign: row.vatsim_callsign ?? null,
       releasedFields: row.released_fields ? JSON.parse(row.released_fields) : null,
+      depLat: row.dep_lat ?? null,
+      depLon: row.dep_lon ?? null,
+      arrLat: row.arr_lat ?? null,
+      arrLon: row.arr_lon ?? null,
     };
   }
 

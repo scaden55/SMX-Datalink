@@ -11,6 +11,11 @@ export interface DispatchFlight {
   vatsimCallsign: string | null;
   /** Field names changed during the last dispatcher release (null = no pending changes) */
   releasedFields: string[] | null;
+  /** Airport coordinates for map display */
+  depLat: number | null;
+  depLon: number | null;
+  arrLat: number | null;
+  arrLon: number | null;
 }
 
 export interface DispatchFlightsResponse {
