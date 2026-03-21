@@ -14,6 +14,8 @@ import RouteAccordion from '@/components/dispatch/RouteAccordion';
 import CargoAccordion from '@/components/dispatch/CargoAccordion';
 import MelAccordion from '@/components/dispatch/MelAccordion';
 import RemarksAccordion from '@/components/dispatch/RemarksAccordion';
+import RouteMapPanel from '@/components/dispatch/RouteMapPanel';
+import DetailTabPanel from '@/components/dispatch/DetailTabPanel';
 import { api } from '@/lib/api';
 import { toast } from '@/stores/toastStore';
 
@@ -116,11 +118,21 @@ function ErrorState({ message }: { message: string }) {
 function FlightDetailsInner({
   flight,
   cargo,
+  messages,
+  exceedances,
+  track,
+  telemetry,
+  bidId,
   activeTab,
   setActiveTab,
 }: {
   flight: DispatchFlight;
   cargo: CargoManifest | null;
+  messages: AcarsMessagePayload[];
+  exceedances: any[];
+  track: any[];
+  telemetry: any;
+  bidId: number;
   activeTab: string;
   setActiveTab: (tab: string) => void;
 }) {
@@ -145,32 +157,17 @@ function FlightDetailsInner({
 
         {/* Right column: Map + tabs */}
         <div className="flex-1 flex flex-col">
-          {/* Top: Route map -- placeholder for Task 11 */}
-          <div className="h-[45%] bg-[var(--surface-0)] border-b border-[var(--surface-3)] flex items-center justify-center">
-            <span className="text-[var(--text-muted)] text-xs">Route Map (Task 11)</span>
-          </div>
-
-          {/* Bottom: Tab panel -- placeholder for Task 12 */}
-          <div className="flex-1 flex flex-col">
-            <div className="flex border-b border-[var(--surface-3)] bg-[var(--surface-1)] px-3">
-              {['ofp', 'weather', 'acars', 'cargo', 'exceedances', 'log'].map((tab) => (
-                <button
-                  key={tab}
-                  onClick={() => setActiveTab(tab)}
-                  className={`px-3 py-2 text-[10px] uppercase tracking-wider ${
-                    activeTab === tab
-                      ? 'text-[var(--accent-blue-bright)] border-b-2 border-[var(--accent)]'
-                      : 'text-[var(--text-muted)]'
-                  }`}
-                >
-                  {tab}
-                </button>
-              ))}
-            </div>
-            <div className="flex-1 p-3 overflow-y-auto">
-              <span className="text-[var(--text-muted)] text-xs">Tab content: {activeTab} (Task 12)</span>
-            </div>
-          </div>
+          <RouteMapPanel flight={flight} track={track} telemetry={telemetry} />
+          <DetailTabPanel
+            activeTab={activeTab}
+            onTabChange={setActiveTab}
+            flight={flight}
+            cargo={cargo}
+            messages={messages}
+            exceedances={exceedances}
+            bidId={bidId}
+            track={track}
+          />
         </div>
       </div>
     </div>
@@ -296,6 +293,11 @@ export default function FlightDetailsPage() {
       <FlightDetailsInner
         flight={flight}
         cargo={cargo}
+        messages={messages}
+        exceedances={exceedances}
+        track={track}
+        telemetry={telemetry}
+        bidId={bidIdNum!}
         activeTab={activeTab}
         setActiveTab={setActiveTab}
       />
