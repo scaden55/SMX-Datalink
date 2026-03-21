@@ -35,6 +35,39 @@ interface DispatchBidRow {
   released_fields: string | null;
 }
 
+/** Shared SELECT columns + JOINs for dispatch flight queries */
+const DISPATCH_FLIGHT_SQL = `
+  SELECT
+    ab.id, ab.user_id, ab.schedule_id, ab.created_at,
+    sf.flight_number, sf.dep_icao, sf.arr_icao, sf.aircraft_type,
+    sf.dep_time, sf.arr_time, sf.distance_nm, sf.flight_time_min, sf.days_of_week,
+    sf.flight_type, sf.event_tag,
+    COALESCE(dep.name, oa_dep.name, sf.dep_icao) AS dep_name,
+    COALESCE(arr.name, oa_arr.name, sf.arr_icao) AS arr_name,
+    ab.aircraft_id,
+    ab.simbrief_ofp_json,
+    ab.flight_plan_data,
+    ab.flight_plan_phase,
+    ab.vatsim_connected,
+    ab.vatsim_callsign,
+    ab.vatsim_cid,
+    ab.expires_at,
+    ab.released_fields,
+    f.registration AS aircraft_registration,
+    f.name AS aircraft_name,
+    u.callsign AS pilot_callsign,
+    u.first_name AS pilot_first_name,
+    u.last_name AS pilot_last_name
+  FROM active_bids ab
+  JOIN scheduled_flights sf ON sf.id = ab.schedule_id
+  LEFT JOIN airports dep ON dep.icao = sf.dep_icao
+  LEFT JOIN airports arr ON arr.icao = sf.arr_icao
+  LEFT JOIN oa_airports oa_dep ON oa_dep.ident = sf.dep_icao
+  LEFT JOIN oa_airports oa_arr ON oa_arr.ident = sf.arr_icao
+  LEFT JOIN fleet f ON f.id = ab.aircraft_id
+  JOIN users u ON u.id = ab.user_id
+`;
+
 export class DispatchService {
   /** Quick lookup for bid ownership checks */
   findBidOwner(bidId: number): { userId: number } | null {
@@ -42,7 +75,14 @@ export class DispatchService {
     return row ? { userId: row.user_id } : null;
   }
 
-  findActiveFlights(userId?: number): DispatchFlight[] {
+  /** Get a single flight by bid ID */
+  findFlightById(bidId: number): DispatchFlight | null {
+    const sql = `${DISPATCH_FLIGHT_SQL} WHERE ab.id = ?`;
+    const row = getDb().prepare(sql).get(bidId) as DispatchBidRow | undefined;
+    return row ? this.toDispatchFlight(row) : null;
+  }
+
+  findActiveFlights(userId?: number, phase?: string): DispatchFlight[] {
     const conditions = ['ab.flight_plan_data IS NOT NULL'];
     const params: unknown[] = [];
 
@@ -51,36 +91,14 @@ export class DispatchService {
       params.push(userId);
     }
 
-    const sql = `
-      SELECT
-        ab.id, ab.user_id, ab.schedule_id, ab.created_at,
-        sf.flight_number, sf.dep_icao, sf.arr_icao, sf.aircraft_type,
-        sf.dep_time, sf.arr_time, sf.distance_nm, sf.flight_time_min, sf.days_of_week,
-        sf.flight_type, sf.event_tag,
-        COALESCE(dep.name, oa_dep.name, sf.dep_icao) AS dep_name,
-        COALESCE(arr.name, oa_arr.name, sf.arr_icao) AS arr_name,
-        ab.aircraft_id,
-        ab.simbrief_ofp_json,
-        ab.flight_plan_data,
-        ab.flight_plan_phase,
-        ab.vatsim_connected,
-        ab.vatsim_callsign,
-        ab.vatsim_cid,
-        ab.expires_at,
-        ab.released_fields,
-        f.registration AS aircraft_registration,
-        f.name AS aircraft_name,
-        u.callsign AS pilot_callsign,
-        u.first_name AS pilot_first_name,
-        u.last_name AS pilot_last_name
-      FROM active_bids ab
-      JOIN scheduled_flights sf ON sf.id = ab.schedule_id
-      LEFT JOIN airports dep ON dep.icao = sf.dep_icao
-      LEFT JOIN airports arr ON arr.icao = sf.arr_icao
-      LEFT JOIN oa_airports oa_dep ON oa_dep.ident = sf.dep_icao
-      LEFT JOIN oa_airports oa_arr ON oa_arr.ident = sf.arr_icao
-      LEFT JOIN fleet f ON f.id = ab.aircraft_id
-      JOIN users u ON u.id = ab.user_id
+    if (phase === 'planning') {
+      conditions.push("ab.flight_plan_phase = 'planning'");
+    } else if (phase === 'active') {
+      conditions.push("ab.flight_plan_phase = 'active'");
+    }
+    // 'all' or undefined → no additional filter
+
+    const sql = `${DISPATCH_FLIGHT_SQL}
       WHERE ${conditions.join(' AND ')}
       ORDER BY ab.created_at DESC
     `;

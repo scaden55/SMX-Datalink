@@ -11,6 +11,22 @@ import type { FlightEventTracker } from '../services/flight-event-tracker.js';
 import type { DispatchFlightsResponse, DispatchEditPayload } from '@acars/shared';
 import { logger } from '../lib/logger.js';
 import { NotificationService } from '../services/notification.js';
+import { CargoService } from '../services/cargo.js';
+import type { ExceedanceRow } from '../types/db-rows.js';
+import { getDb } from '../db/index.js';
+
+interface TrackPointRow {
+  id: number;
+  pilot_id: number;
+  bid_id: number;
+  lat: number;
+  lon: number;
+  altitude_ft: number;
+  heading: number | null;
+  speed_kts: number | null;
+  vs_fpm: number | null;
+  recorded_at: number;
+}
 
 export function dispatchRouter(
   io?: SocketServer<ClientToServerEvents, ServerToClientEvents>,
@@ -23,21 +39,66 @@ export function dispatchRouter(
   const messageService = new MessageService();
   const pirepService = new PirepService();
   const notificationService = new NotificationService();
+  const cargoService = new CargoService();
 
   // GET /api/dispatch/flights — active flights with saved flight plans
   // Admin: all flights; Pilot: only own flights
+  // Optional query param: ?phase=planning|active|all
   router.get('/dispatch/flights', authMiddleware, (req, res) => {
     try {
       const isAdmin = req.user!.role === 'admin';
+      const phase = req.query.phase as string | undefined;
       const flights = isAdmin
-        ? dispatchService.findActiveFlights()
-        : dispatchService.findActiveFlights(req.user!.userId);
+        ? dispatchService.findActiveFlights(undefined, phase)
+        : dispatchService.findActiveFlights(req.user!.userId, phase);
 
       const response: DispatchFlightsResponse = { flights };
       res.json(response);
     } catch (err) {
       logger.error('Dispatch', 'Get flights error', err);
       res.status(500).json({ error: 'Failed to get dispatch flights' });
+    }
+  });
+
+  // GET /api/dispatch/flights/:bidId — single-flight detail (admin or owner)
+  router.get('/dispatch/flights/:bidId', authMiddleware, (req, res) => {
+    try {
+      const bidId = Number(req.params.bidId);
+      if (isNaN(bidId)) {
+        res.status(400).json({ error: 'Invalid bid ID' });
+        return;
+      }
+
+      // Verify ownership — pilot must own the bid; admins can see all
+      if (req.user!.role !== 'admin') {
+        const bid = dispatchService.findBidOwner(bidId);
+        if (!bid || bid.userId !== req.user!.userId) {
+          res.status(404).json({ error: 'Flight not found' });
+          return;
+        }
+      }
+
+      const flight = dispatchService.findFlightById(bidId);
+      if (!flight) {
+        res.status(404).json({ error: 'Flight not found' });
+        return;
+      }
+
+      const cargo = cargoService.getByFlightId(bidId);
+      const messages = messageService.getMessages(bidId);
+
+      const exceedances = getDb().prepare(
+        'SELECT * FROM flight_exceedances WHERE bid_id = ? ORDER BY detected_at DESC'
+      ).all(bidId) as ExceedanceRow[];
+
+      const track = getDb().prepare(
+        'SELECT * FROM telemetry_track WHERE bid_id = ? ORDER BY recorded_at ASC'
+      ).all(bidId) as TrackPointRow[];
+
+      res.json({ flight, cargo, messages, exceedances, track });
+    } catch (err) {
+      logger.error('Dispatch', 'Get flight detail error', err);
+      res.status(500).json({ error: 'Failed to get flight detail' });
     }
   });
 

@@ -12,6 +12,10 @@ const FUEL_FIELDS = new Set([
   'fuelTaxi', 'fuelContingency', 'fuelTotal', 'fuelBurn',
 ]);
 
+const PLANNING_ONLY_FIELDS = new Set([
+  'depTime', 'costIndex', 'paxCount',
+]);
+
 export class FlightPlanService {
   getFlightPlan(bidId: number, userId: number): FlightPlanRow | null {
     const row = getDb().prepare(
@@ -78,6 +82,11 @@ export class FlightPlanService {
       const hasFuelEdit = Object.keys(fields).some((k) => FUEL_FIELDS.has(k));
       if (hasFuelEdit) {
         return { ok: false, error: 'Fuel fields cannot be edited after takeoff' };
+      }
+
+      const hasPlanningOnlyEdit = Object.keys(fields).some((k) => PLANNING_ONLY_FIELDS.has(k));
+      if (hasPlanningOnlyEdit) {
+        return { ok: false, error: 'These fields cannot be edited after departure' };
       }
     }
 
