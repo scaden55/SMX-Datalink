@@ -188,7 +188,7 @@ export function SharedMapContainer() {
         </Suspense>
       </div>
       {/* Both overlays always mounted — CSS transitions handle enter/exit */}
-      <div className="relative h-full" style={{ zIndex: 10 }}>
+      <div className="relative h-full pointer-events-none" style={{ zIndex: 10 }}>
         <OverviewOverlayBridge />
         <DispatchOverlayBridge />
       </div>
