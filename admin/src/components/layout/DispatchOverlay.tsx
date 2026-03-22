@@ -154,15 +154,14 @@ export function DispatchOverlay({ active }: DispatchOverlayProps) {
         />
       </div>
 
-      {/* Floating card for selected flight — only when dispatch is active */}
-      {active && selectedFlight && clickPosition && (
+      {/* Floating card — hidden when detail panel is open */}
+      {active && selectedFlight && clickPosition && detailBidId == null && (
         <div className="pointer-events-auto">
           <FloatingFlightCard
             flight={selectedFlight}
             position={clickPosition}
             onOpenDetails={() => {
               setDetailBidId(selectedFlight.bidId);
-              setSelectedBidId(null);
             }}
             onClose={() => setSelectedBidId(null)}
           />
