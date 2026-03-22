@@ -132,7 +132,7 @@ export const WorldMap = memo(function WorldMap({
   }, []);
 
   const routeFlights = useMemo(
-    () => flights.filter(f => f.depLat != null && f.depLon != null && f.arrLat != null && f.arrLon != null),
+    () => flights.filter(f => f.phase !== 'completed' && f.depLat != null && f.depLon != null && f.arrLat != null && f.arrLon != null),
     [flights],
   );
 
