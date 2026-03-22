@@ -27,6 +27,7 @@ interface FlightData {
   groundSpeed?: number;
   phase?: string;
   trackPoints?: Array<{ lat: number; lon: number }>;
+  bidId?: number;
 }
 
 // ── Heartbeat → FlightData mapper ────────────────────────────
@@ -82,7 +83,9 @@ function MapBridge() {
     // Start with dispatch flights (they have airport coords even without heartbeats)
     for (const df of dispatchFlights) {
       const hb = heartbeatMap.get(df.pilot.callsign);
-      flightMap.set(df.pilot.callsign, {
+      // Use bidId as key instead of callsign (same pilot can have multiple flights)
+      flightMap.set(`${df.bid.id}`, {
+        bidId: df.bid.id,
         latitude: hb?.latitude ?? df.depLat ?? 0,
         longitude: hb?.longitude ?? df.depLon ?? 0,
         heading: hb?.heading ?? 0,
@@ -101,10 +104,11 @@ function MapBridge() {
       });
     }
 
-    // Add any heartbeat-only flights not in dispatch data
+    // Add any heartbeat-only flights not already matched by bid
     for (const hb of liveFlights) {
-      if (!flightMap.has(hb.callsign)) {
-        flightMap.set(hb.callsign, heartbeatToFlight(hb));
+      const key = hb.bidId ? `${hb.bidId}` : `hb-${hb.callsign}`;
+      if (!flightMap.has(key)) {
+        flightMap.set(key, { ...heartbeatToFlight(hb), bidId: hb.bidId });
       }
     }
 
@@ -118,10 +122,12 @@ function MapBridge() {
       // If we have a live heartbeat, use its position; otherwise fall back to airport coords
       const isCompleted = df.phase === 'completed';
       return {
+        bidId: df.bid.id,
         latitude: hb?.latitude ?? (isCompleted ? (df.arrLat ?? df.depLat ?? 0) : (df.depLat ?? 0)),
         longitude: hb?.longitude ?? (isCompleted ? (df.arrLon ?? df.depLon ?? 0) : (df.depLon ?? 0)),
         heading: hb?.heading ?? 0,
-        callsign: df.pilot.callsign,
+        // Use flightNumber as callsign for unique selection (same pilot may have multiple flights)
+        callsign: df.bid.flightNumber,
         flightNumber: df.bid.flightNumber,
         aircraftType: df.bid.aircraftType ?? undefined,
         depIcao: df.bid.depIcao,
@@ -157,34 +163,41 @@ function MapBridge() {
   }, [selectedBidId, selectedCallsign, dispatchFlights]);
 
   // Dispatch: derive selectedCallsign from selectedBidId
+  // Use flightNumber as the selection key (callsign is shared when same pilot has multiple flights)
   const dispatchSelectedCallsign = useMemo(() => {
     if (selectedBidId == null) return null;
     const df = dispatchFlights.find((f) => f.bid.id === selectedBidId);
-    return df?.pilot.callsign ?? null;
+    return df?.bid.flightNumber ?? null;
   }, [selectedBidId, dispatchFlights]);
 
-  // Dispatch: when a callsign is selected on map, find the bidId
+  // Dispatch: when a flight is selected on map by callsign, find the bidId
   const handleDispatchSelectCallsign = useCallback(
     (callsign: string | null) => {
       if (!callsign) {
         setSelectedBidId(null);
         return;
       }
-      const df = dispatchFlights.find((f) => f.pilot.callsign === callsign);
+      // Match by flightNumber first (used as selection key in dispatch), then callsign
+      const df = dispatchFlights.find((f) => f.bid.flightNumber === callsign)
+        ?? dispatchFlights.find((f) => f.pilot.callsign === callsign);
       setSelectedBidId(df?.bid.id ?? null);
     },
     [dispatchFlights, setSelectedBidId],
   );
 
-  // Dispatch: onFlightClick handler
+  // Dispatch: onFlightClick handler — match by bidId for accuracy
   const handleFlightClick = useCallback(
     (flight: FlightData, event: React.MouseEvent) => {
-      const df = dispatchFlights.find(
-        (f) => f.pilot.callsign === flight.callsign,
-      );
-      if (df) {
-        setSelectedBidId(df.bid.id);
+      if (flight.bidId) {
+        setSelectedBidId(flight.bidId);
         setClickPosition({ x: event.clientX, y: event.clientY });
+      } else {
+        // Fallback: match by callsign (heartbeat-only flights)
+        const df = dispatchFlights.find((f) => f.pilot.callsign === flight.callsign);
+        if (df) {
+          setSelectedBidId(df.bid.id);
+          setClickPosition({ x: event.clientX, y: event.clientY });
+        }
       }
     },
     [dispatchFlights, setSelectedBidId, setClickPosition],

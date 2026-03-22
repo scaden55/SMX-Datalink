@@ -33,6 +33,7 @@ interface FlightData {
   groundSpeed?: number;
   phase?: string;
   trackPoints?: TrackPt[];
+  bidId?: number;
 }
 
 interface HistoricalRoute {
