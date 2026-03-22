@@ -344,7 +344,7 @@ export const WorldMap = memo(function WorldMap({
                   strokeLinecap="round"
                   strokeDasharray="3 3"
                 />
-                {/* Departure airport icon */}
+                {/* Departure airport icon + label */}
                 <Marker coordinates={[f.depLon!, f.depLat!]}>
                   <path
                     d={airportPath(2.5 / z)}
@@ -353,8 +353,15 @@ export const WorldMap = memo(function WorldMap({
                     strokeWidth={0.8 / z}
                     strokeLinejoin="round"
                   />
+                  <text
+                    y={-5 / z}
+                    textAnchor="middle"
+                    style={{ fontFamily: 'ui-monospace, monospace', fontSize: 3 / z, fill: 'rgba(99,132,230,0.7)', fontWeight: 600 }}
+                  >
+                    {f.depIcao}
+                  </text>
                 </Marker>
-                {/* Arrival airport icon */}
+                {/* Arrival airport icon + label */}
                 <Marker coordinates={[f.arrLon!, f.arrLat!]}>
                   <path
                     d={airportPath(2.5 / z)}
@@ -363,6 +370,13 @@ export const WorldMap = memo(function WorldMap({
                     strokeWidth={0.8 / z}
                     strokeLinejoin="round"
                   />
+                  <text
+                    y={-5 / z}
+                    textAnchor="middle"
+                    style={{ fontFamily: 'ui-monospace, monospace', fontSize: 3 / z, fill: 'rgba(99,132,230,0.7)', fontWeight: 600 }}
+                  >
+                    {f.arrIcao}
+                  </text>
                 </Marker>
               </g>
             );
