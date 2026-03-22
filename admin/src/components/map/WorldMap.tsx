@@ -1,4 +1,4 @@
-import { memo, useState, useCallback, useMemo, useEffect } from 'react';
+import { memo, useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import {
   ComposableMap,
   Geographies,
@@ -183,22 +183,28 @@ export const WorldMap = memo(function WorldMap({
     setPosition(pos.zoom <= 1 ? { coordinates: CENTER, zoom: 1 } : pos);
   }, []);
 
-  // Zoom to fit route when focusBounds changes, zoom out when cleared
+  // Zoom to fit route ONCE when detail panel opens — don't re-trigger on pan
+  const lastFocusRef = useRef<string | null>(null);
   useEffect(() => {
     if (!focusBounds) {
-      // Zoom back out to default when detail panel closes
-      setPosition({ coordinates: CENTER, zoom: 1 });
+      lastFocusRef.current = null;
       return;
     }
+    const key = focusBounds.join(',');
+    if (lastFocusRef.current === key) return; // already zoomed for this route
+    lastFocusRef.current = key;
+
     const [minLon, minLat, maxLon, maxLat] = focusBounds;
     const centerLon = (minLon + maxLon) / 2;
     const centerLat = (minLat + maxLat) / 2;
+    // Offset center to the right to account for 40% detail panel on the left
     const spanLon = Math.abs(maxLon - minLon) || 20;
+    const offsetLon = centerLon + spanLon * 0.25; // shift right
     const spanLat = Math.abs(maxLat - minLat) || 10;
     const zoomLon = 280 / spanLon;
     const zoomLat = 140 / spanLat;
     const zoom = Math.min(zoomLon, zoomLat, 8) * 0.75;
-    setPosition({ coordinates: [centerLon, centerLat], zoom: Math.max(zoom, 1.5) });
+    setPosition({ coordinates: [offsetLon, centerLat], zoom: Math.max(zoom, 1.5) });
   }, [focusBounds]);
 
   const routeFlights = useMemo(
@@ -431,61 +437,6 @@ export const WorldMap = memo(function WorldMap({
                   })
                 }
 
-                {/* Remaining route — dashed white */}
-                <Line
-                  from={[selectedFlight.longitude, selectedFlight.latitude]}
-                  to={[selectedFlight.arrLon!, selectedFlight.arrLat!]}
-                  stroke="rgba(255,255,255,0.2)"
-                  strokeWidth={0.8 / z}
-                  strokeLinecap="round"
-                  strokeDasharray={`${5 / z} ${3 / z}`}
-                />
-
-                {/* Departure badge */}
-                <Marker coordinates={[selectedFlight.depLon!, selectedFlight.depLat!]}>
-                  <rect
-                    x={-12 / z} y={-5 / z}
-                    width={24 / z} height={10 / z}
-                    rx={2 / z}
-                    fill="rgba(74,222,128,0.15)"
-                    stroke="rgba(74,222,128,0.4)"
-                    strokeWidth={0.4 / z}
-                  />
-                  <text
-                    textAnchor="middle" dominantBaseline="central"
-                    style={{
-                      fontFamily: 'ui-monospace, monospace',
-                      fontSize: 4.5 / z,
-                      fill: '#4ade80',
-                      fontWeight: 700,
-                    }}
-                  >
-                    {selectedFlight.depIcao}
-                  </text>
-                </Marker>
-
-                {/* Arrival badge */}
-                <Marker coordinates={[selectedFlight.arrLon!, selectedFlight.arrLat!]}>
-                  <rect
-                    x={-12 / z} y={-5 / z}
-                    width={24 / z} height={10 / z}
-                    rx={2 / z}
-                    fill="rgba(248,113,113,0.15)"
-                    stroke="rgba(248,113,113,0.4)"
-                    strokeWidth={0.4 / z}
-                  />
-                  <text
-                    textAnchor="middle" dominantBaseline="central"
-                    style={{
-                      fontFamily: 'ui-monospace, monospace',
-                      fontSize: 4.5 / z,
-                      fill: '#f87171',
-                      fontWeight: 700,
-                    }}
-                  >
-                    {selectedFlight.arrIcao}
-                  </text>
-                </Marker>
               </g>
             );
           })()}
@@ -517,53 +468,6 @@ export const WorldMap = memo(function WorldMap({
             </g>
           )}
 
-          {/* ── Airport labels (unselected flights, subtle) ── */}
-          {!selectedFlight && routeFlights.map((f, i) => (
-            <g key={`apt-${i}`}>
-              <Marker coordinates={[f.depLon!, f.depLat!]}>
-                <rect
-                  x={-10 / z} y={-4 / z}
-                  width={20 / z} height={8 / z}
-                  rx={1.5 / z}
-                  fill="rgba(99,132,230,0.1)"
-                  stroke="rgba(99,132,230,0.25)"
-                  strokeWidth={0.3 / z}
-                />
-                <text
-                  textAnchor="middle" dominantBaseline="central"
-                  style={{
-                    fontFamily: 'ui-monospace, monospace',
-                    fontSize: 3.5 / z,
-                    fill: 'rgba(99,132,230,0.7)',
-                    fontWeight: 600,
-                  }}
-                >
-                  {f.depIcao}
-                </text>
-              </Marker>
-              <Marker coordinates={[f.arrLon!, f.arrLat!]}>
-                <rect
-                  x={-10 / z} y={-4 / z}
-                  width={20 / z} height={8 / z}
-                  rx={1.5 / z}
-                  fill="rgba(99,132,230,0.1)"
-                  stroke="rgba(99,132,230,0.25)"
-                  strokeWidth={0.3 / z}
-                />
-                <text
-                  textAnchor="middle" dominantBaseline="central"
-                  style={{
-                    fontFamily: 'ui-monospace, monospace',
-                    fontSize: 3.5 / z,
-                    fill: 'rgba(99,132,230,0.7)',
-                    fontWeight: 600,
-                  }}
-                >
-                  {f.arrIcao}
-                </text>
-              </Marker>
-            </g>
-          ))}
 
           {/* ── Aircraft icons + callsign labels ─────────── */}
           {flights.map((f, i) => {
@@ -612,14 +516,6 @@ export const WorldMap = memo(function WorldMap({
                   }}
                   style={{ cursor: 'pointer' }}
                 >
-                  {isSelected && (
-                    <circle
-                      r={iconSize * 0.55}
-                      fill="rgba(74,222,128,0.08)"
-                      stroke="rgba(74,222,128,0.3)"
-                      strokeWidth={0.5 / z}
-                    />
-                  )}
                   <image
                     href={buildUri(f.aircraftType, isSelected ? '#ffffff' : markerColor, isSelected ? '_sel' : '')}
                     width={iconSize}
