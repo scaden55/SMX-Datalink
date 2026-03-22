@@ -37,7 +37,7 @@ export function OverviewFlightCard({
   onClose,
 }: OverviewFlightCardProps) {
   const navigate = useNavigate();
-  const { setSelectedBidId } = useSharedMap();
+  const { setDetailBidId } = useSharedMap();
 
   const phaseColor = phase ? PHASE_COLORS[phase] : undefined;
 
@@ -50,7 +50,7 @@ export function OverviewFlightCard({
 
   const handleViewDispatch = () => {
     if (bidId != null) {
-      setSelectedBidId(bidId);
+      setDetailBidId(bidId);
     }
     navigate('/dispatch');
   };

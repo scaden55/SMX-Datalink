@@ -18,12 +18,13 @@ export function DispatchOverlay({ active }: DispatchOverlayProps) {
     liveFlights,
     selectedBidId,
     setSelectedBidId,
+    detailBidId,
+    setDetailBidId,
     clickPosition,
   } = useSharedMap();
 
   const [phaseFilter, setPhaseFilter] = useState<PhaseFilter>('all');
   const [searchQuery, setSearchQuery] = useState('');
-  const [detailBidId, setDetailBidId] = useState<number | null>(null);
 
   /* ── Build DispatchMapFlight[] from context data ─────────────── */
 

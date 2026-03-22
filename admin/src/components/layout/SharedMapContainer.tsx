@@ -136,6 +136,19 @@ function MapBridge() {
     });
   }, [dispatchFlights, heartbeatMap]);
 
+  // Dispatch: extract OFP waypoints for the selected flight's route
+  const selectedRoute = useMemo(() => {
+    if (selectedBidId == null) return undefined;
+    const df = dispatchFlights.find((f) => f.bid.id === selectedBidId);
+    if (!df?.ofpJson?.steps?.length) return undefined;
+    return df.ofpJson.steps.map((s) => ({
+      lat: s.lat,
+      lon: s.lon,
+      altitudeFt: s.altitudeFt,
+      fixType: s.fixType,
+    }));
+  }, [selectedBidId, dispatchFlights]);
+
   // Dispatch: derive selectedCallsign from selectedBidId
   const dispatchSelectedCallsign = useMemo(() => {
     if (selectedBidId == null) return null;
@@ -187,6 +200,7 @@ function MapBridge() {
         onSelectCallsign={handleDispatchSelectCallsign}
         onFlightClick={handleFlightClick}
         mode="dispatch"
+        selectedRoute={selectedRoute}
       />
     );
   }

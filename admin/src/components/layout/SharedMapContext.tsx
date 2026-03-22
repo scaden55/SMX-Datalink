@@ -53,6 +53,8 @@ export interface SharedMapContextValue {
   setSelectedCallsign: (callsign: string | null) => void;
   selectedBidId: number | null;
   setSelectedBidId: (bidId: number | null) => void;
+  detailBidId: number | null;
+  setDetailBidId: (id: number | null) => void;
   clickPosition: { x: number; y: number } | null;
   setClickPosition: (pos: { x: number; y: number } | null) => void;
 }
@@ -132,6 +134,7 @@ export function SharedMapProvider({ children }: { children: ReactNode }) {
   // ── Selection state ──────────────────────────────────────
   const [selectedCallsign, setSelectedCallsign] = useState<string | null>(null);
   const [selectedBidId, setSelectedBidId] = useState<number | null>(null);
+  const [detailBidId, setDetailBidId] = useState<number | null>(null);
   const [clickPosition, setClickPosition] = useState<{
     x: number;
     y: number;
@@ -148,6 +151,8 @@ export function SharedMapProvider({ children }: { children: ReactNode }) {
       setSelectedCallsign,
       selectedBidId,
       setSelectedBidId,
+      detailBidId,
+      setDetailBidId,
       clickPosition,
       setClickPosition,
     }),
@@ -158,6 +163,7 @@ export function SharedMapProvider({ children }: { children: ReactNode }) {
       hubs,
       selectedCallsign,
       selectedBidId,
+      detailBidId,
       clickPosition,
     ],
   );

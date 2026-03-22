@@ -51,6 +51,13 @@ interface HubData {
   coverage?: number;
 }
 
+interface RouteWaypoint {
+  lat: number;
+  lon: number;
+  altitudeFt?: number;
+  fixType?: string;
+}
+
 interface WorldMapProps {
   hubs?: HubData[];
   flights?: FlightData[];
@@ -59,6 +66,7 @@ interface WorldMapProps {
   historicalRoute?: HistoricalRoute | null;
   mode?: 'overview' | 'dispatch';
   onFlightClick?: (flight: FlightData, event: React.MouseEvent) => void;
+  selectedRoute?: RouteWaypoint[];
 }
 
 const CENTER: [number, number] = [0, 30];
@@ -99,6 +107,7 @@ export const WorldMap = memo(function WorldMap({
   selectedCallsign, onSelectCallsign,
   historicalRoute,
   mode, onFlightClick,
+  selectedRoute,
 }: WorldMapProps) {
   const [hoveredHub, setHoveredHub] = useState<number | null>(null);
   const [position, setPosition] = useState<{ coordinates: [number, number]; zoom: number }>({
@@ -242,15 +251,32 @@ export const WorldMap = memo(function WorldMap({
           {/* ── Selected flight route layers ──────────────── */}
           {selectedFlight && selectedFlight.depLat != null && (
             <g>
-              {/* Planned route — bright magenta/pink like reference */}
-              <Line
-                from={[selectedFlight.depLon!, selectedFlight.depLat!]}
-                to={[selectedFlight.arrLon!, selectedFlight.arrLat!]}
-                stroke="#e05080"
-                strokeWidth={1.2 / z}
-                strokeLinecap="round"
-                strokeDasharray={`${4 / z} ${3 / z}`}
-              />
+              {/* Planned route — through waypoints if available, else straight line */}
+              {selectedRoute && selectedRoute.length >= 2 ? (
+                selectedRoute.slice(0, -1).map((wp, j) => {
+                  const next = selectedRoute[j + 1];
+                  return (
+                    <Line
+                      key={`route-wp-${j}`}
+                      from={[wp.lon, wp.lat]}
+                      to={[next.lon, next.lat]}
+                      stroke="#4F6CCD"
+                      strokeWidth={1.2 / z}
+                      strokeLinecap="round"
+                      strokeDasharray={`${4 / z} ${3 / z}`}
+                    />
+                  );
+                })
+              ) : (
+                <Line
+                  from={[selectedFlight.depLon!, selectedFlight.depLat!]}
+                  to={[selectedFlight.arrLon!, selectedFlight.arrLat!]}
+                  stroke="#4F6CCD"
+                  strokeWidth={1.2 / z}
+                  strokeLinecap="round"
+                  strokeDasharray={`${4 / z} ${3 / z}`}
+                />
+              )}
 
               {/* Actual flown track — solid emerald */}
               {selectedFlight.trackPoints && selectedFlight.trackPoints.length >= 2 &&
@@ -454,23 +480,14 @@ export const WorldMap = memo(function WorldMap({
                       strokeWidth={0.5 / z}
                     />
                   )}
-                  {isPlanning || isCompleted ? (
-                    <circle
-                      r={3.5 / z}
-                      fill={markerColor}
-                      opacity={isCompleted ? 0.6 : 1}
-                      stroke={isSelected ? '#ffffff' : 'none'}
-                      strokeWidth={isSelected ? 0.5 / z : 0}
-                    />
-                  ) : (
-                    <image
-                      href={buildUri(f.aircraftType, isSelected ? '#ffffff' : markerColor, isSelected ? '_sel' : '')}
-                      width={iconSize}
-                      height={iconSize}
-                      x={-iconSize / 2}
-                      y={-iconSize / 2}
-                    />
-                  )}
+                  <image
+                    href={buildUri(f.aircraftType, isSelected ? '#ffffff' : markerColor, isSelected ? '_sel' : '')}
+                    width={iconSize}
+                    height={iconSize}
+                    x={-iconSize / 2}
+                    y={-iconSize / 2}
+                    opacity={isCompleted ? 0.6 : 1}
+                  />
                 </g>
               </Marker>
             );
