@@ -115,10 +115,11 @@ function MapBridge() {
   const dispatchMergedFlights = useMemo<FlightData[]>(() => {
     return dispatchFlights.map((df) => {
       const hb = heartbeatMap.get(df.pilot.callsign);
-      // If we have a live heartbeat, use its position; otherwise fall back to API data
+      // If we have a live heartbeat, use its position; otherwise fall back to airport coords
+      const isCompleted = df.phase === 'completed';
       return {
-        latitude: hb?.latitude ?? 0,
-        longitude: hb?.longitude ?? 0,
+        latitude: hb?.latitude ?? (isCompleted ? (df.arrLat ?? df.depLat ?? 0) : (df.depLat ?? 0)),
+        longitude: hb?.longitude ?? (isCompleted ? (df.arrLon ?? df.depLon ?? 0) : (df.depLon ?? 0)),
         heading: hb?.heading ?? 0,
         callsign: df.pilot.callsign,
         flightNumber: df.bid.flightNumber,
@@ -136,18 +137,24 @@ function MapBridge() {
     });
   }, [dispatchFlights, heartbeatMap]);
 
-  // Dispatch: extract OFP waypoints for the selected flight's route
+  // Extract OFP waypoints for the selected flight's route (both modes)
   const selectedRoute = useMemo(() => {
-    if (selectedBidId == null) return undefined;
-    const df = dispatchFlights.find((f) => f.bid.id === selectedBidId);
-    if (!df?.ofpJson?.steps?.length) return undefined;
-    return df.ofpJson.steps.map((s) => ({
-      lat: s.lat,
-      lon: s.lon,
-      altitudeFt: s.altitudeFt,
-      fixType: s.fixType,
-    }));
-  }, [selectedBidId, dispatchFlights]);
+    // Try dispatch mode (selectedBidId)
+    if (selectedBidId != null) {
+      const df = dispatchFlights.find((f) => f.bid.id === selectedBidId);
+      if (df?.ofpJson?.steps?.length) {
+        return df.ofpJson.steps.map((s) => ({ lat: s.lat, lon: s.lon, altitudeFt: s.altitudeFt, fixType: s.fixType }));
+      }
+    }
+    // Try overview mode (selectedCallsign)
+    if (selectedCallsign) {
+      const df = dispatchFlights.find((f) => f.pilot.callsign === selectedCallsign);
+      if (df?.ofpJson?.steps?.length) {
+        return df.ofpJson.steps.map((s) => ({ lat: s.lat, lon: s.lon, altitudeFt: s.altitudeFt, fixType: s.fixType }));
+      }
+    }
+    return undefined;
+  }, [selectedBidId, selectedCallsign, dispatchFlights]);
 
   // Dispatch: derive selectedCallsign from selectedBidId
   const dispatchSelectedCallsign = useMemo(() => {
@@ -214,6 +221,7 @@ function MapBridge() {
       onSelectCallsign={setSelectedCallsign}
       onFlightClick={handleOverviewFlightClick}
       mode="overview"
+      selectedRoute={selectedRoute}
     />
   );
 }
