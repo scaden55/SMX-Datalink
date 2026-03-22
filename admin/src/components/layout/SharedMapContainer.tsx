@@ -170,6 +170,14 @@ function MapBridge() {
     [dispatchFlights, setSelectedBidId, setClickPosition],
   );
 
+  // Overview: when a flight is clicked, set selectedCallsign
+  const handleOverviewFlightClick = useCallback(
+    (flight: FlightData) => {
+      setSelectedCallsign(flight.callsign === selectedCallsign ? null : flight.callsign);
+    },
+    [selectedCallsign, setSelectedCallsign],
+  );
+
   if (mode === 'dispatch') {
     return (
       <WorldMap
@@ -182,14 +190,6 @@ function MapBridge() {
       />
     );
   }
-
-  // Overview: when a flight is clicked, set selectedCallsign
-  const handleOverviewFlightClick = useCallback(
-    (flight: FlightData) => {
-      setSelectedCallsign(flight.callsign === selectedCallsign ? null : flight.callsign);
-    },
-    [selectedCallsign, setSelectedCallsign],
-  );
 
   // Overview mode
   return (
