@@ -136,7 +136,7 @@ export default function FlightDetailPanel({ bidId, open, onClose }: FlightDetail
   const [messages, setMessages] = useState<AcarsMessagePayload[]>([]);
   const [exceedances, setExceedances] = useState<any[]>([]);
   const [track, setTrack] = useState<any[]>([]);
-  const [activeTab, setActiveTab] = useState<string>('ofp');
+  const [activeTab, setActiveTab] = useState<string>('weather');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 

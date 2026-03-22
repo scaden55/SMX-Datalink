@@ -1,10 +1,12 @@
 import type { DispatchFlight, CargoManifest, AcarsMessagePayload } from '@acars/shared';
-import OfpTab from '@/components/dispatch/tabs/OfpTab';
 import WeatherTab from '@/components/dispatch/tabs/WeatherTab';
+import NotamTab from '@/components/dispatch/tabs/NotamTab';
+import AirportInfoTab from '@/components/dispatch/tabs/AirportInfoTab';
+import OfpTab from '@/components/dispatch/tabs/OfpTab';
 import AcarsTab from '@/components/dispatch/tabs/AcarsTab';
-import CargoDetailTab from '@/components/dispatch/tabs/CargoDetailTab';
-import ExceedancesTab from '@/components/dispatch/tabs/ExceedancesTab';
+import AdvisoriesTab from '@/components/dispatch/tabs/AdvisoriesTab';
 import FlightLogTab from '@/components/dispatch/tabs/FlightLogTab';
+import CargoDetailTab from '@/components/dispatch/tabs/CargoDetailTab';
 
 interface DetailTabPanelProps {
   activeTab: string;
@@ -18,12 +20,14 @@ interface DetailTabPanelProps {
 }
 
 const TABS = [
-  { id: 'ofp', label: 'OFP' },
   { id: 'weather', label: 'Weather' },
-  { id: 'acars', label: 'ACARS' },
+  { id: 'notam', label: 'NOTAM' },
+  { id: 'airport', label: 'Airport Info' },
+  { id: 'ofp', label: 'OFP' },
+  { id: 'messages', label: 'Messages' },
+  { id: 'advisories', label: 'Advisories' },
+  { id: 'log', label: 'Flight Log' },
   { id: 'cargo', label: 'Cargo' },
-  { id: 'exceedances', label: 'Exceedances' },
-  { id: 'log', label: 'Log' },
 ];
 
 export default function DetailTabPanel({
@@ -39,12 +43,12 @@ export default function DetailTabPanel({
   return (
     <div className="flex-1 flex flex-col min-h-0">
       {/* Tab bar */}
-      <div className="flex border-b border-[var(--surface-3)] bg-[var(--surface-1)] px-3">
+      <div className="flex overflow-x-auto border-b border-white/[0.06] shrink-0" style={{ scrollbarWidth: 'none' }}>
         {TABS.map((tab) => (
           <button
             key={tab.id}
             onClick={() => onTabChange(tab.id)}
-            className={`px-3 py-2 text-[10px] uppercase tracking-wider transition-colors ${
+            className={`whitespace-nowrap px-3 py-2 text-[12px] uppercase tracking-[0.08em] font-medium transition-colors ${
               activeTab === tab.id
                 ? 'text-[var(--accent-blue-bright)] border-b-2 border-[var(--accent)]'
                 : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
@@ -57,12 +61,14 @@ export default function DetailTabPanel({
 
       {/* Tab content */}
       <div className="flex-1 p-3 overflow-y-auto">
-        {activeTab === 'ofp' && <OfpTab flight={flight} />}
         {activeTab === 'weather' && <WeatherTab flight={flight} />}
-        {activeTab === 'acars' && <AcarsTab bidId={bidId} messages={messages} />}
-        {activeTab === 'cargo' && <CargoDetailTab cargo={cargo} />}
-        {activeTab === 'exceedances' && <ExceedancesTab exceedances={exceedances} />}
+        {activeTab === 'notam' && <NotamTab />}
+        {activeTab === 'airport' && <AirportInfoTab flight={flight} />}
+        {activeTab === 'ofp' && <OfpTab flight={flight} />}
+        {activeTab === 'messages' && <AcarsTab bidId={bidId} messages={messages} />}
+        {activeTab === 'advisories' && <AdvisoriesTab exceedances={exceedances} />}
         {activeTab === 'log' && <FlightLogTab flight={flight} track={track} />}
+        {activeTab === 'cargo' && <CargoDetailTab cargo={cargo} />}
       </div>
     </div>
   );

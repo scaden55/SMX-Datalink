@@ -18,20 +18,45 @@ export default function CargoDetailTab({ cargo }: CargoDetailTabProps) {
   return (
     <div className="space-y-3">
       {/* Summary row */}
-      <div className="grid grid-cols-4 gap-2">
-        <SummaryCell label="Manifest" value={cargo.manifestNumber} />
-        <SummaryCell label="Total Weight" value={`${cargo.totalWeightDisplay?.toLocaleString() ?? '--'} ${cargo.totalWeightUnit ?? 'LBS'}`} />
-        <SummaryCell label="Utilization" value={`${Math.round(cargo.payloadUtilization ?? 0)}%`} />
-        <SummaryCell label="CG Position" value={cargo.cgPosition != null ? `${cargo.cgPosition.toFixed(1)}%` : '--'} />
+      <div className="bg-[var(--surface-1)] border border-[var(--surface-3)] rounded-md p-3 space-y-2">
+        <h3 className="text-[11px] font-semibold text-[var(--text-muted)] uppercase tracking-wider">
+          Manifest Summary
+        </h3>
+        <div className="grid grid-cols-4 gap-3 text-[12px]">
+          <div>
+            <span className="text-[11px] text-[var(--text-muted)]">Manifest</span>
+            <div className="font-mono tabular-nums text-[var(--text-primary)]">
+              {cargo.manifestNumber}
+            </div>
+          </div>
+          <div>
+            <span className="text-[11px] text-[var(--text-muted)]">Total Weight</span>
+            <div className="font-mono tabular-nums text-[var(--text-primary)]">
+              {cargo.totalWeightDisplay?.toLocaleString() ?? '--'} {cargo.totalWeightUnit ?? 'LBS'}
+            </div>
+          </div>
+          <div>
+            <span className="text-[11px] text-[var(--text-muted)]">Utilization</span>
+            <div className="font-mono tabular-nums text-[var(--text-primary)]">
+              {Math.round(cargo.payloadUtilization ?? 0)}%
+            </div>
+          </div>
+          <div>
+            <span className="text-[11px] text-[var(--text-muted)]">CG Position</span>
+            <div className="font-mono tabular-nums text-[var(--text-primary)]">
+              {cargo.cgPosition != null ? `${cargo.cgPosition.toFixed(1)}%` : '--'}
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* ULD table */}
       {cargo.ulds && cargo.ulds.length > 0 && (
-        <div className="rounded bg-[var(--surface-1)] overflow-hidden">
-          <div className="px-3 py-1.5 border-b border-[var(--surface-3)]">
-            <span className="text-[10px] uppercase tracking-wider font-semibold text-[var(--text-muted)]">
+        <div className="bg-[var(--surface-1)] border border-[var(--surface-3)] rounded-md overflow-hidden">
+          <div className="px-3 py-2 border-b border-[var(--surface-3)]">
+            <h3 className="text-[11px] font-semibold text-[var(--text-muted)] uppercase tracking-wider">
               ULD Breakdown ({cargo.ulds.length})
-            </span>
+            </h3>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-[10px]">
@@ -52,16 +77,26 @@ export default function CargoDetailTab({ cargo }: CargoDetailTabProps) {
                     key={uld.uld_id}
                     className={`border-b border-[var(--surface-3)] ${uld.hazmat ? 'bg-amber-500/5' : ''}`}
                   >
-                    <td className="px-3 py-1.5 font-mono tabular-nums text-[var(--text-primary)]">{uld.uld_id}</td>
-                    <td className="px-3 py-1.5 font-mono tabular-nums text-[var(--text-secondary)]">{uld.position}</td>
+                    <td className="px-3 py-1.5 font-mono tabular-nums text-[var(--text-primary)]">
+                      {uld.uld_id}
+                    </td>
+                    <td className="px-3 py-1.5 font-mono tabular-nums text-[var(--text-secondary)]">
+                      {uld.position}
+                    </td>
                     <td className="px-3 py-1.5 font-mono tabular-nums text-right text-[var(--text-primary)]">
                       {uld.weight?.toLocaleString() ?? '--'}
                     </td>
-                    <td className="px-3 py-1.5 text-[var(--text-secondary)] max-w-[200px] truncate">{uld.cargo_description}</td>
-                    <td className="px-3 py-1.5 text-[var(--text-muted)]">{uld.category_name || uld.category}</td>
+                    <td className="px-3 py-1.5 text-[var(--text-secondary)] max-w-[200px] truncate">
+                      {uld.cargo_description}
+                    </td>
+                    <td className="px-3 py-1.5 text-[var(--text-muted)]">
+                      {uld.category_name || uld.category}
+                    </td>
                     <td className="px-3 py-1.5 text-center">
                       {uld.temp_controlled ? (
-                        <span className="text-sky-400 font-mono text-[9px]">{uld.temp_requirement ?? 'CTRL'}</span>
+                        <span className="text-sky-400 font-mono text-[9px]">
+                          {uld.temp_requirement ?? 'CTRL'}
+                        </span>
                       ) : (
                         <span className="text-[var(--text-muted)]">--</span>
                       )}
@@ -86,10 +121,10 @@ export default function CargoDetailTab({ cargo }: CargoDetailTabProps) {
 
       {/* NOTOC section */}
       {cargo.notocRequired && cargo.notocItems && cargo.notocItems.length > 0 && (
-        <div className="rounded bg-amber-500/5 border border-amber-500/20 p-3">
+        <div className="rounded-md bg-amber-500/5 border border-amber-500/20 p-3">
           <div className="flex items-center gap-1.5 mb-2">
             <AlertTriangle size={12} className="text-amber-400" />
-            <span className="text-[10px] uppercase tracking-wider font-bold text-amber-400">
+            <span className="text-[11px] uppercase tracking-wider font-bold text-amber-400">
               NOTOC — Notification to Captain
             </span>
           </div>
@@ -99,22 +134,15 @@ export default function CargoDetailTab({ cargo }: CargoDetailTabProps) {
                 <span className="text-[var(--text-primary)] min-w-[60px]">{item.uld_id}</span>
                 <span className="text-amber-400 min-w-[70px]">UN{item.un_number}</span>
                 <span className="text-[var(--text-secondary)] min-w-[40px]">CLS {item.class}</span>
-                <span className="text-[var(--text-muted)] flex-1 truncate">{item.proper_shipping_name}</span>
+                <span className="text-[var(--text-muted)] flex-1 truncate">
+                  {item.proper_shipping_name}
+                </span>
                 <span className="text-[var(--text-secondary)]">{item.net_weight}</span>
               </div>
             ))}
           </div>
         </div>
       )}
-    </div>
-  );
-}
-
-function SummaryCell({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded bg-[var(--surface-1)] px-3 py-2">
-      <div className="text-[9px] uppercase tracking-wider text-[var(--text-muted)] mb-0.5">{label}</div>
-      <div className="font-mono text-[11px] tabular-nums text-[var(--text-primary)]">{value}</div>
     </div>
   );
 }
