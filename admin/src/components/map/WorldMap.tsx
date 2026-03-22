@@ -1,4 +1,4 @@
-import { memo, useState, useCallback, useMemo } from 'react';
+import { memo, useState, useCallback, useMemo, useEffect } from 'react';
 import {
   ComposableMap,
   Geographies,
@@ -69,6 +69,8 @@ interface WorldMapProps {
   mode?: 'overview' | 'dispatch';
   onFlightClick?: (flight: FlightData, event: React.MouseEvent) => void;
   selectedRoute?: RouteWaypoint[];
+  /** When set, smoothly zoom/pan to fit these bounds [minLon, minLat, maxLon, maxLat] */
+  focusBounds?: [number, number, number, number] | null;
 }
 
 const CENTER: [number, number] = [0, 30];
@@ -158,6 +160,7 @@ export const WorldMap = memo(function WorldMap({
   historicalRoute,
   mode, onFlightClick,
   selectedRoute,
+  focusBounds,
 }: WorldMapProps) {
   const [hoveredHub, setHoveredHub] = useState<number | null>(null);
   const [position, setPosition] = useState<{ coordinates: [number, number]; zoom: number }>({
@@ -179,6 +182,24 @@ export const WorldMap = memo(function WorldMap({
   const handleMoveEnd = useCallback((pos: { coordinates: [number, number]; zoom: number }) => {
     setPosition(pos.zoom <= 1 ? { coordinates: CENTER, zoom: 1 } : pos);
   }, []);
+
+  // Zoom to fit route when focusBounds changes, zoom out when cleared
+  useEffect(() => {
+    if (!focusBounds) {
+      // Zoom back out to default when detail panel closes
+      setPosition({ coordinates: CENTER, zoom: 1 });
+      return;
+    }
+    const [minLon, minLat, maxLon, maxLat] = focusBounds;
+    const centerLon = (minLon + maxLon) / 2;
+    const centerLat = (minLat + maxLat) / 2;
+    const spanLon = Math.abs(maxLon - minLon) || 20;
+    const spanLat = Math.abs(maxLat - minLat) || 10;
+    const zoomLon = 280 / spanLon;
+    const zoomLat = 140 / spanLat;
+    const zoom = Math.min(zoomLon, zoomLat, 8) * 0.75;
+    setPosition({ coordinates: [centerLon, centerLat], zoom: Math.max(zoom, 1.5) });
+  }, [focusBounds]);
 
   const routeFlights = useMemo(
     () => flights.filter(f => f.phase !== 'completed' && f.depLat != null && f.depLon != null && f.arrLat != null && f.arrLon != null),
