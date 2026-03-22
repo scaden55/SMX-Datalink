@@ -317,11 +317,6 @@ input[type="number"] {
   to { opacity: 1; transform: translateY(0); }
 }
 
-/* ── Map zoom transition (only during programmatic zoom) ── */
-.map-animating .rsm-zoomable-group {
-  transition: transform 600ms ease-out;
-}
-
 /* ── Map panel transitions ─────────────────────────────── */
 
 .map-panel-left {
