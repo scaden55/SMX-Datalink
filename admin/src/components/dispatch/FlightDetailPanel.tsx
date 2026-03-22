@@ -106,7 +106,7 @@ function PanelInner({
       </div>
 
       {/* Tabs — fill remaining space, tab content scrollable */}
-      <div className="flex-1 min-h-0 border-t border-[var(--surface-3)]">
+      <div className="flex-1 min-h-0 flex flex-col border-t border-[var(--surface-3)]">
         <DetailTabPanel
           activeTab={activeTab}
           onTabChange={setActiveTab}
