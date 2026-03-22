@@ -481,14 +481,21 @@ export const WorldMap = memo(function WorldMap({
                       strokeWidth={0.5 / z}
                     />
                   )}
-                  <image
-                    href={buildUri(f.aircraftType, isSelected ? '#ffffff' : markerColor, isSelected ? '_sel' : '')}
-                    width={iconSize}
-                    height={iconSize}
-                    x={-iconSize / 2}
-                    y={-iconSize / 2}
-                    opacity={isCompleted ? 0.6 : 1}
-                  />
+                  {isPlanning || isCompleted ? (
+                    <circle
+                      r={iconSize * 0.25}
+                      fill={markerColor}
+                      opacity={isCompleted ? 0.6 : 0.85}
+                    />
+                  ) : (
+                    <image
+                      href={buildUri(f.aircraftType, isSelected ? '#ffffff' : markerColor, isSelected ? '_sel' : '')}
+                      width={iconSize}
+                      height={iconSize}
+                      x={-iconSize / 2}
+                      y={-iconSize / 2}
+                    />
+                  )}
                 </g>
               </Marker>
             );
