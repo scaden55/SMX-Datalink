@@ -349,8 +349,8 @@ export const WorldMap = memo(function WorldMap({
                   <path
                     d={airportPath(2.5 / z)}
                     fill="none"
-                    stroke="rgba(99,132,230,0.4)"
-                    strokeWidth={0.4 / z}
+                    stroke="rgba(99,132,230,0.6)"
+                    strokeWidth={0.8 / z}
                     strokeLinejoin="round"
                   />
                 </Marker>
@@ -359,8 +359,8 @@ export const WorldMap = memo(function WorldMap({
                   <path
                     d={airportPath(2.5 / z)}
                     fill="none"
-                    stroke="rgba(99,132,230,0.4)"
-                    strokeWidth={0.4 / z}
+                    stroke="rgba(99,132,230,0.6)"
+                    strokeWidth={0.8 / z}
                     strokeLinejoin="round"
                   />
                 </Marker>
@@ -434,7 +434,7 @@ export const WorldMap = memo(function WorldMap({
                           d={airportPath(3 / z)}
                           fill="none"
                           stroke={color}
-                          strokeWidth={0.6 / z}
+                          strokeWidth={1 / z}
                           strokeLinejoin="round"
                         />
                       ) : isTocTod ? (
