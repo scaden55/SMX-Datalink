@@ -207,26 +207,32 @@ export const WorldMap = memo(function WorldMap({
 
   // Zoom to fit route ONCE when detail panel opens — don't re-trigger on pan
   const lastFocusRef = useRef<string | null>(null);
+  const mapContainerRef = useRef<HTMLDivElement>(null);
+  const [animating, setAnimating] = useState(false);
+
   useEffect(() => {
     if (!focusBounds) {
       lastFocusRef.current = null;
       return;
     }
     const key = focusBounds.join(',');
-    if (lastFocusRef.current === key) return; // already zoomed for this route
+    if (lastFocusRef.current === key) return;
     lastFocusRef.current = key;
 
     const [minLon, minLat, maxLon, maxLat] = focusBounds;
     const centerLon = (minLon + maxLon) / 2;
     const centerLat = (minLat + maxLat) / 2;
-    // Offset center to the right to account for 40% detail panel on the left
     const spanLon = Math.abs(maxLon - minLon) || 20;
-    const offsetLon = centerLon + spanLon * 0.25; // shift right
+    const offsetLon = centerLon + spanLon * 0.25;
     const spanLat = Math.abs(maxLat - minLat) || 10;
     const zoomLon = 280 / spanLon;
     const zoomLat = 140 / spanLat;
     const zoom = Math.min(zoomLon, zoomLat, 8) * 0.75;
+
+    // Enable CSS transition, then set position, then disable after animation
+    setAnimating(true);
     setPosition({ coordinates: [offsetLon, centerLat], zoom: Math.max(zoom, 1.5) });
+    setTimeout(() => setAnimating(false), 650);
   }, [focusBounds]);
 
   const routeFlights = useMemo(
@@ -238,7 +244,7 @@ export const WorldMap = memo(function WorldMap({
   const z = position.zoom;
 
   return (
-    <div style={{ width: '100%', height: '100%', position: 'relative', background: 'transparent' }}>
+    <div ref={mapContainerRef} className={animating ? 'map-animating' : ''} style={{ width: '100%', height: '100%', position: 'relative', background: 'transparent' }}>
       <ComposableMap
         projection="geoMercator"
         projectionConfig={{ scale: 140, center: [0, 30] }}
