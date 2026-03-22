@@ -354,9 +354,9 @@ export const WorldMap = memo(function WorldMap({
                     strokeLinejoin="round"
                   />
                   <text
-                    y={-5 / z}
+                    y={-7 / z}
                     textAnchor="middle"
-                    style={{ fontFamily: 'ui-monospace, monospace', fontSize: 3 / z, fill: 'rgba(99,132,230,0.7)', fontWeight: 600 }}
+                    style={{ fontFamily: 'ui-monospace, monospace', fontSize: 5 / z, fill: 'rgba(99,132,230,0.7)', fontWeight: 600 }}
                   >
                     {f.depIcao}
                   </text>
@@ -371,9 +371,9 @@ export const WorldMap = memo(function WorldMap({
                     strokeLinejoin="round"
                   />
                   <text
-                    y={-5 / z}
+                    y={-7 / z}
                     textAnchor="middle"
-                    style={{ fontFamily: 'ui-monospace, monospace', fontSize: 3 / z, fill: 'rgba(99,132,230,0.7)', fontWeight: 600 }}
+                    style={{ fontFamily: 'ui-monospace, monospace', fontSize: 5 / z, fill: 'rgba(99,132,230,0.7)', fontWeight: 600 }}
                   >
                     {f.arrIcao}
                   </text>
@@ -430,11 +430,11 @@ export const WorldMap = memo(function WorldMap({
                       {/* Waypoint label */}
                       <text
                         x={0}
-                        y={-5 / z}
+                        y={-7 / z}
                         textAnchor="middle"
                         style={{
                           fontFamily: 'ui-monospace, monospace',
-                          fontSize: 3 / z,
+                          fontSize: 5 / z,
                           fill: color,
                           fontWeight: 500,
                         }}
@@ -550,10 +550,10 @@ export const WorldMap = memo(function WorldMap({
                 {/* Callsign label (offset above the icon) */}
                 <text
                   textAnchor="middle"
-                  y={-iconSize / 2 - 2 / z}
+                  y={-iconSize / 2 - 4 / z}
                   style={{
                     fontFamily: 'ui-monospace, monospace',
-                    fontSize: 3.2 / z,
+                    fontSize: 5 / z,
                     fill: isSelected ? '#ffffff' : `${markerColor}b3`,
                     fontWeight: isSelected ? 700 : 500,
                   }}
