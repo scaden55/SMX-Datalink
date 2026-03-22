@@ -1,4 +1,4 @@
-import { memo, useState, useCallback, useMemo, useEffect, useRef } from 'react';
+import { memo, useState, useCallback, useMemo } from 'react';
 import {
   ComposableMap,
   Geographies,
@@ -69,8 +69,6 @@ interface WorldMapProps {
   mode?: 'overview' | 'dispatch';
   onFlightClick?: (flight: FlightData, event: React.MouseEvent) => void;
   selectedRoute?: RouteWaypoint[];
-  /** When set, smoothly zoom/pan to fit these bounds [minLon, minLat, maxLon, maxLat] */
-  focusBounds?: [number, number, number, number] | null;
 }
 
 const CENTER: [number, number] = [0, 30];
@@ -182,7 +180,6 @@ export const WorldMap = memo(function WorldMap({
   historicalRoute,
   mode, onFlightClick,
   selectedRoute,
-  focusBounds,
 }: WorldMapProps) {
   const [hoveredHub, setHoveredHub] = useState<number | null>(null);
   const [position, setPosition] = useState<{ coordinates: [number, number]; zoom: number }>({
@@ -205,41 +202,6 @@ export const WorldMap = memo(function WorldMap({
     setPosition(pos.zoom <= 1 ? { coordinates: CENTER, zoom: 1 } : pos);
   }, []);
 
-  // Zoom to fit route ONCE when detail panel opens — don't re-trigger on pan
-  const lastFocusRef = useRef<string | null>(null);
-
-  useEffect(() => {
-    if (!focusBounds) {
-      lastFocusRef.current = null;
-      return;
-    }
-    const key = focusBounds.join(',');
-    if (lastFocusRef.current === key) return;
-    lastFocusRef.current = key;
-
-    const [minLon, minLat, maxLon, maxLat] = focusBounds;
-    const routeCenterLon = (minLon + maxLon) / 2;
-    const routeCenterLat = (minLat + maxLat) / 2;
-    const spanLon = Math.abs(maxLon - minLon) || 20;
-    const spanLat = Math.abs(maxLat - minLat) || 10;
-
-    // Calculate zoom to fit the route in the visible 60% of the screen
-    // (detail panel covers left 40%)
-    const zoomLon = 160 / spanLon;  // 280 * 0.6 ≈ 160 (only 60% width available)
-    const zoomLat = 140 / spanLat;
-    const zoom = Math.min(zoomLon, zoomLat, 8) * 0.7;
-    const finalZoom = Math.max(zoom, 1.5);
-
-    // The visible area center is not the map center — it's shifted right
-    // because the left 40% is covered by the panel.
-    // At a given zoom, the full map longitude span is roughly 360/zoom.
-    // The panel covers the left 40%, so the visible center is at 70% from left
-    // (midpoint of the right 60%). Offset = (0.7 - 0.5) * fullSpan = 0.2 * 360/zoom
-    const fullLonSpan = 360 / finalZoom;
-    const offsetLon = routeCenterLon - fullLonSpan * 0.2;
-
-    setPosition({ coordinates: [offsetLon, routeCenterLat], zoom: finalZoom });
-  }, [focusBounds]);
 
   const routeFlights = useMemo(
     () => flights.filter(f => f.phase !== 'completed' && f.depLat != null && f.depLon != null && f.arrLat != null && f.arrLon != null),

@@ -164,30 +164,6 @@ function MapBridge() {
     return undefined;
   }, [selectedBidId, selectedCallsign, dispatchFlights]);
 
-  // Compute bounds for the detail panel's flight route (zoom-to-fit)
-  const focusBounds = useMemo<[number, number, number, number] | null>(() => {
-    if (detailBidId == null) return null;
-    const df = dispatchFlights.find((f) => f.bid.id === detailBidId);
-    if (!df) return null;
-
-    // Collect all relevant coordinates: OFP steps, or fallback to dep/arr airports
-    const lats: number[] = [];
-    const lons: number[] = [];
-
-    if (df.ofpJson?.steps?.length) {
-      for (const s of df.ofpJson.steps) {
-        lats.push(s.lat);
-        lons.push(s.lon);
-      }
-    } else {
-      if (df.depLat != null && df.depLon != null) { lats.push(df.depLat); lons.push(df.depLon); }
-      if (df.arrLat != null && df.arrLon != null) { lats.push(df.arrLat); lons.push(df.arrLon); }
-    }
-
-    if (lats.length < 2) return null;
-
-    return [Math.min(...lons), Math.min(...lats), Math.max(...lons), Math.max(...lats)];
-  }, [detailBidId, dispatchFlights]);
 
   // Dispatch: derive selectedCallsign from selectedBidId
   // Use flightNumber as the selection key (callsign is shared when same pilot has multiple flights)
@@ -248,7 +224,7 @@ function MapBridge() {
         onFlightClick={handleFlightClick}
         mode="dispatch"
         selectedRoute={selectedRoute}
-        focusBounds={focusBounds}
+
       />
     );
   }
