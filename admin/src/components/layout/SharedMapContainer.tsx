@@ -150,14 +150,14 @@ function MapBridge() {
     if (selectedBidId != null) {
       const df = dispatchFlights.find((f) => f.bid.id === selectedBidId);
       if (df?.ofpJson?.steps?.length) {
-        return df.ofpJson.steps.map((s) => ({ lat: s.lat, lon: s.lon, altitudeFt: s.altitudeFt, fixType: s.fixType }));
+        return df.ofpJson.steps.map((s) => ({ lat: s.lat, lon: s.lon, altitudeFt: s.altitudeFt, fixType: s.fixType, ident: s.ident }));
       }
     }
     // Try overview mode (selectedCallsign is now flightNumber)
     if (selectedCallsign) {
       const df = dispatchFlights.find((f) => f.bid.flightNumber === selectedCallsign);
       if (df?.ofpJson?.steps?.length) {
-        return df.ofpJson.steps.map((s) => ({ lat: s.lat, lon: s.lon, altitudeFt: s.altitudeFt, fixType: s.fixType }));
+        return df.ofpJson.steps.map((s) => ({ lat: s.lat, lon: s.lon, altitudeFt: s.altitudeFt, fixType: s.fixType, ident: s.ident }));
       }
     }
     return undefined;

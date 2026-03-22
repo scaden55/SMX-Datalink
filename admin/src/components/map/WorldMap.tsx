@@ -57,6 +57,7 @@ interface RouteWaypoint {
   lon: number;
   altitudeFt?: number;
   fixType?: string;
+  ident?: string;
 }
 
 interface WorldMapProps {
@@ -99,6 +100,54 @@ function getMarkerColor(flight: FlightData, mode: string | undefined): string {
     case 'completed': return '#6b7280';  // gray
     default: return '#4ade80';           // flying/active — emerald
   }
+}
+
+// ── Route phase colors ───────────────────────────────────────
+
+const CLR_CLIMB = '#d2a8ff';
+const CLR_CRUISE = '#58a6ff';
+const CLR_DESCENT = '#3fb950';
+
+function findTocTod(steps: RouteWaypoint[]): { tocIndex: number; todIndex: number } {
+  if (steps.length < 2) return { tocIndex: 0, todIndex: steps.length - 1 };
+
+  const tocByType = steps.findIndex(s => s.fixType === 'toc');
+  const todByType = steps.length - 1 - [...steps].reverse().findIndex(s => s.fixType === 'tod');
+  const hasToc = tocByType >= 0;
+  const hasTod = todByType < steps.length && steps.findIndex(s => s.fixType === 'tod') >= 0;
+
+  if (hasToc && hasTod) return { tocIndex: tocByType, todIndex: todByType };
+
+  // Fallback: altitude threshold (90% of max)
+  const maxAlt = Math.max(...steps.map(s => s.altitudeFt ?? 0));
+  const threshold = maxAlt * 0.9;
+
+  let tocFallback = 0;
+  let todFallback = steps.length - 1;
+  for (let i = 0; i < steps.length; i++) {
+    if ((steps[i].altitudeFt ?? 0) >= threshold) { tocFallback = i; break; }
+  }
+  for (let i = steps.length - 1; i >= 0; i--) {
+    if ((steps[i].altitudeFt ?? 0) >= threshold) { todFallback = i; break; }
+  }
+
+  return {
+    tocIndex: hasToc ? tocByType : tocFallback,
+    todIndex: hasTod ? todByType : todFallback,
+  };
+}
+
+function getPhaseColor(index: number, tocIndex: number, todIndex: number): string {
+  if (index <= tocIndex) return CLR_CLIMB;
+  if (index <= todIndex) return CLR_CRUISE;
+  return CLR_DESCENT;
+}
+
+function hexPoints(r: number): string {
+  return Array.from({ length: 6 }, (_, i) => {
+    const angle = (Math.PI / 3) * i - Math.PI / 6;
+    return `${r * Math.cos(angle)},${r * Math.sin(angle)}`;
+  }).join(' ');
 }
 
 // ── Component ────────────────────────────────────────────────
@@ -250,109 +299,175 @@ export const WorldMap = memo(function WorldMap({
           })}
 
           {/* ── Selected flight route layers ──────────────── */}
-          {selectedFlight && selectedFlight.depLat != null && (
-            <g>
-              {/* Planned route — through waypoints if available, else straight line */}
-              {selectedRoute && selectedRoute.length >= 2 ? (
-                selectedRoute.slice(0, -1).map((wp, j) => {
-                  const next = selectedRoute[j + 1];
+          {selectedFlight && selectedFlight.depLat != null && (() => {
+            const hasRoute = selectedRoute && selectedRoute.length >= 2;
+            const toctod = hasRoute ? findTocTod(selectedRoute!) : null;
+            const tocIdx = toctod?.tocIndex ?? 0;
+            const todIdx = toctod?.todIndex ?? 0;
+
+            return (
+              <g>
+                {/* Phase-colored route segments */}
+                {hasRoute ? (
+                  selectedRoute!.slice(0, -1).map((wp, j) => {
+                    const next = selectedRoute![j + 1];
+                    const color = getPhaseColor(j, tocIdx, todIdx);
+                    return (
+                      <Line
+                        key={`route-wp-${j}`}
+                        from={[wp.lon, wp.lat]}
+                        to={[next.lon, next.lat]}
+                        stroke={color}
+                        strokeWidth={1.5 / z}
+                        strokeLinecap="round"
+                      />
+                    );
+                  })
+                ) : (
+                  <Line
+                    from={[selectedFlight.depLon!, selectedFlight.depLat!]}
+                    to={[selectedFlight.arrLon!, selectedFlight.arrLat!]}
+                    stroke="#4F6CCD"
+                    strokeWidth={1.5 / z}
+                    strokeLinecap="round"
+                  />
+                )}
+
+                {/* Waypoint markers and labels */}
+                {hasRoute && selectedRoute!.map((wp, j) => {
+                  const color = getPhaseColor(j, tocIdx, todIdx);
+                  const ft = wp.fixType;
+                  const isApt = ft === 'apt';
+                  const isTocTod = ft === 'toc' || ft === 'tod';
+                  const isVor = ft === 'vor';
+
                   return (
-                    <Line
-                      key={`route-wp-${j}`}
-                      from={[wp.lon, wp.lat]}
-                      to={[next.lon, next.lat]}
-                      stroke="#4F6CCD"
-                      strokeWidth={1.2 / z}
-                      strokeLinecap="round"
-                      strokeDasharray={`${4 / z} ${3 / z}`}
-                    />
+                    <Marker key={`wp-marker-${j}`} coordinates={[wp.lon, wp.lat]}>
+                      {/* Waypoint label */}
+                      <text
+                        x={0}
+                        y={-5 / z}
+                        textAnchor="middle"
+                        style={{
+                          fontFamily: 'ui-monospace, monospace',
+                          fontSize: 3 / z,
+                          fill: color,
+                          fontWeight: 500,
+                        }}
+                      >
+                        {wp.ident ?? ft?.toUpperCase() ?? ''}
+                      </text>
+
+                      {/* Shape by fixType */}
+                      {isApt ? (
+                        <g>
+                          <circle cx={0} cy={0} r={3 / z} fill="none" stroke={color} strokeWidth={0.6 / z} />
+                          <rect x={-0.5 / z} y={-4.5 / z} width={1 / z} height={2 / z} fill={color} />
+                          <rect x={-0.5 / z} y={2.5 / z} width={1 / z} height={2 / z} fill={color} />
+                          <rect x={-4.5 / z} y={-0.5 / z} width={2 / z} height={1 / z} fill={color} />
+                          <rect x={2.5 / z} y={-0.5 / z} width={2 / z} height={1 / z} fill={color} />
+                        </g>
+                      ) : isTocTod ? (
+                        <polygon
+                          points={`0,${-3 / z} ${3 / z},0 0,${3 / z} ${-3 / z},0`}
+                          fill={color}
+                          stroke="#000"
+                          strokeWidth={0.3 / z}
+                        />
+                      ) : isVor ? (
+                        <polygon
+                          points={hexPoints(2.5 / z)}
+                          fill={color}
+                          stroke="#000"
+                          strokeWidth={0.3 / z}
+                        />
+                      ) : (
+                        <polygon
+                          points={`0,${-2.5 / z} ${2.5 / z},0 0,${2.5 / z} ${-2.5 / z},0`}
+                          fill="none"
+                          stroke={color}
+                          strokeWidth={0.5 / z}
+                        />
+                      )}
+                    </Marker>
                   );
-                })
-              ) : (
+                })}
+
+                {/* Actual flown track — solid emerald */}
+                {selectedFlight.trackPoints && selectedFlight.trackPoints.length >= 2 &&
+                  selectedFlight.trackPoints.slice(0, -1).map((pt, j) => {
+                    const next = selectedFlight.trackPoints![j + 1];
+                    return (
+                      <Line
+                        key={`track-${j}`}
+                        from={[pt.lon, pt.lat]}
+                        to={[next.lon, next.lat]}
+                        stroke="#4ade80"
+                        strokeWidth={1.2 / z}
+                        strokeLinecap="round"
+                      />
+                    );
+                  })
+                }
+
+                {/* Remaining route — dashed white */}
                 <Line
-                  from={[selectedFlight.depLon!, selectedFlight.depLat!]}
+                  from={[selectedFlight.longitude, selectedFlight.latitude]}
                   to={[selectedFlight.arrLon!, selectedFlight.arrLat!]}
-                  stroke="#4F6CCD"
-                  strokeWidth={1.2 / z}
+                  stroke="rgba(255,255,255,0.2)"
+                  strokeWidth={0.8 / z}
                   strokeLinecap="round"
-                  strokeDasharray={`${4 / z} ${3 / z}`}
+                  strokeDasharray={`${5 / z} ${3 / z}`}
                 />
-              )}
 
-              {/* Actual flown track — solid emerald */}
-              {selectedFlight.trackPoints && selectedFlight.trackPoints.length >= 2 &&
-                selectedFlight.trackPoints.slice(0, -1).map((pt, j) => {
-                  const next = selectedFlight.trackPoints![j + 1];
-                  return (
-                    <Line
-                      key={`track-${j}`}
-                      from={[pt.lon, pt.lat]}
-                      to={[next.lon, next.lat]}
-                      stroke="#4ade80"
-                      strokeWidth={1.2 / z}
-                      strokeLinecap="round"
-                    />
-                  );
-                })
-              }
+                {/* Departure badge */}
+                <Marker coordinates={[selectedFlight.depLon!, selectedFlight.depLat!]}>
+                  <rect
+                    x={-12 / z} y={-5 / z}
+                    width={24 / z} height={10 / z}
+                    rx={2 / z}
+                    fill="rgba(74,222,128,0.15)"
+                    stroke="rgba(74,222,128,0.4)"
+                    strokeWidth={0.4 / z}
+                  />
+                  <text
+                    textAnchor="middle" dominantBaseline="central"
+                    style={{
+                      fontFamily: 'ui-monospace, monospace',
+                      fontSize: 4.5 / z,
+                      fill: '#4ade80',
+                      fontWeight: 700,
+                    }}
+                  >
+                    {selectedFlight.depIcao}
+                  </text>
+                </Marker>
 
-              {/* Remaining route — dashed white */}
-              <Line
-                from={[selectedFlight.longitude, selectedFlight.latitude]}
-                to={[selectedFlight.arrLon!, selectedFlight.arrLat!]}
-                stroke="rgba(255,255,255,0.2)"
-                strokeWidth={0.8 / z}
-                strokeLinecap="round"
-                strokeDasharray={`${5 / z} ${3 / z}`}
-              />
-
-              {/* Departure badge */}
-              <Marker coordinates={[selectedFlight.depLon!, selectedFlight.depLat!]}>
-                <rect
-                  x={-12 / z} y={-5 / z}
-                  width={24 / z} height={10 / z}
-                  rx={2 / z}
-                  fill="rgba(74,222,128,0.15)"
-                  stroke="rgba(74,222,128,0.4)"
-                  strokeWidth={0.4 / z}
-                />
-                <text
-                  textAnchor="middle" dominantBaseline="central"
-                  style={{
-                    fontFamily: 'ui-monospace, monospace',
-                    fontSize: 4.5 / z,
-                    fill: '#4ade80',
-                    fontWeight: 700,
-                  }}
-                >
-                  {selectedFlight.depIcao}
-                </text>
-              </Marker>
-
-              {/* Arrival badge */}
-              <Marker coordinates={[selectedFlight.arrLon!, selectedFlight.arrLat!]}>
-                <rect
-                  x={-12 / z} y={-5 / z}
-                  width={24 / z} height={10 / z}
-                  rx={2 / z}
-                  fill="rgba(248,113,113,0.15)"
-                  stroke="rgba(248,113,113,0.4)"
-                  strokeWidth={0.4 / z}
-                />
-                <text
-                  textAnchor="middle" dominantBaseline="central"
-                  style={{
-                    fontFamily: 'ui-monospace, monospace',
-                    fontSize: 4.5 / z,
-                    fill: '#f87171',
-                    fontWeight: 700,
-                  }}
-                >
-                  {selectedFlight.arrIcao}
-                </text>
-              </Marker>
-            </g>
-          )}
+                {/* Arrival badge */}
+                <Marker coordinates={[selectedFlight.arrLon!, selectedFlight.arrLat!]}>
+                  <rect
+                    x={-12 / z} y={-5 / z}
+                    width={24 / z} height={10 / z}
+                    rx={2 / z}
+                    fill="rgba(248,113,113,0.15)"
+                    stroke="rgba(248,113,113,0.4)"
+                    strokeWidth={0.4 / z}
+                  />
+                  <text
+                    textAnchor="middle" dominantBaseline="central"
+                    style={{
+                      fontFamily: 'ui-monospace, monospace',
+                      fontSize: 4.5 / z,
+                      fill: '#f87171',
+                      fontWeight: 700,
+                    }}
+                  >
+                    {selectedFlight.arrIcao}
+                  </text>
+                </Marker>
+              </g>
+            );
+          })()}
 
           {/* ── Historical route (recent flight) ─────────── */}
           {historicalRoute && !selectedFlight && (
