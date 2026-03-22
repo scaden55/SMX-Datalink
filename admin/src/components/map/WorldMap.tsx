@@ -152,6 +152,28 @@ function hexPoints(r: number): string {
   }).join(' ');
 }
 
+/** Airport icon as a single continuous SVG path — circle with 4 protruding ticks */
+function airportPath(r: number): string {
+  const tr = r * 1.5; // tick reach (outer end of tick)
+  // Draw: top tick → arc to right tick → right tick → arc to bottom tick → etc.
+  // Using arcs (A rx ry rotation large-arc sweep x y)
+  return [
+    `M 0 ${-tr}`,           // top tick outer
+    `L 0 ${-r}`,            // top tick inner (meets circle)
+    `A ${r} ${r} 0 0 1 ${r} 0`,  // arc clockwise to right
+    `L ${tr} 0`,             // right tick outer
+    `L ${r} 0`,              // back to circle
+    `A ${r} ${r} 0 0 1 0 ${r}`,  // arc to bottom
+    `L 0 ${tr}`,             // bottom tick outer
+    `L 0 ${r}`,              // back to circle
+    `A ${r} ${r} 0 0 1 ${-r} 0`, // arc to left
+    `L ${-tr} 0`,            // left tick outer
+    `L ${-r} 0`,             // back to circle
+    `A ${r} ${r} 0 0 1 0 ${-r}`, // arc back to top
+    'Z',
+  ].join(' ');
+}
+
 // ── Component ────────────────────────────────────────────────
 
 export const WorldMap = memo(function WorldMap({
@@ -313,15 +335,36 @@ export const WorldMap = memo(function WorldMap({
             const isSelected = flightIdx === selectedIdx;
             if (isSelected) return null; // rendered separately below
             return (
-              <Line
-                key={`route-${i}`}
-                from={[f.depLon!, f.depLat!]}
-                to={[f.arrLon!, f.arrLat!]}
-                stroke="rgba(99,132,230,0.12)"
-                strokeWidth={0.6 / z}
-                strokeLinecap="round"
-                strokeDasharray="3 3"
-              />
+              <g key={`route-${i}`}>
+                <Line
+                  from={[f.depLon!, f.depLat!]}
+                  to={[f.arrLon!, f.arrLat!]}
+                  stroke="rgba(99,132,230,0.12)"
+                  strokeWidth={0.6 / z}
+                  strokeLinecap="round"
+                  strokeDasharray="3 3"
+                />
+                {/* Departure airport icon */}
+                <Marker coordinates={[f.depLon!, f.depLat!]}>
+                  <path
+                    d={airportPath(2.5 / z)}
+                    fill="none"
+                    stroke="rgba(99,132,230,0.4)"
+                    strokeWidth={0.4 / z}
+                    strokeLinejoin="round"
+                  />
+                </Marker>
+                {/* Arrival airport icon */}
+                <Marker coordinates={[f.arrLon!, f.arrLat!]}>
+                  <path
+                    d={airportPath(2.5 / z)}
+                    fill="none"
+                    stroke="rgba(99,132,230,0.4)"
+                    strokeWidth={0.4 / z}
+                    strokeLinejoin="round"
+                  />
+                </Marker>
+              </g>
             );
           })}
 
@@ -387,13 +430,13 @@ export const WorldMap = memo(function WorldMap({
 
                       {/* Shape by fixType */}
                       {isApt ? (
-                        <g>
-                          <circle cx={0} cy={0} r={3 / z} fill="none" stroke={color} strokeWidth={0.6 / z} />
-                          <rect x={-0.5 / z} y={-4.5 / z} width={1 / z} height={2 / z} fill={color} />
-                          <rect x={-0.5 / z} y={2.5 / z} width={1 / z} height={2 / z} fill={color} />
-                          <rect x={-4.5 / z} y={-0.5 / z} width={2 / z} height={1 / z} fill={color} />
-                          <rect x={2.5 / z} y={-0.5 / z} width={2 / z} height={1 / z} fill={color} />
-                        </g>
+                        <path
+                          d={airportPath(3 / z)}
+                          fill="none"
+                          stroke={color}
+                          strokeWidth={0.6 / z}
+                          strokeLinejoin="round"
+                        />
                       ) : isTocTod ? (
                         <polygon
                           points={`0,${-3 / z} ${3 / z},0 0,${3 / z} ${-3 / z},0`}
