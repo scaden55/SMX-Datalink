@@ -218,17 +218,27 @@ export const WorldMap = memo(function WorldMap({
     lastFocusRef.current = key;
 
     const [minLon, minLat, maxLon, maxLat] = focusBounds;
-    const centerLon = (minLon + maxLon) / 2;
-    const centerLat = (minLat + maxLat) / 2;
+    const routeCenterLon = (minLon + maxLon) / 2;
+    const routeCenterLat = (minLat + maxLat) / 2;
     const spanLon = Math.abs(maxLon - minLon) || 20;
     const spanLat = Math.abs(maxLat - minLat) || 10;
-    // Offset center to the right — the detail panel covers the left 40%,
-    // so the visible map center is shifted right by ~30% of the route span
-    const offsetLon = centerLon + spanLon * 0.4;
-    const zoomLon = 280 / spanLon;
+
+    // Calculate zoom to fit the route in the visible 60% of the screen
+    // (detail panel covers left 40%)
+    const zoomLon = 160 / spanLon;  // 280 * 0.6 ≈ 160 (only 60% width available)
     const zoomLat = 140 / spanLat;
-    const zoom = Math.min(zoomLon, zoomLat, 8) * 0.65;
-    setPosition({ coordinates: [offsetLon, centerLat], zoom: Math.max(zoom, 1.5) });
+    const zoom = Math.min(zoomLon, zoomLat, 8) * 0.7;
+    const finalZoom = Math.max(zoom, 1.5);
+
+    // The visible area center is not the map center — it's shifted right
+    // because the left 40% is covered by the panel.
+    // At a given zoom, the full map longitude span is roughly 360/zoom.
+    // The panel covers the left 40%, so the visible center is at 70% from left
+    // (midpoint of the right 60%). Offset = (0.7 - 0.5) * fullSpan = 0.2 * 360/zoom
+    const fullLonSpan = 360 / finalZoom;
+    const offsetLon = routeCenterLon - fullLonSpan * 0.2;
+
+    setPosition({ coordinates: [offsetLon, routeCenterLat], zoom: finalZoom });
   }, [focusBounds]);
 
   const routeFlights = useMemo(
