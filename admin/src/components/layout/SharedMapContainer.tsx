@@ -75,11 +75,41 @@ function MapBridge() {
     return map;
   }, [liveFlights]);
 
-  // Overview mode: just convert heartbeats
-  const overviewFlights = useMemo<FlightData[]>(
-    () => liveFlights.map(heartbeatToFlight),
-    [liveFlights],
-  );
+  // Overview mode: merge dispatch flights + heartbeats so all flights appear
+  const overviewFlights = useMemo<FlightData[]>(() => {
+    const flightMap = new Map<string, FlightData>();
+
+    // Start with dispatch flights (they have airport coords even without heartbeats)
+    for (const df of dispatchFlights) {
+      const hb = heartbeatMap.get(df.pilot.callsign);
+      flightMap.set(df.pilot.callsign, {
+        latitude: hb?.latitude ?? df.depLat ?? 0,
+        longitude: hb?.longitude ?? df.depLon ?? 0,
+        heading: hb?.heading ?? 0,
+        callsign: df.pilot.callsign,
+        flightNumber: df.bid.flightNumber,
+        aircraftType: df.bid.aircraftType ?? undefined,
+        depIcao: df.bid.depIcao,
+        arrIcao: df.bid.arrIcao,
+        depLat: df.depLat ?? undefined,
+        depLon: df.depLon ?? undefined,
+        arrLat: df.arrLat ?? undefined,
+        arrLon: df.arrLon ?? undefined,
+        altitude: hb?.altitude,
+        groundSpeed: hb?.groundSpeed,
+        phase: df.phase,
+      });
+    }
+
+    // Add any heartbeat-only flights not in dispatch data
+    for (const hb of liveFlights) {
+      if (!flightMap.has(hb.callsign)) {
+        flightMap.set(hb.callsign, heartbeatToFlight(hb));
+      }
+    }
+
+    return Array.from(flightMap.values());
+  }, [liveFlights, dispatchFlights, heartbeatMap]);
 
   // Dispatch mode: merge dispatch flights with live heartbeat data
   const dispatchMergedFlights = useMemo<FlightData[]>(() => {
@@ -153,6 +183,14 @@ function MapBridge() {
     );
   }
 
+  // Overview: when a flight is clicked, set selectedCallsign
+  const handleOverviewFlightClick = useCallback(
+    (flight: FlightData) => {
+      setSelectedCallsign(flight.callsign === selectedCallsign ? null : flight.callsign);
+    },
+    [selectedCallsign, setSelectedCallsign],
+  );
+
   // Overview mode
   return (
     <WorldMap
@@ -160,6 +198,7 @@ function MapBridge() {
       hubs={hubs}
       selectedCallsign={selectedCallsign}
       onSelectCallsign={setSelectedCallsign}
+      onFlightClick={handleOverviewFlightClick}
       mode="overview"
     />
   );

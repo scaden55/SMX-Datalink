@@ -1,9 +1,10 @@
-import { useState, useMemo, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useMemo, useCallback, lazy, Suspense } from 'react';
 import { useSharedMap, type DispatchMapFlight } from './SharedMapContext';
 import { FilterBar, type PhaseFilter } from '@/components/dispatch/FilterBar';
 import { FlightStrip } from '@/components/dispatch/FlightStrip';
 import { FloatingFlightCard } from '@/components/dispatch/FloatingFlightCard';
+
+const FlightDetailPanel = lazy(() => import('@/components/dispatch/FlightDetailPanel'));
 
 // ── Component ────────────────────────────────────────────────
 
@@ -12,7 +13,6 @@ interface DispatchOverlayProps {
 }
 
 export function DispatchOverlay({ active }: DispatchOverlayProps) {
-  const navigate = useNavigate();
   const {
     dispatchFlights,
     liveFlights,
@@ -23,6 +23,7 @@ export function DispatchOverlay({ active }: DispatchOverlayProps) {
 
   const [phaseFilter, setPhaseFilter] = useState<PhaseFilter>('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [detailBidId, setDetailBidId] = useState<number | null>(null);
 
   /* ── Build DispatchMapFlight[] from context data ─────────────── */
 
@@ -158,10 +159,24 @@ export function DispatchOverlay({ active }: DispatchOverlayProps) {
           <FloatingFlightCard
             flight={selectedFlight}
             position={clickPosition}
-            onOpenDetails={() => navigate(`/dispatch/${selectedFlight.bidId}`)}
+            onOpenDetails={() => {
+              setDetailBidId(selectedFlight.bidId);
+              setSelectedBidId(null);
+            }}
             onClose={() => setSelectedBidId(null)}
           />
         </div>
+      )}
+
+      {/* Slide-in detail panel */}
+      {active && (
+        <Suspense fallback={null}>
+          <FlightDetailPanel
+            bidId={detailBidId!}
+            open={detailBidId != null}
+            onClose={() => setDetailBidId(null)}
+          />
+        </Suspense>
       )}
 
       {/* Flight strip */}

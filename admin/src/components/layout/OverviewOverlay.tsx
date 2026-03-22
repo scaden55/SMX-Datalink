@@ -1,6 +1,8 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/stores/authStore';
+import { useSharedMap } from './SharedMapContext';
+import { OverviewFlightCard } from './OverviewFlightCard';
 import type {
   FinancialKPIs,
   MaintenanceSummary,
@@ -37,6 +39,47 @@ interface OverviewOverlayProps {
 
 export function OverviewOverlay({ active }: OverviewOverlayProps) {
   const firstName = useAuthStore((s) => s.user?.firstName);
+  const { selectedCallsign, setSelectedCallsign, dispatchFlights, liveFlights } = useSharedMap();
+
+  // Find the selected flight data for the overview card
+  const selectedFlightData = useMemo(() => {
+    if (!selectedCallsign) return null;
+
+    // Try dispatch flights first
+    const df = dispatchFlights.find((f) => f.pilot.callsign === selectedCallsign);
+    if (df) {
+      // Find matching heartbeat for live telemetry
+      const hb = liveFlights.find((h) => h.callsign === selectedCallsign);
+      return {
+        callsign: df.pilot.callsign,
+        flightNumber: df.bid.flightNumber,
+        depIcao: df.bid.depIcao,
+        arrIcao: df.bid.arrIcao,
+        aircraftType: df.bid.aircraftType ?? undefined,
+        phase: df.phase,
+        altitude: hb?.altitude,
+        groundSpeed: hb?.groundSpeed,
+        bidId: df.bid.id,
+      };
+    }
+
+    // Fall back to heartbeat-only
+    const hb = liveFlights.find((h) => h.callsign === selectedCallsign);
+    if (hb) {
+      return {
+        callsign: hb.callsign,
+        flightNumber: hb.flightNumber,
+        depIcao: hb.depIcao,
+        arrIcao: hb.arrIcao,
+        aircraftType: hb.aircraftType,
+        altitude: hb.altitude,
+        groundSpeed: hb.groundSpeed,
+        bidId: hb.bidId,
+      };
+    }
+
+    return null;
+  }, [selectedCallsign, dispatchFlights, liveFlights]);
 
   // ── Data state ──────────────────────────────────────────
   const [kpis, setKpis] = useState<FinancialKPIs>(EMPTY_KPIS);
@@ -115,6 +158,14 @@ export function OverviewOverlay({ active }: OverviewOverlayProps) {
           <SchedulesCard />
         </div>
       </div>
+
+      {/* ── Overview flight info card (bottom-left) ── */}
+      {active && selectedFlightData && (
+        <OverviewFlightCard
+          {...selectedFlightData}
+          onClose={() => setSelectedCallsign(null)}
+        />
+      )}
     </div>
   );
 }
