@@ -442,8 +442,11 @@ export const WorldMap = memo(function WorldMap({
             // Skip flights with no position data
             if (lat === 0 && lon === 0) return null;
 
-            const isPlanning = mode === 'dispatch' && f.phase === 'planning';
-            const isCompleted = mode === 'dispatch' && f.phase === 'completed';
+            const isPlanning = f.phase === 'planning';
+            const isCompleted = f.phase === 'completed';
+
+            // Don't render markers for planning or completed flights
+            if (isPlanning || isCompleted) return null;
 
             return (
               <Marker key={`ac-${i}`} coordinates={[lon, lat]}>
@@ -481,21 +484,13 @@ export const WorldMap = memo(function WorldMap({
                       strokeWidth={0.5 / z}
                     />
                   )}
-                  {isPlanning || isCompleted ? (
-                    <circle
-                      r={iconSize * 0.25}
-                      fill={markerColor}
-                      opacity={isCompleted ? 0.6 : 0.85}
-                    />
-                  ) : (
-                    <image
-                      href={buildUri(f.aircraftType, isSelected ? '#ffffff' : markerColor, isSelected ? '_sel' : '')}
-                      width={iconSize}
-                      height={iconSize}
-                      x={-iconSize / 2}
-                      y={-iconSize / 2}
-                    />
-                  )}
+                  <image
+                    href={buildUri(f.aircraftType, isSelected ? '#ffffff' : markerColor, isSelected ? '_sel' : '')}
+                    width={iconSize}
+                    height={iconSize}
+                    x={-iconSize / 2}
+                    y={-iconSize / 2}
+                  />
                 </g>
               </Marker>
             );
