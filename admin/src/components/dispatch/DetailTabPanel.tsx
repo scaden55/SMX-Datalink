@@ -59,8 +59,8 @@ export default function DetailTabPanel({
         ))}
       </div>
 
-      {/* Tab content */}
-      <div className="flex-1 p-3 overflow-y-auto">
+      {/* Tab content — scrollable */}
+      <div className="flex-1 min-h-0 p-3 overflow-y-auto">
         {activeTab === 'weather' && <WeatherTab flight={flight} />}
         {activeTab === 'notam' && <NotamTab />}
         {activeTab === 'airport' && <AirportInfoTab flight={flight} />}
