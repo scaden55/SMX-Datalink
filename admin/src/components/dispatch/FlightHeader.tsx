@@ -1,78 +1,115 @@
 import type { DispatchFlight } from '@acars/shared';
 import { useDispatchEdit } from './DispatchEditContext';
 
-function formatMinutes(min: number): string {
-  const h = Math.floor(min / 60);
-  const m = min % 60;
-  return `${h}h ${String(m).padStart(2, '0')}m`;
+/** Format a Unix epoch string (seconds) to "DD - HH:MMz" */
+function formatDayTime(epoch: string | undefined): string {
+  if (!epoch) return '---';
+  const ts = Number(epoch);
+  if (isNaN(ts)) return '---';
+  const d = new Date(ts * 1000);
+  const dd = String(d.getUTCDate()).padStart(2, '0');
+  const hh = String(d.getUTCHours()).padStart(2, '0');
+  const mm = String(d.getUTCMinutes()).padStart(2, '0');
+  return `${dd} - ${hh}:${mm}z`;
 }
 
-function computeEta(etd: string, flightTimeMin: number): string {
-  if (!etd) return '--:--';
-  // etd could be "HH:MM" or a full datetime
-  const parts = etd.split(':');
-  if (parts.length < 2) return '--:--';
-  const depMinutes = parseInt(parts[0], 10) * 60 + parseInt(parts[1], 10);
-  const arrMinutes = (depMinutes + flightTimeMin) % (24 * 60);
-  const h = Math.floor(arrMinutes / 60);
-  const m = arrMinutes % 60;
-  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}z`;
+function formatDateHeader(): string {
+  const d = new Date();
+  const days = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+  const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+  return `${days[d.getUTCDay()]} ${String(d.getUTCDate()).padStart(2, '0')} ${months[d.getUTCMonth()]} ${d.getUTCFullYear()}`;
 }
 
 export default function FlightHeader({ flight }: { flight: DispatchFlight }) {
-  const { editableFields, onFieldChange, canEdit, releasedFields } = useDispatchEdit();
+  const { editableFields } = useDispatchEdit();
 
+  const origin = flight.bid.depIcao ?? 'XXXX';
+  const destination = flight.bid.arrIcao ?? 'XXXX';
+  const flightId = flight.bid.flightNumber || '---';
+
+  const depIata = origin.length === 4 ? origin.slice(1) : '---';
+  const arrIata = destination.length === 4 ? destination.slice(1) : '---';
+
+  const depLabel = flight.bid.depName || origin;
+  const arrLabel = flight.bid.arrName || destination;
+
+  // Scheduled times
+  const schedDep = formatDayTime(flight.ofpJson?.times?.schedDep);
+  const schedArr = formatDayTime(flight.ofpJson?.times?.schedArr);
+
+  // ETD from editable fields or flight plan data
   const etd = (editableFields.etd as string) || flight.flightPlanData?.etd || flight.bid.depTime || '';
-  const flightTimeMin = flight.bid.flightTimeMin ?? 0;
-  const ete = formatMinutes(flightTimeMin);
-  const eta = computeEta(etd, flightTimeMin);
 
-  const isReleased = (key: string) => releasedFields?.includes(key);
-  const releasedClass = (key: string) =>
-    isReleased(key) ? 'border-l-2 border-l-amber-400 bg-amber-400/5 pl-1' : '';
+  // ETE
+  const enrouteMin = flight.ofpJson?.times?.estEnroute ?? flight.bid.flightTimeMin ?? 0;
+  const ete = enrouteMin > 0
+    ? `${String(Math.floor(enrouteMin / 60)).padStart(2, '0')}h ${String(enrouteMin % 60).padStart(2, '0')}m`
+    : '---';
+
+  // Pilot callsign
+  const pilotCallsign = flight.pilot.callsign || '---';
 
   return (
-    <div className="bg-[var(--surface-1)] border border-[var(--surface-3)] rounded-md px-3 py-2.5">
-      {/* Row 1: Airport names */}
-      <div className="flex justify-between mb-1">
-        <span className="text-[9px] text-[var(--text-muted)]">{flight.bid.depName}</span>
-        <span className="text-[9px] text-[var(--text-muted)]">{flight.bid.arrName}</span>
+    <div className="border-b border-[var(--surface-3)] px-4 py-2.5">
+      {/* Row 1: Airport names + date */}
+      <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 mb-1">
+        <span className="text-[11px] text-[var(--text-muted)]/70 truncate">{depLabel}</span>
+        <span className="text-[11px] text-[var(--text-muted)]/70 uppercase tracking-wider shrink-0">{formatDateHeader()}</span>
+        <span className="text-[11px] text-[var(--text-muted)]/70 truncate text-right">{arrLabel}</span>
       </div>
 
-      {/* Row 2: ICAO codes with flight number centered */}
-      <div className="flex items-center gap-2">
-        <span className="font-mono text-[18px] font-bold text-[var(--text-primary)]">
-          {flight.bid.depIcao}
+      {/* Row 2: ICAO codes + route center line */}
+      <div className="grid grid-cols-[auto_1fr_auto] items-center gap-0">
+        {/* Origin */}
+        <span className="shrink-0">
+          <span className="text-[20px] font-mono font-semibold text-[var(--text-primary)] tabular-nums">{origin}</span>
+          <span className="text-[13px] font-mono text-[var(--text-muted)]/70 ml-1">/ {depIata}</span>
         </span>
-        <div className="flex-1 flex items-center gap-1.5">
-          <div className="flex-1 border-t border-dashed border-[var(--surface-3)]" />
-          <span className="font-mono text-[10px] text-[var(--accent-blue-bright)] whitespace-nowrap">
-            {flight.bid.flightNumber}
+
+        {/* Center: dotted line + flight number */}
+        <div className="flex items-center mx-2 min-w-0">
+          <div className="flex-1 border-b border-dotted border-[var(--surface-3)]/40" />
+          <span className="px-2 shrink-0 text-center text-[15px] font-mono font-medium text-[var(--text-primary)] tabular-nums">
+            {flightId}
           </span>
-          <div className="flex-1 border-t border-dashed border-[var(--surface-3)]" />
+          <div className="flex-1 border-b border-dotted border-[var(--surface-3)]/40" />
         </div>
-        <span className="font-mono text-[18px] font-bold text-[var(--text-primary)]">
-          {flight.bid.arrIcao}
+
+        {/* Destination */}
+        <span className="shrink-0 text-right">
+          <span className="text-[20px] font-mono font-semibold text-[var(--text-primary)] tabular-nums">{destination}</span>
+          <span className="text-[13px] font-mono text-[var(--text-muted)]/70 ml-1">/ {arrIata}</span>
         </span>
       </div>
 
-      {/* Row 3: ETD / ETE / ETA */}
-      <div className="flex items-center justify-between mt-1.5">
-        <div className={`${releasedClass('depTime')}`}>
-          {canEdit ? (
-            <input
-              type="text"
-              value={etd}
-              onChange={(e) => onFieldChange('depTime', e.target.value)}
-              className="bg-[var(--surface-2)] border border-[var(--surface-3)] rounded px-1.5 py-0.5 font-mono text-[9px] tabular-nums text-[var(--text-primary)] w-16"
-              placeholder="HH:MM"
-            />
-          ) : (
-            <span className="font-mono text-[9px] tabular-nums text-[var(--text-primary)]">{etd}z</span>
+      {/* Row 3: STD left | pilot callsign center | STA right */}
+      <div className="grid grid-cols-[1fr_auto_1fr] items-center mt-1.5">
+        <div className="flex items-center gap-2 text-[11px]">
+          <span className="text-[var(--text-muted)]/70">STD <span className="text-[var(--text-primary)]/80 font-mono tabular-nums">{schedDep}</span></span>
+          {etd && (
+            <>
+              <span className="text-[var(--surface-3)]/60">|</span>
+              <span className="text-[var(--text-muted)]/70">
+                ETD <span className="text-[var(--text-primary)]/80 font-mono tabular-nums">{etd}z</span>
+              </span>
+            </>
           )}
         </div>
-        <span className="font-mono text-[9px] tabular-nums text-[var(--accent)]">{ete}</span>
-        <span className="font-mono text-[9px] tabular-nums text-[var(--text-primary)]">{eta}</span>
+        <span className="text-center shrink-0 px-3 text-[12px] font-mono font-medium text-blue-400/80 tabular-nums uppercase">
+          {pilotCallsign}
+        </span>
+        <div className="flex items-center justify-end gap-2 text-[11px]">
+          <span className="text-[var(--text-muted)]/70">STA <span className="text-[var(--text-primary)]/80 font-mono tabular-nums">{schedArr}</span></span>
+        </div>
+      </div>
+
+      {/* Row 4: ETE center */}
+      <div className="grid grid-cols-[1fr_auto_1fr] items-center mt-1">
+        <div />
+        <span className="text-center shrink-0 px-3 text-[12px] text-[var(--text-primary)]/80">
+          ETE <span className="font-mono tabular-nums font-semibold">{ete}</span>
+        </span>
+        <div />
       </div>
     </div>
   );

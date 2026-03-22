@@ -1,56 +1,116 @@
 import type { DispatchFlight } from '@acars/shared';
+import { useDispatchEdit } from './DispatchEditContext';
 
-function formatWeight(val: number | string | undefined): string {
-  const num = typeof val === 'string' ? parseFloat(val) : val;
-  if (!num || isNaN(num)) return '—';
-  return `${(num / 1000).toFixed(1)}K`;
+function fmt(val: number | string | undefined | null): string {
+  if (val === null || val === undefined || val === '') return '---';
+  const n = typeof val === 'string' ? Number(val) : val;
+  if (isNaN(n)) return '---';
+  return Math.round(n).toLocaleString();
 }
 
-function weightColor(est: number, max: number): string {
-  if (!est || !max) return 'text-[var(--text-primary)]';
-  const ratio = est / max;
-  if (ratio > 1) return 'text-red-400';
-  if (ratio > 0.95) return 'text-amber-400';
-  return 'text-emerald-400';
-}
-
-function WeightCell({
-  label,
-  estValue,
-  maxValue,
-}: {
+interface FieldProps {
   label: string;
-  estValue: number | string | undefined;
-  maxValue: number | undefined;
-}) {
-  const est = typeof estValue === 'string' ? parseFloat(estValue) : (estValue ?? 0);
-  const max = maxValue ?? 0;
+  value: string;
+  sub?: string;
+  warn?: boolean;
+  editable?: boolean;
+  fieldKey?: string;
+  onFieldChange?: (key: string, val: string | number) => void;
+  highlighted?: boolean;
+}
+
+function Field({ label, value, sub, warn, editable, fieldKey, onFieldChange, highlighted }: FieldProps) {
+  const boxCls = `bg-[var(--surface-2)] border border-[var(--surface-3)] text-[12px] tabular-nums rounded-md px-1.5 py-0.5 w-full truncate outline-none focus:border-blue-400 ${warn ? 'text-amber-400' : 'text-[var(--text-primary)]'}`;
 
   return (
-    <div className="text-center">
-      <div className="text-[8px] text-[var(--text-muted)] uppercase tracking-wider mb-0.5">{label}</div>
-      <div className={`font-mono text-[13px] font-semibold tabular-nums ${weightColor(est, max)}`}>
-        {formatWeight(estValue)}
-      </div>
-      {max > 0 && (
-        <div className="font-mono text-[9px] tabular-nums text-[var(--text-muted)]">
-          / {formatWeight(max)}
+    <div className={`flex flex-col items-start min-w-0 flex-1 ${highlighted ? 'border-l-2 border-amber-400 bg-amber-400/5 pl-1' : ''}`}>
+      <span className="text-[9px] font-medium uppercase tracking-[0.06em] text-[var(--text-muted)]/70">{label}</span>
+      {editable && fieldKey && onFieldChange ? (
+        <input
+          type="text"
+          value={value}
+          onChange={(e) => onFieldChange(fieldKey, e.target.value)}
+          className={boxCls}
+        />
+      ) : (
+        <div className={boxCls}>
+          {value}
         </div>
       )}
+      {sub && <span className="text-[9px] text-[var(--text-muted)]/50">{sub}</span>}
     </div>
   );
 }
 
 export default function WeightsSummary({ flight }: { flight: DispatchFlight }) {
-  const fpd = flight.flightPlanData;
-  const weights = flight.ofpJson?.weights;
+  const w = flight.ofpJson?.weights;
+  const f = flight.ofpJson?.fuel;
+  const { canEditFuel, editableFields, onFieldChange, releasedFields } = useDispatchEdit();
+  const hl = (key: string) => releasedFields?.includes(key) ?? false;
+
+  // Contingency fuel: default 5% of planned burn
+  const contingencyRaw = editableFields.fuelContingency ?? f?.contingencyLbs;
+  const contingencyPct = f?.burnLbs ? Math.round(((Number(contingencyRaw) || 0) / f.burnLbs) * 100) : null;
 
   return (
-    <div className="bg-[var(--surface-1)] border border-[var(--surface-3)] rounded-md px-3 py-2.5">
-      <div className="grid grid-cols-3 gap-3">
-        <WeightCell label="ZFW" estValue={fpd?.estZfw} maxValue={weights?.maxZfw} />
-        <WeightCell label="TOW" estValue={fpd?.estTow} maxValue={weights?.maxTow} />
-        <WeightCell label="LDW" estValue={fpd?.estLdw} maxValue={weights?.maxLdw} />
+    <div className="border-b border-[var(--surface-3)] px-3 py-1.5 space-y-1.5">
+      {/* Row 1: Weights */}
+      <div className="flex items-start gap-1.5">
+        <Field
+          label="ZFW"
+          value={`${fmt(w?.estZfw)} lbs`}
+          sub={w?.maxZfw ? `Max ${fmt(w.maxZfw)} lbs` : undefined}
+        />
+        <Field
+          label="Plan Gate"
+          value={String(editableFields.fuelTotal ?? f?.totalLbs ?? '---')}
+          sub={w?.maxTow ? `Max ${fmt(w.maxTow)} lbs` : undefined}
+          editable={canEditFuel}
+          fieldKey="fuelTotal"
+          onFieldChange={onFieldChange}
+          highlighted={hl('fuelTotal')}
+        />
+        <Field
+          label="Taxi Out"
+          value={String(editableFields.fuelTaxi ?? f?.taxiLbs ?? '---')}
+          sub={f?.taxiLbs ? `${fmt(f.taxiLbs)} lbs` : undefined}
+          editable={canEditFuel}
+          fieldKey="fuelTaxi"
+          onFieldChange={onFieldChange}
+          highlighted={hl('fuelTaxi')}
+        />
+        <Field
+          label="CF"
+          value={String(editableFields.fuelContingency ?? f?.contingencyLbs ?? '---')}
+          sub={contingencyPct !== null ? `${contingencyPct}% of burn` : undefined}
+          editable={canEditFuel}
+          fieldKey="fuelContingency"
+          onFieldChange={onFieldChange}
+          highlighted={hl('fuelContingency')}
+        />
+        <Field
+          label="Extra"
+          value={String(editableFields.fuelExtra ?? f?.extraLbs ?? '---')}
+          sub="pilot disc."
+          editable={canEditFuel}
+          fieldKey="fuelExtra"
+          onFieldChange={onFieldChange}
+          highlighted={hl('fuelExtra')}
+        />
+        <Field
+          label="ACF"
+          value={`${fmt(editableFields.fuelAlternate ?? f?.alternateLbs)} lbs`}
+          sub={w?.estLdw ? `LDW ${fmt(w.estLdw)} lbs` : undefined}
+        />
+        <Field
+          label="REMF"
+          value={String(editableFields.fuelReserve ?? f?.reserveLbs ?? '---')}
+          sub="FAA reserve"
+          editable={canEditFuel}
+          fieldKey="fuelReserve"
+          onFieldChange={onFieldChange}
+          highlighted={hl('fuelReserve')}
+        />
       </div>
     </div>
   );

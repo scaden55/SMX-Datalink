@@ -5,13 +5,14 @@ import { useSocketStore } from '@/stores/socketStore';
 import { useSocket } from '@/hooks/useSocket';
 import { useDispatchEdit, DispatchEditProvider } from './DispatchEditContext';
 import FlightHeader from './FlightHeader';
+import ScenarioBar from './ScenarioBar';
+import DispatchActionBar from './DispatchActionBar';
+import NavProcedureRow from './NavProcedureRow';
 import AircraftSection from './AircraftSection';
 import WeightsSummary from './WeightsSummary';
-import FuelAccordion from './FuelAccordion';
-import RouteAccordion from './RouteAccordion';
-import CargoAccordion from './CargoAccordion';
-import MelAccordion from './MelAccordion';
-import RemarksAccordion from './RemarksAccordion';
+import CargoSummaryRow from './CargoSummaryRow';
+import RemarksSection from './RemarksSection';
+import FlightDetailSections from './FlightDetailSections';
 import DetailTabPanel from './DetailTabPanel';
 import { api } from '@/lib/api';
 import { toast } from '@/stores/toastStore';
@@ -34,7 +35,7 @@ function PhaseBadge({ phase }: { phase: string }) {
 /* ── Top Bar ────────────────────────────────────────────────────── */
 
 function PanelTopBar({ flight, onClose }: { flight: DispatchFlight; onClose: () => void }) {
-  const { saving, lastSavedAt, hasUnreleasedChanges, releasing, releaseDispatch } = useDispatchEdit();
+  const { saving, lastSavedAt } = useDispatchEdit();
 
   return (
     <div className="flex items-center gap-3 px-4 py-2 bg-[var(--surface-1)] border-b border-[var(--surface-3)]">
@@ -51,27 +52,15 @@ function PanelTopBar({ flight, onClose }: { flight: DispatchFlight; onClose: () 
         {flight.bid.flightNumber}
       </span>
       <span className="font-mono text-[11px] text-[var(--text-secondary)]">
-        {flight.bid.depIcao} → {flight.bid.arrIcao}
+        {flight.bid.depIcao} &rarr; {flight.bid.arrIcao}
       </span>
 
       <PhaseBadge phase={flight.phase} />
-
-      <span className="text-[10px] text-[var(--text-muted)]">
-        {flight.bid.aircraftType} · {flight.pilot.name}
-      </span>
 
       <div className="flex-1" />
 
       {saving && <span className="text-[9px] text-amber-400">Saving...</span>}
       {!saving && lastSavedAt && <span className="text-[9px] text-emerald-400">Saved</span>}
-
-      <button
-        onClick={releaseDispatch}
-        disabled={!hasUnreleasedChanges || releasing}
-        className="px-3 py-1 text-[10px] font-semibold rounded bg-[var(--accent)] text-white disabled:opacity-40"
-      >
-        {releasing ? 'Releasing...' : 'Release Changes'}
-      </button>
     </div>
   );
 }
@@ -104,15 +93,16 @@ function PanelInner({
       <PanelTopBar flight={flight} onClose={onClose} />
 
       {/* Scrollable detail content */}
-      <div className="flex-1 overflow-y-auto p-3 space-y-2" style={{ minHeight: 0 }}>
+      <div className="flex-1 overflow-y-auto" style={{ minHeight: 0 }}>
         <FlightHeader flight={flight} />
+        <ScenarioBar flight={flight} />
+        <DispatchActionBar flight={flight} cargo={cargo} />
+        <NavProcedureRow flight={flight} />
         <AircraftSection flight={flight} />
         <WeightsSummary flight={flight} />
-        <FuelAccordion flight={flight} />
-        <RouteAccordion flight={flight} />
-        <CargoAccordion cargo={cargo} />
-        <MelAccordion flight={flight} />
-        <RemarksAccordion flight={flight} />
+        <CargoSummaryRow cargo={cargo} />
+        <RemarksSection flight={flight} />
+        <FlightDetailSections flight={flight} />
       </div>
 
       {/* Bottom tabs */}

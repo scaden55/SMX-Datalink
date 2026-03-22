@@ -1,104 +1,74 @@
 import type { DispatchFlight } from '@acars/shared';
 import { useDispatchEdit } from './DispatchEditContext';
 
-const labelClass = 'text-[8px] text-[var(--text-muted)] uppercase tracking-wider';
-const valueClass = 'font-mono text-[11px] tabular-nums text-[var(--text-primary)]';
-const inputClass =
-  'bg-[var(--surface-2)] border border-[var(--surface-3)] rounded px-1.5 py-0.5 font-mono text-[11px] tabular-nums text-[var(--text-primary)] w-full';
-
-function EditableCell({
-  label,
-  fieldKey,
-  value,
-  canEdit,
-  onFieldChange,
-  isReleased,
-}: {
-  label: string;
-  fieldKey: string;
-  value: string;
-  canEdit: boolean;
-  onFieldChange: (key: string, value: string | number) => void;
-  isReleased: boolean;
-}) {
-  const releasedClass = isReleased ? 'border-l-2 border-l-amber-400 bg-amber-400/5 pl-1' : '';
-  return (
-    <div className={releasedClass}>
-      <div className={labelClass}>{label}</div>
-      {canEdit ? (
-        <input
-          type="text"
-          value={value}
-          onChange={(e) => onFieldChange(fieldKey, e.target.value)}
-          className={inputClass}
-        />
-      ) : (
-        <div className={valueClass}>{value || '—'}</div>
-      )}
-    </div>
-  );
-}
-
 export default function AircraftSection({ flight }: { flight: DispatchFlight }) {
-  const { editableFields, onFieldChange, canEdit, releasedFields } = useDispatchEdit();
+  const { canEdit, editableFields, onFieldChange, releasedFields } = useDispatchEdit();
+  const hl = (key: string) => releasedFields?.includes(key) ?? false;
 
-  const isReleased = (key: string) => releasedFields?.includes(key) ?? false;
-
+  const tailNumber = flight.bid.aircraftRegistration ?? '---';
+  const acType = flight.bid.aircraftType ?? '---';
   const cruiseFL = (editableFields.cruiseFL as string) ?? flight.flightPlanData?.cruiseFL ?? '';
-  const costIndex = (editableFields.costIndex as string) ?? flight.flightPlanData?.costIndex ?? '';
-  const depRunway = (editableFields.depRunway as string) ?? flight.flightPlanData?.depRunway ?? '';
-  const arrRunway = (editableFields.arrRunway as string) ?? flight.flightPlanData?.arrRunway ?? '';
-  const paxCount = (editableFields.paxCount as string) ?? flight.flightPlanData?.paxCount ?? '';
+  const costIdx = (editableFields.costIndex as string) ?? flight.flightPlanData?.costIndex ?? '';
+  const aobFL = (editableFields.aobFL as string) ?? flight.flightPlanData?.aobFL ?? '';
+  const pic = (editableFields.pic as string) ?? flight.flightPlanData?.pic ?? flight.pilot.name ?? '';
+
+  const inputCls = "bg-[var(--surface-2)] border border-[var(--surface-3)] text-[12px] tabular-nums text-[var(--text-primary)] rounded-md px-1.5 py-0.5 outline-none focus:border-blue-400 truncate w-full";
 
   return (
-    <div className="bg-[var(--surface-1)] border border-[var(--surface-3)] rounded-md px-3 py-2.5">
-      <div className="grid grid-cols-3 gap-x-3 gap-y-2">
-        {/* Aircraft Type — always read-only */}
-        <div>
-          <div className={labelClass}>Aircraft Type</div>
-          <div className={valueClass}>{flight.bid.aircraftType || '—'}</div>
+    <div className="px-3 py-1.5">
+      <div className="flex items-end gap-1.5">
+        {/* Aircraft -- read-only */}
+        <div className="flex flex-col min-w-0 flex-[2]">
+          <span className="text-[9px] text-[var(--text-muted)]/70 mb-0.5">Aircraft</span>
+          <input type="text" value={`${tailNumber} (${acType})`} readOnly className={inputCls} />
         </div>
-
-        <EditableCell
-          label="Cruise FL"
-          fieldKey="cruiseFL"
-          value={cruiseFL}
-          canEdit={canEdit}
-          onFieldChange={onFieldChange}
-          isReleased={isReleased('cruiseFL')}
-        />
-        <EditableCell
-          label="Cost Index"
-          fieldKey="costIndex"
-          value={String(costIndex)}
-          canEdit={canEdit}
-          onFieldChange={(k, v) => onFieldChange(k, Number(v) || 0)}
-          isReleased={isReleased('costIndex')}
-        />
-        <EditableCell
-          label="Dep Runway"
-          fieldKey="depRunway"
-          value={depRunway}
-          canEdit={canEdit}
-          onFieldChange={onFieldChange}
-          isReleased={isReleased('depRunway')}
-        />
-        <EditableCell
-          label="Arr Runway"
-          fieldKey="arrRunway"
-          value={arrRunway}
-          canEdit={canEdit}
-          onFieldChange={onFieldChange}
-          isReleased={isReleased('arrRunway')}
-        />
-        <EditableCell
-          label="PAX Count"
-          fieldKey="paxCount"
-          value={String(paxCount)}
-          canEdit={canEdit}
-          onFieldChange={(k, v) => onFieldChange(k, Number(v) || 0)}
-          isReleased={isReleased('paxCount')}
-        />
+        {/* Cruise -- editable */}
+        <div className={`flex flex-col min-w-0 flex-1 ${hl('cruiseFL') ? 'border-l-2 border-amber-400 bg-amber-400/5 pl-1' : ''}`}>
+          <span className="text-[9px] text-[var(--text-muted)]/70 mb-0.5">Cruise</span>
+          <input
+            type="text"
+            value={cruiseFL}
+            onChange={(e) => onFieldChange('cruiseFL', e.target.value.toUpperCase())}
+            readOnly={!canEdit}
+            placeholder="FL350"
+            className={inputCls}
+          />
+        </div>
+        {/* CI Value -- editable */}
+        <div className={`flex flex-col min-w-0 flex-1 ${hl('costIndex') ? 'border-l-2 border-amber-400 bg-amber-400/5 pl-1' : ''}`}>
+          <span className="text-[9px] text-[var(--text-muted)]/70 mb-0.5">CI Value</span>
+          <input
+            type="text"
+            value={costIdx}
+            onChange={(e) => onFieldChange('costIndex', e.target.value)}
+            readOnly={!canEdit}
+            placeholder="0"
+            className={inputCls}
+          />
+        </div>
+        {/* AOB FL -- editable */}
+        <div className={`flex flex-col min-w-0 flex-1 ${hl('aobFL') ? 'border-l-2 border-amber-400 bg-amber-400/5 pl-1' : ''}`}>
+          <span className="text-[9px] text-[var(--text-muted)]/70 mb-0.5">AOB FL</span>
+          <input
+            type="text"
+            value={aobFL}
+            onChange={(e) => onFieldChange('aobFL', e.target.value.toUpperCase())}
+            readOnly={!canEdit}
+            placeholder="FL350"
+            className={inputCls}
+          />
+        </div>
+        {/* Pilot in Command -- editable */}
+        <div className={`flex flex-col min-w-0 flex-[2] ${hl('pic') ? 'border-l-2 border-amber-400 bg-amber-400/5 pl-1' : ''}`}>
+          <span className="text-[9px] text-[var(--text-muted)]/70 mb-0.5">Pilot in Command</span>
+          <input
+            type="text"
+            value={pic || '---'}
+            onChange={(e) => onFieldChange('pic', e.target.value)}
+            readOnly={!canEdit}
+            className={inputCls}
+          />
+        </div>
       </div>
     </div>
   );
