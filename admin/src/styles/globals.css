@@ -360,3 +360,27 @@ input[type="number"] {
   transform: translateY(0);
   opacity: 1;
 }
+
+/* ── Dispatch field highlighting (released changes) ────── */
+.field-released {
+  border-left: 2px solid var(--accent-amber, #f59e0b);
+  background: rgba(245, 158, 11, 0.05);
+  padding-left: 4px;
+}
+
+/* ── Dispatch input styling ────────────────────────────── */
+.dispatch-input {
+  background: var(--surface-2);
+  border: 1px solid var(--surface-3);
+  color: var(--text-primary);
+  font-family: ui-monospace, Cascadia Mono, Consolas, monospace;
+  font-variant-numeric: tabular-nums;
+  font-size: 12px;
+  border-radius: 4px;
+  padding: 2px 6px;
+  outline: none;
+  transition: border-color 150ms ease-out;
+}
+.dispatch-input:focus {
+  border-color: var(--accent);
+}

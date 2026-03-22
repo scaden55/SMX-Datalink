@@ -18,8 +18,8 @@ function formatTimestamp(ts: string): string {
 
 function TypeBadge({ type }: { type: string }) {
   const styles: Record<string, string> = {
-    DISPATCHER: 'bg-sky-500/15 text-sky-400 border-sky-400/20',
-    DISPATCH: 'bg-sky-500/15 text-sky-400 border-sky-400/20',
+    DISPATCHER: 'bg-blue-500/15 text-blue-400 border-blue-400/20',
+    DISPATCH: 'bg-blue-500/15 text-blue-400 border-blue-400/20',
     PILOT: 'bg-emerald-500/15 text-emerald-400 border-emerald-400/20',
     SYSTEM: 'bg-amber-500/15 text-amber-400 border-amber-500/20',
   };
@@ -150,7 +150,7 @@ export default function AcarsTab({ bidId, messages: initialMessages }: AcarsTabP
         <button
           onClick={handleSend}
           disabled={!input.trim() || sending}
-          className="px-3 py-1.5 rounded text-[12px] font-medium bg-sky-500/10 text-sky-400 border border-sky-400/20 hover:bg-sky-500/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          className="px-3 py-1.5 rounded text-[12px] font-medium bg-blue-500/10 text-blue-400 border border-blue-500/20 hover:bg-blue-500/20 transition-colors duration-150 focus:outline-none focus-visible:ring-1 focus-visible:ring-[var(--accent)] disabled:opacity-40 disabled:cursor-not-allowed"
         >
           Send
         </button>

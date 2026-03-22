@@ -48,7 +48,7 @@ export default function DetailTabPanel({
           <button
             key={tab.id}
             onClick={() => onTabChange(tab.id)}
-            className={`whitespace-nowrap px-3 py-2 text-[12px] uppercase tracking-[0.08em] font-medium transition-colors ${
+            className={`whitespace-nowrap px-3 py-2 text-[12px] uppercase tracking-[0.08em] font-medium transition-colors duration-150 focus:outline-none focus-visible:ring-1 focus-visible:ring-[var(--accent)] ${
               activeTab === tab.id
                 ? 'text-[var(--accent-blue-bright)] border-b-2 border-[var(--accent)]'
                 : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'

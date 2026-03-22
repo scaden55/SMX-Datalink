@@ -46,7 +46,7 @@ export default function ScenarioBar({ flight }: { flight: DispatchFlight }) {
       </div>
 
       {/* Right: Edit button */}
-      <button className="text-[11px] font-medium text-blue-400/70 hover:text-blue-400 transition-colors duration-150 shrink-0 ml-auto">
+      <button className="text-[11px] font-medium text-blue-400/70 hover:text-blue-400 transition-colors duration-150 focus:outline-none focus-visible:ring-1 focus-visible:ring-[var(--accent)] rounded shrink-0 ml-auto">
         Edit
       </button>
     </div>

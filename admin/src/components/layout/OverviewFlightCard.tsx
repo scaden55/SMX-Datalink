@@ -93,6 +93,7 @@ export function OverviewFlightCard({
             fontSize: 16,
             lineHeight: 1,
             padding: '0 2px',
+            transition: 'color 150ms ease-out',
           }}
         >
           ×
@@ -195,6 +196,7 @@ export function OverviewFlightCard({
               fontSize: 12,
               fontWeight: 600,
               padding: 0,
+              transition: 'color 150ms ease-out',
             }}
           >
             View in Dispatch →

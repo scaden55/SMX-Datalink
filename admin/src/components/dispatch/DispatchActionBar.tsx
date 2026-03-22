@@ -46,7 +46,7 @@ export default function DispatchActionBar({ flight, cargo }: DispatchActionBarPr
           <button
             onClick={releaseDispatch}
             disabled={!hasUnreleasedChanges || releasing}
-            className={`flex items-center gap-1.5 px-3 py-0.5 text-[11px] font-semibold rounded border transition-colors duration-150 ${
+            className={`flex items-center gap-1.5 px-3 py-0.5 text-[11px] font-semibold rounded border transition-colors duration-150 focus:outline-none focus-visible:ring-1 focus-visible:ring-[var(--accent)] ${
               hasUnreleasedChanges && !releasing
                 ? 'bg-blue-500/10 text-blue-400 border-blue-500/30 hover:bg-blue-500/20 hover:text-blue-300'
                 : 'bg-[var(--surface-2)] text-[var(--text-muted)] border-[var(--surface-3)] cursor-not-allowed opacity-50'

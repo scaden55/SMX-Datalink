@@ -31,7 +31,7 @@ function TelemetryCell({ label, value }: { label: string; value: string }) {
       </div>
       <div style={{
         fontSize: '10px',
-        color: 'var(--text-tertiary, #76798b)',
+        color: 'var(--text-tertiary)',
         textTransform: 'uppercase',
         letterSpacing: '0.05em',
       }}>
@@ -69,13 +69,13 @@ export function FloatingFlightCard({ flight, position, onOpenDetails, onClose }:
         left,
         top,
         zIndex: 50,
-        background: 'var(--surface-1, #0e1125)',
-        border: '1px solid var(--border-secondary, rgba(48, 61, 104, 0.12))',
+        background: 'var(--surface-1)',
+        border: '1px solid var(--border-secondary)',
         borderRadius: '8px',
         padding: '12px',
         minWidth: '220px',
         maxWidth: `${cardWidth}px`,
-        color: 'var(--text-primary, #ffffff)',
+        color: 'var(--text-primary)',
         fontSize: '13px',
         lineHeight: 1.4,
         pointerEvents: 'auto',
@@ -87,8 +87,9 @@ export function FloatingFlightCard({ flight, position, onOpenDetails, onClose }:
         onClick={onClose}
         style={{
           position: 'absolute', top: 6, right: 8,
-          background: 'none', border: 'none', color: 'var(--text-tertiary, #76798b)',
+          background: 'none', border: 'none', color: 'var(--text-tertiary)',
           cursor: 'pointer', fontSize: '14px', lineHeight: 1,
+          transition: 'color 150ms ease-out',
         }}
       >
         ×
@@ -99,7 +100,7 @@ export function FloatingFlightCard({ flight, position, onOpenDetails, onClose }:
         <span style={{
           fontFamily: 'ui-monospace, Cascadia Mono, Consolas, monospace',
           fontWeight: 700, fontSize: '14px',
-          color: 'var(--accent-blue-bright, #9BB3F0)',
+          color: 'var(--accent-blue-bright)',
         }}>
           {flight.callsign}
         </span>
@@ -116,13 +117,13 @@ export function FloatingFlightCard({ flight, position, onOpenDetails, onClose }:
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
         <span style={{
           fontFamily: 'ui-monospace, Cascadia Mono, Consolas, monospace',
-          fontSize: '13px', fontWeight: 500, color: 'var(--text-primary, #ffffff)',
+          fontSize: '13px', fontWeight: 500, color: 'var(--text-primary)',
         }}>
           {flight.depIcao} → {flight.arrIcao}
         </span>
         <span style={{
           fontFamily: 'ui-monospace, Cascadia Mono, Consolas, monospace',
-          fontSize: '11px', color: 'var(--text-tertiary, #76798b)',
+          fontSize: '11px', color: 'var(--text-tertiary)',
         }}>
           {flight.aircraftType || '---'}
         </span>
@@ -132,8 +133,8 @@ export function FloatingFlightCard({ flight, position, onOpenDetails, onClose }:
       {flight.phase === 'flying' && (
         <div style={{
           display: 'flex', gap: '4px', padding: '6px 0',
-          borderTop: '1px solid var(--border-primary, rgba(48, 61, 104, 0.08))',
-          borderBottom: '1px solid var(--border-primary, rgba(48, 61, 104, 0.08))',
+          borderTop: '1px solid var(--border-primary)',
+          borderBottom: '1px solid var(--border-primary)',
           marginBottom: '8px',
         }}>
           <TelemetryCell label="ALT" value={alt} />
@@ -144,7 +145,7 @@ export function FloatingFlightCard({ flight, position, onOpenDetails, onClose }:
 
       {/* Pilot info */}
       {flight.pilot && (
-        <div style={{ fontSize: '12px', color: 'var(--text-secondary, #b6b8c5)', marginBottom: '10px' }}>
+        <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '10px' }}>
           {flight.pilot.name}
         </div>
       )}
@@ -152,15 +153,16 @@ export function FloatingFlightCard({ flight, position, onOpenDetails, onClose }:
       {/* Action buttons */}
       <div style={{
         display: 'flex', gap: '6px',
-        borderTop: '1px solid var(--border-primary, rgba(48, 61, 104, 0.08))',
+        borderTop: '1px solid var(--border-primary)',
         paddingTop: '10px',
       }}>
         <button
           onClick={onOpenDetails}
           style={{
             flex: 1, padding: '6px 10px', borderRadius: '6px', border: 'none',
-            background: 'var(--accent-blue, #6384E6)', color: '#ffffff',
+            background: 'var(--accent-blue)', color: '#ffffff',
             fontSize: '12px', fontWeight: 600, cursor: 'pointer',
+            transition: 'filter 150ms ease-out',
           }}
         >
           Open Details
@@ -169,9 +171,10 @@ export function FloatingFlightCard({ flight, position, onOpenDetails, onClose }:
           onClick={onOpenDetails}
           style={{
             flex: 1, padding: '6px 10px', borderRadius: '6px',
-            border: '1px solid var(--border-secondary, rgba(48, 61, 104, 0.12))',
-            background: 'var(--surface-3, #131728)', color: 'var(--text-secondary, #b6b8c5)',
+            border: '1px solid var(--border-secondary)',
+            background: 'var(--surface-3)', color: 'var(--text-secondary)',
             fontSize: '12px', fontWeight: 500, cursor: 'pointer',
+            transition: 'border-color 150ms ease-out, color 150ms ease-out',
           }}
         >
           ACARS
