@@ -92,8 +92,8 @@ function PanelInner({
     <>
       <PanelTopBar flight={flight} onClose={onClose} />
 
-      {/* Scrollable detail content */}
-      <div className="flex-1 overflow-y-auto" style={{ minHeight: 0 }}>
+      {/* Flight details — fixed, not scrollable */}
+      <div className="shrink-0">
         <FlightHeader flight={flight} />
         <ScenarioBar flight={flight} />
         <DispatchActionBar flight={flight} cargo={cargo} />
@@ -105,8 +105,8 @@ function PanelInner({
         <FlightDetailSections flight={flight} />
       </div>
 
-      {/* Bottom tabs */}
-      <div className="border-t border-[var(--surface-3)]" style={{ height: '40%', minHeight: 200 }}>
+      {/* Tabs — fill remaining space, tab content scrollable */}
+      <div className="flex-1 min-h-0 border-t border-[var(--surface-3)]">
         <DetailTabPanel
           activeTab={activeTab}
           onTabChange={setActiveTab}
