@@ -37,7 +37,7 @@ export function OverviewFlightCard({
   onClose,
 }: OverviewFlightCardProps) {
   const navigate = useNavigate();
-  const { setDetailBidId } = useSharedMap();
+  const { setDetailBidId, setSelectedBidId } = useSharedMap();
 
   const phaseColor = phase ? PHASE_COLORS[phase] : undefined;
 
@@ -49,10 +49,18 @@ export function OverviewFlightCard({
     groundSpeed != null ? `${Math.round(groundSpeed)} kt` : null;
 
   const handleViewDispatch = () => {
+    // Dismiss the overview card immediately
+    onClose();
+    // Set selectedBidId so the flight stays highlighted on the map during transition
     if (bidId != null) {
-      setDetailBidId(bidId);
+      setSelectedBidId(bidId);
     }
+    // Navigate — overview cards slide out, dispatch overlays slide in
     navigate('/dispatch');
+    // Open the detail panel after the transition animation completes
+    if (bidId != null) {
+      setTimeout(() => setDetailBidId(bidId), 400);
+    }
   };
 
   return (
