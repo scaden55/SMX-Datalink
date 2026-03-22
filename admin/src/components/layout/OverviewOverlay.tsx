@@ -42,14 +42,14 @@ export function OverviewOverlay({ active }: OverviewOverlayProps) {
   const { selectedCallsign, setSelectedCallsign, dispatchFlights, liveFlights } = useSharedMap();
 
   // Find the selected flight data for the overview card
+  // selectedCallsign is now flightNumber (unique per flight)
   const selectedFlightData = useMemo(() => {
     if (!selectedCallsign) return null;
 
-    // Try dispatch flights first
-    const df = dispatchFlights.find((f) => f.pilot.callsign === selectedCallsign);
+    // Match by flight number
+    const df = dispatchFlights.find((f) => f.bid.flightNumber === selectedCallsign);
     if (df) {
-      // Find matching heartbeat for live telemetry
-      const hb = liveFlights.find((h) => h.callsign === selectedCallsign);
+      const hb = liveFlights.find((h) => h.callsign === df.pilot.callsign);
       return {
         callsign: df.pilot.callsign,
         flightNumber: df.bid.flightNumber,
@@ -63,8 +63,8 @@ export function OverviewOverlay({ active }: OverviewOverlayProps) {
       };
     }
 
-    // Fall back to heartbeat-only
-    const hb = liveFlights.find((h) => h.callsign === selectedCallsign);
+    // Fall back to heartbeat-only (callsign match)
+    const hb = liveFlights.find((h) => h.callsign === selectedCallsign || h.flightNumber === selectedCallsign);
     if (hb) {
       return {
         callsign: hb.callsign,

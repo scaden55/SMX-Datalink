@@ -89,7 +89,8 @@ function MapBridge() {
         latitude: hb?.latitude ?? df.depLat ?? 0,
         longitude: hb?.longitude ?? df.depLon ?? 0,
         heading: hb?.heading ?? 0,
-        callsign: df.pilot.callsign,
+        // Use flightNumber as callsign for unique selection (same pilot may have multiple flights)
+        callsign: df.bid.flightNumber,
         flightNumber: df.bid.flightNumber,
         aircraftType: df.bid.aircraftType ?? undefined,
         depIcao: df.bid.depIcao,
@@ -152,9 +153,9 @@ function MapBridge() {
         return df.ofpJson.steps.map((s) => ({ lat: s.lat, lon: s.lon, altitudeFt: s.altitudeFt, fixType: s.fixType }));
       }
     }
-    // Try overview mode (selectedCallsign)
+    // Try overview mode (selectedCallsign is now flightNumber)
     if (selectedCallsign) {
-      const df = dispatchFlights.find((f) => f.pilot.callsign === selectedCallsign);
+      const df = dispatchFlights.find((f) => f.bid.flightNumber === selectedCallsign);
       if (df?.ofpJson?.steps?.length) {
         return df.ofpJson.steps.map((s) => ({ lat: s.lat, lon: s.lon, altitudeFt: s.altitudeFt, fixType: s.fixType }));
       }
