@@ -13,9 +13,11 @@
   .text-body { font-size: var(--text-body-size); }
   .text-caption { font-size: var(--text-caption-size); }
   .text-data { font-size: var(--text-data-size); }
+  .data-xs { font-size: var(--text-data-xs-size); }
   .text-data-sm { font-size: var(--text-data-sm-size); }
   .text-data-lg { font-size: var(--text-data-lg-size); }
   .font-display { font-family: var(--font-display); }
+  .page-header { padding: 12px 24px; gap: 10px; }
 }
 
 @layer base {

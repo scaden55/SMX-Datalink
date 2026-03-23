@@ -264,7 +264,7 @@ export function AircraftDetailPage() {
           }}
         >
           <Trash2 size={13} />
-          <span>Delete</span>
+          <span className="text-caption">Delete</span>
         </button>
       </motion.div>
 
