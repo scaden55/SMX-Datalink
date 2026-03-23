@@ -14,10 +14,18 @@
   .text-caption { font-size: var(--text-caption-size); }
   .text-data { font-size: var(--text-data-size); }
   .data-xs { font-size: var(--text-data-xs-size); }
+  .data-sm { font-size: var(--text-data-sm-size); }
+  .data-md { font-size: var(--text-data-md-size); }
+  .data-lg { font-size: var(--text-data-lg-size); }
   .text-data-sm { font-size: var(--text-data-sm-size); }
   .text-data-lg { font-size: var(--text-data-lg-size); }
   .font-display { font-family: var(--font-display); }
   .page-header { padding: 12px 24px; gap: 10px; }
+}
+
+/* ── Print utilities ───────────────────────────────────── */
+@media print {
+  .no-print { display: none !important; }
 }
 
 @layer base {
@@ -430,4 +438,30 @@ input[type="number"] {
 @keyframes vatsim-pulse {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.4; }
+}
+
+/* ── Simulation slider ─────────────────────────────────── */
+.sim-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--surface-2);
+  outline: none;
+}
+.sim-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--accent);
+  cursor: pointer;
+}
+.sim-slider::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: none;
+  cursor: pointer;
 }
