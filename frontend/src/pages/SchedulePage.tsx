@@ -86,7 +86,7 @@ function formatDuration(min: number): string {
 
 function formatTimeRemaining(expiresAt: string | null): string | null {
   if (!expiresAt) return null;
-  const ms = new Date(expiresAt + 'Z').getTime() - Date.now();
+  const ms = new Date(expiresAt).getTime() - Date.now();
   if (ms <= 0) return 'Expired';
   const hours = Math.floor(ms / 3600000);
   const mins = Math.floor((ms % 3600000) / 60000);

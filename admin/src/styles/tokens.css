@@ -40,6 +40,9 @@
   --accent-cyan-bg: rgba(34, 211, 238, 0.12);
   --accent-cyan-ring: rgba(34, 211, 238, 0.25);
 
+  /* ── Tints ────────────────────────────────────────────── */
+  --tint-subtle: rgba(255, 255, 255, 0.05);
+
   /* ── Border System ────────────────────────────────────── */
   --border-primary: rgba(48, 61, 104, 0.08);
   --border-secondary: rgba(48, 61, 104, 0.12);
@@ -59,7 +62,7 @@
   /* ── Typography ───────────────────────────────────────── */
   --font-sans: 'Inter Variable', 'Inter', system-ui, -apple-system, sans-serif;
   --font-display: 'Lufga', system-ui, -apple-system, sans-serif;
-  --font-mono: ui-monospace, 'Cascadia Mono', 'Segoe UI Mono', 'Liberation Mono', Menlo, Monaco, Consolas, monospace;
+  --font-mono: ui-monospace, 'Cascadia Mono', Consolas, monospace;
 
   --text-display-size: 24px;
   --text-heading-size: 17px;
@@ -84,10 +87,10 @@
   --space-16: 64px;
 
   /* ── Border Radius ────────────────────────────────────── */
-  --radius-sm: 4px;
-  --radius-md: 6px;
-  --radius-lg: 8px;
-  --radius-xl: 12px;
+  --radius-sm: 0;
+  --radius-md: 0;
+  --radius-lg: 0;
+  --radius-xl: 0;
   --radius-full: 9999px;
 
   /* ── Animation ────────────────────────────────────────── */

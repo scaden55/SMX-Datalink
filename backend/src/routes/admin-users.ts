@@ -159,7 +159,11 @@ export function adminUsersRouter(): Router {
   // POST /api/admin/users/:id/impersonate
   router.post('/admin/users/:id/impersonate', authMiddleware, adminMiddleware, (req, res) => {
     try {
-      const result = userAdminService.impersonate(parseInt(req.params.id as string), req.user!.userId);
+      const targetId = parseInt(req.params.id as string);
+      const target = userAdminService.findById(targetId);
+      if (!target) { res.status(404).json({ error: 'User not found' }); return; }
+      if (target.role === 'admin') { res.status(403).json({ error: 'Cannot impersonate another admin' }); return; }
+      const result = userAdminService.impersonate(targetId, req.user!.userId);
       if (!result) { res.status(404).json({ error: 'User not found' }); return; }
       res.json(result);
     } catch (err) {

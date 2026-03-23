@@ -7,7 +7,7 @@ import type { MaintenanceSummary } from '@/types/dashboard';
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex items-center gap-2 mt-1">
-      <span className="text-[10px] font-semibold uppercase tracking-widest text-[var(--text-quaternary)]">
+      <span className="text-[10px] font-medium uppercase tracking-widest text-[var(--text-quaternary)] font-display">
         {children}
       </span>
       <div className="flex-1 h-px bg-[var(--divider)]" />
@@ -53,7 +53,7 @@ function CheckProgress({ label, registration, hoursRemaining, pctRemaining }: {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-1.5">
           <span className="font-mono text-[11px] text-[var(--text-secondary)]">{registration}</span>
-          <span className="text-[10px] text-[var(--text-quaternary)]">{label}</span>
+          <span className="text-[10px] text-[var(--text-quaternary)]" style={{ fontFamily: 'var(--font-display)' }}>{label}</span>
         </div>
         <span className="font-mono text-[10px] tabular-nums" style={{ color: textColor }}>
           {hoursLabel} rem
@@ -91,7 +91,7 @@ function EngineRow({ engine }: { engine: EngineData }) {
     <div className="flex items-center justify-between py-[2px]">
       <div className="flex items-center gap-1.5 min-w-0">
         <span className="font-mono text-[11px] text-[var(--text-secondary)]">{engine.registration}</span>
-        <span className="text-[9px] text-[var(--text-quaternary)]">{engine.position}</span>
+        <span className="text-[10px] text-[var(--text-quaternary)]">{engine.position}</span>
       </div>
       <div className="flex items-center gap-3">
         <div className="text-right">
@@ -159,12 +159,15 @@ export const MaintenanceCard = memo(function MaintenanceCard({ data }: Maintenan
   const healthPct = totalAircraft > 0 ? Math.round((fleet.airworthy / totalAircraft) * 100) : 0;
 
   return (
-    <div className="rounded-lg border border-[var(--border-primary)] p-3 flex flex-col gap-2">
+    <div className="flex flex-col gap-2">
       {/* ── Header ─────────────────────────────────────────── */}
       <div className="flex items-center justify-between">
-        <h3 className="text-[13px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">
-          Maintenance
-        </h3>
+        <div className="flex items-center gap-2">
+          <h3 className="text-display font-display" style={{ fontSize: 22, fontWeight: 500, color: 'var(--text-primary)', lineHeight: 1 }}>
+            Maintenance
+          </h3>
+          <span className="font-mono text-[8px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded" style={{ background: 'rgba(245,158,11,0.15)', color: '#f59e0b' }}>Sample</span>
+        </div>
         <Heart
           size={16}
           fill={healthPct >= 80 ? 'var(--accent-emerald)' : healthPct >= 60 ? 'var(--accent-amber)' : 'var(--accent-red)'}
@@ -172,15 +175,15 @@ export const MaintenanceCard = memo(function MaintenanceCard({ data }: Maintenan
         />
       </div>
 
-      {/* ── Fleet Health Summary ────────────────────────────── */}
-      <SectionLabel>Fleet Health</SectionLabel>
+      {/* ── Fleet Utilization ────────────────────────────── */}
+      <SectionLabel>Fleet Utilization</SectionLabel>
 
       <div className="grid grid-cols-4 gap-2">
         {[
           { value: fleet.airworthy, label: 'Airworthy', color: 'var(--accent-emerald)' },
-          { value: fleet.melDispatch, label: 'MEL', color: 'var(--accent-amber)' },
+          { value: fleet.melDispatch, label: 'Deferred', color: 'var(--accent-amber)' },
           { value: fleet.inCheck, label: 'In Check', color: 'var(--accent-cyan)' },
-          { value: fleet.aog, label: 'AOG', color: 'var(--accent-red)' },
+          { value: fleet.aog, label: 'Grounded', color: 'var(--accent-red)' },
         ].map((s) => (
           <div key={s.label} className="text-center">
             <div className="font-mono text-[16px] font-bold tabular-nums leading-none" style={{ color: s.color }}>
@@ -188,7 +191,7 @@ export const MaintenanceCard = memo(function MaintenanceCard({ data }: Maintenan
             </div>
             <div className="flex items-center justify-center gap-1 mt-1">
               <StatusDot color={s.color} />
-              <span className="text-[9px] text-[var(--text-quaternary)]">{s.label}</span>
+              <span className="text-[10px] text-[var(--text-quaternary)]" style={{ fontFamily: 'var(--font-display)' }}>{s.label}</span>
             </div>
           </div>
         ))}
@@ -209,15 +212,15 @@ export const MaintenanceCard = memo(function MaintenanceCard({ data }: Maintenan
         ))}
       </div>
 
-      {/* ── Engine & APU Tracking ──────────────────────────── */}
-      <SectionLabel>Engine &amp; APU Tracking</SectionLabel>
+      {/* ── Components Tracking ──────────────────────────── */}
+      <SectionLabel>Components Tracking</SectionLabel>
 
       <div>
         <div className="flex items-center justify-between mb-1">
-          <span className="text-[9px] text-[var(--text-quaternary)]">Tail / Position</span>
+          <span className="text-[10px] text-[var(--text-quaternary)]" style={{ fontFamily: 'var(--font-display)' }}>Tail / Position</span>
           <div className="flex items-center gap-3">
-            <span className="text-[9px] text-[var(--text-quaternary)]">TSO / CSO</span>
-            <span className="text-[9px] text-[var(--text-quaternary)]" style={{ minWidth: 52, textAlign: 'right' }}>Next Shop</span>
+            <span className="text-[10px] text-[var(--text-quaternary)]" style={{ fontFamily: 'var(--font-display)' }}>TSO / CSO</span>
+            <span className="text-[10px] text-[var(--text-quaternary)]" style={{ minWidth: 52, textAlign: 'right', fontFamily: 'var(--font-display)' }}>Next Shop</span>
           </div>
         </div>
         <div className="flex flex-col">
@@ -232,25 +235,25 @@ export const MaintenanceCard = memo(function MaintenanceCard({ data }: Maintenan
 
       <div className="grid grid-cols-2 gap-x-4 gap-y-1">
         <div className="flex items-center justify-between">
-          <span className="text-[11px] text-[var(--text-tertiary)]">Open ADs</span>
+          <span className="text-[11px] text-[var(--text-tertiary)]" style={{ fontFamily: 'var(--font-display)' }}>Open ADs</span>
           <span className="font-mono text-[12px] font-medium tabular-nums text-[var(--text-secondary)]">
             {adCompliance.openADs}
           </span>
         </div>
         <div className="flex items-center justify-between">
-          <span className="text-[11px] text-[var(--text-tertiary)]">Open SBs</span>
+          <span className="text-[11px] text-[var(--text-tertiary)]" style={{ fontFamily: 'var(--font-display)' }}>Open SBs</span>
           <span className="font-mono text-[12px] font-medium tabular-nums text-[var(--text-secondary)]">
             {adCompliance.openSBs}
           </span>
         </div>
         <div className="flex items-center justify-between">
-          <span className="text-[11px] text-[var(--text-tertiary)]">Approaching</span>
+          <span className="text-[11px] text-[var(--text-tertiary)]" style={{ fontFamily: 'var(--font-display)' }}>Approaching</span>
           <span className={`font-mono text-[12px] font-medium tabular-nums ${adCompliance.approachingDeadline > 0 ? 'text-[var(--accent-amber)]' : 'text-[var(--text-secondary)]'}`}>
             {adCompliance.approachingDeadline}
           </span>
         </div>
         <div className="flex items-center justify-between">
-          <span className="text-[11px] text-[var(--text-tertiary)]">Past Due</span>
+          <span className="text-[11px] text-[var(--text-tertiary)]" style={{ fontFamily: 'var(--font-display)' }}>Past Due</span>
           <span className={`font-mono text-[12px] font-bold tabular-nums ${adCompliance.pastDue > 0 ? 'text-[var(--accent-red)]' : 'text-[var(--accent-emerald)]'}`}>
             {adCompliance.pastDue}
           </span>

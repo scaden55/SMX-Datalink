@@ -161,18 +161,18 @@ const typeBadgeStyle = (type: string): React.CSSProperties => {
   };
   if (type === 'charter') return {
     padding: '2px 8px', borderRadius: 3, fontSize: 10, fontWeight: 600, fontFamily: 'inherit',
-    background: 'rgba(251,191,36,0.13)', color: 'var(--accent-amber)',
+    background: 'var(--surface-2)', color: 'var(--text-tertiary)',
   };
   return {
     padding: '2px 8px', borderRadius: 3, fontSize: 10, fontWeight: 600, fontFamily: 'inherit',
-    background: 'rgba(96,165,250,0.13)', color: '#60a5fa',
+    background: 'var(--surface-2)', color: 'var(--text-tertiary)',
   };
 };
 
 const statusBadgeStyle = (active: boolean): React.CSSProperties => {
   if (active) return {
     padding: '2px 8px', borderRadius: 3, fontSize: 10, fontWeight: 600, fontFamily: 'inherit',
-    background: 'rgba(74,222,128,0.13)', color: 'var(--accent-emerald)',
+    background: 'var(--surface-2)', color: 'var(--text-secondary)',
   };
   return {
     padding: '2px 8px', borderRadius: 3, fontSize: 10, fontWeight: 600, fontFamily: 'inherit',

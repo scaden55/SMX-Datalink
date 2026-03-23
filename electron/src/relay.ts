@@ -68,6 +68,11 @@ export class VpsRelay {
     this.config.token = token;
     if (this.socket) {
       (this.socket as any).auth = { token };
+      // Force reconnect so the new token is used for authentication
+      if (this.socket.connected) {
+        this.socket.disconnect();
+        this.socket.connect();
+      }
     }
   }
 

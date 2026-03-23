@@ -14,7 +14,6 @@ import RouteAccordion from '@/components/dispatch/RouteAccordion';
 import CargoAccordion from '@/components/dispatch/CargoAccordion';
 import MelAccordion from '@/components/dispatch/MelAccordion';
 import RemarksAccordion from '@/components/dispatch/RemarksAccordion';
-import RouteMapPanel from '@/components/dispatch/RouteMapPanel';
 import DetailTabPanel from '@/components/dispatch/DetailTabPanel';
 import { api } from '@/lib/api';
 import { toast } from '@/stores/toastStore';
@@ -157,7 +156,6 @@ function FlightDetailsInner({
 
         {/* Right column: Map + tabs */}
         <div className="flex-1 flex flex-col">
-          <RouteMapPanel flight={flight} track={track} telemetry={telemetry} />
           <DetailTabPanel
             activeTab={activeTab}
             onTabChange={setActiveTab}
@@ -256,7 +254,8 @@ export default function FlightDetailsPage() {
     }
   });
 
-  useSocket<AcarsMessagePayload>('acars:message', (msg) => {
+  useSocket<AcarsMessagePayload & { bidId?: number }>('acars:message', (msg) => {
+    if (bidIdNum && msg.bidId && msg.bidId !== bidIdNum) return;
     setMessages((prev) => [...prev, msg]);
   });
 

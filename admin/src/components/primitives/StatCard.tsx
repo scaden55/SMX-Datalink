@@ -25,20 +25,20 @@ export function StatCard({ icon: Icon, label, value, accent = 'blue', trend, cla
   return (
     <div
       className={cn(
-        'rounded-lg border border-[var(--border-primary)] bg-[var(--surface-2)] p-4',
+        'rounded-lg border border-[var(--border-primary)] bg-[var(--surface-2)] px-3 py-2.5',
         className,
       )}
     >
       <div className="flex items-center gap-3">
-        <div className={cn('flex items-center justify-center w-9 h-9 rounded-lg', iconBg[accent])}>
-          <Icon size={18} />
+        <div className={cn('flex items-center justify-center w-8 h-8 rounded-lg', iconBg[accent])}>
+          <Icon size={16} />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-[12px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">
+          <p className="text-caption font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">
             {label}
           </p>
           <div className="flex items-baseline gap-2 mt-0.5">
-            <span className="text-xl font-mono font-bold text-[var(--text-primary)]">
+            <span className="data-lg font-mono font-bold text-[var(--text-primary)]">
               {value}
             </span>
             {trend && (

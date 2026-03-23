@@ -383,7 +383,7 @@ function RatmCatmBars({ ratmData, catmData, height = 80 }: { ratmData: number[];
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex items-center gap-2 mt-1">
-      <span className="text-[10px] font-semibold uppercase tracking-widest text-[var(--text-quaternary)]">
+      <span className="text-[10px] font-medium uppercase tracking-widest text-[var(--text-quaternary)] font-display">
         {children}
       </span>
       <div className="flex-1 h-px bg-[var(--divider)]" />
@@ -396,7 +396,7 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 function MetricRow({ label, value, color }: { label: string; value: string; color?: string }) {
   return (
     <div className="flex items-center justify-between py-[3px]">
-      <span className="text-[12px] text-[var(--text-tertiary)]">{label}</span>
+      <span className="text-[12px] text-[var(--text-tertiary)]" style={{ fontFamily: 'var(--font-display)' }}>{label}</span>
       <span className="font-mono text-[13px] font-medium tabular-nums" style={{ color: color ?? 'var(--text-primary)' }}>
         {value}
       </span>
@@ -410,7 +410,7 @@ function CostBar({ label, value, pct, color }: { label: string; value: string; p
   return (
     <div className="flex flex-col gap-1">
       <div className="flex items-center justify-between">
-        <span className="text-[11px] text-[var(--text-tertiary)]">{label}</span>
+        <span className="text-[11px] text-[var(--text-tertiary)]" style={{ fontFamily: 'var(--font-display)' }}>{label}</span>
         <span className="font-mono text-[11px] tabular-nums text-[var(--text-secondary)]">{value}</span>
       </div>
       <div className="h-[3px] rounded-full bg-[var(--border-primary)]">
@@ -514,12 +514,15 @@ export const FinanceCard = memo(function FinanceCard({ data, periodPnl }: Financ
   const runwayMonths = burnRate > 0 ? Math.floor(cashBalance / burnRate) : null;
 
   return (
-    <div className="rounded-lg border border-[var(--border-primary)] p-3 flex flex-col gap-2">
+    <div className="flex flex-col gap-2">
       {/* ── Header ─────────────────────────────────────────── */}
-      <div className="flex items-center justify-between">
-        <h3 className="text-[13px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">
-          Finance
-        </h3>
+      <div className="flex items-baseline justify-between">
+        <div className="flex items-center gap-2">
+          <h3 className="text-display font-display" style={{ fontSize: 22, fontWeight: 500, color: 'var(--text-primary)', lineHeight: 1 }}>
+            Finance
+          </h3>
+          {!latestPeriod && <span className="font-mono text-[8px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded" style={{ background: 'rgba(245,158,11,0.15)', color: '#f59e0b' }}>Sample</span>}
+        </div>
         <span className="text-[10px] text-[var(--text-quaternary)] font-mono tabular-nums">
           {latestPeriod?.periodKey ?? new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
         </span>
@@ -528,38 +531,38 @@ export const FinanceCard = memo(function FinanceCard({ data, periodPnl }: Financ
       {/* ── Balance headline + revenue/expenses + chart ─────── */}
       <div className="flex items-end justify-between">
         <div>
-          <span className="text-[10px] text-[var(--text-quaternary)]">Balance</span>
+          <span className="text-[10px] text-[var(--text-quaternary)]" style={{ fontFamily: 'var(--font-display)' }}>Balance</span>
           <div className="flex items-baseline gap-2">
             <span className="font-mono text-[18px] font-bold tabular-nums leading-tight text-[var(--text-primary)]">
-              ${Math.abs(cashBalance).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              ${Math.abs(cashBalance).toLocaleString('en-US', { maximumFractionDigits: 0 })}
             </span>
             {burnRate > 0 ? (
-              <span className="inline-flex items-center gap-0.5 text-[10px] font-mono tabular-nums text-[var(--accent-red)]">
+              <span className="inline-flex items-center gap-0.5 text-[10px] text-[var(--accent-red)]">
                 <TrendingDown size={10} />
-                {fmt(burnRate)}/mo
+                <span className="font-mono tabular-nums">{fmt(burnRate)}/mo</span>
               </span>
             ) : (
-              <span className="inline-flex items-center gap-0.5 text-[10px] font-mono tabular-nums text-[var(--accent-emerald)]">
+              <span className="inline-flex items-center gap-0.5 text-[10px] text-[var(--accent-emerald)]">
                 <TrendingUp size={10} />
-                Net positive
+                <span style={{ fontFamily: 'var(--font-display)' }}>Net positive</span>
               </span>
             )}
           </div>
         </div>
         <div className="grid gap-0.5" style={{ gridTemplateColumns: 'auto auto auto' }}>
-          <span className="text-[10px] text-[var(--text-tertiary)] self-center">Revenue</span>
+          <span className="text-[10px] text-[var(--text-tertiary)] self-center" style={{ fontFamily: 'var(--font-display)' }}>Revenue</span>
           <span className="font-mono text-[12px] font-medium tabular-nums text-[var(--accent-emerald)] self-center">
             {fmt(totalRevenue)}
           </span>
           <span className="self-center">
             {revenueDelta !== 0 && (
-              <span className={`inline-flex items-center gap-0.5 text-[9px] font-mono tabular-nums ${revenueDelta > 0 ? 'text-[var(--accent-emerald)]' : 'text-[var(--accent-red)]'}`}>
+              <span className={`inline-flex items-center gap-0.5 text-[10px] font-mono tabular-nums ${revenueDelta > 0 ? 'text-[var(--accent-emerald)]' : 'text-[var(--accent-red)]'}`}>
                 {revenueDelta > 0 ? <TrendingUp size={9} /> : <TrendingDown size={9} />}
                 {Math.abs(revenueDelta).toFixed(0)}%
               </span>
             )}
           </span>
-          <span className="text-[10px] text-[var(--text-tertiary)] self-center">Expenses</span>
+          <span className="text-[10px] text-[var(--text-tertiary)] self-center" style={{ fontFamily: 'var(--font-display)' }}>Expenses</span>
           <span className="font-mono text-[12px] font-medium tabular-nums text-[var(--accent-red)] self-center">
             {fmt(totalExpenses)}
           </span>
@@ -593,7 +596,7 @@ export const FinanceCard = memo(function FinanceCard({ data, periodPnl }: Financ
           <div className="font-mono text-[14px] font-bold tabular-nums text-[var(--accent-emerald)] leading-none">
             ${ratm.toFixed(2)}
           </div>
-          <span className="text-[9px] text-[var(--text-quaternary)]">RATM</span>
+          <span className="text-[10px] text-[var(--text-tertiary)]" style={{ fontFamily: 'var(--font-display)' }}>RATM</span>
         </div>
 
         {/* Center: Bar chart */}
@@ -606,7 +609,7 @@ export const FinanceCard = memo(function FinanceCard({ data, periodPnl }: Financ
           <div className="font-mono text-[14px] font-bold tabular-nums text-[var(--accent-blue)] leading-none">
             ${catm.toFixed(2)}
           </div>
-          <span className="text-[9px] text-[var(--text-quaternary)]">CATM</span>
+          <span className="text-[10px] text-[var(--text-tertiary)]" style={{ fontFamily: 'var(--font-display)' }}>CATM</span>
         </div>
       </div>
 

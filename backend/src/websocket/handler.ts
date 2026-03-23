@@ -446,6 +446,7 @@ export function setupWebSocket(
     });
 
     socket.on('livemap:subscribe', () => {
+      if (!socket.user) return;
       if (livemapSubscribers.size >= MAX_SUBSCRIBERS) return;
       livemapSubscribers.add(socket.id);
       socket.join(ROOM_LIVEMAP);

@@ -59,21 +59,21 @@ function FloatingWindowControls() {
         className="flex items-center justify-center w-12 h-full text-white/30 hover:bg-white/[0.06] hover:text-white/70 transition-colors"
         title="Minimize"
       >
-        <Minus className="w-4 h-4" weight="light" />
+        <Minus className="w-4 h-4" weight="regular" />
       </button>
       <button
         onClick={() => window.electronAPI!.windowMaximizeToggle()}
         className="flex items-center justify-center w-12 h-full text-white/30 hover:bg-white/[0.06] hover:text-white/70 transition-colors"
         title={maximized ? 'Restore' : 'Maximize'}
       >
-        {maximized ? <Copy className="w-3.5 h-3.5" weight="light" /> : <Square className="w-3.5 h-3.5" weight="light" />}
+        {maximized ? <Copy className="w-3.5 h-3.5" weight="regular" /> : <Square className="w-3.5 h-3.5" weight="regular" />}
       </button>
       <button
         onClick={() => window.electronAPI!.windowClose()}
         className="flex items-center justify-center w-12 h-full text-white/30 hover:bg-[#e81123] hover:text-white transition-colors"
         title="Close"
       >
-        <X className="w-4 h-4" weight="light" />
+        <X className="w-4 h-4" weight="regular" />
       </button>
     </div>
   );

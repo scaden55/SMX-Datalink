@@ -75,11 +75,11 @@ interface AdminUserListResponse {
 function roleBadge(role: UserRole) {
   switch (role) {
     case 'admin':
-      return { bg: 'var(--accent-red-bg)', color: 'var(--accent-red)', label: 'Admin' };
+      return { bg: 'var(--surface-2)', color: 'var(--text-secondary)', label: 'Admin' };
     case 'dispatcher':
-      return { bg: 'var(--accent-blue-bg)', color: 'var(--accent-blue-bright)', label: 'Dispatcher' };
+      return { bg: 'var(--surface-2)', color: 'var(--text-secondary)', label: 'Dispatcher' };
     case 'pilot':
-      return { bg: 'var(--accent-emerald-bg)', color: 'var(--accent-emerald)', label: 'Pilot' };
+      return { bg: 'var(--surface-2)', color: 'var(--text-tertiary)', label: 'Pilot' };
     default:
       return { bg: 'var(--surface-3)', color: 'var(--text-tertiary)', label: role };
   }
@@ -462,8 +462,8 @@ export function UsersPage() {
                           borderRadius: 3,
                           fontSize: 10,
                           fontWeight: 600,
-                          backgroundColor: isActive ? 'var(--accent-emerald-bg)' : 'var(--surface-3)',
-                          color: isActive ? 'var(--accent-emerald)' : 'var(--text-tertiary)',
+                          backgroundColor: isActive ? 'var(--surface-2)' : 'var(--surface-3)',
+                          color: isActive ? 'var(--text-secondary)' : 'var(--text-tertiary)',
                         }}
                       >
                         {isActive ? 'Active' : 'Inactive'}

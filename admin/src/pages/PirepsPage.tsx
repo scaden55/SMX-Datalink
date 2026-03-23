@@ -794,7 +794,7 @@ export function PirepsPage() {
             { label: 'Total PIREPs', value: total, color: 'var(--text-primary)' },
             { label: 'Pending', value: pendingCount, color: 'var(--accent-amber)' },
             { label: 'Approved', value: stats.approved, color: 'var(--text-primary)' },
-            { label: 'Rejected', value: stats.rejected, color: 'var(--accent-red)' },
+            { label: 'Rejected', value: stats.rejected, color: stats.rejected > 0 ? 'var(--accent-red)' : 'var(--text-secondary)' },
           ].map((stat) => (
             <motion.div
               key={stat.label}

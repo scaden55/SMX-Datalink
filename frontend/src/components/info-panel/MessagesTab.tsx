@@ -69,11 +69,9 @@ export function MessagesTab() {
     return () => { cancelled = true; };
   }, [bidId]);
 
-  // Subscribe to Socket.io room for this bid
+  // Listen for new messages (subscription is handled by DispatchPage)
   useEffect(() => {
     if (!socket || !bidId) return;
-
-    socket.emit('dispatch:subscribe', bidId);
 
     const handler = (msg: Message) => {
       setMessages((prev) => {
@@ -85,7 +83,6 @@ export function MessagesTab() {
     socket.on('acars:message', handler);
 
     return () => {
-      socket.emit('dispatch:unsubscribe', bidId);
       socket.off('acars:message', handler);
     };
   }, [socket, bidId]);

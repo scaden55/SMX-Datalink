@@ -12,7 +12,11 @@ export default defineConfig(({ mode }) => {
     resolve: {
       alias: {
         '@': path.resolve(__dirname, './src'),
+        '@aircraft-shapes': path.resolve(__dirname, '../assets/aircraft-shapes'),
       },
+    },
+    optimizeDeps: {
+      include: ['maplibre-gl', 'react-map-gl/maplibre'],
     },
     build: {
       outDir: 'dist',

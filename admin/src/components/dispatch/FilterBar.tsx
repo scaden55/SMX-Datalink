@@ -18,7 +18,7 @@ const badges: { key: Exclude<PhaseFilter, 'all'>; label: string; color: string; 
 
 export function FilterBar({ phaseCounts, activeFilter, onFilterChange, searchQuery, onSearchChange }: FilterBarProps) {
   return (
-    <div className="absolute top-3 left-3 right-3 z-[1000] flex items-center gap-2 bg-[var(--surface-1)]/90 border border-[var(--surface-3)] rounded-lg px-3 py-2">
+    <div className="absolute top-3 left-3 right-3 z-[1000] flex items-center gap-2 px-3 py-2">
       {/* Phase badges */}
       <div className="flex items-center gap-1.5">
         {badges.map(({ key, label, color, dotColor }) => {

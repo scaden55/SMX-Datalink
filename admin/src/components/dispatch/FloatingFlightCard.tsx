@@ -71,7 +71,7 @@ export function FloatingFlightCard({ flight, position, onOpenDetails, onClose }:
         zIndex: 50,
         background: 'var(--surface-1)',
         border: '1px solid var(--border-secondary)',
-        borderRadius: '8px',
+        borderRadius: 0,
         padding: '12px',
         minWidth: '220px',
         maxWidth: `${cardWidth}px`,
@@ -159,25 +159,13 @@ export function FloatingFlightCard({ flight, position, onOpenDetails, onClose }:
         <button
           onClick={onOpenDetails}
           style={{
-            flex: 1, padding: '6px 10px', borderRadius: '6px', border: 'none',
+            flex: 1, padding: '6px 10px', borderRadius: 0, border: 'none',
             background: 'var(--accent-blue)', color: '#ffffff',
             fontSize: '12px', fontWeight: 600, cursor: 'pointer',
             transition: 'filter 150ms ease-out',
           }}
         >
           Open Details
-        </button>
-        <button
-          onClick={onOpenDetails}
-          style={{
-            flex: 1, padding: '6px 10px', borderRadius: '6px',
-            border: '1px solid var(--border-secondary)',
-            background: 'var(--surface-3)', color: 'var(--text-secondary)',
-            fontSize: '12px', fontWeight: 500, cursor: 'pointer',
-            transition: 'border-color 150ms ease-out, color 150ms ease-out',
-          }}
-        >
-          ACARS
         </button>
       </div>
     </div>

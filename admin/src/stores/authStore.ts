@@ -20,6 +20,7 @@ interface AuthState {
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
   hydrate: () => Promise<void>;
+  setTokens: (accessToken: string, refreshToken: string) => void;
 }
 
 export const useAuthStore = create<AuthState>((set, get) => ({
@@ -50,6 +51,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   logout: () => {
     set({ accessToken: null, refreshToken: null, user: null, isAuthenticated: false });
     localStorage.removeItem('admin-auth');
+  },
+
+  setTokens: (accessToken, refreshToken) => {
+    set({ accessToken, refreshToken });
   },
 
   hydrate: async () => {

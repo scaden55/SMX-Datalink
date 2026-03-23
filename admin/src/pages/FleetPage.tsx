@@ -68,11 +68,11 @@ interface AircraftStats {
 function statusBadge(status: string) {
   switch (status) {
     case 'active':
-      return { bg: 'rgba(74, 222, 128, 0.12)', text: 'var(--accent-emerald)', label: 'Active' };
+      return { bg: 'var(--surface-2)', text: 'var(--text-secondary)', label: 'Active' };
     case 'maintenance':
       return { bg: 'rgba(251, 191, 36, 0.12)', text: 'var(--accent-amber)', label: 'Maintenance' };
     case 'stored':
-      return { bg: 'var(--accent-blue-bg)', text: 'var(--accent-blue-bright)', label: 'Stored' };
+      return { bg: 'var(--surface-2)', text: 'var(--text-tertiary)', label: 'Stored' };
     case 'retired':
       return { bg: 'var(--accent-red-bg)', text: 'var(--accent-red)', label: 'Retired' };
     default:
@@ -508,7 +508,7 @@ export function FleetPage() {
       {/* Header */}
       <motion.div
         className="flex flex-col"
-        style={{ padding: '16px 24px', gap: 16 }}
+        style={{ padding: '16px 24px 12px', gap: 12 }}
         variants={fadeUp}
         initial="hidden"
         animate="visible"
@@ -646,7 +646,7 @@ export function FleetPage() {
                   onClick={() => navigate(`/fleet/${ac.id}`)}
                 >
                   {/* Registration + status + action menu */}
-                  <div className="flex items-center" style={{ padding: '12px 16px', gap: 8, position: 'relative' }}>
+                  <div className="flex items-center" style={{ padding: '10px 16px', gap: 8, position: 'relative' }}>
                     <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-primary)' }}>{ac.registration}</span>
                     <div className="flex-1" />
                     <span
@@ -734,7 +734,7 @@ export function FleetPage() {
                   </div>
 
                   {/* Aircraft name + type + class */}
-                  <div className="flex flex-col" style={{ padding: '0 16px 10px 16px', gap: 2 }}>
+                  <div className="flex flex-col" style={{ padding: '0 16px 8px 16px', gap: 2 }}>
                     <div className="flex items-center" style={{ gap: 6 }}>
                       <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{ac.name}</span>
                       <span
@@ -1514,16 +1514,16 @@ function StatCard({ label, value, color, delay }: { label: string; value: string
     <motion.div
       className="flex flex-col flex-1"
       style={{
-        padding: '12px 16px',
-        gap: 4,
+        padding: '8px 14px',
+        gap: 2,
         borderRadius: 6,
         backgroundColor: 'var(--surface-2)',
         border: '1px solid var(--border-primary)',
       }}
       variants={staggerItem}
     >
-      <span style={{ fontSize: 10, color: 'var(--text-tertiary)' }}>{label}</span>
-      <span style={{ fontSize: 22, fontWeight: 700, color: color ?? 'var(--text-primary)' }}>{value}</span>
+      <span className="text-caption" style={{ color: 'var(--text-tertiary)' }}>{label}</span>
+      <span className="data-lg font-mono" style={{ fontWeight: 700, color: color ?? 'var(--text-primary)' }}>{value}</span>
     </motion.div>
   );
 }

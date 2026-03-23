@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Gear, FloppyDisk, SpinnerGap, Check, Monitor, Bell, Trash } from '@phosphor-icons/react';
 import { api } from '../lib/api';
+import { toast } from '../stores/toastStore';
 
 export function SettingsPage() {
   const [simbriefUsername, setSimbriefUsername] = useState('');
@@ -46,6 +47,7 @@ export function SettingsPage() {
       savedTimerRef.current = setTimeout(() => setSaved(false), 2000);
     } catch (err) {
       console.error('[Gear] Failed to save SimBrief username:', err);
+      toast.error('Failed to save settings');
     } finally {
       setSaving(false);
     }
@@ -62,6 +64,7 @@ export function SettingsPage() {
       clearedTimerRef.current = setTimeout(() => setSessionCleared(false), 2000);
     } catch (err) {
       console.error('[Gear] Failed to clear SimBrief session:', err);
+      toast.error('Failed to save settings');
     } finally {
       setClearingSession(false);
     }

@@ -2,7 +2,7 @@ import type { Config } from 'tailwindcss';
 import tailwindAnimate from 'tailwindcss-animate';
 
 export default {
-  darkMode: ['class', 'class'],
+  darkMode: 'class',
   content: ['./index.html', './src/**/*.{ts,tsx}'],
   theme: {
   	extend: {
@@ -48,7 +48,7 @@ export default {
   		fontFamily: {
   			sans: ['Inter Variable', 'Inter', 'system-ui', 'sans-serif'],
   			display: ['Lufga', 'system-ui', 'sans-serif'],
-  			mono: ['ui-monospace', 'Cascadia Mono', 'Segoe UI Mono', 'Liberation Mono', 'Menlo', 'Monaco', 'Consolas', 'monospace'],
+  			mono: ['ui-monospace', 'Cascadia Mono', 'Consolas', 'monospace'],
   		},
   		borderRadius: {
   			lg: 'var(--radius)',

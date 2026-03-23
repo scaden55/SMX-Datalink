@@ -5,6 +5,19 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ── Typography utility classes (from tokens.css vars) ── */
+@layer components {
+  .text-display { font-size: var(--text-display-size); }
+  .text-heading { font-size: var(--text-heading-size); }
+  .text-subheading { font-size: var(--text-subheading-size); }
+  .text-body { font-size: var(--text-body-size); }
+  .text-caption { font-size: var(--text-caption-size); }
+  .text-data { font-size: var(--text-data-size); }
+  .text-data-sm { font-size: var(--text-data-sm-size); }
+  .text-data-lg { font-size: var(--text-data-lg-size); }
+  .font-display { font-family: var(--font-display); }
+}
+
 @layer base {
   :root {
     --radius: 0;
@@ -383,4 +396,36 @@ input[type="number"] {
 }
 .dispatch-input:focus {
   border-color: var(--accent);
+}
+
+/* ── MapLibre popup overrides (strip default chrome) ──── */
+.fir-popup .maplibregl-popup-content {
+  background: transparent !important;
+  padding: 0 !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+}
+.fir-popup .maplibregl-popup-tip {
+  display: none !important;
+}
+
+/* ── ATC facility badge hover ──────────────────────────── */
+.atc-badge-group {
+  transition: transform 150ms ease;
+}
+.atc-badge-group:hover {
+  transform: scale(1.25);
+}
+.atc-badge-group:hover .atc-badge-letter {
+  background: rgba(3,7,38,0.95) !important;
+  box-shadow: 0 0 6px rgba(255,255,255,0.15);
+}
+
+/* ── VATSIM status badge pulse ─────────────────────────── */
+.vatsim-status-badge span:first-child {
+  animation: vatsim-pulse 2s ease-in-out infinite;
+}
+@keyframes vatsim-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
 }

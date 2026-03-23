@@ -244,6 +244,14 @@ export class SimConnectManager extends EventEmitter implements ISimConnectManage
           this.diag('warn', 'Event: CRASHED');
           this.emit('crashed');
           break;
+        case SystemEventID.AIRCRAFT_LOADED:
+          this.diag('info', 'Event: AIRCRAFT_LOADED — re-requesting data');
+          requestAllData(handle);
+          break;
+        case SystemEventID.FLIGHT_LOADED:
+          this.diag('info', 'Event: FLIGHT_LOADED — re-requesting data');
+          requestAllData(handle);
+          break;
       }
     });
 
@@ -259,6 +267,7 @@ export class SimConnectManager extends EventEmitter implements ISimConnectManage
       this.diag('info', 'Lifecycle: quit — simulator shutting down');
       simQuitting = true;
       this._connected = false;
+      try { handle.close(); } catch { /* already closing */ }
       this.handle = null;
       this.emit('disconnected');
       this.scheduleReconnect();

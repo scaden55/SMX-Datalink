@@ -101,7 +101,7 @@ export class AirportDetailService {
     return db.prepare(
       `SELECT ident, type, latitude_deg, longitude_deg
        FROM oa_airports
-       WHERE type IN ('large_airport', 'medium_airport')
+       WHERE type IN ('large_airport', 'medium_airport', 'small_airport')
          AND latitude_deg IS NOT NULL AND longitude_deg IS NOT NULL`,
     ).all() as MapAirport[];
   }

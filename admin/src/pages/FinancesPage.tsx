@@ -178,11 +178,11 @@ interface FlightPnlEntry {
 
 // ── Colors ──────────────────────────────────────────────────────
 
-const ACCENT_BLUE = '#4F6CCD';
-const ACCENT_EMERALD = '#4ade80';
-const ACCENT_AMBER = '#fbbf24';
-const ACCENT_RED = '#f87171';
-const ACCENT_CYAN = '#22d3ee';
+const ACCENT_BLUE = 'var(--accent-blue)';
+const ACCENT_EMERALD = 'var(--accent-emerald)';
+const ACCENT_AMBER = 'var(--accent-amber)';
+const ACCENT_RED = 'var(--accent-red)';
+const ACCENT_CYAN = 'var(--accent-cyan)';
 
 // ── Chart Styling ───────────────────────────────────────────────
 
@@ -1532,6 +1532,12 @@ export function FinancesPage() {
             <button
               key={tab.key}
               onClick={() => setActiveTab(tab.key)}
+              onMouseEnter={(e) => {
+                if (activeTab !== tab.key) e.currentTarget.style.color = 'var(--text-secondary)';
+              }}
+              onMouseLeave={(e) => {
+                if (activeTab !== tab.key) e.currentTarget.style.color = 'var(--text-tertiary)';
+              }}
               style={{
                 padding: '8px 16px',
                 fontSize: 13,
@@ -1542,6 +1548,7 @@ export function FinancesPage() {
                 borderBottom: activeTab === tab.key ? `2px solid ${ACCENT_BLUE}` : '2px solid transparent',
                 cursor: 'pointer',
                 marginBottom: -1,
+                transition: 'color 120ms, border-color 120ms',
               }}
             >
               {tab.label}

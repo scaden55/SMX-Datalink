@@ -46,17 +46,13 @@ export function LoginPage() {
   if (isHydrating) {
     return (
       <div className="flex h-screen items-center justify-center bg-[var(--surface-0)]">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#4F6CCD] border-t-transparent" />
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-[var(--accent-blue)] border-t-transparent" />
       </div>
     );
   }
 
   return (
     <div className="relative flex min-h-screen items-center justify-center bg-[var(--surface-0)] px-4 overflow-hidden">
-      {/* Background glow */}
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(77,156,246,0.06)_0%,transparent_60%)]" />
-      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[600px] h-[600px] rounded-full bg-blue-500/[0.02] blur-3xl" />
-
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}

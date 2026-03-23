@@ -65,8 +65,12 @@ export function adminPirepsRouter(): Router {
   router.post('/admin/pireps/bulk-review', authMiddleware, dispatcherMiddleware, (req, res) => {
     try {
       const { ids, status, notes } = req.body;
-      if (!ids?.length || !status || !['approved', 'rejected'].includes(status)) {
-        res.status(400).json({ error: 'ids array and valid status required' });
+      if (!Array.isArray(ids) || ids.length === 0 || ids.length > 200) {
+        res.status(400).json({ error: 'ids must be an array of 1–200 entries' });
+        return;
+      }
+      if (!status || !['approved', 'rejected'].includes(status)) {
+        res.status(400).json({ error: 'status must be approved or rejected' });
         return;
       }
       const count = pirepService.bulkReview(ids, req.user!.userId, status, notes);

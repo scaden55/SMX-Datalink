@@ -200,6 +200,8 @@ export function WorkOrderBanner({ aircraftId, onAccept }: WorkOrderBannerProps) 
           <button
             onClick={handleAccept}
             disabled={accepting}
+            onMouseEnter={(e) => { if (!accepting) e.currentTarget.style.opacity = '0.85'; }}
+            onMouseLeave={(e) => { if (!accepting) e.currentTarget.style.opacity = '1'; }}
             className="flex items-center"
             style={{
               gap: 5,
@@ -212,6 +214,7 @@ export function WorkOrderBanner({ aircraftId, onAccept }: WorkOrderBannerProps) 
               cursor: accepting ? 'default' : 'pointer',
               opacity: accepting ? 0.6 : 1,
               whiteSpace: 'nowrap',
+              transition: 'opacity 120ms',
             }}
           >
             {accepting ? (

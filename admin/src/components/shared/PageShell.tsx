@@ -38,7 +38,7 @@ export function PageShell({ title, subtitle, actions, stats, children }: PageShe
             {title}
           </h1>
           {subtitle && (
-            <p className="text-[13px] mt-0.5" style={{ color: 'var(--text-secondary)' }}>
+            <p className="text-caption mt-0.5" style={{ color: 'var(--text-secondary)' }}>
               {subtitle}
             </p>
           )}
@@ -50,7 +50,7 @@ export function PageShell({ title, subtitle, actions, stats, children }: PageShe
 
       {/* Stats Row */}
       {stats && stats.length > 0 && (
-        <div className="px-6 pb-4">
+        <div className="px-6 pb-3">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {stats.map((stat) => (
               <StatCard

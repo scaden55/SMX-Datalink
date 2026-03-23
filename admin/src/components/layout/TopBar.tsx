@@ -143,7 +143,7 @@ export function TopBar() {
             FAA-121
           </span>
           <span style={{
-            background: 'rgba(255,255,255,0.05)',
+            background: 'var(--tint-subtle)',
             color: 'var(--text-tertiary)',
             fontSize: 8,
             padding: '2px 5px',
@@ -153,7 +153,7 @@ export function TopBar() {
             CARGO
           </span>
           <span style={{
-            background: 'rgba(255,255,255,0.05)',
+            background: 'var(--tint-subtle)',
             color: 'var(--text-tertiary)',
             fontSize: 8,
             padding: '2px 5px',
@@ -196,7 +196,7 @@ export function TopBar() {
                     fontFamily: 'var(--font-sans)',
                     color: isActive ? 'var(--text-primary)' : 'var(--text-secondary)',
                     textDecoration: 'none',
-                    backgroundColor: isActive ? 'rgba(79,108,205,0.06)' : 'transparent',
+                    backgroundColor: isActive ? 'var(--accent-blue-bg)' : 'transparent',
                   })}
                 >
                   {({ isActive }) => (
@@ -229,7 +229,7 @@ export function TopBar() {
                       {/* Active indicator bar */}
                       {isActive && (
                         <motion.div
-                          className="absolute bottom-0 left-2 right-2 h-[2px] rounded-full"
+                          className="absolute bottom-0 left-2 right-2 h-[2px]"
                           style={{ background: 'var(--accent-blue)' }}
                           layoutId="topbar-indicator"
                           transition={{ type: 'spring', stiffness: 400, damping: 30 }}

@@ -173,9 +173,10 @@ export function LogbookPage() {
 
   // ── Stats summary ────────────────────────────────────────────
 
+  // Stats are computed from the current page of results only
   const totalFlights = total;
-  const totalHours = entries.reduce((sum, e) => sum + e.flightTimeMin, 0);
-  const totalDist = entries.reduce((sum, e) => sum + e.distanceNm, 0);
+  const pageHours = entries.reduce((sum, e) => sum + e.flightTimeMin, 0);
+  const pageDist = entries.reduce((sum, e) => sum + e.distanceNm, 0);
   const avgScore = entries.length > 0
     ? Math.round(entries.filter(e => e.score != null).reduce((sum, e) => sum + (e.score ?? 0), 0) / (entries.filter(e => e.score != null).length || 1))
     : 0;
@@ -218,15 +219,15 @@ export function LogbookPage() {
           <div className="flex items-center gap-3 rounded-md border border-acars-border bg-acars-input/50 px-3 py-2">
             <Clock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
             <div>
-              <div className="text-[11px] text-acars-muted uppercase tracking-wider">Hours</div>
-              <div className="text-sm font-semibold text-acars-text font-mono tabular-nums">{formatDuration(totalHours)}</div>
+              <div className="text-[11px] text-acars-muted uppercase tracking-wider">Hours (page)</div>
+              <div className="text-sm font-semibold text-acars-text font-mono tabular-nums">{formatDuration(pageHours)}</div>
             </div>
           </div>
           <div className="flex items-center gap-3 rounded-md border border-acars-border bg-acars-input/50 px-3 py-2">
             <Ruler className="w-3.5 h-3.5 text-blue-400 shrink-0" />
             <div>
-              <div className="text-[11px] text-acars-muted uppercase tracking-wider">Distance</div>
-              <div className="text-sm font-semibold text-acars-text font-mono tabular-nums">{totalDist.toLocaleString()} nm</div>
+              <div className="text-[11px] text-acars-muted uppercase tracking-wider">Distance (page)</div>
+              <div className="text-sm font-semibold text-acars-text font-mono tabular-nums">{pageDist.toLocaleString()} nm</div>
             </div>
           </div>
           <div className="flex items-center gap-3 rounded-md border border-acars-border bg-acars-input/50 px-3 py-2">

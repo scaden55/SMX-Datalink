@@ -32,20 +32,28 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
   },
 
   markRead: async (id: number) => {
-    await api.post(`/api/notifications/${id}/read`);
-    set((s) => ({
-      notifications: s.notifications.map((n) =>
-        n.id === id ? { ...n, read: true } : n,
-      ),
-      unreadCount: Math.max(0, s.unreadCount - 1),
-    }));
+    try {
+      await api.post(`/api/notifications/${id}/read`);
+      set((s) => ({
+        notifications: s.notifications.map((n) =>
+          n.id === id ? { ...n, read: true } : n,
+        ),
+        unreadCount: Math.max(0, s.unreadCount - 1),
+      }));
+    } catch {
+      // Silently ignore — notification will remain unread in UI
+    }
   },
 
   markAllRead: async () => {
-    await api.post('/api/notifications/read-all');
-    set((s) => ({
-      notifications: s.notifications.map((n) => ({ ...n, read: true })),
-      unreadCount: 0,
-    }));
+    try {
+      await api.post('/api/notifications/read-all');
+      set((s) => ({
+        notifications: s.notifications.map((n) => ({ ...n, read: true })),
+        unreadCount: 0,
+      }));
+    } catch {
+      // Silently ignore — notifications will remain unread in UI
+    }
   },
 }));

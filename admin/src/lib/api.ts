@@ -17,7 +17,7 @@ let refreshPromise: Promise<string | null> | null = null;
 async function attemptRefresh(): Promise<string | null> {
   if (refreshPromise) return refreshPromise;
 
-  refreshPromise = (async () => {
+  const inner = (async () => {
     const refreshToken = await getRefreshToken();
     if (!refreshToken) return null;
 
@@ -30,6 +30,7 @@ async function attemptRefresh(): Promise<string | null> {
     if (!res.ok) return null;
     const data = await res.json();
 
+    // Update localStorage
     const raw = localStorage.getItem('admin-auth');
     if (raw) {
       const state = JSON.parse(raw);
@@ -37,12 +38,25 @@ async function attemptRefresh(): Promise<string | null> {
       state.refreshToken = data.refreshToken;
       localStorage.setItem('admin-auth', JSON.stringify(state));
     }
+
+    // Sync Zustand auth store so in-memory state matches
+    try {
+      const { useAuthStore } = await import('@/stores/authStore');
+      const store = useAuthStore.getState();
+      if (store.setTokens) {
+        store.setTokens(data.accessToken, data.refreshToken);
+      }
+    } catch { /* store not available — localStorage is authoritative */ }
+
     return data.accessToken;
   })();
 
-  const result = await refreshPromise;
-  refreshPromise = null;
-  return result;
+  refreshPromise = inner;
+  try {
+    return await inner;
+  } finally {
+    refreshPromise = null;
+  }
 }
 
 export class ApiError extends Error {
