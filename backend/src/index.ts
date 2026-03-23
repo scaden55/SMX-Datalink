@@ -94,7 +94,7 @@ app.use(helmet({
       scriptSrc: ["'self'", "'unsafe-inline'"],
       styleSrc: ["'self'", "'unsafe-inline'", "https://api.fontshare.com"],
       imgSrc: ["'self'", "data:", "blob:", "https:"],
-      connectSrc: ["'self'", "wss:", "ws:", "https://cdn.jsdelivr.net", ...config.corsOrigin],
+      connectSrc: ["'self'", "wss:", "ws:", "https://cdn.jsdelivr.net", "https://tiles.versatiles.org", "https://demotiles.maplibre.org", ...config.corsOrigin],
       fontSrc: ["'self'", "https://cdn.fontshare.com"],
       baseUri: ["'self'"],
       formAction: ["'self'"],
