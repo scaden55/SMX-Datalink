@@ -6,7 +6,6 @@ import {
   ChevronLeft,
   ChevronRight,
   AlertTriangle,
-  CheckCircle2,
   X,
 } from 'lucide-react';
 import { api, ApiError } from '@/lib/api';
@@ -624,12 +623,14 @@ export function ChecksTab({ aircraftId, icaoType }: ChecksTabProps) {
   }, [icaoType]);
 
   // ── Fetch maintenance log ────────────────────────────────
+  // Fetch all entries for this aircraft and filter client-side to check types.
+  // Pagination is client-side because the API only supports a single checkType filter.
   const fetchLog = useCallback(async () => {
     try {
       const params = new URLSearchParams();
       params.set('aircraftId', String(aircraftId));
-      params.set('page', page.toString());
-      params.set('pageSize', PAGE_SIZE.toString());
+      params.set('page', '1');
+      params.set('pageSize', '100');
 
       const res = await api.get<{
         entries: MaintenanceLogEntry[];
@@ -643,11 +644,11 @@ export function ChecksTab({ aircraftId, icaoType }: ChecksTabProps) {
         ['A', 'B', 'C', 'D'].includes(e.checkType),
       );
       setLogEntries(checkEntries);
-      setLogTotal(res.total);
+      setLogTotal(checkEntries.length);
     } catch (err) {
       toast.error(err instanceof ApiError ? err.message : 'Failed to load maintenance log');
     }
-  }, [aircraftId, page]);
+  }, [aircraftId]);
 
   // ── Initial load ─────────────────────────────────────────
   useEffect(() => {
@@ -664,8 +665,9 @@ export function ChecksTab({ aircraftId, icaoType }: ChecksTabProps) {
     fetchChecksDue();
   }
 
-  // ── Derived ──────────────────────────────────────────────
+  // ── Derived (client-side pagination on filtered entries) ─
   const totalPages = Math.max(1, Math.ceil(logTotal / PAGE_SIZE));
+  const pagedEntries = logEntries.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   // ── Loading ──────────────────────────────────────────────
   if (loading) {
@@ -758,7 +760,7 @@ export function ChecksTab({ aircraftId, icaoType }: ChecksTabProps) {
                 </tr>
               </thead>
               <motion.tbody variants={tableContainer} initial="hidden" animate="visible">
-                {logEntries.map((entry) => (
+                {pagedEntries.map((entry) => (
                   <motion.tr
                     key={entry.id}
                     variants={tableRow}
