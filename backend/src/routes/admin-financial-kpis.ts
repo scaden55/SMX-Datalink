@@ -101,12 +101,11 @@ function computeFinancialKpis(db: import('better-sqlite3').Database) {
       AND l.status IN ('completed', 'approved')
   `).get() as { charter_revenue: number; charter_flights: number } | undefined;
 
-  // Fuel surcharge recovery rate
+  // Fuel surcharge recovery rate (finance_rated_manifests was dropped in migration 049)
   const fuelRecoveryRow = db.prepare(`
-    SELECT COALESCE(SUM(rm.total_fuel_surcharge), 0) AS surcharge_collected,
+    SELECT 0 AS surcharge_collected,
            COALESCE(SUM(p.fuel_cost), 0) AS actual_fuel_cost
     FROM finance_flight_pnl p
-    LEFT JOIN finance_rated_manifests rm ON rm.id = p.rated_manifest_id
   `).get() as { surcharge_collected: number; actual_fuel_cost: number };
 
   // ── Cost KPIs ────────────────────────────────────────────────
