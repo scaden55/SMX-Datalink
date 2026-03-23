@@ -15,6 +15,7 @@ import {
   Timer,
 } from 'lucide-react';
 import { api, ApiError } from '@/lib/api';
+import { RepairEstimatesSection } from './maintenance/RepairEstimatesSection';
 import { toast } from '@/stores/toastStore';
 import {
   pageVariants,
@@ -136,8 +137,8 @@ const SECTIONS: SectionDef[] = [
   },
   {
     id: 'simulation',
-    title: 'Simulation',
-    summary: 'Maintenance timer speed',
+    title: 'Maintenance Simulation',
+    summary: 'Timer speed, repair cost estimates',
     icon: Timer,
     fields: [
       {
@@ -185,9 +186,10 @@ interface AccordionSectionProps {
   values: Record<string, string>;
   localValues: Record<string, string>;
   onFieldChange: (key: string, value: string) => void;
+  extraContent?: React.ReactNode;
 }
 
-function AccordionSection({ section, expanded, onToggle, values, localValues, onFieldChange }: AccordionSectionProps) {
+function AccordionSection({ section, expanded, onToggle, values, localValues, onFieldChange, extraContent }: AccordionSectionProps) {
   const Icon = section.icon;
 
   return (
@@ -355,6 +357,7 @@ function AccordionSection({ section, expanded, onToggle, values, localValues, on
               );
             })}
           </div>
+          {extraContent}
         </div>
       )}
     </div>
@@ -801,6 +804,17 @@ export function SettingsPage() {
                   values={settings}
                   localValues={localValues}
                   onFieldChange={handleFieldChange}
+                  extraContent={section.id === 'simulation' ? (
+                    <div style={{ marginTop: 16, borderTop: '1px solid var(--border-primary)', paddingTop: 16 }}>
+                      <div className="text-subheading" style={{ marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                        Repair Cost Estimates
+                      </div>
+                      <div className="text-caption" style={{ color: 'var(--text-tertiary)', marginBottom: 12 }}>
+                        Configure simulated repair costs per ATA chapter. These values appear on work order invoices for immersion.
+                      </div>
+                      <RepairEstimatesSection refreshKey={0} />
+                    </div>
+                  ) : undefined}
                 />
               </motion.div>
             ))}
