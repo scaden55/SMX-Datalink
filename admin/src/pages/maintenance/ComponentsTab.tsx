@@ -181,7 +181,7 @@ const cellStyle: React.CSSProperties = {
   verticalAlign: 'middle',
 };
 
-const MONO_CLASS = 'data-sm';
+const MONO_CLASS = 'data-sm font-mono';
 
 // ── Skeleton ─────────────────────────────────────────────────
 

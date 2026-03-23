@@ -117,7 +117,7 @@ const cellStyle: React.CSSProperties = {
   borderBottom: '1px solid var(--border-primary)',
   verticalAlign: 'middle',
 };
-const MONO_CLASS = 'data-sm';
+const MONO_CLASS = 'data-sm font-mono';
 
 // ── Helpers ──────────────────────────────────────────────────
 
