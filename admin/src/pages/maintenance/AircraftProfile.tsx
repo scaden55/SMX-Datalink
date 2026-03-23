@@ -293,22 +293,6 @@ export function AircraftProfile({ aircraftId, onBack }: AircraftProfileProps) {
   );
 }
 
-// ── Placeholder for tabs not yet wired ───────────────────────
-
-function TabPlaceholder({ tab, aircraftId }: { tab: string; aircraftId: number }) {
-  return (
-    <div
-      style={{
-        padding: '32px 24px',
-        color: 'var(--text-quaternary)',
-        fontSize: 13,
-      }}
-    >
-      <span style={{ fontWeight: 500 }}>{tab}</span> tab — aircraftId: {aircraftId}
-    </div>
-  );
-}
-
 // ── Styles ───────────────────────────────────────────────────
 
 const backButtonStyle: React.CSSProperties = {
