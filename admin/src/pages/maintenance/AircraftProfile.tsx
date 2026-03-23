@@ -11,6 +11,7 @@ import { DiscrepanciesTab } from './DiscrepanciesTab';
 import { AdsTab } from './AdsTab';
 import { MelDeferralsTab } from './MelDeferralsTab';
 import { ChecksTab } from './ChecksTab';
+import { ComponentsTab } from './ComponentsTab';
 
 // ── Types ────────────────────────────────────────────────────
 
@@ -285,7 +286,7 @@ export function AircraftProfile({ aircraftId, onBack }: AircraftProfileProps) {
           <AdsTab aircraftId={aircraftId} />
         )}
         {activeTab === 'components' && (
-          <TabPlaceholder tab="Components" aircraftId={aircraftId} />
+          <ComponentsTab aircraftId={aircraftId} />
         )}
       </div>
     </motion.div>
