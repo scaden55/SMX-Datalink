@@ -9,6 +9,7 @@ import { WorkOrderBanner } from './WorkOrderBanner';
 import { AircraftLogbook } from './AircraftLogbook';
 import { DiscrepanciesTab } from './DiscrepanciesTab';
 import { AdsTab } from './AdsTab';
+import { MelDeferralsTab } from './MelDeferralsTab';
 
 // ── Types ────────────────────────────────────────────────────
 
@@ -274,7 +275,7 @@ export function AircraftProfile({ aircraftId, onBack }: AircraftProfileProps) {
           <DiscrepanciesTab aircraftId={aircraftId} />
         )}
         {activeTab === 'mel' && (
-          <TabPlaceholder tab="MEL Deferrals" aircraftId={aircraftId} />
+          <MelDeferralsTab aircraftId={aircraftId} />
         )}
         {activeTab === 'checks' && (
           <TabPlaceholder tab="Checks" aircraftId={aircraftId} />

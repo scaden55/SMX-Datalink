@@ -483,7 +483,7 @@ function DetailField({
 // Active Deferrals View
 // ═══════════════════════════════════════════════════════════════
 
-function ActiveDeferralsView({ refreshKey }: { refreshKey: number }) {
+function ActiveDeferralsView({ refreshKey, aircraftId }: { refreshKey: number; aircraftId?: number }) {
   const [deferrals, setDeferrals] = useState<MELDeferral[]>([]);
   const [loading, setLoading] = useState(true);
   const [total, setTotal] = useState(0);
@@ -499,6 +499,7 @@ function ActiveDeferralsView({ refreshKey }: { refreshKey: number }) {
       params.set('page', page.toString());
       params.set('pageSize', pageSize.toString());
       if (statusFilter !== 'all') params.set('status', statusFilter);
+      if (aircraftId != null) params.set('aircraftId', aircraftId.toString());
 
       const res = await api.get<{ deferrals: MELDeferral[]; total: number }>(
         `/api/admin/maintenance/mel?${params.toString()}`,
@@ -510,7 +511,7 @@ function ActiveDeferralsView({ refreshKey }: { refreshKey: number }) {
     } finally {
       setLoading(false);
     }
-  }, [page, pageSize, statusFilter]);
+  }, [page, pageSize, statusFilter, aircraftId]);
 
   useEffect(() => {
     setLoading(true);
@@ -1016,10 +1017,29 @@ function MelMasterDialog({
   );
 }
 
-function MelMasterListView() {
+function MelMasterListView({ aircraftId }: { aircraftId?: number }) {
   const [items, setItems] = useState<MelMasterItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [typeFilter, setTypeFilter] = useState('all');
+
+  // Auto-select ICAO type when viewing from an aircraft profile
+  useEffect(() => {
+    if (aircraftId == null) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await api.get<{ fleet: { aircraftId: number; icaoType: string }[] }>(
+          '/api/admin/maintenance/fleet-status',
+        );
+        if (cancelled) return;
+        const ac = res.fleet.find((a) => a.aircraftId === aircraftId);
+        if (ac) setTypeFilter(ac.icaoType);
+      } catch {
+        // non-critical — filter stays at 'all'
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [aircraftId]);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editItem, setEditItem] = useState<MelMasterItem | null>(null);
   const [deleteItem, setDeleteItem] = useState<MelMasterItem | null>(null);
@@ -1308,7 +1328,7 @@ function MelMasterListView() {
 // MEL Deferrals Tab (exported)
 // ═══════════════════════════════════════════════════════════════
 
-export function MelDeferralsTab() {
+export function MelDeferralsTab({ aircraftId }: { aircraftId?: number } = {}) {
   const [view, setView] = useState<'deferrals' | 'master'>('deferrals');
   const [stats, setStats] = useState<MelStats | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
@@ -1408,8 +1428,8 @@ export function MelDeferralsTab() {
 
       {/* View Content */}
       <div style={{ flex: 1, overflow: 'auto', display: 'flex', flexDirection: 'column' }}>
-        {view === 'deferrals' && <ActiveDeferralsView refreshKey={refreshKey} />}
-        {view === 'master' && <MelMasterListView />}
+        {view === 'deferrals' && <ActiveDeferralsView refreshKey={refreshKey} aircraftId={aircraftId} />}
+        {view === 'master' && <MelMasterListView aircraftId={aircraftId} />}
       </div>
     </div>
   );
