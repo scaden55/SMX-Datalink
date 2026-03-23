@@ -10,6 +10,7 @@ import { AircraftLogbook } from './AircraftLogbook';
 import { DiscrepanciesTab } from './DiscrepanciesTab';
 import { AdsTab } from './AdsTab';
 import { MelDeferralsTab } from './MelDeferralsTab';
+import { ChecksTab } from './ChecksTab';
 
 // ── Types ────────────────────────────────────────────────────
 
@@ -278,7 +279,7 @@ export function AircraftProfile({ aircraftId, onBack }: AircraftProfileProps) {
           <MelDeferralsTab aircraftId={aircraftId} />
         )}
         {activeTab === 'checks' && (
-          <TabPlaceholder tab="Checks" aircraftId={aircraftId} />
+          <ChecksTab aircraftId={aircraftId} icaoType={aircraft.icaoType} />
         )}
         {activeTab === 'ads' && (
           <AdsTab aircraftId={aircraftId} />
