@@ -99,6 +99,7 @@ app.use(helmet({
       baseUri: ["'self'"],
       formAction: ["'self'"],
       frameAncestors: ["'self'"],
+      workerSrc: ["'self'", "blob:"],
       objectSrc: ["'none'"],
     },
   },
